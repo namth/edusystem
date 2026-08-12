@@ -1,0 +1,395 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Student Portal - Test History &amp; Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Jetbrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-primary": "#ffffff", "surface-container": "#f9ebe4", "tertiary-container": "#00677c", "surface-tint": "#8b501f", "primary-container": "#8a4f1e", "on-surface-variant": "#52443a", "text-dark": "#1D1D1B", "primary-fixed": "#ffdcc5", "on-primary-fixed-variant": "#6e3907", tertiary: "#004d5e", "on-secondary-fixed-variant": "#5e402b", "secondary-fixed-dim": "#e8bea2", surface: "#fff8f5", "primary-fixed-dim": "#ffb783", "inverse-on-surface": "#fceee7", "on-surface": "#211a16", "surface-dim": "#e5d7d0", "secondary-container": "#fdd1b4", "surface-variant": "#ede0d9", background: "#fff8f5", "tertiary-fixed": "#b2ebff", "secondary-fixed": "#ffdcc5", "surface-container-highest": "#ede0d9", "accent-yellow": "#FFD426", "tertiary-fixed-dim": "#86d1e9", "on-tertiary": "#ffffff", "on-secondary-fixed": "#2c1605", secondary: "#785841", "on-background": "#211a16", error: "#ba1a1a", "error-container": "#ffdad6", "on-secondary-container": "#785841", "on-secondary": "#ffffff", "surface-bright": "#fff8f5", "on-error": "#ffffff", "on-primary-fixed": "#301400", "surface-container-lowest": "#ffffff", "warning-soft": "#FEFBEA", "inverse-primary": "#ffb783", "outline-variant": "#d8c2b6", "surface-container-low": "#fff1ea", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#004e5e", "inverse-surface": "#362f2a", "on-primary-container": "#ffceac", "bg-soft-gray": "#F8FAFC", "surface-container-high": "#f3e6de", "on-tertiary-fixed": "#001f27", outline: "#857469", "on-tertiary-container": "#98e3fb", primary: "#6d3807", "success-mint": "#DCFCE7"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-mobile": "16px", "margin-desktop": "40px", gutter: "24px", base: "8px", "container-max-width": "1280px"}, fontFamily: {"headline-lg": ["Be Vietnam Pro"], "body-md": ["Inter"], "headline-lg-mobile": ["Be Vietnam Pro"], "body-lg": ["Inter"], "display-lg": ["Be Vietnam Pro"], "label-md": ["JetBrains Mono"], "label-sm": ["JetBrains Mono"], "headline-md": ["Be Vietnam Pro"], "body-sm": ["Inter"], headline: ["Be Vietnam Pro"], display: ["Be Vietnam Pro"], body: ["Inter"], label: ["Jetbrains Mono"]}, fontSize: {"headline-lg": ["32px", {lineHeight: "40px", fontWeight: "600"}], "body-md": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "600"}], "body-lg": ["18px", {lineHeight: "28px", fontWeight: "400"}], "display-lg": ["48px", {lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "700"}], "label-md": ["14px", {lineHeight: "20px", letterSpacing: "0.02em", fontWeight: "500"}], "label-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "headline-md": ["24px", {lineHeight: "32px", fontWeight: "600"}], "body-sm": ["14px", {lineHeight: "20px", fontWeight: "400"}]}}}};</script>
+<style>
+        .radar-grid {
+            background-image: 
+                radial-gradient(circle at center, transparent 70%, theme('colors.surface-variant') 71%, transparent 72%),
+                radial-gradient(circle at center, transparent 50%, theme('colors.surface-variant') 51%, transparent 52%),
+                radial-gradient(circle at center, transparent 30%, theme('colors.surface-variant') 31%, transparent 32%);
+            background-size: 100% 100%;
+            background-position: center;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-polygon {
+            transition: all 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-surface shadow-sm flex flex-col h-full py-base z-20">
+<div class="px-gutter mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">
+                E
+            </div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">EduTest Pro</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Academic Excellence</p>
+</div>
+</div>
+<div class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="quiz">quiz</span>
+<span class="font-label-md text-label-md">Mock Tests</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-md text-label-md">Classroom</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold border-r-4 border-primary opacity-80 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Resources</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full py-2 mb-4 rounded-lg bg-surface-variant text-primary font-label-md text-label-md hover:bg-surface-container transition-colors">
+                Support Center
+            </button>
+<div class="border-t border-outline-variant pt-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-error hover:bg-error-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 bg-surface-container-lowest shadow-sm flex justify-between items-center w-full px-margin-desktop h-16 z-10">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">EduTest</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">My Classes</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Assignments</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-full border border-outline-variant bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-body-sm text-body-sm" placeholder="Search tests..." type="text">
+</div>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+</button>
+<img alt="Student/Teacher profile" class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A clean, professional headshot of a student against a light grey background, wearing casual but neat academic attire, well-lit with soft natural lighting, conveying focus and readiness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmauwwDG0PGNE76XaRqQ4BapWpXax4EWqW2fbABhkjmBB0qp4sTamnGIiWdOeKkz1nQLU5T2JoU6Tm9bQ8MGJY8uisQF-pQ6U2ZTr-0RFdm8aRWdQc_RGoY80JQoFnhr0o0k3uvrcpNCc4-lbXVHyDtPh8lzjfNXRhR0oJ_RKd3Z68esuvFJCGcQeL_yDg_mlwe5tdWJgoypBOtV3CseoTf3Z86EKeyYFAX89eUHHSKsRy4u-nESI5">
+</div>
+</header>
+<!-- Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-desktop bg-bg-soft-gray">
+<div class="max-w-container-max-width mx-auto">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Test History &amp; Analytics</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Track your progress and review detailed feedback.</p>
+</div>
+<div class="flex gap-4">
+<select class="rounded-lg border border-outline-variant bg-surface px-4 py-2 font-label-md text-label-md text-on-surface focus:outline-none focus:border-primary">
+<option>All Test Types</option>
+<option>IELTS Academic</option>
+<option>TOEFL iBT</option>
+</select>
+<select class="rounded-lg border border-outline-variant bg-surface px-4 py-2 font-label-md text-label-md text-on-surface focus:outline-none focus:border-primary">
+<option>Last 6 Months</option>
+<option>Last 3 Months</option>
+<option>All Time</option>
+</select>
+</div>
+</div>
+<!-- Bento Grid Layout for Main Content -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Analytics Overview Card (Left side, spans 4 cols) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant p-6 flex flex-col shadow-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">Overall Performance</h3>
+<div class="flex-1 flex flex-col items-center justify-center relative min-h-[300px]">
+<!-- Radar Chart Container -->
+<div class="relative w-64 h-64 radar-grid rounded-full">
+<!-- Axes -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-full h-px bg-outline-variant/30 rotate-0"></div>
+<div class="w-full h-px bg-outline-variant/30 rotate-90"></div>
+<div class="w-full h-px bg-outline-variant/30 rotate-45"></div>
+<div class="w-full h-px bg-outline-variant/30 -rotate-45"></div>
+</div>
+<!-- Data Polygon (Simulated with SVG for simplicity in HTML) -->
+<svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+<polygon class="chart-polygon" fill="theme('colors.primary-container')" fill-opacity="0.3" points="50,15 85,50 65,85 25,75 15,40" stroke="theme('colors.primary')" stroke-width="2"></polygon>
+<!-- Current Selection Overlay (Hidden by default, shown via JS) -->
+<polygon class="chart-polygon opacity-0 transition-opacity" fill="theme('colors.secondary-container')" fill-opacity="0.5" id="active-polygon" points="50,20 80,50 60,80 30,70 20,40" stroke="theme('colors.secondary')" stroke-width="2"></polygon>
+</svg>
+<!-- Labels -->
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 font-label-sm text-label-sm text-on-surface-variant font-bold">Reading</div>
+<div class="absolute top-1/2 -right-8 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant font-bold">Listening</div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-sm text-label-sm text-on-surface-variant font-bold">Writing</div>
+<div class="absolute top-1/2 -left-8 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant font-bold">Speaking</div>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-2 gap-4">
+<div class="bg-surface p-4 rounded-lg border border-outline-variant text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">Avg. Band Score</p>
+<p class="font-headline-lg text-headline-lg text-primary">7.0</p>
+</div>
+<div class="bg-surface p-4 rounded-lg border border-outline-variant text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">Tests Taken</p>
+<p class="font-headline-lg text-headline-lg text-primary">12</p>
+</div>
+</div>
+</div>
+<!-- Test List (Right side, spans 8 cols) -->
+<div class="col-span-12 lg:col-span-8 space-y-4">
+<!-- List Header -->
+<div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-outline-variant font-label-md text-label-md text-on-surface-variant">
+<div class="col-span-5">Test Name</div>
+<div class="col-span-3">Date</div>
+<div class="col-span-2 text-center">Band Score</div>
+<div class="col-span-2 text-right">Action</div>
+</div>
+<!-- Test Item 1 (Expanded) -->
+<div class="bg-surface-container-lowest rounded-xl border border-primary shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden transition-all duration-300 test-card" data-scores="{&quot;R&quot;: 7.5, &quot;L&quot;: 8.0, &quot;W&quot;: 6.5, &quot;S&quot;: 7.0}">
+<div class="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-surface-container-low transition-colors" onclick="toggleDetails(this)">
+<div class="col-span-5 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed-dim flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">IELTS Mock Final - Alpha</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Academic Module</p>
+</div>
+</div>
+<div class="col-span-3 font-body-sm text-body-sm text-on-surface-variant">
+                                    Oct 24, 2023
+                                </div>
+<div class="col-span-2 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-success-mint text-on-secondary-container font-label-md text-label-md font-bold">
+                                        7.5
+                                    </span>
+</div>
+<div class="col-span-2 text-right flex justify-end">
+<button class="p-2 rounded-full text-primary hover:bg-surface-container transition-colors expand-btn transform rotate-180">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Expanded Details -->
+<div class="details-pane border-t border-outline-variant bg-surface-bright p-6 animate-fade-in block">
+<div class="grid grid-cols-4 gap-6 mb-8">
+<!-- Skill Breakdowns -->
+<div class="flex flex-col items-center p-4 bg-surface rounded-lg border border-outline-variant relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-secondary-fixed"></div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Listening</p>
+<p class="font-headline-md text-headline-md font-bold text-on-surface">8.0</p>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface rounded-lg border border-outline-variant relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-secondary-fixed"></div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Reading</p>
+<p class="font-headline-md text-headline-md font-bold text-on-surface">7.5</p>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface rounded-lg border border-outline-variant relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-tertiary-fixed-dim"></div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Writing</p>
+<p class="font-headline-md text-headline-md font-bold text-on-surface">6.5</p>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface rounded-lg border border-outline-variant relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-fixed-dim"></div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Speaking</p>
+<p class="font-headline-md text-headline-md font-bold text-on-surface">7.0</p>
+</div>
+</div>
+<!-- Teacher Feedback Section -->
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="forum" style="font-variation-settings: 'FILL' 1;">forum</span>
+                                        Teacher Feedback
+                                    </h4>
+<div class="space-y-4">
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant flex gap-4">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex-shrink-0 flex items-center justify-center text-on-tertiary-fixed font-bold">W</div>
+<div>
+<p class="font-label-sm text-label-sm font-bold text-on-surface mb-1">Writing Task 2</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Good structure and clear paragraphs. However, you need to develop your secondary arguments more fully. Vocabulary is adequate but could use more academic precision.</p>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant flex gap-4">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex-shrink-0 flex items-center justify-center text-on-primary-fixed font-bold">S</div>
+<div>
+<p class="font-label-sm text-label-sm font-bold text-on-surface mb-1">Speaking Part 3</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Fluency is generally good. Try to reduce filler words ("um", "like") when organizing your thoughts on abstract topics. Pronunciation is clear.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-6 flex justify-end gap-3">
+<button class="px-4 py-2 rounded-lg font-label-md text-label-md text-primary border border-outline-variant hover:bg-surface transition-colors">Download PDF</button>
+<button class="px-4 py-2 rounded-lg font-label-md text-label-md bg-primary text-on-primary hover:bg-primary/90 transition-colors">Review Full Test</button>
+</div>
+</div>
+</div>
+<!-- Test Item 2 (Collapsed) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden transition-all duration-300 test-card hover:shadow-sm" data-scores="{&quot;R&quot;: 7.0, &quot;L&quot;: 7.5, &quot;W&quot;: 6.0, &quot;S&quot;: 6.5}">
+<div class="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-surface-container-low transition-colors" onclick="toggleDetails(this)">
+<div class="col-span-5 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">Practice Test 04</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Academic Module</p>
+</div>
+</div>
+<div class="col-span-3 font-body-sm text-body-sm text-on-surface-variant">
+                                    Oct 10, 2023
+                                </div>
+<div class="col-span-2 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-bold">
+                                        6.5
+                                    </span>
+</div>
+<div class="col-span-2 text-right flex justify-end">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors expand-btn">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Expanded Details (Hidden) -->
+<div class="details-pane border-t border-outline-variant bg-surface-bright p-6 hidden">
+<div class="text-center py-8">
+<p class="font-body-md text-body-md text-on-surface-variant">Test details loading...</p>
+</div>
+</div>
+</div>
+<!-- Test Item 3 (Collapsed) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden transition-all duration-300 test-card hover:shadow-sm" data-scores="{&quot;R&quot;: 6.5, &quot;L&quot;: 7.0, &quot;W&quot;: 6.0, &quot;S&quot;: 6.0}">
+<div class="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-surface-container-low transition-colors" onclick="toggleDetails(this)">
+<div class="col-span-5 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">Diagnostic Test</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">General Training</p>
+</div>
+</div>
+<div class="col-span-3 font-body-sm text-body-sm text-on-surface-variant">
+                                    Sep 15, 2023
+                                </div>
+<div class="col-span-2 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-bold">
+                                        6.0
+                                    </span>
+</div>
+<div class="col-span-2 text-right flex justify-end">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors expand-btn">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+<div class="details-pane border-t border-outline-variant bg-surface-bright p-6 hidden"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Padding for bottom scrolling -->
+<div class="h-24"></div>
+</div>
+</main>
+<script>
+        function toggleDetails(element) {
+            const card = element.closest('.test-card');
+            const pane = card.querySelector('.details-pane');
+            const btn = card.querySelector('.expand-btn');
+            const isExpanded = !pane.classList.contains('hidden');
+
+            // Close all others
+            document.querySelectorAll('.test-card').forEach(c => {
+                if(c !== card) {
+                    c.querySelector('.details-pane').classList.add('hidden');
+                    c.querySelector('.expand-btn').classList.remove('rotate-180', 'text-primary');
+                    c.querySelector('.expand-btn').classList.add('text-on-surface-variant');
+                    c.classList.remove('border-primary', 'shadow-[0_4px_20px_rgba(0,0,0,0.05)]');
+                    c.classList.add('border-outline-variant');
+                }
+            });
+
+            // Toggle current
+            if (isExpanded) {
+                pane.classList.add('hidden');
+                btn.classList.remove('rotate-180', 'text-primary');
+                btn.classList.add('text-on-surface-variant');
+                card.classList.remove('border-primary', 'shadow-[0_4px_20px_rgba(0,0,0,0.05)]');
+                card.classList.add('border-outline-variant');
+                
+                // Reset radar chart to overall
+                document.getElementById('active-polygon').style.opacity = '0';
+            } else {
+                pane.classList.remove('hidden');
+                pane.classList.add('animate-fade-in');
+                btn.classList.add('rotate-180', 'text-primary');
+                btn.classList.remove('text-on-surface-variant');
+                card.classList.add('border-primary', 'shadow-[0_4px_20px_rgba(0,0,0,0.05)]');
+                card.classList.remove('border-outline-variant');
+                
+                // Update radar chart based on data-scores
+                const scoresData = card.getAttribute('data-scores');
+                if(scoresData) {
+                    const scores = JSON.parse(scoresData);
+                    updateRadarChart(scores);
+                }
+            }
+        }
+        
+        function updateRadarChart(scores) {
+            // Simplified calculation for polygon points (Top, Right, Bottom, Left)
+            // Center is 50,50. Radius max is ~45. Max score is 9.
+            const scale = 45 / 9;
+            
+            // Reading (Top)
+            const p1y = 50 - (scores.R * scale);
+            // Listening (Right)
+            const p2x = 50 + (scores.L * scale);
+            // Writing (Bottom)
+            const p3y = 50 + (scores.W * scale);
+            // Speaking (Left)
+            const p4x = 50 - (scores.S * scale);
+            
+            const pointsString = `50,${p1y} ${p2x},50 50,${p3y} ${p4x},50`;
+            
+            const activePolygon = document.getElementById('active-polygon');
+            activePolygon.setAttribute('points', pointsString);
+            activePolygon.style.opacity = '1';
+        }
+    </script>
+</body></html>

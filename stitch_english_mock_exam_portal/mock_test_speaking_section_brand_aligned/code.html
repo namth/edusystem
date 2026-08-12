@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduTest Pro - IELTS Mock Final - Speaking Section</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#ffffff",
+                      "surface-container": "#f4f1ee",
+                      "tertiary-container": "#ffdfc4",
+                      "surface-tint": "#8a4f1e",
+                      "primary-container": "#ffdbcc",
+                      "on-surface-variant": "#53433e",
+                      "text-dark": "#1D1D1B",
+                      "primary-fixed": "#ffdbcc",
+                      "on-primary-fixed-variant": "#6f3800",
+                      "tertiary": "#6e5d2d",
+                      "on-secondary-fixed-variant": "#344e26",
+                      "secondary-fixed-dim": "#b6cc99",
+                      "surface": "#fffbff",
+                      "primary-fixed-dim": "#ffb68c",
+                      "inverse-on-surface": "#fbeee8",
+                      "on-surface": "#201a17",
+                      "surface-dim": "#e4d9d4",
+                      "secondary-container": "#d2e9b4",
+                      "surface-variant": "#f4ded3",
+                      "background": "#fffbff",
+                      "tertiary-fixed": "#f8e2a6",
+                      "secondary-fixed": "#d2e9b4",
+                      "surface-container-highest": "#e9e0db",
+                      "accent-yellow": "#eeb400",
+                      "tertiary-fixed-dim": "#dbc68c",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-fixed": "#092000",
+                      "secondary": "#4b663b",
+                      "on-background": "#201a17",
+                      "error": "#ba1a1a",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#0c2000",
+                      "on-secondary": "#ffffff",
+                      "surface-bright": "#fffbff",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#2d1600",
+                      "surface-container-lowest": "#ffffff",
+                      "warning-soft": "#fff9e5",
+                      "inverse-primary": "#ffb68c",
+                      "outline-variant": "#d7c2b8",
+                      "surface-container-low": "#fdf2ed",
+                      "on-error-container": "#410002",
+                      "on-tertiary-fixed-variant": "#544518",
+                      "inverse-surface": "#362f2c",
+                      "on-primary-container": "#2d1600",
+                      "bg-soft-gray": "#f9f9f9",
+                      "surface-container-high": "#f1e6e0",
+                      "on-tertiary-fixed": "#241a00",
+                      "outline": "#85736b",
+                      "on-tertiary-container": "#241a00",
+                      "primary": "#8a4f1e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.375rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px",
+                      "base": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Be Vietnam Pro"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Be Vietnam Pro"],
+                      "body-lg": ["Inter"],
+                      "display-lg": ["Be Vietnam Pro"],
+                      "label-md": ["JetBrains Mono"],
+                      "label-sm": ["JetBrains Mono"],
+                      "headline-md": ["Be Vietnam Pro"],
+                      "body-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+          .waveform-bar {
+              width: 8px;
+              background-color: #8a4f1e; /* primary brown */
+              border-radius: 2px;
+              margin: 0 2px;
+              display: inline-block;
+              height: 10px;
+              transition: height 0.1s ease;
+          }
+          .waveform-container {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 120px;
+          }
+          @keyframes idlePulse {
+              0% { height: 10px; opacity: 0.5; }
+              50% { height: 15px; opacity: 0.8; }
+              100% { height: 10px; opacity: 0.5; }
+          }
+          .waveform-bar.idle {
+              animation: idlePulse 2s infinite ease-in-out;
+              background-color: #d7c2b8;
+          }
+          .waveform-bar.idle:nth-child(even) {
+              animation-delay: 1s;
+          }
+      </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-full flex flex-col pt-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-primary shadow-sm flex justify-between items-center px-margin-desktop h-20">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-primary text-3xl" style="font-variation-settings: 'FILL' 1;">headset_mic</span>
+<span class="font-headline-md text-headline-md font-bold text-on-primary">IELTS Mock Final</span>
+<div class="h-6 w-px bg-on-primary/30 mx-2 hidden md:block"></div>
+<span class="text-on-primary/80 font-label-md text-label-md hidden md:block uppercase tracking-wider">Speaking Section</span>
+</div>
+<div class="flex-1 max-w-md mx-8 hidden md:flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="text-on-primary/80 font-label-md text-label-md">Part 1 of 3</span>
+<div class="flex items-center gap-2 font-bold text-tertiary-fixed font-label-md text-label-md bg-white/10 px-3 py-1 rounded">
+<span class="material-symbols-outlined text-sm">timer</span>
+<span id="countdown-timer">02:00</span>
+</div>
+</div>
+<div class="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
+<div class="bg-tertiary-fixed h-1.5 rounded-full" style="width: 33%;"></div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="text-on-primary/80 hover:text-on-primary transition-colors hover:bg-white/10 p-2 rounded flex items-center justify-center">
+<span class="material-symbols-outlined">timer</span>
+</button>
+<button class="text-on-primary/80 hover:text-on-primary transition-colors hover:bg-white/10 p-2 rounded flex items-center justify-center">
+<span class="material-symbols-outlined">speed</span>
+</button>
+</div>
+<button class="font-label-md text-label-md bg-on-primary text-primary px-6 py-2.5 rounded hover:bg-primary-fixed transition-all font-bold shadow-sm whitespace-nowrap hidden sm:block">
+                Submit Test
+            </button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-12 flex flex-col items-center justify-center relative">
+<!-- Instruction Card -->
+<div class="w-full max-w-3xl bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-8 mb-12 shadow-sm text-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+<h2 class="font-headline-md text-headline-md text-primary mb-4">Part 1: Introduction and Interview</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed font-body-md">
+                In this part, the examiner will ask you general questions about yourself and a range of familiar topics, such as home, family, work, studies, and interests.
+            </p>
+<div class="mt-6 p-4 bg-surface-container rounded inline-block text-left border border-outline-variant/20">
+<span class="block font-label-md text-label-md text-primary mb-2 uppercase tracking-wider">Current Question:</span>
+<p class="font-body-md text-body-md font-semibold text-on-surface">"Let's talk about where you live. What do you like most about your hometown?"</p>
+</div>
+</div>
+<!-- Recording Interface -->
+<div class="w-full max-w-2xl bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-10 shadow-sm flex flex-col items-center">
+<!-- Microphone Status -->
+<div class="flex items-center gap-3 mb-8 bg-surface-container px-4 py-2 rounded border border-outline-variant/20">
+<div class="w-3 h-3 rounded-full bg-outline" id="mic-status-indicator"></div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" id="mic-status-text">Microphone Ready</span>
+</div>
+<!-- Waveform Animation Area -->
+<div class="w-full bg-surface-container-low rounded border border-outline-variant/20 p-6 mb-10 relative">
+<div class="absolute inset-0 bg-surface-container-low/80 flex items-center justify-center rounded z-10 transition-opacity duration-300" id="waveform-overlay">
+<p class="font-label-md text-label-md text-on-surface-variant">Click record to begin speaking</p>
+</div>
+<div class="waveform-container w-full" id="waveform">
+<!-- Bars generated by JS -->
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col items-center gap-4">
+<button class="group relative flex items-center justify-center w-20 h-20 bg-primary rounded-full shadow-md hover:brightness-110 transition-all duration-300 outline-none focus:ring-4 focus:ring-primary/30" id="record-btn">
+<span class="material-symbols-outlined text-on-primary text-4xl transition-transform group-hover:scale-110" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold" id="record-btn-text">Record</span>
+</div>
+</div>
+</main>
+<script>
+        const waveformContainer = document.getElementById('waveform');
+        const numBars = 40;
+        
+        for (let i = 0; i < numBars; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'waveform-bar idle';
+            waveformContainer.appendChild(bar);
+        }
+
+        const recordBtn = document.getElementById('record-btn');
+        const recordBtnText = document.getElementById('record-btn-text');
+        const micStatusIndicator = document.getElementById('mic-status-indicator');
+        const micStatusText = document.getElementById('mic-status-text');
+        const waveformOverlay = document.getElementById('waveform-overlay');
+        const bars = document.querySelectorAll('.waveform-bar');
+        
+        let isRecording = false;
+        let animationInterval;
+
+        function simulateAudioLevels() {
+            bars.forEach(bar => {
+                const randomHeight = Math.floor(Math.random() * 90) + 10;
+                bar.style.height = `${randomHeight}px`;
+                bar.style.opacity = (randomHeight / 100) * 0.4 + 0.6;
+            });
+        }
+
+        recordBtn.addEventListener('click', () => {
+            isRecording = !isRecording;
+            
+            if (isRecording) {
+                recordBtn.classList.remove('bg-primary');
+                recordBtn.classList.add('bg-error');
+                recordBtn.innerHTML = `<span class="material-symbols-outlined text-on-error text-4xl" style="font-variation-settings: 'FILL' 1;">stop</span>`;
+                recordBtnText.textContent = "Stop Recording";
+                
+                micStatusIndicator.classList.remove('bg-outline');
+                micStatusIndicator.classList.add('bg-secondary'); 
+                micStatusIndicator.classList.add('animate-pulse');
+                micStatusText.textContent = "Recording...";
+                micStatusText.classList.add('text-secondary');
+                
+                waveformOverlay.style.opacity = '0';
+                setTimeout(() => waveformOverlay.classList.add('hidden'), 300);
+                
+                bars.forEach(bar => {
+                    bar.classList.remove('idle');
+                    bar.style.backgroundColor = '#8a4f1e';
+                });
+                animationInterval = setInterval(simulateAudioLevels, 100);
+                
+            } else {
+                recordBtn.classList.add('bg-primary');
+                recordBtn.classList.remove('bg-error');
+                recordBtn.innerHTML = `
+                    <span class="material-symbols-outlined text-on-primary text-4xl transition-transform group-hover:scale-110" style="font-variation-settings: 'FILL' 1;">mic</span>
+                `;
+                recordBtnText.textContent = "Record Again";
+                
+                micStatusIndicator.classList.add('bg-outline');
+                micStatusIndicator.classList.remove('bg-secondary', 'animate-pulse');
+                micStatusText.textContent = "Audio Saved";
+                micStatusText.classList.remove('text-secondary');
+                
+                clearInterval(animationInterval);
+                bars.forEach(bar => {
+                    bar.style.height = '10px';
+                    bar.style.opacity = '0.5';
+                    bar.classList.add('idle');
+                    bar.style.backgroundColor = '#d7c2b8';
+                });
+                
+                waveformOverlay.classList.remove('hidden');
+                waveformOverlay.innerHTML = `
+                    <div class="flex items-center gap-2 text-secondary font-label-md text-label-md bg-secondary-container px-4 py-2 rounded">
+                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                        <span>Response recorded successfully</span>
+                    </div>
+                `;
+                waveformOverlay.style.opacity = '1';
+            }
+        });
+    </script>
+</body></html>

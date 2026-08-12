@@ -1,0 +1,40 @@
+{
+  "name": "learningsystem",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7",
+    "@types/pg": "^8.20.0",
+    "clsx": "^2.1.1",
+    "ioredis": "^5.11.1",
+    "lucide-react": "^1.25.0",
+    "neo4j-driver": "^6.2.0",
+    "next": "16.2.10",
+    "openai": "^6.48.0",
+    "pg": "^8.22.0",
+    "portkey-ai": "^3.1.0",
+    "quill-better-table": "^1.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-quill-new": "^3.8.3",
+    "recharts": "^3.9.2",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

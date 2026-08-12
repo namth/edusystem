@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reading Mock Test - EduTest Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#ffffff",
+                      "surface-container": "#f4f1ea",
+                      "tertiary-container": "#fcefc7",
+                      "surface-tint": "#8a4f1e",
+                      "primary-container": "#ffdbcc",
+                      "on-surface-variant": "#50453e",
+                      "text-dark": "#2b231d",
+                      "primary-fixed": "#ffdbcc",
+                      "on-primary-fixed-variant": "#6c3a12",
+                      "tertiary": "#61611a",
+                      "on-secondary-fixed-variant": "#434b22",
+                      "secondary-fixed-dim": "#c3cb9a",
+                      "surface": "#fffbff",
+                      "primary-fixed-dim": "#ffb78f",
+                      "inverse-on-surface": "#f9efe9",
+                      "on-surface": "#201a17",
+                      "surface-dim": "#e4d9d1",
+                      "secondary-container": "#dee6b4",
+                      "surface-variant": "#f2dfd2",
+                      "background": "#fffbff",
+                      "tertiary-fixed": "#e8e892",
+                      "secondary-fixed": "#dee6b4",
+                      "surface-container-highest": "#e4d9d1",
+                      "accent-yellow": "#ffb900",
+                      "tertiary-fixed-dim": "#cbcb79",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-fixed": "#191e00",
+                      "secondary": "#5a6237",
+                      "on-background": "#201a17",
+                      "error": "#ba1a1a",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#181e00",
+                      "on-secondary": "#ffffff",
+                      "surface-bright": "#fff8f6",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#321300",
+                      "surface-container-lowest": "#ffffff",
+                      "warning-soft": "#fff9e6",
+                      "inverse-primary": "#ffb78f",
+                      "outline-variant": "#d5c3b7",
+                      "surface-container-low": "#fcf1ea",
+                      "on-error-container": "#410002",
+                      "on-tertiary-fixed-variant": "#494901",
+                      "inverse-surface": "#362f2a",
+                      "on-primary-container": "#321300",
+                      "bg-soft-gray": "#f8f9fa",
+                      "surface-container-high": "#f6ebe3",
+                      "on-tertiary-fixed": "#1d1d00",
+                      "outline": "#837368",
+                      "on-tertiary-container": "#1d1d00",
+                      "primary": "#8a4f1e",
+                      "success-mint": "#dcfce7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.375rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px",
+                      "base": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "label-md": [
+                              "JetBrains Mono"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "60px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="h-full bg-surface overflow-hidden font-body-md text-body-md text-on-background antialiased flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-primary text-on-primary shadow-md flex justify-between items-center px-margin-desktop h-20 shrink-0">
+<div class="flex items-center gap-4">
+<h1 class="font-headline-md text-headline-md font-bold">IELTS Mock Final</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 font-label-md text-label-md text-accent-yellow font-bold bg-white/10 px-4 py-2 rounded">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">timer</span>
+<span>45:20</span>
+</div>
+<div class="hidden md:flex items-center gap-2 font-label-md text-label-md text-on-primary/80">
+<span class="material-symbols-outlined">speed</span>
+<span>Section 2 of 3</span>
+</div>
+<button class="bg-surface text-primary hover:bg-surface-container-low transition-colors px-6 py-2 rounded font-label-md text-label-md shadow-sm border border-primary/20 font-bold uppercase tracking-wide">
+                Submit Test
+            </button>
+</div>
+</header>
+<!-- Main Content Area (Split Screen) -->
+<main class="flex-1 mt-20 flex w-full max-w-container-max-width mx-auto h-[calc(100vh-80px)]">
+<!-- Left Pane: Reading Passage -->
+<section class="w-1/2 h-full overflow-y-auto bg-surface border-r border-outline-variant p-8 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+<article class="max-w-prose mx-auto">
+<header class="mb-8 border-b border-outline-variant pb-6">
+<span class="inline-block px-3 py-1 bg-surface-container text-primary font-label-sm text-label-sm rounded mb-4 border border-outline-variant uppercase font-bold tracking-wider">Reading Passage 2</span>
+<h2 class="font-headline-lg text-headline-lg text-on-background">The Evolution of Urban Architecture in the 21st Century</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-2 italic">You should spend about 20 minutes on Questions 14-26, which are based on Reading Passage 2.</p>
+</header>
+<div class="prose prose-slate max-w-none font-body-lg text-body-lg leading-relaxed text-on-surface">
+<p class="mb-6">
+<strong class="font-semibold text-primary">A.</strong> The transition from the sprawling industrial cities of the 20th century to the densely packed, technologically integrated urban centers of today represents one of the most significant shifts in human habitation. Modern urban architecture is no longer solely concerned with providing shelter or facilitating commerce; it is increasingly focused on sustainability, resilience, and the psychological well-being of its inhabitants. This paradigm shift has been driven by a confluence of factors, including rapid population growth, climate change, and advancements in construction materials and digital technologies.
+                    </p>
+<p class="mb-6">
+<strong class="font-semibold text-primary">B.</strong> A cornerstone of contemporary urban design is the concept of 'biophilic design'—the integration of natural elements into the built environment. Early implementations often amounted to little more than decorative indoor plants or superficial green roofs. However, modern approaches are far more structural and systemic. High-rise buildings now incorporate vast vertical gardens that not only improve aesthetic appeal but also contribute significantly to thermal regulation, reducing the energy required for heating and cooling. Furthermore, these living facades act as localized air filters, mitigating the pervasive problem of urban air pollution.
+                    </p>
+<p class="mb-6">
+<strong class="font-semibold text-primary">C.</strong> Another critical development is the emphasis on 'adaptable architecture'. Historically, buildings were designed for specific, immutable functions. A factory was a factory; an office building was an office building. When economic or social needs changed, these structures often became obsolete, leading to costly demolitions and rebuilding cycles. Today, architects increasingly employ modular construction techniques and flexible floor plans that allow buildings to be repurposed with relative ease. A structure designed as a commercial hub can be retrofitted into residential units or community spaces as demographic demands shift, thereby extending the building's lifespan and reducing construction waste.
+                    </p>
+<p class="mb-6">
+<strong class="font-semibold text-primary">D.</strong> The integration of smart technology into the very fabric of buildings has also revolutionized urban architecture. So-called 'smart buildings' utilize extensive networks of sensors to monitor environmental conditions, occupancy levels, and structural integrity in real-time. This data is fed into central management systems that optimize energy consumption, adjust lighting and climate control based on actual usage patterns, and even predict maintenance needs before failures occur. While the initial costs of implementing these systems are substantial, the long-term operational savings and environmental benefits are increasingly seen as justifying the investment.
+                    </p>
+<p class="mb-6">
+<strong class="font-semibold text-primary">E.</strong> Despite these advancements, significant challenges remain. The rapid pace of urbanization, particularly in developing nations, often outstrips the capacity of planners to implement these sophisticated architectural solutions. In many rapidly growing megacities, the urgent need for basic housing and infrastructure takes precedence over sustainable or technologically advanced design. Consequently, vast swaths of new urban development still rely on resource-intensive, traditional construction methods that exacerbate environmental problems and fail to provide optimal living conditions for residents.
+                    </p>
+</div>
+</article>
+</section>
+<!-- Right Pane: Questions -->
+<section class="w-1/2 h-full overflow-y-auto bg-surface-container-low p-8 relative">
+<!-- Progress Bar -->
+<div class="sticky top-0 bg-surface-container-low pt-2 pb-6 z-10 border-b border-outline-variant mb-6">
+<div class="flex justify-between text-body-sm font-body-sm text-on-surface-variant mb-2 font-semibold">
+<span>Questions 14-26</span>
+<span>Progress: 13/40</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2">
+<div class="bg-secondary h-2 rounded-full" style="width: 32.5%"></div>
+</div>
+</div>
+<div class="max-w-2xl mx-auto space-y-12 pb-24">
+<!-- Question Group 1 -->
+<div>
+<div class="bg-surface-container-lowest p-6 rounded border border-outline-variant shadow-sm mb-6">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-primary mb-2">Questions 14-18</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Reading Passage 2 has five paragraphs, <strong>A-E</strong>.<br/>
+                            Which paragraph contains the following information?<br/>
+<em class="text-sm">Write the correct letter, A-E, in boxes 14-18.</em>
+</p>
+</div>
+<div class="space-y-6">
+<!-- Q14 -->
+<div class="bg-surface-container-lowest p-5 rounded border border-outline-variant hover:border-primary/50 transition-colors">
+<div class="flex items-start gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded bg-primary-container flex items-center justify-center font-label-md text-label-md text-on-primary-container font-bold border border-primary/20">14</span>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface mb-3">A reference to the financial rationale for investing in advanced building systems.</p>
+<input class="w-16 h-10 border border-outline-variant rounded text-center font-label-md text-label-md focus:border-primary focus:ring-1 focus:ring-primary uppercase bg-surface-container-low" maxlength="1" type="text"/>
+</div>
+</div>
+</div>
+<!-- Q15 -->
+<div class="bg-surface-container-lowest p-5 rounded border-2 border-secondary transition-colors shadow-sm">
+<div class="flex items-start gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded bg-secondary text-on-secondary flex items-center justify-center font-label-md text-label-md font-bold">15</span>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface mb-3">An explanation of how modern living walls differ from earlier attempts at incorporating nature.</p>
+<input autofocus="" class="w-16 h-10 border-2 border-secondary rounded text-center font-label-md text-label-md focus:border-secondary focus:ring-0 uppercase bg-surface-container-low" maxlength="1" type="text"/>
+</div>
+</div>
+</div>
+<!-- Q16 -->
+<div class="bg-surface-container-lowest p-5 rounded border border-outline-variant hover:border-primary/50 transition-colors">
+<div class="flex items-start gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded bg-primary-container flex items-center justify-center font-label-md text-label-md text-on-primary-container font-bold border border-primary/20">16</span>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface mb-3">The reason why traditional construction methods are still prevalent in some regions.</p>
+<input class="w-16 h-10 border border-outline-variant rounded text-center font-label-md text-label-md focus:border-primary focus:ring-1 focus:ring-primary uppercase bg-surface-container-low" maxlength="1" type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Question Group 2 -->
+<div>
+<div class="bg-surface-container-lowest p-6 rounded border border-outline-variant shadow-sm mb-6">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-primary mb-2">Questions 19-22</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Choose the correct letter, <strong>A, B, C or D</strong>.
+                        </p>
+</div>
+<div class="space-y-6">
+<!-- Q19 -->
+<div class="bg-surface-container-lowest p-6 rounded border border-outline-variant">
+<div class="flex items-start gap-4 mb-4">
+<span class="flex-shrink-0 w-8 h-8 rounded bg-primary-container flex items-center justify-center font-label-md text-label-md text-on-primary-container font-bold border border-primary/20">19</span>
+<p class="font-body-md text-body-md text-on-surface pt-1">According to paragraph C, what was a common outcome for buildings in the past when societal needs changed?</p>
+</div>
+<div class="space-y-3 pl-12">
+<label class="flex items-center gap-3 p-3 rounded border border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+<input class="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant" name="q19" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">They were easily modified for new uses.</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded border-2 border-secondary bg-secondary-container/30 cursor-pointer transition-colors">
+<input checked="" class="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant" name="q19" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface font-semibold">They were often torn down and replaced.</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded border border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+<input class="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant" name="q19" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">They remained empty for long periods.</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded border border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+<input class="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant" name="q19" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">They were preserved as historical monuments.</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+```</body></html>

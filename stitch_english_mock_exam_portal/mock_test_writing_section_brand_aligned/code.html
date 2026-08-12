@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduTest Pro - Mock Test Writing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "surface-container": "#f5f2f0",
+                        "tertiary-container": "#ffddb8",
+                        "surface-tint": "#8a4f1e",
+                        "primary-container": "#ffdbc6",
+                        "on-surface-variant": "#53433a",
+                        "text-dark": "#201a18",
+                        "primary-fixed": "#ffdbc6",
+                        "on-primary-fixed-variant": "#6e3907",
+                        "tertiary": "#6e5d2e",
+                        "on-secondary-fixed-variant": "#2b1a09",
+                        "secondary-fixed-dim": "#e7bdb2",
+                        "surface": "#fffbff",
+                        "primary-fixed-dim": "#ffb686",
+                        "inverse-on-surface": "#fbeeeb",
+                        "on-surface": "#201a18",
+                        "surface-dim": "#e8d8d1",
+                        "secondary-container": "#ffdbc6",
+                        "surface-variant": "#f5ded3",
+                        "background": "#fffbff",
+                        "tertiary-fixed": "#f9e1a6",
+                        "secondary-fixed": "#ffdbd2",
+                        "surface-container-highest": "#e8d8d1",
+                        "accent-yellow": "#ffb900",
+                        "tertiary-fixed-dim": "#dcc58c",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#331106",
+                        "secondary": "#77574e",
+                        "on-background": "#201a18",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#2c150f",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#fffbff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#2e1500",
+                        "surface-container-lowest": "#ffffff",
+                        "warning-soft": "#fff8f1",
+                        "inverse-primary": "#ffb686",
+                        "outline-variant": "#d8c2b7",
+                        "surface-container-low": "#fff1ec",
+                        "on-error-container": "#410002",
+                        "on-tertiary-fixed-variant": "#554619",
+                        "inverse-surface": "#362f2c",
+                        "on-primary-container": "#2e1500",
+                        "bg-soft-gray": "#f7f2f0",
+                        "surface-container-high": "#f1e3dd",
+                        "on-tertiary-fixed": "#241a00",
+                        "outline": "#85736b",
+                        "on-tertiary-container": "#241a00",
+                        "primary": "#8a4f1e",
+                        "success-mint": "#e4f3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Be Vietnam Pro"],
+                        "label-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .split-pane-divider {
+            cursor: col-resize;
+            width: 4px;
+            background-color: transparent;
+            transition: background-color 0.2s;
+        }
+        .split-pane-divider:hover, .split-pane-divider:active {
+            background-color: var(--color-outline-variant, #d8c2b7);
+        }
+        /* Custom scrollbar for content areas */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-outline-variant, #d8c2b7);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-outline, #85736b);
+        }
+        .textarea-focus-ring:focus-within {
+            border-color: #8a4f1e !important;
+            box-shadow: 0 0 0 1px #8a4f1e;
+        }
+    </style>
+</head>
+<body class="bg-bg-soft-gray text-on-background font-body-md text-body-md h-screen overflow-hidden flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-primary text-on-primary font-headline-md text-headline-md fixed top-0 w-full z-50 shadow-md flex justify-between items-center px-margin-desktop h-20 transition-all">
+<div class="flex items-center gap-4">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">IELTS Mock Final</h1>
+<span class="text-on-primary/60 font-body-md text-body-md hidden md:inline-block pl-4 border-l border-on-primary/30">Writing Task 2</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Timer and Speed indicators -->
+<div class="flex items-center gap-4 font-label-md text-label-md text-on-primary-fixed bg-primary-fixed px-4 py-2 rounded-full shadow-inner">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="timer" style="font-variation-settings: 'FILL' 1;">timer</span>
+<span class="tabular-nums" id="timer-display">39:45</span>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="bg-on-primary text-primary font-label-md text-label-md px-6 py-2 rounded-lg font-bold hover:bg-primary-fixed hover:text-primary transition-colors shadow-sm flex items-center gap-2">
+<span>Submit Test</span>
+<span class="material-symbols-outlined text-sm" data-icon="send">send</span>
+</button>
+</div>
+<!-- Progress Bar -->
+<div class="absolute bottom-0 left-0 w-full h-1 bg-on-primary/20">
+<div class="h-full bg-on-primary-fixed-variant w-3/4 transition-all duration-1000 ease-linear"></div>
+</div>
+</header>
+<!-- Main Workspace - Split Screen -->
+<main class="flex-1 mt-20 flex w-full h-[calc(100vh-5rem)] overflow-hidden">
+<!-- Left Pane: Stimulus / Prompt -->
+<section class="w-1/2 h-full bg-surface-container-lowest overflow-y-auto p-margin-desktop border-r border-outline-variant relative">
+<div class="max-w-2xl mx-auto space-y-6">
+<!-- Instruction Header -->
+<div class="border-b border-outline-variant pb-4 mb-6">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-2">Writing Task 2</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">info</span>
+                        You should spend about 40 minutes on this task.
+                    </p>
+</div>
+<!-- Prompt Content -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant shadow-sm relative">
+<div class="absolute -top-3 -left-3 bg-primary text-on-primary font-label-sm text-label-sm px-3 py-1 rounded-full shadow-sm">
+                        Prompt
+                    </div>
+<p class="font-body-lg text-body-lg text-text-dark leading-[1.75] mt-2 font-medium">
+                        Some people believe that university education should be free for everyone, regardless of their background. Others think that students should pay for their higher education.
+                    </p>
+<p class="font-body-lg text-body-lg text-text-dark leading-[1.75] mt-4 font-medium">
+                        Discuss both these views and give your own opinion.
+                    </p>
+</div>
+<!-- Requirement Checklist -->
+<div class="mt-8 space-y-3">
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Task Requirements:</h3>
+<ul class="space-y-2 font-body-md text-body-md text-on-surface-variant">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-lg mt-0.5" data-icon="check_circle">check_circle</span>
+<span>Write at least <strong>250 words</strong>.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-lg mt-0.5" data-icon="check_circle">check_circle</span>
+<span>Give reasons for your answer and include any relevant examples from your own knowledge or experience.</span>
+</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Divider for manual resize -->
+<div class="split-pane-divider h-full z-10 relative bg-outline-variant/30 hidden md:block">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-12 flex items-center justify-center bg-surface-container-lowest border border-outline-variant rounded-full shadow-sm cursor-col-resize">
+<span class="material-symbols-outlined text-[16px] text-outline">drag_indicator</span>
+</div>
+</div>
+<!-- Right Pane: Text Editor -->
+<section class="w-1/2 h-full bg-surface-bright p-margin-desktop flex flex-col relative overflow-hidden">
+<div class="w-full max-w-3xl mx-auto flex flex-col h-full bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm textarea-focus-ring transition-colors duration-200">
+<!-- Editor Toolbar -->
+<div class="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Your Response</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 rounded transition-colors" title="Undo">
+<span class="material-symbols-outlined text-[20px]" data-icon="undo">undo</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 rounded transition-colors" title="Redo">
+<span class="material-symbols-outlined text-[20px]" data-icon="redo">redo</span>
+</button>
+</div>
+</div>
+<!-- Text Area -->
+<textarea class="flex-1 w-full p-6 resize-none outline-none font-body-lg text-body-lg text-text-dark bg-transparent leading-relaxed placeholder:text-outline" id="essay-input" placeholder="Start typing your essay here..." spellcheck="false">In contemporary society, the funding of tertiary education remains a highly debated topic. While a significant portion of the public argues that universities should offer free tuition to all individuals irrespective of their socioeconomic status, an opposing perspective maintains that students ought to bear the financial responsibility for their higher learning.</textarea>
+<!-- Footer with Word Count -->
+<div class="px-6 py-4 border-t border-outline-variant/50 bg-surface flex justify-between items-center rounded-b-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Draft auto-saved 2 mins ago</span>
+</div>
+<!-- Floating Word Counter Pill -->
+<div class="bg-primary-container text-on-primary-container font-label-md text-label-md px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2 transition-colors border border-outline-variant" id="word-count-badge">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit_document">edit_document</span>
+<span class="tabular-nums font-bold" id="word-count-display">48 Words</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<div class="fixed inset-0 bg-black/5 backdrop-blur-sm z-40 hidden pointer-events-none transition-opacity duration-300 opacity-0" id="focus-overlay"></div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('essay-input');
+            const wordCountDisplay = document.getElementById('word-count-display');
+            const wordCountBadge = document.getElementById('word-count-badge');
+            
+            const updateWordCount = () => {
+                const text = textarea.value.trim();
+                const words = text ? text.split(/\s+/).length : 0;
+                wordCountDisplay.textContent = `${words} Words`;
+                
+                // Visual feedback based on minimum requirements (250 words)
+                if (words >= 250) {
+                    wordCountBadge.classList.remove('bg-primary-container', 'text-on-primary-container');
+                    wordCountBadge.classList.add('bg-success-mint', 'text-secondary');
+                } else {
+                    wordCountBadge.classList.add('bg-primary-container', 'text-on-primary-container');
+                    wordCountBadge.classList.remove('bg-success-mint', 'text-secondary');
+                }
+            };
+
+            textarea.addEventListener('input', updateWordCount);
+            updateWordCount();
+        });
+    </script>
+</body></html>

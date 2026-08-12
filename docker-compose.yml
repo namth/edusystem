@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PORTKEY_API_KEY=${PORTKEY_API_KEY}
+      - PORTKEY_CONFIG_ID=${PORTKEY_CONFIG_ID}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  grading-worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - APP_URL=http://nextjs:3000
+      - WORKER_ID=1
+    depends_on:
+      - redis
+      - nextjs
+    restart: unless-stopped

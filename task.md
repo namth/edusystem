@@ -1,0 +1,29 @@
+# Tasks - Restructured 4-Skill Exam Creator & Interactive Builder
+
+- [x] Add Global Exam Description input at the top (`app/teacher/tests/create/page.tsx`)
+- [x] Implement Unified AI Voice Generator with dynamic select box accents (`app/teacher/tests/create/page.tsx`)
+- [x] Merge Fill-in categories to single tab with Option Bank vs Dropdown radio options (`app/teacher/tests/create/page.tsx`)
+- [x] Implement real-time Ordering preview blocks (`app/teacher/tests/create/page.tsx`)
+- [x] Implement Flashcard image preview blocks (`app/teacher/tests/create/page.tsx`)
+- [x] Display flashcard thumbnail images in the added cards list for overall review (`app/teacher/tests/create/page.tsx`)
+- [x] Redesign flashcards list to render in a 3-column grid layout with full-width preview images (`app/teacher/tests/create/page.tsx`)
+- [x] Configure GOOGLE_API_KEY with the user-provided Google AI Studio API Key in `.env.local`
+- [x] Integrate Google Gemini 3.1/2.5 Flash Text-to-Speech API (`gemini-2.5-flash-preview-tts` primary) with pcmToWav audio formatting converter (`app/api/tts/route.ts`)
+- [x] Implement single audio reference controller and AbortController to prevent overlapping duplicate audios (`app/teacher/tests/create/page.tsx`)
+- [x] Add loading spinner and center overlay audio player popup modal on "Phát Thử" preview (`app/teacher/tests/create/page.tsx`)
+- [x] Support Listening MC sub-question audio previewing and male/female selection (`app/teacher/tests/create/page.tsx`)
+- [x] Support Editing & Deleting sub-elements in builder list (Sub-questions, matching pairs, flashcards) (`app/teacher/tests/create/page.tsx`)
+- [x] Implement Edit Main Question flow from the preview list (`app/teacher/tests/create/page.tsx`)
+- [x] Separate Reading Passage text (`stimulusText`) from AI Generated Audio text (`stimulusAudioText`) in Shared Stimulus Section (`app/teacher/tests/create/page.tsx`)
+- [x] Design a large textarea block (`rows={3}`) for the AI generated audio text field instead of a small single line input box (`app/teacher/tests/create/page.tsx`)
+- [x] Implement stopPropagation on Listening MC sub-question and input play buttons to prevent duplicate triggers (`app/teacher/tests/create/page.tsx`)
+- [x] Implement resetCategoryStates helper and connect it to skill switches and category switches to completely isolate form states between Reading/Listening/Writing (`app/teacher/tests/create/page.tsx`)
+- [x] Support Course (Category) dropdown selection when creating a test (`app/teacher/tests/create/page.tsx`)
+- [x] Create Cypher relation sync utilities `syncCourseExam` and `getExamCourseMapping` inside `lib/neo4j.ts`
+- [x] Build comprehensive Course-categorized Test Manager dashboard with tabbed course/category sidebar navigation panel and exam count tags (`app/teacher/tests/page.tsx`)
+- [x] Create 7 PostgreSQL Pure Entity Tables on Supabase without Foreign Keys (`courses`, `lessons`, `flashcards`, `questions`, `exams`, `classes`, `submissions`)
+- [x] Create TypeScript interface definitions in `lib/db-schema.ts`
+- [x] Install `ioredis` package and create Redis Streams & BullMQ Async Queue Manager in `lib/redis-queue.ts`
+- [x] Create Server API route `app/api/events/route.ts` for producing Redis Streams events asynchronously
+- [x] Update test creator page (`app/teacher/tests/create/page.tsx`) to fetch `/api/events` and emit Redis Stream events for Neo4j Graph sync
+- [x] Kiểm thử `npm run build`, chạy Dev Server & cập nhật Walkthrough

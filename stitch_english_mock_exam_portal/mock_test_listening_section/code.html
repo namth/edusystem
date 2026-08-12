@@ -1,0 +1,266 @@
+<!DOCTYPE html><html lang="en" class="light"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-tertiary-container": "#98e3fb",
+                "inverse-surface": "#362f2a",
+                "surface-container-lowest": "#ffffff",
+                "on-primary": "#ffffff",
+                "surface": "#fff8f5",
+                "on-background": "#211a16",
+                "secondary-container": "#fdd1b4",
+                "surface-variant": "#ede0d9",
+                "surface-container-low": "#fff1e9",
+                "surface-container-high": "#f3e6de",
+                "on-primary-container": "#ffceac",
+                "outline": "#857469",
+                "background": "#fff8f5",
+                "secondary": "#785840",
+                "inverse-primary": "#ffb782",
+                "surface-container": "#f9ebe4",
+                "tertiary-container": "#00677c",
+                "surface-tint": "#8a501f",
+                "primary-fixed": "#ffdcc5",
+                "tertiary-fixed-dim": "#86d1e9",
+                "secondary-fixed-dim": "#e8bea1",
+                "on-error": "#ffffff",
+                "on-tertiary-fixed": "#001f27",
+                "on-surface-variant": "#52443a",
+                "outline-variant": "#d8c2b6",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#ffb782",
+                "on-error-container": "#93000a",
+                "on-secondary-container": "#795841",
+                "tertiary": "#004d5e",
+                "surface-bright": "#fff8f5",
+                "on-secondary": "#ffffff",
+                "primary-container": "#8a4f1e",
+                "surface-dim": "#e5d8d0",
+                "error-container": "#ffdad6",
+                "tertiary-fixed": "#b2ebff",
+                "primary": "#6d3807",
+                "secondary-fixed": "#ffdcc5",
+                "on-secondary-fixed-variant": "#5e402a",
+                "on-primary-fixed-variant": "#6e3908",
+                "on-tertiary-fixed-variant": "#004e5e",
+                "on-primary-fixed": "#301400",
+                "on-secondary-fixed": "#2c1605",
+                "inverse-on-surface": "#fceee7",
+                "on-tertiary": "#ffffff",
+                "surface-container-highest": "#ede0d9",
+                "on-surface": "#211a16"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "base": "8px",
+                "margin-mobile": "16px",
+                "gutter": "24px",
+                "margin-desktop": "40px",
+                "container-max-width": "1280px"
+            },
+            "fontFamily": {
+                "headline-lg-mobile": ["Be Vietnam Pro"],
+                "body-lg": ["Inter"],
+                "label-md": ["JetBrains Mono"],
+                "label-sm": ["JetBrains Mono"],
+                "display-lg": ["Be Vietnam Pro"],
+                "body-sm": ["Inter"],
+                "headline-md": ["Be Vietnam Pro"],
+                "headline-lg": ["Be Vietnam Pro"],
+                "body-md": ["Inter"]
+            },
+            "fontSize": {
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "display-lg": ["48px", {"lineHeight": "60px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script></head><body class="font-body-md text-on-surface selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-desktop h-20 bg-primary dark:bg-primary-container shadow-md">
+<div class="flex items-center gap-base">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">IELTS Mock Final</h1>
+</div>
+<div class="flex items-center gap- gutter">
+<div class="flex items-center gap-base px-4 py-2 bg-primary-fixed-dim/20 rounded-lg">
+<span class="material-symbols-outlined text-on-primary" data-icon="timer">timer</span>
+<span id="countdown" class="font-label-md text-label-md text-on-primary tabular-nums">30:00</span>
+</div>
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-on-primary" data-icon="speed">speed</span>
+</div>
+<button class="bg-surface-container-lowest text-primary px-6 py-2 rounded-lg font-label-md text-label-md hover:bg-surface-container-high active:scale-95 transition-all shadow-sm">
+                Submit Test
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-28 pb-20 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">
+<!-- Section Title -->
+<section class="mb-10 text-center">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-2">Listening Section - Part 1</h2>
+<p class="font-body-md text-on-surface-variant max-w-xl mx-auto">You will hear a number of different recordings and you will have to answer questions on what you hear.</p>
+</section>
+<!-- Audio Player Component -->
+<section class="mb-12 p-gutter bg-surface-container-low rounded-lg shadow-sm border border-outline-variant/30">
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<button id="playPauseBtn" class="w-12 h-12 flex items-center justify-center bg-primary text-on-primary rounded-full hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="play_arrow">play_arrow</span>
+</button>
+<div>
+<p class="font-label-md text-label-md text-primary">Audio Recording</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Part 1: Telephone Conversation</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary" data-icon="volume_up">volume_up</span>
+<input type="range" class="w-24 accent-primary h-1 bg-surface-variant rounded-lg appearance-none cursor-pointer">
+</div>
+</div>
+<div class="space-y-2">
+<div class="relative w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div id="audioProgress" class="absolute top-0 left-0 h-full bg-primary" style="width: 35%;"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant tabular-nums">
+<span>01:12</span>
+<span>04:45</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Questions Grid -->
+<section class="space-y-6">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Questions 1-5</h3>
+<p class="font-body-md text-on-surface-variant mb-6 italic">Choose the correct letter, A, B or C.</p>
+<!-- Question Card 1 -->
+<div class="bg-surface-container-lowest p-gutter rounded-lg border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow">
+<p class="font-body-lg text-body-lg font-medium text-on-surface mb-4">1. What is the main reason for the caller's inquiry?</p>
+<div class="space-y-3">
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q1" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">A. To report a lost library card</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q1" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">B. To ask about the opening hours of the facility</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q1" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">C. To register for a specific community course</span>
+</label>
+</div>
+</div>
+<!-- Question Card 2 -->
+<div class="bg-surface-container-lowest p-gutter rounded-lg border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow">
+<p class="font-body-lg text-body-lg font-medium text-on-surface mb-4">2. When does the course mentioned in the conversation begin?</p>
+<div class="space-y-3">
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q2" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">A. Next Monday afternoon</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q2" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">B. Wednesday evening at 6 PM</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q2" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">C. Friday morning at 10 AM</span>
+</label>
+</div>
+</div>
+<!-- Question Card 3 -->
+<div class="bg-surface-container-lowest p-gutter rounded-lg border border-outline-variant/20 shadow-sm hover:shadow-md transition-shadow">
+<p class="font-body-lg text-body-lg font-medium text-on-surface mb-4">3. How much is the discount for early registration?</p>
+<div class="space-y-3">
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q3" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">A. 10% of the total fee</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q3" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">B. 15 pounds per person</span>
+</label>
+<label class="flex items-center gap-4 p-4 rounded-lg hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
+<input type="radio" name="q3" class="w-5 h-5 text-primary border-outline-variant focus:ring-primary focus:ring-offset-0 custom-radio">
+<span class="font-body-md text-body-md">C. A flat rate of 50 dollars</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Navigation Buttons -->
+<footer class="mt-12 flex justify-between items-center py-6 border-t border-outline-variant/20">
+<button class="flex items-center gap-2 text-primary font-label-md text-label-md hover:bg-surface-container-high px-4 py-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+                Previous
+            </button>
+<div class="flex gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+</div>
+<button class="flex items-center gap-2 bg-primary text-on-primary font-label-md text-label-md px-6 py-2 rounded-lg hover:brightness-110 active:scale-95 transition-all shadow-sm">
+                Next
+                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</footer>
+</main>
+<script>
+        // Simple Countdown Logic
+        let time = 1800; // 30 minutes
+        const countdownEl = document.getElementById('countdown');
+
+        const updateTimer = () => {
+            const minutes = Math.floor(time / 60);
+            let seconds = time % 60;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            countdownEl.innerHTML = `${minutes}:${seconds}`;
+            if(time > 0) time--;
+        }
+        setInterval(updateTimer, 1000);
+
+        // Simple Audio Toggle Mockup
+        const playBtn = document.getElementById('playPauseBtn');
+        let isPlaying = false;
+        playBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const icon = playBtn.querySelector('.material-symbols-outlined');
+            icon.innerText = isPlaying ? 'pause' : 'play_arrow';
+            playBtn.classList.toggle('bg-primary-container', isPlaying);
+        });
+
+        // Micro-interactions for radio buttons
+        const labels = document.querySelectorAll('label');
+        labels.forEach(label => {
+            label.addEventListener('click', () => {
+                const radio = label.querySelector('input');
+                const groupName = radio.getAttribute('name');
+                document.querySelectorAll(`input[name="${groupName}"]`).forEach(r => {
+                    r.closest('label').classList.remove('bg-secondary-container/30', 'border-primary');
+                    r.closest('label').classList.add('border-transparent');
+                });
+                if(radio.checked) {
+                    label.classList.add('bg-secondary-container/30', 'border-primary');
+                    label.classList.remove('border-transparent');
+                }
+            });
+        });
+    </script>
+</body></html>
