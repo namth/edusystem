@@ -30,8 +30,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6379:6379"
+    # Bỏ map port ra host để tránh xung đột với Redis sẵn có trên Server.
+    # Các container khác (nextjs, worker) vẫn kết nối bình thường qua mạng nội bộ Docker (redis:6379).
+    # ports:
+    #   - "127.0.0.1:6379:6379"
     restart: unless-stopped
 
   grading-worker:
