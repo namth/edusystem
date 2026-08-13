@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
       - "3000:3000"
     environment:
@@ -12,9 +15,15 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
       - PORTKEY_API_KEY=${PORTKEY_API_KEY}
       - PORTKEY_CONFIG_ID=${PORTKEY_CONFIG_ID}
+      - PORTKEY_MODEL=${PORTKEY_MODEL}
       - REDIS_URL=redis://redis:6379
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_DATABASE=${NEO4J_DATABASE}
     depends_on:
       - redis
     restart: unless-stopped
@@ -22,7 +31,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     restart: unless-stopped
 
   grading-worker:
@@ -33,7 +42,13 @@ services:
       - REDIS_URL=redis://redis:6379
       - APP_URL=http://nextjs:3000
       - WORKER_ID=1
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PORTKEY_API_KEY=${PORTKEY_API_KEY}
+      - PORTKEY_CONFIG_ID=${PORTKEY_CONFIG_ID}
+      - PORTKEY_MODEL=${PORTKEY_MODEL}
     depends_on:
       - redis
       - nextjs
     restart: unless-stopped
+
