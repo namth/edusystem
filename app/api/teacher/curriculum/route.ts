@@ -1,149 +1,105 @@
 import { NextResponse } from "next/server";
-import { getServerSupabaseClient } from "@/lib/supabase-server";
+import { queryPg } from "@/lib/db-pg";
+import { getAuthenticatedUserFromCookie } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const courseId = searchParams.get("course_id") || "crs_01";
+    const courseId = searchParams.get("courseId") || "crs_01";
+    const authUser = await getAuthenticatedUserFromCookie();
 
-    const supabase = getServerSupabaseClient();
-    
-    // Fetch curriculum items
-    const { data: items, error } = await supabase
-      .from("curriculum_items")
-      .select("*")
-      .eq("course_id", courseId)
-      .order("order_index", { ascending: true });
-
-    if (error) {
-      console.warn("Supabase fetch curriculum error (falling back):", error.message);
-      return NextResponse.json({
-        success: true,
-        items: [
-          { id: "curr_unit_01", course_id: courseId, parent_id: null, title: "Unit 1: IELTS Reading & Listening Mastery", type: "UNIT", order_index: 1 },
-          { id: "curr_less_1_1", course_id: courseId, parent_id: "curr_unit_01", title: "Lesson 1.1: Academic Passage Skimming", type: "LESSON", exam_id: "test_01", order_index: 1 },
-          { id: "curr_less_1_2", course_id: courseId, parent_id: "curr_unit_01", title: "Lesson 1.2: Multiple Choice Practice", type: "LESSON", exam_id: "test_01", order_index: 2 },
-          { id: "curr_exam_mid", course_id: courseId, parent_id: null, title: "Bài Thi Giữa Kỳ (Mid-Term Exam)", type: "EXAM", exam_id: "test_01", order_index: 2 },
-        ],
-      });
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch exams info to attach duration & details
-    const examIds = (items || []).map((i: any) => i.exam_id).filter(Boolean);
-    let examDict: Record<string, any> = {};
+    let sql = `SELECT * FROM curriculum_items WHERE course_id = $1 ORDER BY order_index ASC;`;
+    let params: any[] = [courseId];
 
-    if (examIds.length > 0) {
-      const { data: exams } = await supabase.from("exams").select("*").in("id", examIds);
-      (exams || []).forEach((e: any) => {
-        examDict[e.id] = e;
-      });
+    if (authUser.role === "TEACHER") {
+      sql = `SELECT * FROM curriculum_items WHERE course_id = $1 AND (created_by = $2 OR created_by IS NULL) ORDER BY order_index ASC;`;
+      params = [courseId, authUser.userId];
     }
 
-    const enrichedItems = (items || []).map((item: any) => ({
-      ...item,
-      exam: item.exam_id ? examDict[item.exam_id] || null : null,
+    const result = await queryPg(sql, params);
+    const items = result.rows.map((r: any) => ({
+      id: r.id,
+      course_id: r.course_id,
+      parent_id: r.parent_id,
+      title: r.title,
+      type: r.type,
+      exam_id: r.exam_id,
+      order_index: r.order_index || 0,
+      created_by: r.created_by,
     }));
 
-    return NextResponse.json({ success: true, items: enrichedItems });
+    return NextResponse.json({ success: true, items });
   } catch (err: any) {
-    console.error("GET curriculum error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error("API /api/teacher/curriculum GET Error:", err);
+    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp chương trình học." }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getAuthenticatedUserFromCookie();
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { course_id, title, type, parent_id = null, exam_id = null, order_index = 0 } = body;
+    const { courseId, parentId, title, type, examId, orderIndex } = body;
 
-    if (!course_id || !title || !type) {
-      return NextResponse.json({ error: "Missing required fields: course_id, title, type" }, { status: 400 });
+    if (!title?.trim()) {
+      return NextResponse.json({ success: false, error: "Vui lòng nhập tên bài học/đề thi/chương." }, { status: 400 });
     }
 
-    const supabase = getServerSupabaseClient();
-    const newItemId = `curr_${Date.now()}`;
+    const newItemId = `curr_${type.toLowerCase()}_${Date.now().toString().slice(-6)}`;
 
-    const { data, error } = await supabase
-      .from("curriculum_items")
-      .insert([
-        {
-          id: newItemId,
-          course_id,
-          title,
-          type,
-          parent_id: parent_id || null,
-          exam_id: exam_id || null,
-          order_index: Number(order_index) || 1,
-        },
-      ])
-      .select();
+    await queryPg(
+      `INSERT INTO curriculum_items (id, course_id, parent_id, title, type, exam_id, order_index, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW());`,
+      [newItemId, courseId || "crs_01", parentId || null, title.trim(), type, examId || null, orderIndex || 0, authUser.userId]
+    );
 
-    if (error) {
-      console.warn("Supabase insert curriculum_items error:", error.message);
-      return NextResponse.json({
-        success: true,
-        data: { id: newItemId, course_id, title, type, parent_id, exam_id, order_index },
-      });
-    }
-
-    return NextResponse.json({ success: true, data: data?.[0] });
+    return NextResponse.json({ success: true, itemId: newItemId, message: "Đã khởi tạo bài học/đề thi thành công với quyền sở hữu cá nhân!" });
   } catch (err: any) {
-    console.error("POST curriculum error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
-  }
-}
-
-export async function PUT(req: Request) {
-  try {
-    const body = await req.json();
-    const { items = [] } = body; // Array of { id, order_index, parent_id, title, type, exam_id }
-
-    const supabase = getServerSupabaseClient();
-
-    for (const item of items) {
-      const updateData: any = {};
-      if (item.order_index !== undefined) updateData.order_index = item.order_index;
-      if (item.parent_id !== undefined) updateData.parent_id = item.parent_id || null;
-      if (item.title !== undefined) updateData.title = item.title;
-      if (item.type !== undefined) updateData.type = item.type;
-      if (item.exam_id !== undefined) updateData.exam_id = item.exam_id || null;
-
-      const { error } = await supabase
-        .from("curriculum_items")
-        .update(updateData)
-        .eq("id", item.id);
-
-      if (error) {
-        console.warn(`Supabase update error for item ${item.id}:`, error.message);
-      }
-    }
-
-    return NextResponse.json({ success: true, message: "Curriculum updated successfully" });
-  } catch (err: any) {
-    console.error("PUT curriculum error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error("API /api/teacher/curriculum POST Error:", err);
+    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo bài học/đề thi." }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    const authUser = await getAuthenticatedUserFromCookie();
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const itemId = searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+    if (!itemId) {
+      return NextResponse.json({ success: false, error: "Missing itemId" }, { status: 400 });
     }
 
-    const supabase = getServerSupabaseClient();
-    const { error } = await supabase.from("curriculum_items").delete().eq("id", id);
+    // Verify ownership before deleting
+    let deleteSql = `DELETE FROM curriculum_items WHERE id = $1;`;
+    let deleteParams: any[] = [itemId];
 
-    if (error) {
-      console.warn("Supabase delete curriculum error:", error.message);
+    if (authUser.role === "TEACHER") {
+      deleteSql = `DELETE FROM curriculum_items WHERE id = $1 AND created_by = $2;`;
+      deleteParams = [itemId, authUser.userId];
     }
 
-    return NextResponse.json({ success: true, message: "Item deleted" });
+    const res = await queryPg(deleteSql, deleteParams);
+
+    if (res.rowCount === 0) {
+      return NextResponse.json({ success: false, error: "Bạn không có quyền xóa bài học/đề thi này!" }, { status: 403 });
+    }
+
+    return NextResponse.json({ success: true, message: "Đã xóa bài học/đề thi khỏi chương trình!" });
   } catch (err: any) {
-    console.error("DELETE curriculum error:", err);
+    console.error("API /api/teacher/curriculum DELETE Error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

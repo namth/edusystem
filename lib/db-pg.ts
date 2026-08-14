@@ -57,6 +57,53 @@ export async function ensureSchema() {
       ALTER TABLE users ALTER COLUMN target_band TYPE VARCHAR(100);
       ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(50);
       ALTER TABLE users ALTER COLUMN password TYPE VARCHAR(255);
+
+      -- Dynamic Courses Table with Ownership
+      CREATE TABLE IF NOT EXISTS courses (
+        id VARCHAR(50) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_by VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+
+      -- Exam & Lesson Teacher Ownership Columns
+      CREATE TABLE IF NOT EXISTS exams (
+        id VARCHAR(50) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_by VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS curriculum_items (
+        id VARCHAR(50) PRIMARY KEY,
+        course_id VARCHAR(50) NOT NULL,
+        parent_id VARCHAR(50),
+        title VARCHAR(255) NOT NULL,
+        type VARCHAR(20) NOT NULL,
+        exam_id VARCHAR(50),
+        order_index INT DEFAULT 0,
+        created_by VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      ALTER TABLE exams ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+      ALTER TABLE curriculum_items ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+
+      -- Auto-seed initial default courses for usr_teacher_01 if table is empty
+      INSERT INTO courses (id, title, description, created_by, created_at)
+      VALUES 
+        ('crs_01', 'IELTS Academic Master 7.5', 'Khóa luyện thi IELTS Academic nâng cao mục tiêu 7.5+', 'usr_teacher_01', NOW()),
+        ('crs_02', 'IELTS General Training 6.5', 'Khóa luyện thi IELTS General mục tiêu định cư 6.5', 'usr_teacher_01', NOW())
+      ON CONFLICT (id) DO NOTHING;
+
+      -- Default migration for legacy exams without owner
+      UPDATE exams SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
+      UPDATE curriculum_items SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
+      UPDATE courses SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
     `);
     schemaInitialized = true;
   } catch (err) {

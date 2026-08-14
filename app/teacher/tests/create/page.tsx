@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -110,6 +111,7 @@ interface SentenceRewriteSubItem {
 function TeacherTestCreatorInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const editId = searchParams.get("editId");
   const [isLoadingEditData, setIsLoadingEditData] = useState(false);
 
@@ -122,7 +124,21 @@ function TeacherTestCreatorInner() {
   const [rubricsList, setRubricsList] = useState<any[]>([]);
   const [selectedRubricId, setSelectedRubricId] = useState<string>("rubric_ielts_writing");
 
+  const [coursesList, setCoursesList] = useState<any[]>([]);
+
   useEffect(() => {
+    fetch("/api/teacher/courses")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.courses)) {
+          setCoursesList(json.courses);
+          if (json.courses.length > 0 && !selectedCourseId) {
+            setSelectedCourseId(json.courses[0].id);
+          }
+        }
+      })
+      .catch((e) => console.warn("Load courses error:", e));
+
     fetch("/api/exam/rubrics")
       .then((res) => res.json())
       .then((json) => {
@@ -1563,6 +1579,7 @@ function TeacherTestCreatorInner() {
           skills: finalSkills,
           question_ids: qIdsArray,
           scoring_rubric_id: selectedRubricId || null,
+          created_by: user?.id || "usr_teacher_01",
         },
       ]);
 
@@ -1715,7 +1732,7 @@ function TeacherTestCreatorInner() {
                     onChange={(e) => setSelectedCourseId(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807] font-medium text-[#6d3807]"
                   >
-                    {INITIAL_COURSES.map((course) => (
+                    {(coursesList.length > 0 ? coursesList : INITIAL_COURSES).map((course) => (
                       <option key={course.id} value={course.id}>
                         {course.title}
                       </option>

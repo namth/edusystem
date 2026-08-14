@@ -53,11 +53,28 @@ interface ExamOption {
   title: string;
 }
 
+interface CourseItem {
+  id: string;
+  title: string;
+  description?: string;
+  level?: string;
+  created_by?: string;
+}
+
 export default function TeacherTestManagerPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("crs_01");
+  const [courses, setCourses] = useState<CourseItem[]>([]);
   const [items, setItems] = useState<CurriculumItem[]>([]);
   const [availableExams, setAvailableExams] = useState<ExamOption[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Course Modals State
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [showEditCourseModal, setShowEditCourseModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<CourseItem | null>(null);
+  const [courseTitle, setCourseTitle] = useState("");
+  const [courseDesc, setCourseDesc] = useState("");
+  const [isCourseSubmitting, setIsCourseSubmitting] = useState(false);
 
   // Flexible Cross-Level Drag State
   const [activePointerDragId, setActivePointerDragId] = useState<string | null>(null);
@@ -96,10 +113,27 @@ export default function TeacherTestManagerPage() {
   const [selectedExamId, setSelectedExamId] = useState<string>("");
 
   // Fetch Curriculum Tree for selected course
+  // Fetch Courses owned by logged-in teacher
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch("/api/teacher/courses");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.courses)) {
+        setCourses(json.courses);
+        if (json.courses.length > 0 && !selectedCourseId) {
+          setSelectedCourseId(json.courses[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Fetch courses error:", err);
+    }
+  };
+
+  // Fetch Curriculum Tree for selected course
   const fetchCurriculum = async (courseId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/teacher/curriculum?course_id=${courseId}`);
+      const res = await fetch(`/api/teacher/curriculum?courseId=${courseId}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.items)) {
         setItems(json.items.sort((a: CurriculumItem, b: CurriculumItem) => a.order_index - b.order_index));
@@ -111,15 +145,91 @@ export default function TeacherTestManagerPage() {
     }
   };
 
-  // Fetch all created exams to bind
+  // Fetch all created exams owned by logged-in teacher to bind
   const fetchExams = async () => {
     try {
-      const { data } = await supabase.from("exams").select("id, title").order("created_at", { ascending: false });
-      if (data) {
-        setAvailableExams(data);
+      const res = await fetch("/api/teacher/exams");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.exams)) {
+        setAvailableExams(json.exams);
       }
     } catch (err) {
       console.error("Fetch exams error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+    fetchExams();
+  }, []);
+
+  const handleCreateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courseTitle.trim()) return;
+    setIsCourseSubmitting(true);
+    try {
+      const res = await fetch("/api/teacher/courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: courseTitle.trim(), description: courseDesc.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowAddCourseModal(false);
+        setCourseTitle("");
+        setCourseDesc("");
+        await fetchCourses();
+        if (json.course?.id) setSelectedCourseId(json.course.id);
+      } else {
+        alert("Lỗi tạo khóa học: " + (json.error || "Không thể tạo khóa học"));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCourseSubmitting(false);
+    }
+  };
+
+  const handleUpdateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourse || !courseTitle.trim()) return;
+    setIsCourseSubmitting(true);
+    try {
+      const res = await fetch("/api/teacher/courses", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingCourse.id, title: courseTitle.trim(), description: courseDesc.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowEditCourseModal(false);
+        setEditingCourse(null);
+        await fetchCourses();
+      } else {
+        alert("Lỗi cập nhật: " + (json.error || "Không thể cập nhật khóa học"));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCourseSubmitting(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string, courseName: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa Khóa học "${courseName}"? Tất cả bài học trong khóa học này sẽ bị xóa.`)) return;
+    try {
+      const res = await fetch(`/api/teacher/courses?id=${courseId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        await fetchCourses();
+        if (selectedCourseId === courseId) {
+          setSelectedCourseId("crs_01");
+        }
+      } else {
+        alert("Lỗi xóa khóa học: " + (json.error || "Bạn không có quyền xóa khóa học này."));
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -481,7 +591,7 @@ export default function TeacherTestManagerPage() {
     window.addEventListener("pointerup", handlePointerUp);
   };
 
-  const selectedCourseObj = INITIAL_COURSES.find((c) => c.id === selectedCourseId) || INITIAL_COURSES[0];
+  const selectedCourseObj = courses.find((c) => c.id === selectedCourseId) || courses[0] || { id: "crs_01", title: "IELTS Academic Master 7.5" };
 
   return (
     <TeacherLayout>
@@ -540,30 +650,75 @@ export default function TeacherTestManagerPage() {
           <div className="lg:col-span-3 space-y-5">
             {/* Box 1: Course Categories */}
             <div className="bg-[#ffffff] p-5 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-3.5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#6d3807] flex items-center space-x-2">
-                <Layers className="w-4 h-4 text-[#6d3807]" />
-                <span>Danh Mục Khóa Học</span>
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#6d3807] flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-[#6d3807]" />
+                  <span>Danh Mục Khóa Học</span>
+                </h2>
+                <button
+                  onClick={() => {
+                    setCourseTitle("");
+                    setCourseDesc("");
+                    setShowAddCourseModal(true);
+                  }}
+                  className="px-2.5 py-1 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[11px] font-bold rounded-lg transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm Mới</span>
+                </button>
+              </div>
               
               <div className="flex flex-col space-y-1.5">
-                {INITIAL_COURSES.map((course) => {
+                {courses.map((course) => {
                   const isSelected = selectedCourseId === course.id;
                   return (
-                    <button
+                    <div
                       key={course.id}
-                      onClick={() => setSelectedCourseId(course.id)}
-                      className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                      className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between border ${
                         isSelected
-                          ? "bg-[#6d3807] text-white shadow-sm"
-                          : "text-[#52443a] hover:bg-[#fff8f5] hover:text-[#6d3807] border border-transparent hover:border-[#d8c2b6]/40"
+                          ? "bg-[#6d3807] text-white shadow-sm border-[#6d3807]"
+                          : "text-[#52443a] hover:bg-[#fff8f5] hover:text-[#6d3807] border-transparent hover:border-[#d8c2b6]/40"
                       }`}
                     >
-                      <span className="flex items-center space-x-2 max-w-[85%]">
+                      <button
+                        onClick={() => setSelectedCourseId(course.id)}
+                        className="flex items-center space-x-2 max-w-[70%] text-left flex-1 truncate cursor-pointer"
+                      >
                         <GraduationCap className="w-4 h-4 shrink-0" />
                         <span className="truncate">{course.title}</span>
-                      </span>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 text-[#ffb782] shrink-0" />}
-                    </button>
+                      </button>
+
+                      <div className="flex items-center space-x-1 shrink-0">
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-[#ffb782] shrink-0 mr-1" />}
+                        <button
+                          title="Sửa khóa học"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCourse(course);
+                            setCourseTitle(course.title);
+                            setCourseDesc(course.description || "");
+                            setShowEditCourseModal(true);
+                          }}
+                          className={`p-1 rounded-lg transition-all cursor-pointer ${
+                            isSelected ? "hover:bg-white/20 text-white" : "hover:bg-[#d8c2b6]/30 text-[#857469]"
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          title="Xóa khóa học"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCourse(course.id, course.title);
+                          }}
+                          className={`p-1 rounded-lg transition-all cursor-pointer ${
+                            isSelected ? "hover:bg-rose-950/40 text-rose-200" : "hover:bg-rose-100 text-rose-600"
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -629,7 +784,7 @@ export default function TeacherTestManagerPage() {
                     <h2 className="text-lg font-headline font-bold text-white flex items-center space-x-2.5 mt-0.5">
                       <span>{selectedCourseObj.title}</span>
                       <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-white text-[11px] font-bold border border-white/20">
-                        {selectedCourseObj.level}
+                        {selectedCourseObj.level || "IELTS Master"}
                       </span>
                     </h2>
                   </div>
@@ -1111,6 +1266,102 @@ export default function TeacherTestManagerPage() {
                 {editingItem ? "Lưu Thay Đổi" : "Tạo Mới"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add New Course */}
+      {showAddCourseModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
+              <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
+                <GraduationCap className="w-5 h-5 text-[#6d3807]" />
+                <span>Thêm Khóa Học Mới</span>
+              </h2>
+              <button onClick={() => setShowAddCourseModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCourse} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Tên Khóa Học (*)</label>
+                <input
+                  type="text"
+                  required
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  placeholder="Ví dụ: IELTS Academic Master 7.5+"
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Mô Tả Chi Tiết Khóa Học</label>
+                <textarea
+                  rows={3}
+                  value={courseDesc}
+                  onChange={(e) => setCourseDesc(e.target.value)}
+                  placeholder="Mô tả lộ trình học, mục tiêu đầu ra..."
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                />
+              </div>
+
+              <div className="pt-2 flex space-x-3">
+                <button type="button" onClick={() => setShowAddCourseModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
+                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
+                  {isCourseSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <span>Thêm Khóa Học</span>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Course */}
+      {showEditCourseModal && editingCourse && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
+              <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
+                <Pencil className="w-5 h-5 text-[#6d3807]" />
+                <span>Chỉnh Sửa Khóa Học</span>
+              </h2>
+              <button onClick={() => setShowEditCourseModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateCourse} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Tên Khóa Học (*)</label>
+                <input
+                  type="text"
+                  required
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Mô Tả Chi Tiết Khóa Học</label>
+                <textarea
+                  rows={3}
+                  value={courseDesc}
+                  onChange={(e) => setCourseDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                />
+              </div>
+
+              <div className="pt-2 flex space-x-3">
+                <button type="button" onClick={() => setShowEditCourseModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
+                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
+                  {isCourseSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <span>Lưu Thay Đổi</span>}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
