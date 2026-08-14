@@ -151,42 +151,35 @@ export default function AdminStudentsPage() {
 
     setIsSubmitting(true);
     try {
-      const studentId = `student_${Date.now().toString().slice(-4)}`;
-
-      // Insert Student User
-      const { error: userErr } = await supabase.from("users").insert([
-        {
-          id: studentId,
-          name: name.trim(),
+      const res = await fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "STUDENT",
           email: email.trim(),
           password: password.trim(),
-          role: "STUDENT",
-          phone: phone.trim() || "0912345678",
-          target_band: targetBand.trim(),
-        },
-      ]);
+          name: name.trim(),
+          phone: phone.trim(),
+          targetBand: targetBand.trim(),
+          classIds: selectedClassIds,
+        }),
+      });
 
-      if (userErr) {
-        console.error("Create student error:", userErr);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        const errorMsg = typeof data.error === "string" ? data.error : (data.error?.message || JSON.stringify(data.error || data));
+        alert("Lỗi khởi tạo học sinh: " + errorMsg);
         return;
-      }
-
-      // Insert Multi-Class Enrollments
-      if (selectedClassIds.length > 0) {
-        const enrollmentRows = selectedClassIds.map((cId) => ({
-          id: `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 100)}`,
-          student_id: studentId,
-          class_id: cId,
-        }));
-        await supabase.from("enrollments").insert(enrollmentRows);
       }
 
       setSuccessMsg(`Đã tạo thành công học viên "${name}"!`);
       setShowCreateModal(false);
       fetchStudentsAndData();
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert("Đã xảy ra lỗi hệ thống khi tạo tài khoản học sinh.");
     } finally {
       setIsSubmitting(false);
     }

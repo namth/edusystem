@@ -148,27 +148,30 @@ export default function AdminAccountsPage() {
 
     setIsSubmitting(true);
     try {
-      const id =
-        role === "TEACHER"
-          ? `teacher_${Date.now().toString().slice(-4)}`
-          : role === "ADMIN"
-          ? `admin_${Date.now().toString().slice(-4)}`
-          : `student_${Date.now().toString().slice(-4)}`;
-
-      const { error } = await supabase.from("users").insert([
-        {
-          id,
-          name: name.trim(),
+      const res = await fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
           email: email.trim(),
           password: password.trim(),
-          role,
+          name: name.trim(),
           phone: role === "TEACHER" ? "0912345679" : "0912345678",
-          target_band: role === "TEACHER" ? "M.A TESOL" : "IELTS 6.5",
-        },
-      ]);
+          targetBand: role === "TEACHER" ? "M.A TESOL" : "IELTS 6.5",
+        }),
+      });
 
-      if (error) {
-        console.error("Account create error:", error);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        const rawErr = data.error;
+        let errorMsg = "Không thể tạo tài khoản.";
+        if (typeof rawErr === "string") {
+          errorMsg = rawErr;
+        } else if (rawErr && typeof rawErr === "object") {
+          errorMsg = rawErr.message || JSON.stringify(rawErr);
+        }
+        alert("Lỗi khởi tạo tài khoản: " + errorMsg);
         return;
       }
 
@@ -179,8 +182,9 @@ export default function AdminAccountsPage() {
       setPassword("");
       fetchAccountsAndClasses();
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Đã xảy ra lỗi hệ thống khi tạo tài khoản.");
     } finally {
       setIsSubmitting(false);
     }

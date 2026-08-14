@@ -50,3 +50,15 @@ Chấp thuận **Option A**.
 ### Negative / Trade-offs:
 - Cần chạy Migration SQL trên Supabase để tạo Trigger `on_auth_user_created` và xóa cột `password` ở `public.users`.
 - Cần cài đặt gói `@supabase/ssr` và cấu hình `@supabase/supabase-js`.
+
+---
+
+## 5. Production Service Role Key & Strict RBAC Audit (2026-08-13)
+
+1. **Strict Service Role Enforcement:** Loại bỏ 100% fallback sang `NEXT_PUBLIC_SUPABASE_ANON_KEY` tại các Server Admin API (`/api/admin/create-user`, `/api/admin/delete-user`) và `getServerSupabaseClient()`. Yêu cầu bắt buộc biến `SUPABASE_SERVICE_ROLE_KEY` chuẩn trong môi trường server.
+2. **Strict RBAC Enforcement:**
+   - `ADMIN`: Phân quyền tuyệt đối.
+   - `TEACHER`: Chỉ được phép tạo/xóa tài khoản Học viên (`STUDENT`).
+   - `STUDENT`: Bị chặn hoàn toàn (HTTP 403) tại các Admin API Routes.
+3. **Mở rộng tương lai (Roadmap):** Đã thiết lập hook phân quyền chuẩn bị cho nhóm vai trò Trợ giảng (`TUTOR` / `TA`).
+

@@ -25,12 +25,20 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const ok = await resetPasswordForEmail(email);
-      if (ok) {
-        setSuccessMsg(`Đã gửi liên kết khôi phục mật khẩu tới địa chỉ "${email}". Vui lòng kiểm tra hộp thư đến (hoặc hòm thư Spam)!`);
-      } else {
-        setErrorMsg("Không thể gửi email khôi phục. Vui lòng kiểm tra lại địa chỉ Email.");
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Không thể gửi yêu cầu khôi phục. Vui lòng thử lại.");
+        return;
       }
+
+      setSuccessMsg(data.message || `Đã tạo liên kết khôi phục mật khẩu cho email "${email}".`);
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Có lỗi xảy ra khi gửi yêu cầu.");

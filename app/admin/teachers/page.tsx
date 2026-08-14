@@ -21,6 +21,8 @@ export default function AdminTeachersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -82,38 +84,62 @@ export default function AdminTeachersPage() {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) return;
+    setModalError(null);
+
+    if (!name.trim()) {
+      setModalError("Vui lòng nhập Họ & Tên giảng viên.");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setModalError("Vui lòng nhập định dạng Email hợp lệ.");
+      return;
+    }
+    if (!password || password.trim().length < 6) {
+      setModalError("Mật khẩu khởi tạo phải từ 6 ký tự trở lên.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const teacherId = `teacher_${Date.now().toString().slice(-4)}`;
-      const { error } = await supabase.from("users").insert([
-        {
-          id: teacherId,
-          name: name.trim(),
+      const res = await fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "TEACHER",
           email: email.trim(),
           password: password.trim(),
-          role: "TEACHER",
-          phone: phone.trim() || "0912345679",
-          target_band: qualification.trim(),
-        },
-      ]);
+          name: name.trim(),
+          phone: phone.trim(),
+          targetBand: qualification.trim(),
+        }),
+      });
 
-      if (error) {
-        console.error("Create teacher error:", error);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        const rawErr = data.error;
+        let errorMsg = "Không thể tạo tài khoản giáo viên.";
+        if (typeof rawErr === "string") {
+          errorMsg = rawErr;
+        } else if (rawErr && typeof rawErr === "object") {
+          errorMsg = rawErr.message || JSON.stringify(rawErr);
+        }
+        setModalError(errorMsg);
         return;
       }
 
       setSuccessMsg(`Đã khởi tạo thành công giảng viên "${name}"!`);
       setShowCreateModal(false);
+      setModalError(null);
       setName("");
       setEmail("");
       setPassword("");
       setPhone("");
       fetchTeachers();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (e: any) {
       console.error(e);
+      setModalError("Đã xảy ra lỗi hệ thống khi kết nối server.");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,15 +148,28 @@ export default function AdminTeachersPage() {
   const handleDeleteTeacher = async (id: string, teacherName: string) => {
     if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản Giáo viên "${teacherName}" không?`)) return;
 
+    setDeletingId(id);
     try {
-      const { error } = await supabase.from("users").delete().eq("id", id);
-      if (error) {
-        console.error("Delete teacher error:", error);
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi xóa giáo viên: " + (data.error || "Không rõ nguyên nhân"));
         return;
       }
+
+      setSuccessMsg(`Đã xóa thành công giảng viên "${teacherName}" khỏi hệ thống.`);
       fetchTeachers();
+      setTimeout(() => setSuccessMsg(null), 4000);
     } catch (e) {
       console.error(e);
+      alert("Lỗi kết nối khi xóa tài khoản.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -157,7 +196,10 @@ export default function AdminTeachersPage() {
           </div>
 
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setModalError(null);
+              setShowCreateModal(true);
+            }}
             className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
             <UserPlus className="w-4 h-4 text-[#ffb782]" />
@@ -172,7 +214,7 @@ export default function AdminTeachersPage() {
           </div>
         )}
 
-        {/* Clean Teachers List (No degree, No classes) */}
+        {/* Clean Teachers List */}
         {loading ? (
           <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
             <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
@@ -224,10 +266,11 @@ export default function AdminTeachersPage() {
 
                   <button
                     onClick={() => handleDeleteTeacher(t.id, t.name)}
-                    className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all"
+                    disabled={deletingId === t.id}
+                    className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all disabled:opacity-50"
                     title="Xóa tài khoản giáo viên"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {deletingId === t.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -250,6 +293,12 @@ export default function AdminTeachersPage() {
               </div>
 
               <form onSubmit={handleCreateTeacher} className="space-y-4">
+                {modalError && (
+                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                    {modalError}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
                     Họ &amp; Tên Giảng Viên (*)
@@ -285,7 +334,7 @@ export default function AdminTeachersPage() {
                   <input
                     type="password"
                     required
-                    placeholder="Nhập mật khẩu..."
+                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"

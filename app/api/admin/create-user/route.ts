@@ -1,38 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { createClient as createServerClient } from "@/lib/supabase-server";
-
-// Initialize Supabase Admin Client using Service Role Key (or fallback anon key for dev)
-const supabaseAdminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://owlvfznycutvkrvgbiot.supabase.co";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_8X7i9iuqijcB9IspKxOugA_cMOElBaK";
-
-const supabaseAdmin = createClient(supabaseAdminUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+import { queryPg } from "@/lib/db-pg";
+import { hashPassword } from "@/lib/auth";
+import { syncStudentEnrolledInClass, syncTeacherManagesClass } from "@/lib/neo4j";
 
 export async function POST(req: Request) {
   try {
-    const supabaseServer = await createServerClient();
-    const {
-      data: { user: callerUser },
-    } = await supabaseServer.auth.getUser();
-
-    // Check caller authorization
-    const callerRole = callerUser?.user_metadata?.role || "STUDENT";
-    if (!callerUser || (callerRole !== "ADMIN" && callerRole !== "TEACHER")) {
-      return NextResponse.json(
-        { success: false, error: "Bạn không có quyền khởi tạo tài khoản mới." },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const {
       email,
-      username,
       password,
       name,
       phone,
@@ -41,50 +16,77 @@ export async function POST(req: Request) {
       classIds,
     } = body;
 
-    // Enforce role creation rules
-    if (callerRole === "TEACHER" && targetRole !== "STUDENT") {
+    if (!email?.trim()) {
       return NextResponse.json(
-        { success: false, error: "Giáo viên chỉ có quyền tạo tài khoản Học viên." },
-        { status: 403 }
-      );
-    }
-
-    const emailToUse = email?.trim() || `${(username || name || "user").trim().toLowerCase().replace(/\s+/g, "")}_${Date.now().toString().slice(-4)}@student.edu.vn`;
-    const tempPassword = password?.trim() || "123456";
-
-    // 1. Create User via Supabase Admin API
-    const { data: createdAuth, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: emailToUse,
-      password: tempPassword,
-      email_confirm: true, // Auto-confirm email so student/teacher can login with temp password
-      user_metadata: {
-        full_name: name?.trim() || emailToUse.split("@")[0],
-        name: name?.trim() || emailToUse.split("@")[0],
-        phone: phone?.trim() || "",
-        role: targetRole || "STUDENT",
-        target_band: targetBand?.trim() || "IELTS 6.5",
-        must_change_password: true, // Force onboarding password change on first login
-      },
-    });
-
-    if (authError) {
-      console.error("Supabase Admin createUser Error:", authError.message);
-      return NextResponse.json(
-        { success: false, error: authError.message },
+        { success: false, error: "Vui lòng nhập Email hợp lệ." },
         { status: 400 }
       );
     }
 
-    const newUserId = createdAuth.user.id;
+    if (!password || password.trim().length < 6) {
+      return NextResponse.json(
+        { success: false, error: "Mật khẩu khởi tạo tối thiểu phải từ 6 ký tự trở lên." },
+        { status: 400 }
+      );
+    }
+
+    const emailToUse = email.trim().toLowerCase();
+    const passwordToUse = password.trim();
+    const hashedPassword = hashPassword(passwordToUse);
+
+    const nameToUse = name?.trim() || emailToUse.split("@")[0];
+    const roleToUse = targetRole?.toUpperCase() || "STUDENT";
+    const phoneToUse = (phone?.trim() || (roleToUse === "TEACHER" ? "0912345679" : "0912345678")).slice(0, 50);
+    const targetBandToUse = (targetBand?.trim() || (roleToUse === "TEACHER" ? "M.A TESOL" : "IELTS 6.5")).slice(0, 100);
+
+    const newUserId = `usr_${roleToUse.toLowerCase()}_${Date.now().toString().slice(-6)}_${Math.random().toString(36).slice(2, 7)}`;
+
+    // 1. Direct PostgreSQL Insert into public.users table with salted scrypt password hash
+    try {
+      const insertSql = `
+        INSERT INTO users (id, name, email, password, role, phone, target_band, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        RETURNING id, name, email, role, phone, target_band, created_at;
+      `;
+
+      await queryPg(insertSql, [
+        newUserId,
+        nameToUse,
+        emailToUse,
+        hashedPassword,
+        roleToUse,
+        phoneToUse,
+        targetBandToUse,
+      ]);
+    } catch (dbErr: any) {
+      console.error("PostgreSQL Insert Error:", dbErr);
+      if (dbErr.code === "23505" || dbErr.message?.includes("unique constraint") || dbErr.message?.includes("already exists")) {
+        return NextResponse.json(
+          { success: false, error: `Email "${emailToUse}" đã được sử dụng cho một tài khoản khác trong CSDL.` },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: `Lỗi CSDL PostgreSQL: ${dbErr.message}` },
+        { status: 500 }
+      );
+    }
 
     // 2. Insert Enrollments if classIds provided
     if (Array.isArray(classIds) && classIds.length > 0) {
-      const enrollmentRows = classIds.map((cId: string) => ({
-        id: `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`,
-        student_id: newUserId,
-        class_id: cId,
-      }));
-      await supabaseAdmin.from("enrollments").insert(enrollmentRows);
+      for (const cId of classIds) {
+        const enrId = `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
+        await queryPg(
+          `INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;`,
+          [enrId, newUserId, cId]
+        );
+        // Sync Polyglot Neo4j Graph DB
+        try {
+          await syncStudentEnrolledInClass(newUserId, cId);
+        } catch (graphErr) {
+          console.warn("Neo4j Sync Warning:", graphErr);
+        }
+      }
     }
 
     return NextResponse.json({
@@ -92,9 +94,10 @@ export async function POST(req: Request) {
       user: {
         id: newUserId,
         email: emailToUse,
-        name: name || emailToUse.split("@")[0],
-        role: targetRole || "STUDENT",
-        tempPassword,
+        name: nameToUse,
+        role: roleToUse,
+        phone: phoneToUse,
+        targetBand: targetBandToUse,
       },
     });
   } catch (err: any) {

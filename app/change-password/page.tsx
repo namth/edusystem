@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { School, Lock, User, Phone, Target, AlertCircle, Loader2, Sparkles, CheckCircle2, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { validatePasswordStrength } from "@/lib/password-validator";
 
 export default function ChangePasswordPage() {
   const { user, updatePasswordAndProfile } = useAuth();
@@ -31,13 +32,9 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!newPassword.trim()) {
-      setErrorMsg("Vui lòng nhập mật khẩu mới!");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setErrorMsg("Mật khẩu mới phải có ít nhất 6 ký tự!");
+    const validation = validatePasswordStrength(newPassword);
+    if (!validation.isValid) {
+      setErrorMsg(validation.errors[0] || "Mật khẩu mới chưa đạt yêu cầu an toàn.");
       return;
     }
 
