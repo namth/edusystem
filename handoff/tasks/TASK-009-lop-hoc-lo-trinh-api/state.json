@@ -12,6 +12,6 @@
   ],
   "locked_files": [
     "handoff/tasks/TASK-009-lop-hoc-lo-trinh-api/verify.sh",
-    "handoff/tasks/TASK-009-lop-hoc-lo-trinh-api/verify.sh"
+    "vitest.config.ts"
   ]
 }
