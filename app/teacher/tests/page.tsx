@@ -29,7 +29,9 @@ import {
   GripVertical,
   ArrowRight,
   Pencil,
-  Plus
+  Plus,
+  RefreshCw,
+  ExternalLink
 } from "lucide-react";
 import { INITIAL_COURSES } from "@/lib/mock-data";
 
@@ -40,6 +42,7 @@ interface CurriculumItem extends DndItem {
   title: string;
   type: "UNIT" | "LESSON" | "EXAM";
   exam_id?: string | null;
+  lesson_id?: string | null;
   order_index: number;
   exam?: {
     id: string;
@@ -47,6 +50,13 @@ interface CurriculumItem extends DndItem {
     duration_minutes?: number;
     skills?: string[];
   } | null;
+}
+
+interface LessonOption {
+  id: string;
+  title: string;
+  block_count: number;
+  skills?: string[];
 }
 
 interface ExamOption {
@@ -67,6 +77,10 @@ export default function TeacherTestManagerPage() {
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [items, setItems] = useState<CurriculumItem[]>([]);
   const [availableExams, setAvailableExams] = useState<ExamOption[]>([]);
+  const [availableLessons, setAvailableLessons] = useState<LessonOption[]>([]);
+  const [selectedLessonId, setSelectedLessonId] = useState<string>("");
+  const [lessonSearchQuery, setLessonSearchQuery] = useState<string>("");
+  const [isLoadingLessons, setIsLoadingLessons] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
   // Course Modals State
@@ -173,6 +187,22 @@ export default function TeacherTestManagerPage() {
       }
     } catch (err) {
       console.error("Fetch exams error:", err);
+    }
+  };
+
+  // Fetch all lessons from lesson library
+  const fetchLessons = async () => {
+    setIsLoadingLessons(true);
+    try {
+      const res = await fetch("/api/teacher/lessons");
+      const json = await res.json().catch(() => null);
+      if (json?.success && Array.isArray(json.lessons)) {
+        setAvailableLessons(json.lessons);
+      }
+    } catch (err) {
+      console.error("Fetch lessons error:", err);
+    } finally {
+      setIsLoadingLessons(false);
     }
   };
 
@@ -310,6 +340,11 @@ export default function TeacherTestManagerPage() {
     setNewTitle("");
     const initialExam = availableExams[0]?.id || "";
     setSelectedExamId(initialExam);
+    setSelectedLessonId("");
+    setLessonSearchQuery("");
+    if (type === "LESSON") {
+      fetchLessons();
+    }
     setShowModal(true);
   };
 
@@ -320,21 +355,34 @@ export default function TeacherTestManagerPage() {
     setTargetParentId(item.parent_id || null);
     setNewTitle(item.title);
     setSelectedExamId(item.exam_id || (availableExams[0]?.id || ""));
+    setSelectedLessonId(item.lesson_id || "");
+    setLessonSearchQuery("");
+    if (item.type === "LESSON") {
+      fetchLessons();
+    }
     setShowModal(true);
   };
 
   // Submit Modal (Create or Edit)
   const handleSubmitModal = async () => {
     const selectedExamObj = availableExams.find((e) => e.id === selectedExamId);
+    const selectedLessonObj = availableLessons.find((l) => l.id === selectedLessonId);
+
+    if (modalType === "LESSON" && !selectedLessonId) {
+      showError("Vui lòng chọn một bài học từ kho.");
+      return;
+    }
     
     let finalTitle = newTitle.trim();
     if (!finalTitle) {
       if (modalType === "UNIT") {
         finalTitle = "Unit Mới";
+      } else if (modalType === "LESSON" && selectedLessonObj) {
+        finalTitle = selectedLessonObj.title;
       } else if (selectedExamObj) {
         finalTitle = selectedExamObj.title;
       } else {
-        finalTitle = "Bài Học Mới";
+        finalTitle = modalType === "LESSON" ? "Bài Học Mới" : "Đề Thi Mới";
       }
     }
 
@@ -342,17 +390,23 @@ export default function TeacherTestManagerPage() {
     try {
       if (editingItem) {
         // Edit Mode
+        const putItem: any = {
+          id: editingItem.id,
+          title: finalTitle,
+        };
+        if (modalType === "LESSON") {
+          putItem.lesson_id = selectedLessonId;
+          putItem.exam_id = null;
+        } else if (modalType === "EXAM") {
+          putItem.exam_id = selectedExamId || null;
+          putItem.lesson_id = null;
+        }
+
         const res = await fetch("/api/teacher/curriculum", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: [
-              {
-                id: editingItem.id,
-                title: finalTitle,
-                exam_id: modalType !== "UNIT" ? selectedExamId || null : null,
-              },
-            ],
+            items: [putItem],
           }),
         });
 
@@ -365,6 +419,7 @@ export default function TeacherTestManagerPage() {
                 ? {
                     ...it,
                     ...updated,
+                    lesson_id: modalType === "LESSON" ? selectedLessonId : it.lesson_id,
                     exam: selectedExamObj
                       ? { id: selectedExamObj.id, title: selectedExamObj.title }
                       : (updated.exam_id ? it.exam : null),
@@ -379,22 +434,29 @@ export default function TeacherTestManagerPage() {
         }
       } else {
         // Create Mode
+        const postBody: any = {
+          course_id: selectedCourseId,
+          parent_id: targetParentId,
+          title: finalTitle,
+          type: modalType,
+        };
+        if (modalType === "LESSON") {
+          postBody.lesson_id = selectedLessonId;
+        } else if (modalType === "EXAM") {
+          postBody.exam_id = selectedExamId || null;
+        }
+
         const res = await fetch("/api/teacher/curriculum", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: selectedCourseId,
-            parent_id: targetParentId,
-            title: finalTitle,
-            type: modalType,
-            exam_id: modalType !== "UNIT" ? selectedExamId || null : null,
-          }),
+          body: JSON.stringify(postBody),
         });
 
         const json = await res.json();
         if (json.success && json.item) {
           const newItem: CurriculumItem = {
             ...json.item,
+            lesson_id: modalType === "LESSON" ? selectedLessonId : null,
             exam: selectedExamObj ? { id: selectedExamObj.id, title: selectedExamObj.title } : null,
           };
           setItems((prev) => [...prev, newItem]);
@@ -1013,6 +1075,19 @@ export default function TeacherTestManagerPage() {
                                   </Link>
                                 )}
 
+                                {/* Edit Lesson in New Tab */}
+                                {rootNode.type === "LESSON" && rootNode.lesson_id && (
+                                  <Link
+                                    href={`/teacher/lessons/${rootNode.lesson_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-all border border-[#d8c2b6]/40"
+                                    title="Soạn bài học"
+                                  >
+                                    <BookMarked className="w-4 h-4" />
+                                  </Link>
+                                )}
+
                                 {/* Edit Button - Positioned Right Next to Delete */}
                                 <button
                                   type="button"
@@ -1158,6 +1233,19 @@ export default function TeacherTestManagerPage() {
                                               </Link>
                                             )}
 
+                                            {/* Edit Lesson in New Tab */}
+                                            {child.type === "LESSON" && child.lesson_id && (
+                                              <Link
+                                                href={`/teacher/lessons/${child.lesson_id}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded border border-[#d8c2b6]/30"
+                                                title="Soạn bài học"
+                                              >
+                                                <BookMarked className="w-3.5 h-3.5" />
+                                              </Link>
+                                            )}
+
                                             {/* Edit Button - Positioned Right Next to Delete */}
                                             <button
                                               type="button"
@@ -1261,32 +1349,10 @@ export default function TeacherTestManagerPage() {
             {/* Form Fields - Streamlined Labels */}
             <div className="space-y-4 text-xs">
               
-              {/* FIELD 1: Select Exam / Exercise */}
+              {/* FIELD 1: Select Category (Radio Buttons) */}
               {modalType !== "UNIT" && (
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-[#52443a]">1. Chọn Đề Thi / Bài Tập</label>
-                  <select
-                    value={selectedExamId}
-                    onChange={(e) => setSelectedExamId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#6d3807]/15 transition-all shadow-2xs"
-                  >
-                    {availableExams.length === 0 ? (
-                      <option value="">Chưa có đề thi sẵn</option>
-                    ) : (
-                      availableExams.map((ex) => (
-                        <option key={ex.id} value={ex.id}>
-                          {ex.title}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              )}
-
-              {/* FIELD 2: Select Category (Radio Buttons) */}
-              {modalType !== "UNIT" && (
-                <div className="space-y-1.5">
-                  <label className="block font-bold text-[#52443a]">2. Chọn Phân Loại</label>
+                  <label className="block font-bold text-[#52443a]">1. Chọn Phân Loại</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label
                       className={`flex items-center space-x-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
@@ -1300,7 +1366,10 @@ export default function TeacherTestManagerPage() {
                         name="modalTypeRadio"
                         value="LESSON"
                         checked={modalType === "LESSON"}
-                        onChange={() => setModalType("LESSON")}
+                        onChange={() => {
+                          setModalType("LESSON");
+                          if (availableLessons.length === 0) fetchLessons();
+                        }}
                         className="w-4 h-4 text-[#6d3807] focus:ring-[#6d3807] accent-[#6d3807]"
                       />
                       <span className="text-xs font-bold text-[#211a16]">Bài Học</span>
@@ -1327,6 +1396,130 @@ export default function TeacherTestManagerPage() {
                 </div>
               )}
 
+              {/* FIELD 2A: For LESSON -> Select Lesson from Library (SCR-L4) */}
+              {modalType === "LESSON" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-[#52443a]">2. Chọn Bài Học Từ Kho</label>
+                    <div className="flex items-center space-x-2 text-[11px]">
+                      <Link
+                        href="/teacher/lessons/new"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#6d3807] font-bold hover:underline flex items-center space-x-0.5"
+                      >
+                        <span>Tạo bài học mới</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={fetchLessons}
+                        disabled={isLoadingLessons}
+                        className="text-[#52443a] hover:text-[#6d3807] font-semibold flex items-center space-x-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLoadingLessons ? "animate-spin" : ""}`} />
+                        <span>Tải lại danh sách</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search in modal */}
+                  <input
+                    type="text"
+                    value={lessonSearchQuery}
+                    onChange={(e) => setLessonSearchQuery(e.target.value)}
+                    placeholder="Tìm theo tiêu đề bài học..."
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807]"
+                  />
+
+                  {/* List of lessons from library */}
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-[#d8c2b6] bg-[#fff8f5]">
+                    {isLoadingLessons ? (
+                      <div className="py-4 text-center text-xs text-[#52443a] flex items-center justify-center space-x-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6d3807]" />
+                        <span>Đang tải kho bài học...</span>
+                      </div>
+                    ) : availableLessons.filter((l) =>
+                        l.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())
+                      ).length === 0 ? (
+                      <div className="py-4 text-center text-xs text-[#52443a]">
+                        {lessonSearchQuery.trim()
+                          ? "Không tìm thấy bài học phù hợp."
+                          : "Chưa có bài học nào trong kho."}
+                      </div>
+                    ) : (
+                      availableLessons
+                        .filter((l) =>
+                          l.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())
+                        )
+                        .map((l) => {
+                          const isZero = l.block_count === 0;
+                          const isSelected = selectedLessonId === l.id;
+                          return (
+                            <div
+                              key={l.id}
+                              onClick={() => {
+                                if (isZero) return;
+                                setSelectedLessonId(l.id);
+                                setNewTitle(l.title);
+                              }}
+                              className={`p-2.5 rounded-lg border text-xs flex items-center justify-between transition-all ${
+                                isZero
+                                  ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
+                                  : isSelected
+                                  ? "border-[#6d3807] bg-white ring-1 ring-[#6d3807] cursor-pointer shadow-2xs"
+                                  : "border-[#d8c2b6]/60 bg-white hover:border-[#6d3807] hover:bg-[#faf8f6] cursor-pointer"
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <p className="font-bold text-[#211a16] truncate">{l.title}</p>
+                                <p className="text-[10px] text-[#52443a] flex items-center space-x-1.5 mt-0.5">
+                                  <span>{l.block_count} khối</span>
+                                  {isZero && (
+                                    <span className="text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200">
+                                      Chưa có nội dung
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                              <input
+                                type="radio"
+                                readOnly
+                                checked={isSelected}
+                                disabled={isZero}
+                                className="w-3.5 h-3.5 text-[#6d3807] accent-[#6d3807] shrink-0"
+                              />
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* FIELD 2B: For EXAM -> Select Exam */}
+              {modalType === "EXAM" && (
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-[#52443a]">2. Chọn Đề Thi</label>
+                  <select
+                    value={selectedExamId}
+                    onChange={(e) => setSelectedExamId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#6d3807]/15 transition-all shadow-2xs"
+                  >
+                    {availableExams.length === 0 ? (
+                      <option value="">Chưa có đề thi sẵn</option>
+                    ) : (
+                      availableExams.map((ex) => (
+                        <option key={ex.id} value={ex.id}>
+                          {ex.title}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              )}
+
               {/* FIELD 3: Custom Title Input */}
               <div className="space-y-1.5">
                 <label className="block font-bold text-[#52443a]">
@@ -1339,7 +1532,7 @@ export default function TeacherTestManagerPage() {
                   placeholder={
                     modalType === "UNIT"
                       ? "Nhập tên Unit..."
-                      : "Để trống để tự động lấy tên đề thi/bài tập"
+                      : "Để trống để tự động lấy tên bài học/đề thi"
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#6d3807]/15 transition-all shadow-2xs placeholder:text-gray-400"
                 />

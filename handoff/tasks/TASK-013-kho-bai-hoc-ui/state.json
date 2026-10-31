@@ -1,13 +1,33 @@
 {
   "id": "TASK-013",
   "title": "Giao diện Kho bài học, soạn bài, bộ chọn bài học trong lộ trình",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "17916a1d-512b-4259-bb38-71d7b4fb28a3",
   "history": [
     {
       "at": "2026-10-31T12:34:26",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:50:44",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:51:00",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T13:08:37",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T13:12:24",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -32,5 +52,6 @@
     "tests/student-pages.test.ts",
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts"
-  ]
+  ],
+  "via": "agy"
 }
