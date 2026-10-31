@@ -63,6 +63,8 @@ function toEvent(h) {
   const tool = h.tool_name || '';
   switch (h.hook_event_name) {
     case 'UserPromptSubmit': {
+      // Lệnh `!` giám đốc tự chạy trong terminal (kèm output) không phải là giao việc.
+      if (/^<(bash-input|bash-stdout|bash-stderr|local-command)/.test(String(h.prompt || '').trim())) return null;
       const m = INTERVIEW.exec(String(h.prompt || '').trim());
       if (m) return { who: 'truongphong', type: 'interview', to: 'giamdoc', text: cut(`Phỏng vấn: ${m[1]}`) };
       return { who: 'giamdoc', type: 'assign', to: 'truongphong', text: cut(h.prompt) };
