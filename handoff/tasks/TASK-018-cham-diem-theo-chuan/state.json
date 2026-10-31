@@ -1,13 +1,33 @@
 {
   "id": "TASK-018",
   "title": "Migration 009 + lib/exam-scoring (điểm phần, tổng theo chuẩn) + chấm Speaking bằng AI",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "05cefcf3-7a2a-46db-869a-569b66864947",
   "history": [
     {
       "at": "2026-10-31T14:28:59",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:29:44",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:30:06",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T14:36:52",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T14:39:07",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -38,5 +58,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "docs/db-migration-009-scoring-standards.sql"
-  ]
+  ],
+  "via": "agy"
 }
