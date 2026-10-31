@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
 import RichTextEditor from "@/components/RichTextEditor";
 import AiExamIngestionStudio from "@/components/teacher/AiExamIngestionStudio";
 import {
@@ -609,29 +608,29 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     if (!file) return;
 
     try {
-      const fileExt = file.name.split(".").pop() || "mp3";
-      const fileName = `audio_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
-      const { data, error } = await supabase.storage.from("audio-assets").upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: true,
+      const fd = new FormData();
+      fd.append("kind", "audio");
+      fd.append("file", file);
+
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        body: fd,
       });
 
-      if (!error && data) {
-        const { data: publicData } = supabase.storage.from("audio-assets").getPublicUrl(fileName);
-        if (publicData?.publicUrl) {
-          setter(publicData.publicUrl);
-          return;
-        }
+      const resData = await res.json().catch(() => null);
+      if (!res.ok || !resData?.success) {
+        alert("Lỗi upload audio: " + (resData?.error || res.statusText));
+        return;
       }
-    } catch (err) {
-      console.warn("Storage upload fallback to Base64:", err);
-    }
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      if (evt.target?.result) setter(evt.target.result as string);
-    };
-    reader.readAsDataURL(file);
+      if (resData.url) {
+        setter(resData.url);
+        return;
+      }
+    } catch (err: any) {
+      console.error("Audio upload error:", err);
+      alert("Lỗi tải file âm thanh");
+    }
   };
 
   // SubQ Handlers
@@ -724,16 +723,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     }
     setIsSearchingFc(true);
     try {
-      const { data } = await supabase
-        .from("flashcards")
-        .select("*")
-        .or(`vietnamese_name.ilike.%${query.trim()}%,correct_english_word.ilike.%${query.trim()}%`)
-        .limit(12);
+      const res = await fetch(`/api/teacher/flashcards?q=${encodeURIComponent(query.trim())}`);
+      const resData = await res.json().catch(() => null);
+      const data = resData?.flashcards || [];
 
       const existingIds = new Set(flashcardsList.map((fc) => fc.id));
       const existingEngWords = new Set(flashcardsList.map((fc) => (fc.correctEnglishWord || "").toLowerCase().trim()));
 
-      const filtered = (data || []).filter((fcRow: any) => {
+      const filtered = (data || []).slice(0, 12).filter((fcRow: any) => {
         const isIdMatch = existingIds.has(fcRow.id);
         const isWordMatch = existingEngWords.has((fcRow.correct_english_word || "").toLowerCase().trim());
         return !isIdMatch && !isWordMatch;
@@ -767,7 +764,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
   const handleAddOrUpdateFlashcard = async () => {
     if (!fcVnName.trim() || !fcEngWord.trim()) return;
 
-    const fcId = editingFcId || `fc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    let fcId = editingFcId;
     const parsedOptions = fcOptionsInput
       .split(",")
       .map((s) => s.trim())
@@ -778,22 +775,37 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     }
 
     try {
-      await supabase.from("flashcards").upsert([
-        {
-          id: fcId,
-          vietnamese_name: fcVnName.trim(),
-          correct_english_word: fcEngWord.trim(),
-          options: parsedOptions,
-          image_url: fcImageUrl.trim(),
-          audio_url: getTtsHdUrl(fcEngWord.trim(), "Female"),
-        },
-      ]);
+      const payload = {
+        vietnamese_name: fcVnName.trim(),
+        correct_english_word: fcEngWord.trim(),
+        options: parsedOptions,
+        image_url: fcImageUrl.trim() || null,
+        audio_url: getTtsHdUrl(fcEngWord.trim(), "Female"),
+      };
+
+      if (editingFcId) {
+        await fetch(`/api/teacher/flashcards/${editingFcId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        const res = await fetch("/api/teacher/flashcards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const resData = await res.json().catch(() => null);
+        if (resData?.flashcard?.id) {
+          fcId = resData.flashcard.id;
+        }
+      }
     } catch (err) {
       console.warn("Save flashcard entity error:", err);
     }
 
     const item: FlashcardItem = {
-      id: fcId,
+      id: fcId || `fc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       imageUrl: fcImageUrl.trim(),
       vietnameseName: fcVnName.trim(),
       correctEnglishWord: fcEngWord.trim(),
@@ -1168,12 +1180,11 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
     if (fcList.length === 0 && fcIds.length > 0) {
       try {
-        const { data: fcRows } = await supabase
-          .from("flashcards")
-          .select("*")
-          .in("id", fcIds);
+        const res = await fetch("/api/teacher/flashcards");
+        const resData = await res.json().catch(() => null);
+        const fcRows = (resData?.flashcards || []).filter((fc: any) => fcIds.includes(fc.id));
 
-        if (fcRows) {
+        if (fcRows.length > 0) {
           fcList = fcRows.map((fc: any) => ({
             id: fc.id,
             imageUrl: fc.image_url || "",
@@ -1355,6 +1366,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         }
       }
 
+      const savedIdByLocalId = new Map<string, string>();
       const qIdsArray: string[] = [];
       for (let i = 0; i < currentQuestionsList.length; i++) {
         const q = currentQuestionsList[i];
@@ -1363,18 +1375,46 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         const flashcardIds: string[] = [];
         if (rawFcList.length > 0) {
           for (const fc of rawFcList) {
-            const fcId = fc.id || `fc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-            flashcardIds.push(fcId);
-            await supabase.from("flashcards").upsert([
-              {
-                id: fcId,
-                vietnamese_name: (fc as any).vietnameseName || (fc as any).vietnamese_name || "Nghĩa TV",
-                correct_english_word: (fc as any).correctEnglishWord || (fc as any).correct_english_word || "English Word",
-                options: (fc as any).englishOptions || (fc as any).options || [],
-                image_url: (fc as any).imageUrl || (fc as any).image_url || "",
-                audio_url: (fc as any).audioUrl || (fc as any).audio_url || "",
-              },
-            ]);
+            const fcId = fc.id;
+            const payload = {
+              vietnamese_name: (fc as any).vietnameseName || (fc as any).vietnamese_name || "Nghĩa TV",
+              correct_english_word: (fc as any).correctEnglishWord || (fc as any).correct_english_word || "English Word",
+              options: (fc as any).englishOptions || (fc as any).options || [],
+              image_url: (fc as any).imageUrl || (fc as any).image_url || null,
+              audio_url: (fc as any).audioUrl || (fc as any).audio_url || null,
+            };
+
+            let savedFcId = fcId;
+            if (fcId && !fcId.startsWith("temp_") && !fcId.startsWith("fc_tmp")) {
+              const res = await fetch(`/api/teacher/flashcards/${fcId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              if (res.ok) {
+                savedFcId = fcId;
+              } else if (res.status === 404) {
+                const postRes = await fetch("/api/teacher/flashcards", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                });
+                const postData = await postRes.json().catch(() => null);
+                if (postData?.flashcard?.id) savedFcId = postData.flashcard.id;
+              }
+            } else {
+              const postRes = await fetch("/api/teacher/flashcards", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              const postData = await postRes.json().catch(() => null);
+              if (postData?.flashcard?.id) savedFcId = postData.flashcard.id;
+            }
+
+            if (savedFcId) {
+              flashcardIds.push(savedFcId);
+            }
           }
         }
 
@@ -1448,10 +1488,21 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
             return;
           }
           savedId = resData.question.id;
+          savedIdByLocalId.set(q.id, savedId);
           dbQuestionIds.current.add(savedId);
         }
 
         qIdsArray.push(savedId);
+      }
+
+      if (savedIdByLocalId.size > 0) {
+        setQuestionsList((prev) =>
+          prev.map((item) =>
+            savedIdByLocalId.has(item.id)
+              ? { ...item, id: savedIdByLocalId.get(item.id)! }
+              : item
+          )
+        );
       }
 
       const savePayload: QuestionSetSavePayload = {

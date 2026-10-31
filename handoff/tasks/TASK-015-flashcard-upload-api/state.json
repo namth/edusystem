@@ -1,13 +1,33 @@
 {
   "id": "TASK-015",
   "title": "API thư viện flashcard + upload qua server; gỡ Supabase trình duyệt cho flashcard/upload",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "bd8172fd-1530-483d-b0e6-042374d852b6",
   "history": [
     {
       "at": "2026-10-31T13:07:55",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T13:09:18",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T13:09:37",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T13:21:52",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T13:25:48",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -36,5 +56,6 @@
     "vitest.config.ts",
     "docs/db-migration-008-flashcard-owner.sql",
     "handoff/tasks/TASK-015-flashcard-upload-api/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }

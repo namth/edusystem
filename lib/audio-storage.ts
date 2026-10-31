@@ -1,7 +1,5 @@
-import { supabase } from "@/lib/supabase";
-
 /**
- * Uploads base64 or blob audio data to Supabase Storage bucket 'speaking-recordings'
+ * Uploads base64 audio data to Supabase Storage via /api/uploads
  * and returns the public HTTP URL.
  */
 export async function uploadAudioToSupabaseStorage(
@@ -17,14 +15,11 @@ export async function uploadAudioToSupabaseStorage(
   }
 
   try {
-    const bucketName = "speaking-recordings";
-
-    // Ensure bucket exists or handle upload directly
-    let fileBuffer: Uint8Array | Blob;
     let contentType = "audio/webm";
+    let blob: Blob;
 
     if (audioData.startsWith("data:")) {
-      const match = audioData.match(/^data:(audio\/[a-zA-Z0-9]+);base64,(.+)$/);
+      const match = audioData.match(/^data:(audio\/[a-zA-Z0-9.\-_+]+);base64,(.+)$/);
       if (match) {
         contentType = match[1];
         const base64Str = match[2];
@@ -33,7 +28,7 @@ export async function uploadAudioToSupabaseStorage(
         for (let i = 0; i < binaryStr.length; i++) {
           bytes[i] = binaryStr.charCodeAt(i);
         }
-        fileBuffer = bytes;
+        blob = new Blob([bytes], { type: contentType });
       } else {
         return audioData;
       }
@@ -42,28 +37,28 @@ export async function uploadAudioToSupabaseStorage(
     }
 
     const fileExt = contentType.includes("mp3") ? "mp3" : "webm";
-    const filePath = `${submissionId}/${questionId}_${Date.now()}.${fileExt}`;
+    const formData = new FormData();
+    formData.append("kind", "speaking");
+    formData.append("file", blob, `${submissionId}_${questionId}.${fileExt}`);
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucketName)
-      .upload(filePath, fileBuffer, {
-        contentType,
-        upsert: true,
-      });
+    const res = await fetch("/api/uploads", {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      console.warn(`Supabase Storage upload note for bucket '${bucketName}':`, uploadError.message);
-      // Fallback: return data URL if storage upload fails or bucket is not public
+    if (!res.ok) {
+      console.warn("Upload speaking audio failed with status:", res.status);
       return audioData;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(uploadData.path);
+    const data = await res.json().catch(() => null);
+    if (data?.success && data?.url) {
+      return data.url;
+    }
 
-    return publicUrlData.publicUrl;
+    return audioData;
   } catch (err) {
-    console.error("Failed to upload audio to Supabase Storage:", err);
+    console.error("Failed to upload audio to /api/uploads:", err);
     return audioData;
   }
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
-import { supabase } from "@/lib/supabase";
 import {
   Plus,
   Search,
@@ -20,9 +19,11 @@ interface FlashcardItem {
   vietnamese_name: string;
   correct_english_word: string;
   options: string[];
-  image_url?: string;
-  audio_url?: string;
+  image_url?: string | null;
+  audio_url?: string | null;
   created_at?: string;
+  created_by?: string | null;
+  can_edit?: boolean;
 }
 
 export default function TeacherFlashcardManagerPage() {
@@ -47,46 +48,52 @@ export default function TeacherFlashcardManagerPage() {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [audioObj, setAudioObj] = useState<HTMLAudioElement | null>(null);
 
-  const fetchFlashcards = async () => {
+  const fetchFlashcards = async (query = searchQuery) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("flashcards")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const url = query.trim()
+        ? `/api/teacher/flashcards?q=${encodeURIComponent(query.trim())}`
+        : "/api/teacher/flashcards";
+      const res = await fetch(url);
+      const data = await res.json();
 
-      if (error) {
-        console.error("Fetch flashcards error:", error);
+      if (!res.ok) {
+        console.error("Fetch flashcards error:", data?.error);
       } else {
         setFlashcards(
-          (data || []).map((row: any) => ({
+          (data.flashcards || []).map((row: any) => ({
             id: row.id,
             vietnamese_name: row.vietnamese_name || "",
             correct_english_word: row.correct_english_word || "",
             options: Array.isArray(row.options) ? row.options : [],
-            image_url: row.image_url || "",
-            audio_url: row.audio_url || "",
+            image_url: row.image_url || null,
+            audio_url: row.audio_url || null,
             created_at: row.created_at,
+            created_by: row.created_by,
+            can_edit: row.can_edit,
           }))
         );
       }
     } catch (e) {
-      console.error(e);
+      console.error("Fetch flashcards error:", e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFlashcards();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchFlashcards(searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleOpenCreateModal = () => {
     setEditingCard(null);
     setVnName("");
     setEngWord("");
     setOptionsInput("");
-    setImageUrl("https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop");
+    setImageUrl("");
     setAudioUrl("");
     setShowModal(true);
   };
@@ -115,35 +122,47 @@ export default function TeacherFlashcardManagerPage() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    // Make sure correct_english_word is among options or format options
+    // Make sure correct_english_word is among options
     const finalOptions = Array.from(new Set([engWord.trim(), ...opts]));
 
-    const cardId = editingCard ? editingCard.id : `fc_${Date.now()}`;
-
     const payload = {
-      id: cardId,
       vietnamese_name: vnName.trim(),
       correct_english_word: engWord.trim(),
       options: finalOptions,
-      image_url: imageUrl.trim() || "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop",
+      image_url: imageUrl.trim() || null,
       audio_url: audioUrl.trim() || null,
     };
 
     try {
-      const { error } = await supabase.from("flashcards").upsert([payload]);
+      const url = editingCard
+        ? `/api/teacher/flashcards/${editingCard.id}`
+        : "/api/teacher/flashcards";
+      const method = editingCard ? "PUT" : "POST";
 
-      if (error) {
-        console.error("Save flashcard error:", error);
-        alert("Lỗi lưu Flashcard: " + error.message);
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const resData = await res.json().catch(() => null);
+
+      if (!res.ok || !resData?.success) {
+        console.error("Save flashcard error:", resData?.error);
+        alert("Lỗi lưu Flashcard: " + (resData?.error || res.statusText));
       } else {
-        setSuccessMsg(editingCard ? "Đã cập nhật flashcard thành công!" : "Đã thêm flashcard mới thành công!");
+        setSuccessMsg(
+          editingCard
+            ? "Đã cập nhật flashcard thành công!"
+            : "Đã thêm flashcard mới thành công!"
+        );
         setShowModal(false);
         fetchFlashcards();
         setTimeout(() => setSuccessMsg(""), 3500);
       }
     } catch (err: any) {
       console.error(err);
-      alert("Lỗi hệ thống: " + err.message);
+      alert("Lỗi hệ thống: " + (err.message || err));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,10 +172,21 @@ export default function TeacherFlashcardManagerPage() {
     if (!confirm(`Bạn có chắc chắn muốn xóa flashcard "${name}" không?`)) return;
 
     try {
-      const { error } = await supabase.from("flashcards").delete().eq("id", id);
-      if (error) {
-        console.error("Delete error:", error);
-        alert("Không thể xóa thẻ: " + error.message);
+      const res = await fetch(`/api/teacher/flashcards/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.status === 409) {
+        const count = data?.question_ids?.length || 0;
+        alert(`Thẻ đang được dùng trong ${count} câu hỏi`);
+        return;
+      }
+
+      if (!res.ok || !data?.success) {
+        console.error("Delete error:", data?.error);
+        alert("Không thể xóa thẻ: " + (data?.error || res.statusText));
       } else {
         setSuccessMsg(`Đã xóa thẻ "${name}" thành công!`);
         fetchFlashcards();
@@ -164,6 +194,7 @@ export default function TeacherFlashcardManagerPage() {
       }
     } catch (e: any) {
       console.error(e);
+      alert("Lỗi hệ thống khi xóa thẻ: " + (e.message || e));
     }
   };
 
@@ -172,29 +203,28 @@ export default function TeacherFlashcardManagerPage() {
     if (!file) return;
 
     try {
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const fileName = `fc_img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
-      const { data, error } = await supabase.storage.from("flashcard-assets").upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: true,
+      const fd = new FormData();
+      fd.append("kind", "image");
+      fd.append("file", file);
+
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        body: fd,
       });
 
-      if (!error && data) {
-        const { data: publicData } = supabase.storage.from("flashcard-assets").getPublicUrl(fileName);
-        if (publicData?.publicUrl) {
-          setImageUrl(publicData.publicUrl);
-          return;
-        }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        alert("Lỗi upload ảnh: " + (data?.error || res.statusText));
+        return;
       }
-    } catch (err) {
-      console.warn("Storage upload fallback:", err);
-    }
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      if (evt.target?.result) setImageUrl(evt.target.result as string);
-    };
-    reader.readAsDataURL(file);
+      if (data.url) {
+        setImageUrl(data.url);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert("Lỗi tải ảnh lên: " + (err.message || err));
+    }
   };
 
   const handlePlayAudio = (card: FlashcardItem) => {
@@ -202,7 +232,9 @@ export default function TeacherFlashcardManagerPage() {
       audioObj.pause();
     }
 
-    const targetUrl = card.audio_url || `/api/tts?text=${encodeURIComponent(card.correct_english_word)}&gender=Female`;
+    const targetUrl =
+      card.audio_url ||
+      `/api/tts?text=${encodeURIComponent(card.correct_english_word)}&gender=Female`;
     setPlayingAudioId(card.id);
 
     const newAudio = new Audio(targetUrl);
@@ -211,16 +243,6 @@ export default function TeacherFlashcardManagerPage() {
     newAudio.play().catch((err) => console.warn("Audio play error:", err));
     newAudio.onended = () => setPlayingAudioId(null);
   };
-
-  const filteredCards = flashcards.filter((fc) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      fc.vietnamese_name.toLowerCase().includes(q) ||
-      fc.correct_english_word.toLowerCase().includes(q) ||
-      fc.options.some((opt) => opt.toLowerCase().includes(q))
-    );
-  });
 
   return (
     <TeacherLayout>
@@ -268,7 +290,7 @@ export default function TeacherFlashcardManagerPage() {
           </div>
 
           <div className="text-xs text-[#52443a] font-bold">
-            Tổng số thẻ: <span className="text-[#6d3807] text-sm">{filteredCards.length}</span> / {flashcards.length} thẻ từ vựng
+            Tổng số thẻ: <span className="text-[#6d3807] text-sm">{flashcards.length}</span> thẻ từ vựng
           </div>
         </div>
 
@@ -278,7 +300,7 @@ export default function TeacherFlashcardManagerPage() {
             <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
             <span className="font-bold">Đang nạp danh sách thẻ Flashcards từ Database...</span>
           </div>
-        ) : filteredCards.length === 0 ? (
+        ) : flashcards.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-3xl border border-[#d8c2b6] space-y-4">
             <div className="w-14 h-14 bg-[#fff1ea] rounded-full flex items-center justify-center mx-auto text-[#6d3807]">
               <Bookmark className="w-7 h-7" />
@@ -300,22 +322,25 @@ export default function TeacherFlashcardManagerPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredCards.map((card) => (
+            {flashcards.map((card) => (
               <div
                 key={card.id}
                 className="bg-white rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
               >
                 {/* Image Container */}
-                <div className="relative aspect-video w-full bg-[#fff8f5] border-b border-[#d8c2b6] overflow-hidden">
-                  <img
-                    src={card.image_url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop"}
-                    alt={card.vietnamese_name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop";
-                    }}
-                  />
+                <div className="relative aspect-video w-full bg-[#fff8f5] border-b border-[#d8c2b6] overflow-hidden flex items-center justify-center">
+                  {card.image_url ? (
+                    <img
+                      src={card.image_url}
+                      alt={card.vietnamese_name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-[#857469] space-y-1">
+                      <Bookmark className="w-8 h-8 opacity-25" />
+                      <span className="text-[11px] font-medium text-[#857469]">Chưa có hình ảnh</span>
+                    </div>
+                  )}
                   <div className="absolute top-2 right-2 flex space-x-1">
                     <button
                       onClick={() => handlePlayAudio(card)}
@@ -364,23 +389,25 @@ export default function TeacherFlashcardManagerPage() {
                 </div>
 
                 {/* Footer Action Buttons */}
-                <div className="p-3 bg-[#fff8f5] border-t border-[#d8c2b6] flex items-center justify-end space-x-2">
-                  <button
-                    onClick={() => handleOpenEditModal(card)}
-                    className="px-3 py-1.5 bg-white border border-[#d8c2b6] hover:bg-[#fff1ea] text-[#6d3807] rounded-xl text-xs font-bold flex items-center space-x-1 transition-all shadow-2xs"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Sửa</span>
-                  </button>
+                {card.can_edit !== false && (
+                  <div className="p-3 bg-[#fff8f5] border-t border-[#d8c2b6] flex items-center justify-end space-x-2">
+                    <button
+                      onClick={() => handleOpenEditModal(card)}
+                      className="px-3 py-1.5 bg-white border border-[#d8c2b6] hover:bg-[#fff1ea] text-[#6d3807] rounded-xl text-xs font-bold flex items-center space-x-1 transition-all shadow-2xs"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Sửa</span>
+                    </button>
 
-                  <button
-                    onClick={() => handleDeleteFlashcard(card.id, card.vietnamese_name)}
-                    className="p-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all"
-                    title="Xóa flashcard"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                    <button
+                      onClick={() => handleDeleteFlashcard(card.id, card.vietnamese_name)}
+                      className="p-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all"
+                      title="Xóa flashcard"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -457,7 +484,7 @@ export default function TeacherFlashcardManagerPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="Ví dụ: https://images.unsplash.com/photo-..."
+                    placeholder="Ví dụ: https://..."
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-mono text-[#6d3807] focus:outline-none focus:border-[#6d3807]"
