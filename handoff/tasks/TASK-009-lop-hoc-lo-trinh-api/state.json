@@ -1,17 +1,38 @@
 {
   "id": "TASK-009",
   "title": "Cài đặt lớp, mở/khoá mục lộ trình, tiến độ học sinh (lib/roadmap)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "d6ba261c-370e-4495-8598-5f7efd7d83ad",
   "history": [
     {
       "at": "2026-10-31T11:58:29",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:03:39",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:04:08",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:20:38",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:22:20",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
     "handoff/tasks/TASK-009-lop-hoc-lo-trinh-api/verify.sh",
     "vitest.config.ts"
-  ]
+  ],
+  "via": "agy"
 }
