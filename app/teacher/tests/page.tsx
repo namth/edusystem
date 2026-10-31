@@ -32,7 +32,6 @@ import {
   RefreshCw,
   ExternalLink
 } from "lucide-react";
-import { INITIAL_COURSES } from "@/lib/mock-data";
 
 interface CurriculumItem extends DndItem {
   id: string;
