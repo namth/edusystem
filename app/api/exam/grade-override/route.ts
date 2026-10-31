@@ -1,88 +1,148 @@
 import { NextResponse } from "next/server";
-import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/api-auth";
+import { queryPg } from "@/lib/db-pg";
+import {
+  type ScoringStandard,
+  aggregateTotal,
+} from "@/lib/exam-scoring";
+import {
+  ensureAttemptsSchema,
+  formatAttemptResponse,
+} from "@/lib/exam-attempts";
 
 export async function PUT(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
   if (auth.error) return auth.error;
 
-  const supabase = getServerSupabaseClient();
+  const body = await req.json().catch(() => ({}));
+  const { submissionId, section_scores, feedback } = body;
 
-  try {
-    const body = await req.json();
-    const { submissionId, questionId, overriddenScore, teacherNote, teacherId } = body;
+  if (!submissionId) {
+    return NextResponse.json(
+      { success: false, error: "Missing submissionId" },
+      { status: 400 }
+    );
+  }
 
-    if (!submissionId || !questionId || !overriddenScore) {
+  await ensureAttemptsSchema();
+
+  const subRes = await queryPg(
+    `SELECT s.*, e.created_by AS exam_created_by, c.teacher_id AS class_teacher_id
+     FROM submissions s
+     LEFT JOIN exams e ON e.id = s.exam_id
+     LEFT JOIN classes c ON c.id = s.class_ref
+     WHERE s.id = $1 LIMIT 1`,
+    [submissionId]
+  );
+
+  if (subRes.rows.length === 0) {
+    return NextResponse.json(
+      { success: false, error: "Submission not found" },
+      { status: 404 }
+    );
+  }
+
+  const sub = subRes.rows[0];
+
+  // TEACHER phải là người tạo đề hoặc giáo viên của lớp class_ref
+  if (auth.user.role === "TEACHER") {
+    const isOwner = sub.exam_created_by === auth.user.userId;
+    const isClassTeacher = sub.class_teacher_id === auth.user.userId;
+    if (!isOwner && !isClassTeacher) {
       return NextResponse.json(
-        { error: "Missing required fields: submissionId, questionId, overriddenScore" },
+        { success: false, error: "Bạn không có quyền sửa điểm bài thi này." },
+        { status: 403 }
+      );
+    }
+  }
+
+  if (
+    !section_scores ||
+    typeof section_scores !== "object" ||
+    Array.isArray(section_scores)
+  ) {
+    return NextResponse.json(
+      { success: false, error: "section_scores phải là object." },
+      { status: 400 }
+    );
+  }
+
+  const snapshot: ScoringStandard =
+    typeof sub.standard_snapshot === "string"
+      ? JSON.parse(sub.standard_snapshot)
+      : sub.standard_snapshot || {};
+  const sections = snapshot.sections || [];
+
+  for (const [skill, score] of Object.entries(section_scores)) {
+    const sec = sections.find((s) => s.skill === skill);
+    if (!sec) {
+      return NextResponse.json(
+        { success: false, error: `Kỹ năng ${skill} không có trong chuẩn chấm.` },
         { status: 400 }
       );
     }
 
-    // Load existing submission
-    const { data: sub, error: subError } = await supabase
-      .from("submissions")
-      .select("*")
-      .eq("id", submissionId)
-      .maybeSingle();
-
-    if (subError || !sub) {
-      return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+    if (
+      typeof score !== "number" ||
+      isNaN(score) ||
+      score < sec.min ||
+      score > sec.max
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Điểm phần ${skill} phải là số trong khoảng [${sec.min}, ${sec.max}].`,
+        },
+        { status: 400 }
+      );
     }
-
-    const existingReview = sub.teacher_review || {
-      overridden_scores: {},
-      teacher_note: "",
-      reviewed_by: teacherId || "teacher_01",
-      reviewed_at: new Date().toISOString(),
-    };
-
-    existingReview.overridden_scores = {
-      ...existingReview.overridden_scores,
-      [questionId]: overriddenScore,
-    };
-    if (teacherNote !== undefined) existingReview.teacher_note = teacherNote;
-    existingReview.reviewed_by = teacherId || existingReview.reviewed_by || "teacher_01";
-    existingReview.reviewed_at = new Date().toISOString();
-
-    // Prepare updated final_evaluation_details with teacher overrides merged
-    const aiDetails = sub.ai_evaluation_details || {};
-    const finalDetails = sub.final_evaluation_details || { ...aiDetails };
-
-    if (!finalDetails.aiTasks) finalDetails.aiTasks = {};
-    if (!finalDetails.aiTasks[questionId]) {
-      finalDetails.aiTasks[questionId] = { questionId, evaluation: overriddenScore };
-    } else {
-      finalDetails.aiTasks[questionId].evaluation = {
-        ...finalDetails.aiTasks[questionId].evaluation,
-        ...overriddenScore,
-        _source: "teacher",
-      };
-    }
-
-    // Save to database
-    const { error: updateError } = await supabase
-      .from("submissions")
-      .update({
-        status: "TEACHER_REVIEWED",
-        teacher_review: existingReview,
-        final_evaluation_details: finalDetails,
-      })
-      .eq("id", submissionId);
-
-    if (updateError) {
-      console.error("Failed to update teacher review:", updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      submissionId,
-      status: "TEACHER_REVIEWED",
-      teacherReview: existingReview,
-    });
-  } catch (err: any) {
-    console.error("Grade override route error:", err);
-    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 });
   }
+
+  const oldSectionScores =
+    typeof sub.section_scores === "string"
+      ? JSON.parse(sub.section_scores)
+      : sub.section_scores || {};
+  const updatedSectionScores = { ...oldSectionScores };
+
+  for (const [skill, score] of Object.entries(section_scores)) {
+    const oldEntry = updatedSectionScores[skill] || { earned: 0, max: 0 };
+    updatedSectionScores[skill] = {
+      ...oldEntry,
+      score,
+      override: true,
+    };
+  }
+
+  const scoreMap: Record<string, number | null> = {};
+  for (const [skill, entry] of Object.entries(updatedSectionScores)) {
+    scoreMap[skill] = (entry as any).score;
+  }
+  const { total, passed } = aggregateTotal(snapshot, scoreMap);
+
+  const teacherFeedback =
+    feedback !== undefined ? feedback : sub.teacher_feedback || null;
+
+  const updateRes = await queryPg(
+    `UPDATE submissions
+     SET status = 'GRADED',
+         graded_at = NOW(),
+         section_scores = $1,
+         total_score = $2,
+         passed = $3,
+         teacher_feedback = $4
+     WHERE id = $5
+     RETURNING *;`,
+    [
+      JSON.stringify(updatedSectionScores),
+      total,
+      passed,
+      teacherFeedback,
+      submissionId,
+    ]
+  );
+
+  return NextResponse.json({
+    success: true,
+    attempt: formatAttemptResponse(updateRes.rows[0]),
+  });
 }
