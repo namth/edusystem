@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "office",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["office/server.mjs"],
+      "port": 4317
+    }
+  ]
+}

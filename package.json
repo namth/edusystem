@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "office": "node office/server.mjs",
+    "office:demo": "node office/demo.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
