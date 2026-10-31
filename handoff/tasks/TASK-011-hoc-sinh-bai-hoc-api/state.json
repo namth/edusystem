@@ -1,13 +1,33 @@
 {
   "id": "TASK-011",
   "title": "API học sinh: lộ trình lớp, nội dung bài ẩn đáp án, nộp bài, chấm AI nền",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "941bd51f-3d98-4fa5-87c3-b4afb6d8a062",
   "history": [
     {
       "at": "2026-10-31T12:26:05",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:28:38",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:29:03",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:40:07",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:46:01",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -33,5 +53,6 @@
     "docs/db-migration-004-enrollments-assignments.sql",
     "docs/db-migration-006-lessons.sql",
     "handoff/tasks/TASK-011-hoc-sinh-bai-hoc-api/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
