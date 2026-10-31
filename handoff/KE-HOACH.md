@@ -76,6 +76,10 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 ### ✅ FEAT-011 Chấm đề thi phía server (`docs/features/exam-server-grading.md`, DEC-014…018)
 - TASK-018 `lib/exam-scoring.ts` + migration 009 · TASK-019 chuẩn chấm + `/admin/scoring-standards` · TASK-020 API lượt thi, chấm khi nộp, `grade-async`/`grade-override` pg, `POST /api/submissions` → 410 · TASK-021 chọn chuẩn cho đề/khóa · TASK-022 trang làm đề mới (giờ theo server, ghi âm Speaking) + xem lại — đã merge, 559 test xanh
 
+### ✅ Gỡ Supabase trình duyệt khỏi khu giáo viên
+- TASK-023 lớp học giáo viên qua API pg (chạy trên máy thợ MacBook) · TASK-024 hồ sơ (bỏ ghi mật khẩu plaintext), mua slot (giá tính ở server, `SLOT_UNIT_PRICE_VND`), trang chấm bài theo `section_scores` — đã merge, 581 test xanh
+- Chỉ còn `app/student/page.tsx` dùng Supabase trình duyệt — chờ chốt mô hình giá khóa học cho học sinh
+
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
 - `app/profile/page.tsx` → API pg
