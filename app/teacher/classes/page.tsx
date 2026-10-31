@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
 import {
   PlusCircle,
   Users,
@@ -18,6 +17,8 @@ import {
   Edit3,
   Trash2,
   Layers,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 interface ClassRoom {
@@ -52,6 +53,7 @@ export default function TeacherClassesPage() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Status Filter Tab
   const [statusTab, setStatusTab] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "UPCOMING">("ALL");
@@ -77,28 +79,16 @@ export default function TeacherClassesPage() {
     if (!user) return;
     try {
       setLoading(true);
-      // 1. Fetch Classes
-      const { data: clsData, error } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("teacher_id", user.id)
-        .order("created_at", { ascending: false });
+      setErrorMessage(null);
 
-      if (error) {
-        console.error("Classes load error:", error);
-        return;
+      const res = await fetch("/api/teacher/classes");
+      const data = await res.json();
+
+      if (!res.ok || !data.classes) {
+        throw new Error(data.error || "Không thể tải danh sách lớp học");
       }
 
-      // 2. Fetch Enrollments headcount
-      const { data: enrData } = await supabase.from("enrollments").select("*");
-      const classHeadcountMap: Record<string, number> = {};
-      if (enrData) {
-        enrData.forEach((e: any) => {
-          classHeadcountMap[e.class_id] = (classHeadcountMap[e.class_id] || 0) + 1;
-        });
-      }
-
-      const formatted: ClassRoom[] = (clsData || []).map((row: any) => {
+      const formatted: ClassRoom[] = data.classes.map((row: any) => {
         const { schedule: cleanSched, status: parsedStatus } = parseScheduleAndStatus(row.schedule);
         return {
           id: row.id,
@@ -109,13 +99,14 @@ export default function TeacherClassesPage() {
           schedule: cleanSched,
           status: parsedStatus,
           description: row.description || "Lớp luyện thi IELTS chuyên sâu target 7.0+, bổ trợ từ vựng & ngữ pháp.",
-          student_count: classHeadcountMap[row.id] || 0,
+          student_count: Number(row.student_count) || 0,
         };
       });
 
       setClasses(formatted);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setErrorMessage(e.message || "Lỗi nạp danh sách lớp học.");
     } finally {
       setLoading(false);
     }
@@ -133,40 +124,30 @@ export default function TeacherClassesPage() {
 
     setIsSubmitting(true);
     try {
-      const classId = `cls_${Date.now().toString().slice(-3)}`;
-      const code = `IELTS${Math.floor(1000 + Math.random() * 9000)}`;
       const finalSchedule = encodeScheduleWithStatus(schedule.trim() || "Thứ 2 - Thứ 4 (18:00 - 20:00)", createStatus);
 
-      const { error } = await supabase.from("classes").insert([
-        {
-          id: classId,
+      const res = await fetch("/api/teacher/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: className.trim(),
-          code,
-          teacher_id: user.id,
-          max_slots: 30,
           schedule: finalSchedule,
-        },
-      ]);
+          max_slots: 30,
+        }),
+      });
 
-      if (error) {
-        console.error("Class creation error:", error.message || error);
-        alert("Lỗi khi tạo lớp học: " + (error.message || "Không thể lưu vào CSDL"));
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi tạo lớp học: " + (data.error || "Không thể lưu vào CSDL"));
         return;
-      }
-
-      // Sync Neo4j teacher manages class
-      try {
-        const { syncTeacherManagesClass } = await import("@/lib/neo4j");
-        await syncTeacherManagesClass(user.id, classId);
-      } catch (err) {
-        console.warn("Neo4j relationship sync warning:", err);
       }
 
       setClassName("");
       setShowCreateModal(false);
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi tạo lớp học: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -190,25 +171,27 @@ export default function TeacherClassesPage() {
     try {
       const finalSchedule = encodeScheduleWithStatus(editSchedule.trim(), editStatus);
 
-      const { error } = await supabase
-        .from("classes")
-        .update({
+      const res = await fetch(`/api/teacher/classes/${editingClass.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: editName.trim(),
-          code: editCode.trim(),
           schedule: finalSchedule,
           max_slots: Number(editMaxSlots) || 30,
-        })
-        .eq("id", editingClass.id);
+        }),
+      });
 
-      if (error) {
-        alert("Lỗi cập nhật lớp học: " + error.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi cập nhật lớp học: " + (data.error || "Không thể cập nhật"));
         return;
       }
 
       setShowEditModal(false);
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi cập nhật lớp: " + err.message);
     } finally {
       setIsEditingSubmitting(false);
     }
@@ -218,14 +201,20 @@ export default function TeacherClassesPage() {
     if (!confirm(`Bạn có chắc chắn muốn xóa lớp học "${className}" không?\nLưu ý: Thao tác này sẽ giải tán lớp học khỏi hệ thống.`)) return;
 
     try {
-      const { error } = await supabase.from("classes").delete().eq("id", classId);
-      if (error) {
-        alert("Lỗi xóa lớp học: " + error.message);
+      const res = await fetch(`/api/teacher/classes/${classId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi xóa lớp học: " + (data.error || "Không thể xóa lớp học"));
         return;
       }
+
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi xóa lớp: " + err.message);
     }
   };
 
@@ -260,7 +249,7 @@ export default function TeacherClassesPage() {
           <div>
             <div className="flex items-center space-x-2 text-xs text-[#6d3807] uppercase tracking-wider font-bold mb-1">
               <BookOpen className="w-4 h-4 text-[#6d3807]" />
-              <span>Teacher Portal &bull; Classrooms & Lifecycle Management</span>
+              <span>Teacher Portal &bull; Classrooms &amp; Lifecycle Management</span>
             </div>
             <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
               Quản Lý Lớp Học &amp; Danh Sách Học Viên
@@ -304,11 +293,28 @@ export default function TeacherClassesPage() {
           ))}
         </div>
 
+        {/* Error Notification with Retry */}
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{errorMessage}</span>
+            </div>
+            <button
+              onClick={fetchClasses}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Thử lại</span>
+            </button>
+          </div>
+        )}
+
         {/* Classes Grid */}
         {loading ? (
           <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
             <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
-            <span>Đang nạp danh sách lớp học từ PostgreSQL...</span>
+            <span>Đang nạp danh sách lớp học từ API PostgreSQL...</span>
           </div>
         ) : filteredClasses.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
@@ -502,14 +508,13 @@ export default function TeacherClassesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
-                      Mã Lớp Học (*)
+                      Mã Lớp Học
                     </label>
                     <input
                       type="text"
-                      required
+                      disabled
                       value={editCode}
-                      onChange={(e) => setEditCode(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-gray-100 border border-[#d8c2b6] rounded-xl text-xs font-mono font-bold text-gray-500 cursor-not-allowed"
                     />
                   </div>
 
@@ -521,7 +526,7 @@ export default function TeacherClassesPage() {
                       type="number"
                       required
                       min="1"
-                      max="100"
+                      max="500"
                       value={editMaxSlots}
                       onChange={(e) => setEditMaxSlots(Number(e.target.value))}
                       className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
