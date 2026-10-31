@@ -1,13 +1,33 @@
 {
   "id": "TASK-016",
   "title": "Xem trước bài học như học sinh cho giáo viên (SCR-L3)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "c1ac1a12-ecc0-4ff3-9c06-290a3f9b1f09",
   "history": [
     {
       "at": "2026-10-31T13:16:27",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T13:16:54",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T13:17:15",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T13:27:19",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T13:29:32",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -36,5 +56,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-016-xem-truoc-bai-hoc/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
