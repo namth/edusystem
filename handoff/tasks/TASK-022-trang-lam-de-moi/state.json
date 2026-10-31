@@ -1,13 +1,33 @@
 {
   "id": "TASK-022",
   "title": "Trang làm đề mới (giờ theo server, LessonPlayer + ghi âm Speaking) và trang xem lại",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "f28a54a9-aafd-4367-8f74-d32f1feb79a4",
   "history": [
     {
       "at": "2026-10-31T14:53:55",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:54:47",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:55:17",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T15:22:12",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T15:31:13",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -43,5 +63,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-022-trang-lam-de-moi/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { emptyAnswerFor, setAnswerPart } from "@/lib/lesson-player";
+import SpeakingRecorder from "./SpeakingRecorder";
 import {
   Volume2,
   CheckCircle2,
@@ -45,6 +46,7 @@ export interface LessonPlayerProps {
   onChange: (questionId: string, answer: unknown) => void;
   results?: GradeResult[] | null;
   disabled?: boolean;
+  allowSpeaking?: boolean;
 }
 
 export default function LessonPlayer({
@@ -54,6 +56,7 @@ export default function LessonPlayer({
   onChange,
   results,
   disabled = false,
+  allowSpeaking = false,
 }: LessonPlayerProps) {
   const isReadonly = Boolean(results || disabled);
 
@@ -1059,6 +1062,52 @@ export default function LessonPlayer({
                 );
               })()}
 
+              {/* Speaking Questions */}
+              {allowSpeaking && category.startsWith("SPEAKING_") && (
+                <div className="space-y-4">
+                  <SpeakingRecorder
+                    value={typeof answers[q.id] === "string" ? (answers[q.id] as string) : ""}
+                    onChange={(url) => onChange(q.id, url)}
+                    disabled={isReadonly}
+                    prepSeconds={content.prep_time_seconds}
+                    speakingSeconds={content.speaking_time_seconds}
+                    readAloudText={content.read_aloud_text}
+                    topicHints={content.topic_hints}
+                  />
+
+                  {/* Ở chế độ kết quả: hiện audio đã nộp + điểm AI (items[0].score) nếu có */}
+                  {qResult && (
+                    <div className="rounded-xl border border-[#ede0d9] bg-[#fff8f5] p-3 space-y-2">
+                      <div className="text-xs font-bold text-[#6d3807]">Bản ghi âm bài làm:</div>
+                      {Boolean(answers[q.id] || qResult.items?.[0]?.given) ? (
+                        <audio
+                          controls
+                          src={String(answers[q.id] || qResult.items?.[0]?.given)}
+                          className="w-full h-8"
+                        />
+                      ) : (
+                        <p className="text-xs text-[#857469] italic">Không có bản ghi âm.</p>
+                      )}
+                      {qResult.items?.[0] && (
+                        <div className="text-xs font-bold mt-1">
+                          {(qResult.items[0] as any).score !== undefined ? (
+                            <span className="text-purple-700">
+                              Điểm AI: {(qResult.items[0] as any).score}
+                            </span>
+                          ) : typeof qResult.items[0].band === "number" ? (
+                            <span className="text-purple-700">
+                              Band AI: {qResult.items[0].band}/9
+                            </span>
+                          ) : (
+                            <span className="text-amber-700">AI đang chấm…</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Dạng khác không hỗ trợ */}
               {![
                 "_MC",
@@ -1074,7 +1123,7 @@ export default function LessonPlayer({
                 pattern.startsWith("_")
                   ? category.endsWith(pattern)
                   : category === pattern
-              ) && (
+              ) && !(allowSpeaking && category.startsWith("SPEAKING_")) && (
                 <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-center text-xs font-semibold text-amber-800">
                   Dạng câu hỏi chưa hỗ trợ
                 </div>
