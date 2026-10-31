@@ -8,7 +8,13 @@ Giao diện chỉ *quan sát* một file sự kiện chung, không điều khi�
 npm run office        # chỉ máy này: http://localhost:4317
 npm run office:lan    # mở cho máy khác trong LAN (cần cho Agy 2), in sẵn lệnh để chạy trên máy đó
 npm run office:demo   # kịch bản giả lặp lại, để xem khi chưa có việc thật
+npm run office:hooks  # cài hook cho mọi phiên Claude (một lần)
+npm run office:service            # chạy văn phòng nền thường trực (LaunchAgent), tự bật khi đăng nhập
+npm run office:service -- --lan   # như trên, mở cho máy khác trong LAN
 ```
+
+Dịch vụ nền chạy từ bản chép trong `~/.office-sim/app` (không phụ thuộc worktree), nhật ký ở `~/.office-sim/server.log`.
+Sửa mã xong chạy lại `npm run office:service` để cập nhật; gỡ bằng `node office/install-service.mjs --uninstall`.
 
 ## Ai làm gì trên màn hình
 

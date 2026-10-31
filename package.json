@@ -10,7 +10,8 @@
     "office": "node office/server.mjs",
     "office:demo": "node office/demo.mjs",
     "office:lan": "OFFICE_LAN=1 node office/server.mjs",
-    "office:hooks": "node office/install-hooks.mjs"
+    "office:hooks": "node office/install-hooks.mjs",
+    "office:service": "node office/install-service.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
