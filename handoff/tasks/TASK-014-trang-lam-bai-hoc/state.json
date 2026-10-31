@@ -1,13 +1,33 @@
 {
   "id": "TASK-014",
   "title": "Trang làm bài học của học sinh (LessonPlayer + kết quả + chờ AI)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "870b9c7b-90ab-4992-9e14-444a2306741b",
   "history": [
     {
       "at": "2026-10-31T12:51:32",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:53:14",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:53:37",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T13:11:29",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T13:15:03",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -34,5 +54,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-014-trang-lam-bai-hoc/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
