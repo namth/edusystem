@@ -49,13 +49,36 @@ function sortStrings(arr: string[]): string[] {
   return [...arr].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
 }
 
+export interface GradeQuestionOptions {
+  speaking?: "AI" | "UNSUPPORTED";
+}
+
 export function gradeQuestion(
   q: GradableQuestion,
   answer: unknown,
-  flashcards?: Record<string, FlashcardRow>
+  flashcards?: Record<string, FlashcardRow>,
+  options?: { speaking?: "AI" | "UNSUPPORTED" }
 ): GradeResult {
   const category = q.category || "";
   const content = q.content || {};
+
+  if (options?.speaking === "AI" && category.startsWith("SPEAKING_")) {
+    return {
+      question_id: q.id,
+      category: q.category,
+      kind: "AI",
+      earned: 0,
+      max: 1,
+      items: [
+        {
+          key: "speaking",
+          correct: false,
+          given: answer,
+          expected: null,
+        },
+      ],
+    };
+  }
 
   // 1. *_MC
   if (category.endsWith("_MC")) {
