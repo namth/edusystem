@@ -61,7 +61,10 @@ async function main() {
             try {
               const res = await fetch(`${APP_URL}/api/exam/grade-async`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-internal-token": process.env.INTERNAL_API_TOKEN || "",
+                },
                 body: JSON.stringify({ submissionId: payload.submissionId }),
               });
               const json = await res.json();

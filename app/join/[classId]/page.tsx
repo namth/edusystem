@@ -4,8 +4,6 @@ import { useState, useEffect, use } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import {
   School,
   User,
@@ -30,11 +28,11 @@ interface ClassInfo {
   id: string;
   name: string;
   code: string;
-  teacher_id: string;
-  teacher_name?: string;
-  schedule?: string;
-  max_slots?: number;
+  teacher_name?: string | null;
+  schedule?: string | null;
+  max_slots?: number | null;
   enrolled_count?: number;
+  is_enrolled?: boolean;
 }
 
 export default function JoinClassPage({ params }: { params: Promise<{ classId: string }> }) {
@@ -46,6 +44,7 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
 
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loadingClass, setLoadingClass] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"register" | "login">("register");
@@ -64,88 +63,62 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1. Fetch Class and Teacher Info
+  // 1. Fetch Class and Teacher Info via public lookup API
   useEffect(() => {
     async function loadClassData() {
       setLoadingClass(true);
+      setNotFound(false);
       try {
-        // Query by id OR code
-        let { data: classRow } = await supabase
-          .from("classes")
-          .select("*")
-          .or(`id.eq.${rawClassId},code.eq.${rawClassId}`)
-          .maybeSingle();
-
-        if (!classRow) {
-          // Fallback to first class
-          const { data: firstClass } = await supabase.from("classes").select("*").limit(1).single();
-          classRow = firstClass;
+        const res = await fetch(`/api/classes/lookup/${encodeURIComponent(rawClassId)}`);
+        if (res.status === 404) {
+          setNotFound(true);
+          setClassInfo(null);
+          return;
         }
 
-        if (classRow) {
-          // Fetch Teacher Name
-          let teacherName = "Thầy Nguyễn Văn Đức";
-          if (classRow.teacher_id) {
-            const { data: teacherRow } = await supabase
-              .from("users")
-              .select("name")
-              .eq("id", classRow.teacher_id)
-              .maybeSingle();
-            if (teacherRow?.name) teacherName = teacherRow.name;
-          }
-
-          // Count Enrollments
-          const { count } = await supabase
-            .from("enrollments")
-            .select("*", { count: "exact", head: true })
-            .eq("class_id", classRow.id);
-
-          setClassInfo({
-            ...classRow,
-            teacher_name: teacherName,
-            enrolled_count: count || 0,
-          });
-
-          // Check if current user is already enrolled
-          if (user) {
-            const { data: enr } = await supabase
-              .from("enrollments")
-              .select("id")
-              .eq("student_id", user.id)
-              .eq("class_id", classRow.id)
-              .maybeSingle();
-
-            if (enr) setIsAlreadyEnrolled(true);
-          }
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success || !json.class) {
+          setErrorMsg(json.error || "Không thể tải thông tin lớp học.");
+          setClassInfo(null);
+          return;
         }
+
+        setClassInfo(json.class);
+        setIsAlreadyEnrolled(Boolean(json.class.is_enrolled));
       } catch (err) {
         console.error("Error loading class:", err);
+        setErrorMsg("Đã xảy ra lỗi khi tải thông tin lớp học.");
       } finally {
         setLoadingClass(false);
       }
     }
 
-    loadClassData();
-  }, [rawClassId, user]);
-
-  // Helper: Enroll Student into Class & Sync Neo4j
-  const enrollStudent = async (studentId: string, targetClassId: string) => {
-    try {
-      await supabase.from("enrollments").upsert(
-        [
-          {
-            id: `enr_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            student_id: studentId,
-            class_id: targetClassId,
-            status: "APPROVED",
-          },
-        ],
-        { onConflict: "student_id,class_id" }
-      );
-      await syncStudentEnrolledInClass(studentId, targetClassId);
-    } catch (err) {
-      console.error("Enrollment error:", err);
+    if (rawClassId) {
+      loadClassData();
     }
+  }, [rawClassId]);
+
+  // Helper: Enroll Student via API
+  const enrollInClass = async (code: string) => {
+    const res = await fetch("/api/student/enroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (res.status === 409) {
+      return { success: false, error: "Lớp học đã đủ chỗ, vui lòng liên hệ giáo viên." };
+    }
+    if (res.status === 403) {
+      return { success: false, error: "Chỉ tài khoản học sinh mới tham gia lớp được." };
+    }
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error || "Lỗi ghi danh lớp học." };
+    }
+
+    return { success: true, data: json };
   };
 
   // Handle Logged-In User Join Click
@@ -154,8 +127,12 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await enrollStudent(user.id, classInfo.id);
-      router.push("/student/dashboard");
+      const res = await enrollInClass(classInfo.code);
+      if (res.success) {
+        router.push("/student/dashboard");
+      } else {
+        setErrorMsg(res.error);
+      }
     } catch (err: any) {
       setErrorMsg("Không thể tham gia lớp học. Vui lòng thử lại!");
     } finally {
@@ -178,16 +155,18 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       return;
     }
 
+    if (!classInfo) return;
+
     setIsSubmitting(true);
     try {
       const res = await register(regName, regEmail, regPassword, regPhone);
       if (res.success) {
-        // Fetch newly created user ID from current session
-        const { data: sessionRes } = await supabase.auth.getUser();
-        if (sessionRes?.user && classInfo) {
-          await enrollStudent(sessionRes.user.id, classInfo.id);
+        const enrollRes = await enrollInClass(classInfo.code);
+        if (enrollRes.success) {
+          router.push("/student/dashboard");
+        } else {
+          setErrorMsg(enrollRes.error);
         }
-        router.push("/student/dashboard");
       } else {
         setErrorMsg(res.error || "Đăng ký không thành công. Email có thể đã được sử dụng!");
       }
@@ -209,15 +188,21 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       return;
     }
 
+    if (!classInfo) return;
+
     setIsSubmitting(true);
     try {
       const res = await login(loginId, loginPassword);
-      if (res.success && res.user && classInfo) {
-        await enrollStudent(res.user.id, classInfo.id);
-        if (res.user.mustChangePassword) {
-          router.push("/change-password");
+      if (res.success && res.user) {
+        const enrollRes = await enrollInClass(classInfo.code);
+        if (enrollRes.success) {
+          if (res.user.mustChangePassword) {
+            router.push("/change-password");
+          } else {
+            router.push("/student/dashboard");
+          }
         } else {
-          router.push("/student/dashboard");
+          setErrorMsg(enrollRes.error);
         }
       } else {
         setErrorMsg(res.error || "Tên đăng nhập hoặc mật khẩu không đúng!");
@@ -235,6 +220,25 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       <div className="min-h-screen bg-[#fff8f5] flex items-center justify-center text-xs font-bold text-[#6d3807]">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         <span>Đang tải thông tin lớp học...</span>
+      </div>
+    );
+  }
+
+  if (notFound || !classInfo) {
+    return (
+      <div className="min-h-screen bg-[#fff8f5] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center border border-rose-200">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h1 className="text-xl font-bold text-[#6d3807] text-center">
+          Link mời không hợp lệ hoặc lớp không còn tồn tại.
+        </h1>
+        <Link
+          href="/student/dashboard"
+          className="px-5 py-2.5 bg-[#6d3807] text-white rounded-xl text-xs font-bold hover:bg-[#85460c] transition-all"
+        >
+          Quay lại Dashboard
+        </Link>
       </div>
     );
   }
@@ -265,10 +269,10 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#f9ebe4] border border-[#d8c2b6]/50 rounded-full text-xs font-bold text-[#6d3807]">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>MÃ LỚP: {classInfo?.code || "IELTS75K24"}</span>
+                <span>MÃ LỚP: {classInfo.code}</span>
               </div>
               <h1 className="text-3xl font-extrabold text-[#6d3807] leading-tight tracking-tight">
-                {classInfo?.name || "Lớp Học IELTS Khảo Thí Special"}
+                {classInfo.name}
               </h1>
               <p className="text-xs text-[#52443a] leading-relaxed max-w-md">
                 Đăng ký hoặc đăng nhập tài khoản học viên để tự động tham gia lớp học và mở khóa ngân hàng đề thi của giảng viên.
@@ -277,11 +281,13 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
 
             {/* Class Metadata Box */}
             <div className="p-5 bg-white/90 rounded-2xl border border-[#d8c2b6]/50 shadow-xs space-y-3">
-              <div className="flex items-center gap-3 text-xs font-bold text-[#211a16]">
-                <User className="w-4 h-4 text-[#6d3807]" />
-                <span>Giảng viên: <strong className="text-[#6d3807]">{classInfo?.teacher_name}</strong></span>
-              </div>
-              {classInfo?.schedule && (
+              {classInfo.teacher_name && (
+                <div className="flex items-center gap-3 text-xs font-bold text-[#211a16]">
+                  <User className="w-4 h-4 text-[#6d3807]" />
+                  <span>Giảng viên: <strong className="text-[#6d3807]">{classInfo.teacher_name}</strong></span>
+                </div>
+              )}
+              {classInfo.schedule && (
                 <div className="flex items-center gap-3 text-xs font-semibold text-[#52443a]">
                   <Calendar className="w-4 h-4 text-[#6d3807]" />
                   <span>Lịch học: {classInfo.schedule}</span>
@@ -289,7 +295,7 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
               )}
               <div className="flex items-center gap-3 text-xs font-semibold text-[#52443a]">
                 <Users className="w-4 h-4 text-[#6d3807]" />
-                <span>Sĩ số: {classInfo?.enrolled_count} / {classInfo?.max_slots || 35} học viên</span>
+                <span>Sĩ số: {classInfo.enrolled_count ?? 0} / {classInfo.max_slots ?? 35} học viên</span>
               </div>
             </div>
 
@@ -324,8 +330,10 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                   </div>
 
                   <div className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/60 text-left text-xs space-y-1.5">
-                    <p className="font-bold text-[#6d3807]">{classInfo?.name}</p>
-                    <p className="text-[#52443a]">Giảng viên: {classInfo?.teacher_name}</p>
+                    <p className="font-bold text-[#6d3807]">{classInfo.name}</p>
+                    {classInfo.teacher_name && (
+                      <p className="text-[#52443a]">Giảng viên: {classInfo.teacher_name}</p>
+                    )}
                   </div>
 
                   {errorMsg && (
@@ -372,7 +380,7 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       THAM GIA LỚP HỌC
                     </h2>
                     <p className="text-xs text-[#857469] mt-1">
-                      {classInfo?.name}
+                      {classInfo.name}
                     </p>
                   </div>
 

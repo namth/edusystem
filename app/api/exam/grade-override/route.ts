@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
+import { requireRole } from "@/lib/api-auth";
 
 export async function PUT(req: Request) {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+
   const supabase = getServerSupabaseClient();
 
   try {

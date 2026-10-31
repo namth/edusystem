@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { requireRole } from "@/lib/api-auth";
 
 // Helper to encode strings to Base64URL
 function base64UrlEncode(str: string): string {
@@ -91,6 +92,9 @@ function pcmToWav(pcmBuffer: Buffer, sampleRate: number = 24000): Buffer {
 }
 
 export async function GET(request: Request) {
+  const auth = await requireRole();
+  if (auth.error) return auth.error;
+
   const { searchParams } = new URL(request.url);
   const text = searchParams.get("text") || "hello";
   const gender = searchParams.get("gender") || "Female";

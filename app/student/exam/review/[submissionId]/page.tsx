@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -29,92 +28,78 @@ export default function ExamSubmissionReviewPage() {
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorStatus, setErrorStatus] = useState<403 | 404 | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let timerId: any = null;
+    let isMounted = true;
 
     const fetchReviewData = async () => {
       try {
-        // 1. Load Submission
-        let subRecord = null;
-        const { data: subData, error: subError } = await supabase
-          .from("submissions")
-          .select("*")
-          .eq("id", submissionId)
-          .maybeSingle();
+        const res = await fetch(`/api/submissions/${submissionId}`);
+        if (!isMounted) return;
 
-        if (subError) {
-          console.warn("Supabase load submission warning:", subError.message);
-        }
-
-        if (subData) {
-          subRecord = subData;
-        } else {
-          // Fallback: Fetch latest submission via /api/submissions API
-          try {
-            const apiRes = await fetch(`/api/submissions?student_id=student_01`);
-            const apiJson = await apiRes.json();
-            if (apiJson.success && Array.isArray(apiJson.data) && apiJson.data.length > 0) {
-              subRecord = apiJson.data.find((s: any) => s.id === submissionId) || apiJson.data[0];
-            }
-          } catch (e) {
-            console.warn("API fallback fetch warning:", e);
-          }
-        }
-
-        if (!subRecord) {
+        if (res.status === 403) {
+          setErrorStatus(403);
           setLoading(false);
           return;
         }
 
-        setSubmission(subRecord);
-
-        // 2. Load Exam
-        const { data: examData } = await supabase
-          .from("exams")
-          .select("*")
-          .eq("id", subData.exam_id)
-          .maybeSingle();
-
-        setExam(examData);
-
-        // 3. Load Questions
-        let questionIds: string[] = [];
-        if (examData && Array.isArray(examData.question_ids)) {
-          questionIds = examData.question_ids;
+        if (res.status === 404) {
+          setErrorStatus(404);
+          setLoading(false);
+          return;
         }
 
-        let qData: any[] = [];
-        if (questionIds.length > 0) {
-          const { data } = await supabase
-            .from("questions")
-            .select("*")
-            .in("id", questionIds);
-          if (data) qData = data;
-        } else {
-          const { data } = await supabase.from("questions").select("*");
-          if (data) qData = data;
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          setErrorMsg(errJson.error || "Lỗi tải chi tiết bài nộp.");
+          setLoading(false);
+          return;
         }
 
-        setQuestions(qData);
+        const json = await res.json();
+        if (!isMounted) return;
+
+        if (!json.success || !json.submission) {
+          setErrorMsg(json.error || "Không tìm thấy bài nộp.");
+          setLoading(false);
+          return;
+        }
+
+        setSubmission(json.submission);
+        setExam(json.exam || null);
+        setQuestions(json.questions || []);
+        setErrorStatus(null);
+        setErrorMsg(null);
 
         // If still pending or in progress, poll again in 3 seconds
-        if (subData.status === "PENDING_GRADING" || subData.status === "AI_GRADING_IN_PROGRESS") {
+        if (
+          json.submission.status === "PENDING_GRADING" ||
+          json.submission.status === "AI_GRADING_IN_PROGRESS"
+        ) {
           timerId = setTimeout(fetchReviewData, 3000);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (!isMounted) return;
         console.error("Error loading review:", err);
+        setErrorMsg(err?.message || "Đã xảy ra lỗi khi tải bài nộp.");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchReviewData();
 
     return () => {
+      isMounted = false;
       if (timerId) clearTimeout(timerId);
     };
-  }, [submissionId]);
+  }, [submissionId, retryCount]);
 
   if (loading) {
     return (
@@ -125,13 +110,42 @@ export default function ExamSubmissionReviewPage() {
     );
   }
 
-  if (!submission) {
+  if (errorStatus === 403) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Không tìm thấy thông tin bài nộp này.</p>
+        <p className="text-sm text-[#52443a]">Bạn không có quyền xem bài nộp này.</p>
         <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
           Quay lại Dashboard
         </Link>
+      </div>
+    );
+  }
+
+  if (errorStatus === 404 || (!submission && !errorMsg)) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
+        <p className="text-sm text-[#52443a]">Không tìm thấy bài nộp.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+          Quay lại Dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
+        <p className="text-sm text-rose-700 font-bold">{errorMsg}</p>
+        <button
+          onClick={() => {
+            setLoading(true);
+            setErrorMsg(null);
+            setRetryCount((c) => c + 1);
+          }}
+          className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold hover:bg-[#8a4f1e] cursor-pointer"
+        >
+          Thử lại
+        </button>
       </div>
     );
   }

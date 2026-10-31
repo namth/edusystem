@@ -27,9 +27,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Guard Student Routes
+  if (pathname.startsWith("/student")) {
+    if (!pathname.startsWith("/student/landing")) {
+      if (!userRole) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/teacher/:path*"],
+  matcher: ["/admin/:path*", "/teacher/:path*", "/student/:path*"],
 };

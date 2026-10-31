@@ -1,0 +1,7 @@
+80be2bde887c12bee0a6c71eeecee479f2613fbc577059e673ea7f55c5444018  handoff/tasks/TASK-003-api-hoc-sinh-pg/verify.sh
+e3a2736b02c6259162cc19114a39355c213aa34810c9c4d1cb0a39ac8d1de092  tests/student-api.test.ts
+c3a71e5f38301426e13dcaab082994abb016ea389e5c815a7d7887f76bf17ae7  tests/helpers/pg-fake.ts
+566be82440f180a962ffebf3df0972bdbd871eb3a7652afe6f94f1072408f3de  tests/api-auth.test.ts
+35017129fcb73b79805a7909928ce26e2d3ffbcc553e80c1a3ad42a6a24e2e6e  tests/secrets-password.test.ts
+38f6a895eb917e3efac3ee59ea682e9d4b33ef23fd16c4117cf132b573225140  vitest.config.ts
+f953f0191707640350fbcc19114db7d6ed203fb4392065d3ba2aa41f7bfa3f87  docs/db-migration-004-enrollments-assignments.sql

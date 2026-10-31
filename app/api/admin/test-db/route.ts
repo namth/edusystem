@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
+import { requireRole } from "@/lib/api-auth";
 
 export async function GET() {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
     connectionMode: "Native PostgreSQL Pool (pg)",

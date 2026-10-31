@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
+import { requireRole } from "@/lib/api-auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const { id: teacherId } = await params;
 
@@ -84,6 +88,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const { id: teacherId } = await params;
     const body = await req.json();

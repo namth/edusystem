@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { emitKafkaEvent } from "@/lib/kafka";
+import { requireRole } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+
   try {
     const { lessonId, examId, orderIndex = 1, isRequired = true, weight = 1.0 } = await req.json();
 

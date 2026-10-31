@@ -1,0 +1,7 @@
+{
+  "protected_paths": [
+    "stitch_english_mock_exam_portal/"
+  ],
+  "agy_model": null,
+  "agy_timeout": "60m"
+}

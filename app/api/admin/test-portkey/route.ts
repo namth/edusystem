@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { callPortkeyGrading } from "@/lib/portkey";
+import { requireRole } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const body = await req.json();
     const { teacherId, userPrompt, studentId, submissionId } = body;

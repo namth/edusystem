@@ -3,8 +3,14 @@ import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { evaluateSpeakingWithAudio, evaluateWritingWithRubric } from "@/lib/ai-engine";
 import { resolveRubricForExam } from "@/lib/rubric-resolver";
 import { parseFillInGaps } from "@/lib/question-content-types";
+import { requireRole, hasValidInternalToken } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
+  if (!hasValidInternalToken(req)) {
+    const auth = await requireRole(["ADMIN", "TEACHER"]);
+    if (auth.error) return auth.error;
+  }
+
   const supabase = getServerSupabaseClient();
   let subIdForError: string | null = null;
 

@@ -14,12 +14,14 @@ export function hashPassword(plainText: string): string {
 
 export function comparePassword(plainText: string, storedHash: string): boolean {
   if (!storedHash || !storedHash.includes(":")) {
-    // Legacy unhashed or plaintext fallback comparison
-    return storedHash === plainText;
+    return false;
   }
 
   try {
     const [salt, key] = storedHash.split(":");
+    if (!salt || !key) {
+      return false;
+    }
     const keyBuffer = Buffer.from(key, "hex");
     const derivedKey = crypto.scryptSync(plainText, salt, 64);
 

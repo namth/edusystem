@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
-import { comparePassword, hashPassword, setAuthCookie } from "@/lib/auth";
+import { comparePassword, setAuthCookie } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -34,25 +34,7 @@ export async function POST(req: Request) {
     const userRow = result.rows[0];
     const storedHash = userRow.password || "";
 
-    let isPasswordCorrect = false;
-
-    if (storedHash && storedHash.includes(":")) {
-      // 1. Password is already hashed with scrypt
-      isPasswordCorrect = comparePassword(cleanPass, storedHash);
-    } else {
-      // 2. Legacy row migration: verify plaintext password or default
-      if (storedHash === cleanPass || cleanPass === "123456" || !storedHash) {
-        isPasswordCorrect = true;
-        // Automatic Migration: Upgrade legacy password to scrypt hash immediately in PostgreSQL
-        try {
-          const newSecureHash = hashPassword(cleanPass || "123456");
-          await queryPg(`UPDATE users SET password = $1 WHERE id = $2;`, [newSecureHash, userRow.id]);
-          console.log(`🔒 Auto-migrated user ${userRow.id} password to salted scrypt hash.`);
-        } catch (e) {
-          console.warn("Legacy password migration warning:", e);
-        }
-      }
-    }
+    const isPasswordCorrect = comparePassword(cleanPass, storedHash);
 
     if (!isPasswordCorrect) {
       return NextResponse.json({ success: false, error: INVALID_CREDENTIALS_MSG }, { status: 401 });

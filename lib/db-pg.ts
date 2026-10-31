@@ -1,16 +1,18 @@
 import { Pool, QueryResult, QueryResultRow } from "pg";
 
-const connectionString =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:qereQScNVoecP8Kd@db.owlvfznycutvkrvgbiot.supabase.co:5432/postgres";
+const connectionString = process.env.DATABASE_URL;
 
 let pool: Pool | null = null;
 let schemaInitialized = false;
 
 export function getPgPool(): Pool {
+  const connStr = process.env.DATABASE_URL || connectionString;
+  if (!connStr) {
+    throw new Error("DATABASE_URL chưa được cấu hình.");
+  }
   if (!pool) {
     pool = new Pool({
-      connectionString,
+      connectionString: connStr,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
@@ -104,6 +106,27 @@ export async function ensureSchema() {
       UPDATE exams SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
       UPDATE curriculum_items SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
       UPDATE courses SET created_by = 'usr_teacher_01' WHERE created_by IS NULL OR created_by = '';
+
+      -- Migration 004: bảng ghi danh lớp & giao bài cho lớp
+      CREATE TABLE IF NOT EXISTS enrollments (
+        id VARCHAR(50) PRIMARY KEY,
+        student_id VARCHAR(50) NOT NULL,
+        class_id VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (student_id, class_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_enrollments_class ON enrollments (class_id);
+
+      CREATE TABLE IF NOT EXISTS class_assignments (
+        id VARCHAR(50) PRIMARY KEY,
+        class_id VARCHAR(50) NOT NULL,
+        exam_id VARCHAR(50) NOT NULL,
+        due_date TIMESTAMPTZ,
+        max_attempts INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (class_id, exam_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_class_assignments_class ON class_assignments (class_id);
     `);
     schemaInitialized = true;
   } catch (err) {

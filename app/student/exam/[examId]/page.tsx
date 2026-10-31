@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, memo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { evaluateWritingSubmission, evaluateSpeakingSubmission } from "@/lib/ai-engine";
 import { getMediaStimulusInfo, parseSentenceRewriteCue } from "@/lib/question-content-types";
 import { uploadAudioToSupabaseStorage } from "@/lib/audio-storage";
@@ -120,6 +119,8 @@ export default function ExamWorkspacePage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedSubId, setSubmittedSubId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Audio Playback Tracking State (loading / playing per button ID)
   const [audioLoadingId, setAudioLoadingId] = useState<string | null>(null);
@@ -174,127 +175,95 @@ export default function ExamWorkspacePage() {
   const recordingIntervalRef = useRef<any>(null);
 
   // ----------------------------------------------------
-  // Load Specific Exam and Its Questions from Database
+  // Load Specific Exam and Its Questions from Database via pg API
   // ----------------------------------------------------
-  useEffect(() => {
-    const fetchExamData = async () => {
-      try {
-        setLoading(true);
-        const { data: examData, error: examErr } = await supabase
-          .from("exams")
-          .select("*")
-          .eq("id", examId)
-          .maybeSingle();
+  const fetchExamData = async () => {
+    try {
+      setLoading(true);
+      setNotFound(false);
+      setLoadError(null);
 
-        if (examErr || !examData) {
-          console.error("Exam load error:", examErr);
-          setLoading(false);
-          return;
-        }
-
-        setExamTitle(examData.title || "Đề Thi Thử 4 Kỹ Năng");
-        setTimeLeft((examData.duration_minutes || 90) * 60);
-
-        const qList: QuestionItem[] = [];
-        let num = 1;
-
-        if (examData.question_ids && Array.isArray(examData.question_ids) && examData.question_ids.length > 0) {
-          const { data: qData, error: qErr } = await supabase
-            .from("questions")
-            .select("*")
-            .in("id", examData.question_ids);
-
-          if (!qErr && qData && qData.length > 0) {
-            const qMap = new Map(qData.map((q: any) => [q.id, q]));
-            examData.question_ids.forEach((id: string) => {
-              const qRow = qMap.get(id);
-              if (qRow) {
-                const fcIds = qRow.flashcard_ids || qRow.content?.flashcard_ids || qRow.content?.flashcardIds || [];
-                qList.push({
-                  id: qRow.id,
-                  number: num++,
-                  skill: qRow.skill,
-                  category: qRow.category,
-                  prompt: qRow.prompt || "",
-                  stimulus_text: qRow.stimulus_text || "",
-                  stimulus_audio_url: qRow.stimulus_audio_url || "",
-                  flashcard_ids: fcIds,
-                  content: { ...qRow.content, flashcard_ids: fcIds },
-                  options: qRow.options || qRow.content?.options || [],
-                  passage: qRow.stimulus_text || "",
-                });
-              }
-            });
-          }
-        }
-
-        if (qList.length === 0) {
-          const { data: qData } = await supabase.from("questions").select("*").order("id", { ascending: true });
-          if (qData && qData.length > 0) {
-            qData.forEach((qRow: any) => {
-              const fcIds = qRow.flashcard_ids || qRow.content?.flashcard_ids || qRow.content?.flashcardIds || [];
-              qList.push({
-                id: qRow.id,
-                number: num++,
-                skill: qRow.skill,
-                category: qRow.category,
-                prompt: qRow.prompt || "",
-                stimulus_text: qRow.stimulus_text || "",
-                stimulus_audio_url: qRow.stimulus_audio_url || "",
-                flashcard_ids: fcIds,
-                content: { ...qRow.content, flashcard_ids: fcIds },
-                options: qRow.options || qRow.content?.options || [],
-                passage: qRow.stimulus_text || "",
-              });
-            });
-          }
-        }
-
-        // Resolve Flashcards for any Flashcard questions from 'flashcards' table
-        const allFcIds = new Set<string>();
-        qList.forEach((q) => {
-          if (q.category && q.category.includes("FLASHCARD")) {
-            const ids: string[] = (q as any).flashcard_ids || q.content?.flashcard_ids || q.content?.flashcardIds || [];
-            ids.forEach((id: string) => { if (id) allFcIds.add(id); });
-          }
-        });
-
-        if (allFcIds.size > 0) {
-          const { data: fcRows } = await supabase.from("flashcards").select("*").in("id", Array.from(allFcIds));
-          if (fcRows && fcRows.length > 0) {
-            const fcMap = new Map(fcRows.map((f: any) => [f.id, f]));
-            qList.forEach((q) => {
-              if (q.category && q.category.includes("FLASHCARD")) {
-                const ids: string[] = (q as any).flashcard_ids || q.content?.flashcard_ids || q.content?.flashcardIds || [];
-                const resolvedCards = ids.map((id: string) => {
-                  const row = fcMap.get(id);
-                  if (!row) return null;
-                  return {
-                    id: row.id,
-                    vietnamese_name: row.vietnamese_name,
-                    correct_english_word: row.correct_english_word,
-                    options: row.options || [],
-                    image_url: row.image_url,
-                    audio_url: row.audio_url,
-                  };
-                }).filter(Boolean);
-
-                if (resolvedCards.length > 0) {
-                  q.content = { ...q.content, flashcard_ids: ids, flashcards_resolved: resolvedCards };
-                }
-              }
-            });
-          }
-        }
-
-        setQuestions(qList);
-      } catch (err) {
-        console.error("Exam load exception:", err);
-      } finally {
+      const res = await fetch(`/api/exams/${examId}/content`);
+      if (res.status === 404) {
+        setNotFound(true);
         setLoading(false);
+        return;
       }
-    };
 
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        setLoadError(errJson.error || "Lỗi tải đề thi. Vui lòng thử lại.");
+        setLoading(false);
+        return;
+      }
+
+      const json = await res.json();
+      if (!json.success || !json.exam) {
+        setLoadError(json.error || "Không thể nạp dữ liệu đề thi.");
+        setLoading(false);
+        return;
+      }
+
+      const examData = json.exam;
+      setExamTitle(examData.title || "Đề Thi Thử 4 Kỹ Năng");
+      setTimeLeft((examData.duration_minutes || 90) * 60);
+
+      const qList: QuestionItem[] = [];
+      let num = 1;
+
+      const rawQuestions: any[] = json.questions || [];
+      const fcMap = new Map<string, any>((json.flashcards || []).map((f: any) => [f.id, f]));
+
+      rawQuestions.forEach((qRow: any) => {
+        const fcIds = qRow.flashcard_ids || qRow.content?.flashcard_ids || qRow.content?.flashcardIds || [];
+        const contentObj = { ...(qRow.content || {}), flashcard_ids: fcIds };
+
+        if (qRow.category && qRow.category.includes("FLASHCARD")) {
+          const resolvedCards = fcIds
+            .map((id: string) => {
+              const row = fcMap.get(id);
+              if (!row) return null;
+              return {
+                id: row.id,
+                vietnamese_name: row.vietnamese_name,
+                correct_english_word: row.correct_english_word,
+                options: row.options || [],
+                image_url: row.image_url,
+                audio_url: row.audio_url,
+              };
+            })
+            .filter(Boolean);
+
+          if (resolvedCards.length > 0) {
+            contentObj.flashcards_resolved = resolvedCards;
+          }
+        }
+
+        qList.push({
+          id: qRow.id,
+          number: num++,
+          skill: qRow.skill,
+          category: qRow.category,
+          prompt: qRow.prompt || "",
+          stimulus_text: qRow.stimulus_text || "",
+          stimulus_audio_url: qRow.stimulus_audio_url || "",
+          flashcard_ids: fcIds,
+          content: contentObj,
+          options: qRow.options || qRow.content?.options || [],
+          passage: qRow.stimulus_text || "",
+        });
+      });
+
+      setQuestions(qList);
+    } catch (err: any) {
+      console.error("Exam load exception:", err);
+      setLoadError(err?.message || "Đã xảy ra lỗi khi nạp đề thi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (examId) fetchExamData();
   }, [examId]);
 
@@ -895,7 +864,6 @@ export default function ExamWorkspacePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          student_id: user.id || "student_01",
           exam_id: examId,
           answers: finalAnswers,
           writing_essay: writingEssay,
@@ -933,10 +901,35 @@ export default function ExamWorkspacePage() {
     );
   }
 
+  if (notFound) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
+        <p className="text-sm text-[#52443a]">Không tìm thấy đề thi.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+          Quay lại Dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
+        <p className="text-sm text-rose-700 font-bold">{loadError}</p>
+        <button
+          onClick={fetchExamData}
+          className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold hover:bg-[#8a4f1e] cursor-pointer"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Không tìm thấy bài thi hoặc đề thi chưa được nạp.</p>
+        <p className="text-sm text-[#52443a]">Đề thi này chưa có câu hỏi.</p>
         <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
           Quay lại Dashboard
         </Link>

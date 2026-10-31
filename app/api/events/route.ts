@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { pushRedisStreamEvent } from "@/lib/redis-queue";
+import { requireRole } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+
   try {
     const body = await req.json();
     const { streamKey, eventType, payload } = body;

@@ -5,15 +5,19 @@ export interface TokenPayload {
   exp?: number;
 }
 
-const JWT_SECRET_STRING =
-  process.env.JWT_SECRET || "edutest_pro_super_secret_jwt_key_2026_change_in_production_32chars!";
-
-const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET_STRING);
+function getJwtSecretBytes(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("JWT_SECRET chưa được cấu hình hoặc ngắn hơn 32 ký tự.");
+  }
+  return new TextEncoder().encode(secret);
+}
 
 async function getHmacKey(): Promise<CryptoKey> {
+  const secretBytes = getJwtSecretBytes();
   return await crypto.subtle.importKey(
     "raw",
-    JWT_SECRET_BYTES,
+    secretBytes as unknown as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"]

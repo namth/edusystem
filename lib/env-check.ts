@@ -4,6 +4,8 @@ export function validateEnvironmentVars() {
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "PORTKEY_API_KEY",
+    "JWT_SECRET",
+    "DATABASE_URL",
   ];
 
   const missing: string[] = [];

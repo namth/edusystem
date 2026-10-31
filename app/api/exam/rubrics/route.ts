@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
 import { ALL_OFFICIAL_STANDARDS_RUBRICS } from "@/lib/rubric-resolver";
+import { requireRole } from "@/lib/api-auth";
 
 // Helper to deduce framework and language safely
 function inferFrameworkAndLanguage(id: string, name: string) {
@@ -35,6 +36,9 @@ function inferFrameworkAndLanguage(id: string, name: string) {
 
 // GET: Fetch all scoring rubrics from Supabase DB
 export async function GET() {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+
   const supabase = getServerSupabaseClient();
 
   try {
@@ -67,6 +71,9 @@ export async function GET() {
 
 // POST: Create a new scoring rubric in Supabase DB
 export async function POST(request: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   const supabase = getServerSupabaseClient();
 
   try {
@@ -128,6 +135,9 @@ export async function POST(request: Request) {
 
 // PUT: Update an existing scoring rubric in Supabase DB
 export async function PUT(request: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   const supabase = getServerSupabaseClient();
 
   try {
@@ -185,6 +195,9 @@ export async function PUT(request: Request) {
 
 // DELETE: Delete a scoring rubric by ID
 export async function DELETE(request: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   const supabase = getServerSupabaseClient();
 
   try {

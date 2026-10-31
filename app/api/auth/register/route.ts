@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       await queryPg(
         `INSERT INTO users (id, name, email, password, role, phone, target_band, created_at)
          VALUES ($1, $2, $3, $4, 'STUDENT', $5, 'IELTS 6.5', NOW());`,
-        [newUserId, nameToUse, emailToUse, hashedPassword, phone?.trim() || "0912345678"]
+        [newUserId, nameToUse, emailToUse, hashedPassword, phone?.trim() || null]
       );
     } catch (dbErr: any) {
       if (dbErr.code === "23505" || dbErr.message?.includes("unique constraint")) {
