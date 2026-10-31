@@ -25,7 +25,9 @@ import {
   Trash2,
   Volume2,
   Send,
+  Route,
 } from "lucide-react";
+import TeacherClassRoadmap from "@/components/class-roadmap/TeacherClassRoadmap";
 
 interface ClassDetail {
   id: string;
@@ -63,7 +65,7 @@ export default function TeacherClassDetailPage() {
   const classId = (params?.classId || "cls_101") as string;
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"gradebook" | "students">("gradebook");
+  const [activeTab, setActiveTab] = useState<"gradebook" | "students" | "roadmap">("gradebook");
   const [cls, setCls] = useState<ClassDetail | null>(null);
   const [students, setStudents] = useState<StudentInClass[]>([]);
   const [assignedExams, setAssignedExams] = useState<AssignedExamItem[]>([]);
@@ -509,6 +511,18 @@ export default function TeacherClassDetailPage() {
             <Users className="w-4 h-4" />
             <span>2. Danh Sách Học Viên Trong Lớp ({students.length})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("roadmap")}
+            className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeTab === "roadmap"
+                ? "bg-[#6d3807] text-white shadow-sm"
+                : "bg-white text-[#52443a] hover:bg-[#fff8f5] border-t border-x border-[#d8c2b6]"
+            }`}
+          >
+            <Route className="w-4 h-4" />
+            <span>3. Lộ trình &amp; Mở bài</span>
+          </button>
         </div>
 
         {/* TAB 1: GRADEBOOK MATRIX WITH EXAM ACTION CONTROLS */}
@@ -698,6 +712,11 @@ export default function TeacherClassDetailPage() {
               </table>
             </div>
           </div>
+        )}
+
+        {/* TAB 3: ROADMAP & UNLOCKS */}
+        {activeTab === "roadmap" && (
+          <TeacherClassRoadmap classId={classId} />
         )}
 
         {/* Modal 1: Assign Exam to Class */}

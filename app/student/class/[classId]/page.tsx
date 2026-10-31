@@ -16,7 +16,9 @@ import {
   Sparkles,
   Layers,
   Eye,
+  Route,
 } from "lucide-react";
+import StudentRoadmap from "@/components/class-roadmap/StudentRoadmap";
 
 interface UserClass {
   id: string;
@@ -59,7 +61,7 @@ export default function StudentClassDetailPage() {
   const params = useParams();
   const classId = (params?.classId || "") as string;
 
-  const [activeTab, setActiveTab] = useState<"pending" | "graded" | "practice">("pending");
+  const [activeTab, setActiveTab] = useState<"roadmap" | "pending" | "graded" | "practice">("roadmap");
   const [classDetail, setClassDetail] = useState<UserClass | null>(null);
   const [assignedExams, setAssignedExams] = useState<AssignedExam[]>([]);
   const [gradedSubmissions, setGradedSubmissions] = useState<GradedSubmission[]>([]);
@@ -259,8 +261,20 @@ export default function StudentClassDetailPage() {
           </div>
         </div>
 
-        {/* Modern LMS 3 Tabs Navigation */}
+        {/* Modern LMS Tabs Navigation */}
         <div className="flex border-b border-[#d8c2b6] space-x-2">
+          <button
+            onClick={() => setActiveTab("roadmap")}
+            className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeTab === "roadmap"
+                ? "bg-[#6d3807] text-white shadow-sm"
+                : "bg-white text-[#52443a] hover:bg-[#fff8f5] border-t border-x border-[#d8c2b6]"
+            }`}
+          >
+            <Route className="w-4 h-4" />
+            <span>Lộ trình</span>
+          </button>
+
           <button
             onClick={() => setActiveTab("pending")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
@@ -297,6 +311,11 @@ export default function StudentClassDetailPage() {
             <span>3. Kho Đề Ôn Luyện Tự Do ({practiceExams.length})</span>
           </button>
         </div>
+
+        {/* TAB 0: ROADMAP */}
+        {activeTab === "roadmap" && (
+          <StudentRoadmap classId={classId} />
+        )}
 
         {/* TAB 1: PENDING ASSIGNMENTS */}
         {activeTab === "pending" && (
