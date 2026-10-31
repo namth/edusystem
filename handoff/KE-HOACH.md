@@ -68,9 +68,9 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ TASK-007 migration 006 + `lib/grading.ts` (chấm khách quan server, ẩn đáp án)
 - TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id` (đang chạy, worktree riêng)
 - TASK-009 API cài đặt lớp, mở/khoá, tiến độ, `lib/roadmap.ts`
-- ✅ TASK-010, TASK-011, TASK-012 đã merge
-- TASK-013 UI Kho bài học + soạn bài + bộ chọn trong lộ trình (đang chạy, tài khoản 2)
-- TASK-014 UI trang làm bài học + xem trước (chờ TASK-011)
+- ✅ TASK-010 → TASK-014 đã merge (Kho bài học, lộ trình lớp, trang làm bài học)
+- TASK-015 API flashcard + upload qua server, gỡ Supabase trình duyệt (đang chạy, tài khoản 2)
+- TASK-016 xem trước bài học cho giáo viên (đang chạy, tài khoản 1)
 
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
