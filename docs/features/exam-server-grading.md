@@ -86,5 +86,5 @@ TC-E01 điểm phần tuyến tính & bảng tra (kể cả đề ngắn quy v�
 | TASK-018 | Migration 009 vào `ensureSchema`; `lib/exam-scoring.ts` (điểm phần, tổng, làm tròn); `gradeQuestion` thêm tuỳ chọn chấm Speaking bằng AI; `lib/lesson-ai-grading.ts` hỗ trợ Speaking | — |
 | TASK-019 | API chuẩn chấm + trang admin SCR-E1 + menu; `lib/rubric-resolver.ts` bỏ Supabase trình duyệt (dùng `queryPg`) | — (song song TASK-018) |
 | TASK-020 | API lượt thi học sinh, chấm khi nộp, `grade-async` + `grade-override` bằng pg, `/api/exams/[id]/content` ẩn đáp án, `POST /api/submissions` → 410 | TASK-018 |
-| TASK-021 | Trang làm đề SCR-E4 dùng `LessonPlayer` + ghi âm Speaking; trang xem lại SCR-E5 | TASK-020 (hợp đồng API) |
-| TASK-022 | Chọn chuẩn khi soạn đề (SCR-E2) + chuẩn mặc định khóa (SCR-E3), API đề/khóa nhận trường mới | TASK-019 |
+| TASK-021 | Chọn chuẩn khi soạn đề (SCR-E2) + chuẩn mặc định khóa (SCR-E3), API đề/khóa nhận trường mới | TASK-019 |
+| TASK-022 | Trang làm đề SCR-E4 dùng `LessonPlayer` + ghi âm Speaking; trang xem lại SCR-E5 | TASK-020 (hợp đồng API) |
