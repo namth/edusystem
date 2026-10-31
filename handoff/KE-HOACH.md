@@ -79,7 +79,7 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 ### ✅ Gỡ Supabase trình duyệt khỏi khu giáo viên
 - TASK-023 lớp học giáo viên qua API pg (chạy trên máy thợ MacBook) · TASK-024 hồ sơ (bỏ ghi mật khẩu plaintext), mua slot (giá tính ở server, `SLOT_UNIT_PRICE_VND`), trang chấm bài theo `section_scores` — đã merge, 581 test xanh
 - ✅ TASK-025 trang chủ học sinh (DEC-019 không bán khóa học), TASK-026 rubric bằng pg + xoá route chết; đã xoá `lib/supabase.ts`, `lib/mock-data.ts`, `lib/audio-storage.ts`, `lib/seed.ts` — không còn truy cập DB từ trình duyệt (585 test xanh)
-- **Tiếp theo: deploy** (`scripts/deploy.sh`, cần Docker Desktop; thêm `SLOT_UNIT_PRICE_VND` vào `.env` server)
+- ✅ Deploy 31/10/2026 23:23 (build local, `scripts/deploy.sh`): migration 006–009 đã áp trên DB server, 4 chuẩn chấm đã seed. Còn thiếu `SLOT_UNIT_PRICE_VND` trong `.env` server (giá slot đang = 0)
 
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
