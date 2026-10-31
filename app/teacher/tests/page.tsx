@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { isNoopGap, computeDrop, type DndItem } from "@/lib/curriculum-dnd";
 import { 
   PlusCircle, 
