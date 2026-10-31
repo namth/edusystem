@@ -5,6 +5,7 @@ import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { GraduationCap, Edit3, BookOpen, Loader2, CheckCircle2, ArrowLeft, FileText, X, Clock, AlertCircle } from "lucide-react";
+import { submissionScore, formatScore, SubmissionScoreResult } from "@/lib/score-display";
 
 interface StudentDetail {
   id: string;
@@ -25,7 +26,7 @@ interface EnrolledClass {
 interface SubmissionItem {
   id: string;
   exam_title: string;
-  overall_score: number;
+  scoreInfo: SubmissionScoreResult;
   submitted_at: string;
   status: string;
 }
@@ -111,7 +112,7 @@ export default function AdminStudentDetailPage() {
         (dataUser.submissions || []).map((s: any) => ({
           id: s.id,
           exam_title: s.exam_title || s.title || "Đề thi IELTS Mock Test",
-          overall_score: Number(s.final_score ?? s.ai_score ?? 0),
+          scoreInfo: submissionScore(s),
           submitted_at: new Date(s.submitted_at || s.created_at || Date.now()).toLocaleDateString("vi-VN"),
           status: s.status || "TEACHER_VERIFIED",
         }))
@@ -344,21 +345,35 @@ export default function AdminStudentDetailPage() {
                 {submissions.length === 0 ? (
                   <p className="text-xs text-[#52443a] italic p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6]">Học viên chưa nộp bài thi nào.</p>
                 ) : (
-                  submissions.map((sub) => (
-                    <div key={sub.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-white flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-[#211a16]">{sub.exam_title}</h3>
-                        <p className="text-xs text-[#857469] flex items-center mt-1">
-                          <Clock className="w-3.5 h-3.5 mr-1" /> Nộp bài: {sub.submitted_at}
-                        </p>
-                      </div>
+                  submissions.map((sub) => {
+                    const formatted = formatScore(sub.scoreInfo);
+                    const scoreDisplay =
+                      sub.scoreInfo.value != null
+                        ? sub.scoreInfo.standard_name
+                          ? `${formatted} (${sub.scoreInfo.standard_name})`
+                          : formatted
+                        : sub.scoreInfo.status === "GRADING"
+                        ? "Đang chấm"
+                        : sub.scoreInfo.status === "NEEDS_REVIEW"
+                        ? "Chờ giáo viên chấm"
+                        : "Chưa chấm";
 
-                      <div className="text-right">
-                        <span className="text-xs text-[#52443a] block">Điểm số:</span>
-                        <span className="text-xl font-bold text-[#6d3807]">{sub.overall_score} / 10</span>
+                    return (
+                      <div key={sub.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-white flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-bold text-[#211a16]">{sub.exam_title}</h3>
+                          <p className="text-xs text-[#857469] flex items-center mt-1">
+                            <Clock className="w-3.5 h-3.5 mr-1" /> Nộp bài: {sub.submitted_at}
+                          </p>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xs text-[#52443a] block">Điểm số:</span>
+                          <span className="text-xl font-bold text-[#6d3807]">{scoreDisplay}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
