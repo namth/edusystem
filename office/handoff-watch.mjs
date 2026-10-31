@@ -51,17 +51,27 @@ function isRecent(state) {
   return Number.isFinite(at) && Date.now() - at < RECENT_MS;
 }
 
+// Trạng thái mà nhân sự còn đang làm task (sửa file lúc này mới là "tự làm").
+const ACTIVE = new Set(['assigned', 'in_progress', 'changes_requested']);
+
+// Cùng một task có thể nằm ở nhiều nơi (worktree agy, worktree điều phối, bản chép cũ trên nhánh khác):
+// bản nào có lịch sử dài hơn là mới hơn, bản ngắn hơn thì bỏ qua.
 function createTracker({ taskInfo, emit }) {
-  const lastStatus = new Map();
-  return (state, owner, reviewText) => {
+  const known = new Map(); // id → { status, steps }
+  const see = (state, owner, reviewText) => {
     if (!state?.id) return;
-    const prev = lastStatus.get(state.id);
-    if (prev === state.status) return;
-    lastStatus.set(state.id, state.status);
-    if (prev === undefined && !isRecent(state)) return;
+    const steps = state.steps ?? state.history?.length ?? 0;
+    const prev = known.get(state.id);
+    if (prev && (steps < prev.steps || prev.status === state.status)) return;
+    known.set(state.id, { status: state.status, steps });
+    // Lần đầu thấy: chỉ báo nếu vừa đổi gần đây, hoặc văn phòng đã biết task này mà lỡ mất bước
+    // (vd duyệt rồi merge ngay, worktree bị xoá trước lần quét) — để không phát lại cả lịch sử cũ.
+    if (!prev && !isRecent(state) && !taskInfo(state.id)) return;
     const ev = statusEvent(state.status, owner, state, reviewText);
     if (ev && taskInfo(state.id)?.last !== ev.type) emit(ev); // nguồn khác đã báo cùng bước này thì bỏ qua
   };
+  see.active = (id) => ACTIVE.has(known.get(id)?.status);
+  return see;
 }
 
 export function mainRepoRoot(fromDir) {
@@ -78,11 +88,12 @@ export function mainRepoRoot(fromDir) {
 // Worktree agy chỉ tin state.json của chính task nó (các task khác trong đó là bản chép cũ từ nhánh gốc).
 const ownTask = (dir) => (n) => /^TASK-\d+$/i.test(path.basename(dir)) ? n.toUpperCase().startsWith(path.basename(dir).toUpperCase() + '-') : true;
 
-/** Máy này: repo chính + worktree agy. */
+/** Máy này: mọi worktree của repo (gồm worktree điều phối nơi task được merge về) + worktree agy. */
 export function watchLocal({ mainRoot, worktreeDir, agent, taskInfo, emit }) {
   const see = createTracker({ taskInfo, emit });
   const mtimes = new Map();
   const fileWatchers = new Map();
+  let repoRoots = [mainRoot];
 
   const worktrees = () => {
     try {
@@ -95,12 +106,21 @@ export function watchLocal({ mainRoot, worktreeDir, agent, taskInfo, emit }) {
     }
   };
 
+  function syncRepoRoots() {
+    execFile('git', ['-C', mainRoot, 'worktree', 'list', '--porcelain'], (err, stdout) => {
+      if (err) return;
+      const roots = stdout.split('\n').filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9));
+      repoRoots = roots.filter((r) => !r.startsWith(worktreeDir + path.sep)); // worktree agy quét riêng bên dưới
+    });
+  }
+
   function scan() {
-    for (const root of [mainRoot, ...worktrees()]) {
+    const agyRoots = worktrees();
+    for (const root of [...repoRoots, ...agyRoots]) {
       const tasksDir = path.join(root, 'handoff', 'tasks');
       let names;
       try {
-        names = fs.readdirSync(tasksDir).filter(root === mainRoot ? () => true : ownTask(root));
+        names = fs.readdirSync(tasksDir).filter(agyRoots.includes(root) ? ownTask(root) : () => true);
       } catch {
         continue;
       }
@@ -134,6 +154,7 @@ export function watchLocal({ mainRoot, worktreeDir, agent, taskInfo, emit }) {
       try {
         entry.watcher = fs.watch(wt, { recursive: true }, (_, name) => {
           if (!name || IGNORED.test(name)) return;
+          if (!see.active(task)) return; // đã nộp/duyệt: file đổi là do kiểm tra, commit, merge — không phải nhân sự làm
           const t = Date.now();
           if (t - entry.lastAt < 4000) return; // tối đa một sự kiện / 4 giây / worktree
           entry.lastAt = t;
@@ -146,10 +167,14 @@ export function watchLocal({ mainRoot, worktreeDir, agent, taskInfo, emit }) {
     }
   }
 
+  syncRepoRoots();
   scan();
   syncFileWatchers();
   setInterval(scan, 2000);
-  setInterval(syncFileWatchers, 10000);
+  setInterval(() => {
+    syncRepoRoots();
+    syncFileWatchers();
+  }, 10000);
 }
 
 // Chạy trên máy thợ qua `ssh … python3 -`: in một JSON gồm tên máy, state.json của từng worktree và file vừa sửa.
@@ -169,7 +194,8 @@ for wt in sorted(glob.glob(os.path.join(base, "*"))):
         if s.get("status") == "changes_requested" and os.path.exists(rv):
             review = open(rv, encoding="utf-8").read()[:2000]
         out["tasks"].append({"id": s.get("id"), "title": s.get("title"), "status": s.get("status"),
-                             "history": (s.get("history") or [])[-1:], "review": review})
+                             "history": (s.get("history") or [])[-1:], "steps": len(s.get("history") or []),
+                             "review": review})
     try:
         st = subprocess.run(["git", "-C", wt, "status", "--porcelain", "-uall"], capture_output=True, text=True, timeout=10).stdout
     except Exception:
@@ -247,7 +273,7 @@ export function watchRemote(r, { taskInfo, emit, onPresence, log }) {
         const [rel, mtime] = data.files[task] || [null, 0];
         const prev = fileSeen.get(task) ?? 0;
         fileSeen.set(task, Math.max(prev, mtime));
-        if (!first && rel && mtime > prev) emit({ who: r.agent, type: 'work', task, text: `Sửa ${path.basename(rel)}` });
+        if (!first && rel && mtime > prev && see.active(task)) emit({ who: r.agent, type: 'work', task, text: `Sửa ${path.basename(rel)}` });
       }
       first = false;
     } catch (err) {
