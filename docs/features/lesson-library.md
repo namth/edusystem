@@ -189,9 +189,9 @@ Lệnh xác minh chung: `npx vitest run && npx tsc --noEmit -p tsconfig.json` (m
 | Task | Nội dung | DoD |
 | :--- | :--- | :--- |
 | TASK-007 | Migration 006 + `ensureSchema`; `lib/grading.ts`: `gradeQuestion`, `sanitizeQuestionForStudent`, `computeScorePercent` | TC-L01, TC-L02 xanh |
-| TASK-008 | API câu hỏi `/api/teacher/questions`; API kho bài học; lộ trình nhận `lesson_id` | TC-L03, TC-L04 xanh |
-| TASK-009 | Tách trình soạn câu hỏi khỏi `app/teacher/tests/create/page.tsx` thành component dùng chung, lưu câu hỏi qua API | TC-L09; trang tạo đề không còn ghi Supabase trực tiếp |
-| TASK-010 | UI SCR-L1, SCR-L2, SCR-L3, SCR-L4 + menu giáo viên | 4 trạng thái UI; test tĩnh |
-| TASK-011 | API cài đặt lớp, mở/khoá, `lib/roadmap.ts` tính trạng thái mục (BR-L04) | TC-L05 xanh |
+| TASK-008 | API câu hỏi `/api/teacher/questions`; API kho bài học; lộ trình nhận `lesson_id`; migration 007 | TC-L03, TC-L04 xanh |
+| TASK-009 | API cài đặt lớp, mở/khoá, tiến độ; `lib/roadmap.ts` tính trạng thái mục (BR-L04), `lib/roadmap-data.ts` | TC-L05 xanh |
+| TASK-010 | Tách trình soạn câu hỏi khỏi `app/teacher/tests/create/page.tsx` thành component dùng chung, lưu câu hỏi qua API | TC-L09; trang tạo đề không còn ghi Supabase trực tiếp |
+| TASK-011 | UI SCR-L1, SCR-L2, SCR-L3, SCR-L4 + menu giáo viên | 4 trạng thái UI; test tĩnh |
 | TASK-012 | API học sinh: roadmap, nội dung bài (đã sanitize), nộp bài, chấm AI nền qua worker + slot | TC-L06, TC-L07, TC-L08, TC-L10 xanh |
 | TASK-013 | UI SCR-L5 (cài đặt + mở/khoá + tiến độ), SCR-L6, SCR-L7 | 4 trạng thái UI; test tĩnh |

@@ -64,11 +64,11 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ Đặc tả FEAT-010 Kho bài học (`docs/features/lesson-library.md`, DEC-001…013)
 
 ### Đang làm — FEAT-010 Kho bài học
-- TASK-007 migration 006 + `lib/grading.ts` (chấm khách quan server, ẩn đáp án)
-- TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id`
-- TASK-009 tách trình soạn câu hỏi thành component dùng chung
-- TASK-010 UI Kho bài học + soạn bài + bộ chọn trong lộ trình
-- TASK-011 API cài đặt lớp, mở/khoá, tính trạng thái mục
+- ✅ TASK-007 migration 006 + `lib/grading.ts` (chấm khách quan server, ẩn đáp án)
+- TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id` (đang chạy, worktree riêng)
+- TASK-009 API cài đặt lớp, mở/khoá, tiến độ, `lib/roadmap.ts`
+- TASK-010 tách trình soạn câu hỏi thành component dùng chung
+- TASK-011 UI Kho bài học + soạn bài + bộ chọn trong lộ trình
 - TASK-012 API học sinh: lộ trình, làm bài, chấm AI nền
 - TASK-013 UI lộ trình lớp (GV) + tab Lộ trình + trang làm bài (HS)
 
