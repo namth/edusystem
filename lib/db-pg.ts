@@ -194,6 +194,10 @@ export async function ensureSchema() {
 
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
       CREATE INDEX IF NOT EXISTS idx_questions_created_by ON questions (created_by);
+
+      -- Migration 008: Flashcard owner
+      ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+      CREATE INDEX IF NOT EXISTS idx_flashcards_created_by ON flashcards (created_by);
     `);
     schemaInitialized = true;
   } catch (err) {
