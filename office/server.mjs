@@ -10,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EVENTS_FILE, ROLES, appendEvent, isEvent } from './events.mjs';
-import { mainRepoRoot, watchHandoff } from './handoff-watch.mjs';
+import { mainRepoRoot, watchLocal, watchRemote, watchReviews } from './handoff-watch.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.OFFICE_PORT || 4317);
@@ -135,13 +135,40 @@ setInterval(() => {
 }, 25000);
 
 const mainRoot = process.env.OFFICE_REPO || mainRepoRoot(HERE);
-watchHandoff({
+const getTask = (id) => taskInfo.get(id);
+watchLocal({
   mainRoot,
   worktreeDir: process.env.AGY_WT_DIR || path.join(path.dirname(mainRoot), 'agy-worktrees'),
   agent: process.env.OFFICE_LOCAL_AGENT || 'agy1',
-  taskInfo: (id) => taskInfo.get(id),
+  taskInfo: getTask,
   emit: appendEvent,
 });
+watchReviews({ emit: appendEvent });
+
+// Máy thợ qua SSH (office/remotes.json, cùng cấu hình với AGY_HOST trong agy-worktree.sh).
+const REMOTES_FILE = process.env.OFFICE_REMOTES || path.join(HERE, 'remotes.json');
+let remotes = [];
+try {
+  remotes = JSON.parse(fs.readFileSync(REMOTES_FILE, 'utf8'));
+} catch {
+  // không có máy thợ nào
+}
+if (process.env.OFFICE_REMOTES !== 'off') {
+  for (const r of remotes) {
+    watchRemote(r, {
+      taskInfo: getTask,
+      emit: appendEvent,
+      onPresence: setPresence,
+      log: (msg) => console.log(msg),
+    });
+  }
+}
+
+function setPresence(who, info) {
+  presence[who] = { ...info, lastSeen: Date.now() };
+  fs.writeFile(PRESENCE_FILE, JSON.stringify(presence), () => {});
+  broadcast(presenceMessage());
+}
 
 // ---------- HTTP ----------
 const isLocal = (req) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
@@ -207,15 +234,12 @@ http
     if (req.method === 'POST' && url.pathname === '/presence') {
       readJson(req, (p) => {
         if (!p || !ROLES.includes(p.who)) return res.writeHead(400).end();
-        presence[p.who] = {
+        setPresence(p.who, {
           host: String(p.host || '?').slice(0, 64),
           ip: clientIp(req),
           lanIp: p.ip ? String(p.ip).slice(0, 64) : undefined,
           platform: p.platform ? String(p.platform).slice(0, 64) : undefined,
-          lastSeen: Date.now(),
-        };
-        fs.writeFile(PRESENCE_FILE, JSON.stringify(presence), () => {});
-        broadcast(presenceMessage());
+        });
         res.writeHead(204).end();
       });
       return;

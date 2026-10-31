@@ -40,7 +40,13 @@ remote_agent.py (máy Agy 2) ┘   (qua POST /emit, /presence)
 - **Agy 1 (máy này)**: server tự theo dõi `handoff/tasks/*/state.json` ở repo chính và mọi worktree trong
   `../agy-worktrees/` (đổi bằng `AGY_WT_DIR`), cùng file đang bị sửa trong các worktree đó. Không cần sửa `handoff.py`.
   Nhân sự mặc định của máy này là `agy1` (đổi bằng `OFFICE_LOCAL_AGENT`).
-- **Agy 2 (máy khác)**: chạy trên máy đó (chỉ cần Python 3, chép riêng file `remote_agent.py` cũng được):
+- **Agy 2 (máy thợ qua SSH, mặc định)**: server tự SSH sang máy thợ khai báo trong `office/remotes.json`
+  (cùng máy/khoá/thư mục với `AGY_HOST=macbook` của `agy-worktree.sh`) mỗi 5 giây, đọc `state.json` và file đang sửa
+  trong `~/agy-farm/worktrees/*`, lấy tên máy để hiện ở khu "Máy từ xa". Không cần cài gì trên máy thợ.
+  SSH lỗi quá 45 giây thì Agy 2 hiện ngoại tuyến. Tắt bằng `OFFICE_REMOTES=off`.
+- **Claude kiểm tra bài** còn được nhận ra từ tiến trình đang chạy (`agy-worktree.sh verify`, `handoff.py accept/reject`),
+  nên vẫn hiện kể cả khi phiên Claude đó chưa nạp hook.
+- **Agy 2 kiểu đẩy (khi không SSH được)**: chạy trên máy đó (chỉ cần Python 3, chép riêng file `remote_agent.py` cũng được):
 
 ```bash
 python3 office/remote_agent.py --server http://<IP-máy-chính>:4317 --token <token> --as agy2 --root <repo-trên-máy-đó>
