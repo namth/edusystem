@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
 import {
   BookOpen,
   UserPlus,
@@ -13,7 +12,6 @@ import {
   ArrowLeft,
   Loader2,
   CheckCircle2,
-  Clock,
   X,
   Save,
   Copy,
@@ -26,6 +24,9 @@ import {
   Volume2,
   Send,
   Route,
+  AlertCircle,
+  RefreshCw,
+  KeyRound,
 } from "lucide-react";
 import TeacherClassRoadmap from "@/components/class-roadmap/TeacherClassRoadmap";
 
@@ -45,7 +46,9 @@ interface StudentInClass {
   email: string;
   username?: string;
   phone?: string;
-  created_at: string;
+  status?: string;
+  submission_count?: number;
+  latest_total?: number | null;
 }
 
 interface AssignedExamItem {
@@ -61,7 +64,6 @@ interface AssignedExamItem {
 
 export default function TeacherClassDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const classId = (params?.classId || "cls_101") as string;
   const { user } = useAuth();
 
@@ -72,8 +74,10 @@ export default function TeacherClassDetailPage() {
   const [allExamsRepo, setAllExamsRepo] = useState<any[]>([]);
   const [submissionsMap, setSubmissionsMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [newStudentTempPassword, setNewStudentTempPassword] = useState<{ name: string; password: string } | null>(null);
 
   // Assign Exam Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -84,10 +88,8 @@ export default function TeacherClassDetailPage() {
   // Create Student Modal State
   const [showCreateStudentModal, setShowCreateStudentModal] = useState(false);
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [defaultPassword, setDefaultPassword] = useState("123456");
 
   // Exam Preview Modal State
   const [previewExam, setPreviewExam] = useState<any | null>(null);
@@ -104,96 +106,69 @@ export default function TeacherClassDetailPage() {
   const fetchClassData = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
 
-      // 1. Fetch Class Detail directly from PostgreSQL `classes` table
-      const { data: clsData } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("id", classId)
-        .maybeSingle();
-
-      if (clsData) {
+      // 1. Fetch Class Detail from API
+      const classRes = await fetch(`/api/teacher/classes/${classId}`);
+      if (!classRes.ok) {
+        const errData = await classRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể tải thông tin lớp học.");
+      }
+      const classData = await classRes.json();
+      if (classData.class) {
         setCls({
-          id: clsData.id,
-          name: clsData.name,
-          code: clsData.code,
-          teacher_id: clsData.teacher_id,
-          schedule: clsData.schedule || "Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 20:00)",
-          description: clsData.description || "Lớp luyện thi IELTS chuyên sâu target 7.5+",
-          max_slots: clsData.max_slots || 30,
-        });
-      } else {
-        setCls({
-          id: classId,
-          name: `Lớp ${classId}`,
-          code: `CODE_${classId.slice(-4)}`,
-          teacher_id: user?.id || "teacher_01",
-          schedule: "Thứ 2 - Thứ 4 - Thứ 6 (19:30 - 21:30)",
-          description: "Lớp chuyên sâu tổng lực 4 kỹ năng IELTS target 7.5+",
-          max_slots: 30,
+          id: classData.class.id,
+          name: classData.class.name,
+          code: classData.class.code,
+          teacher_id: classData.class.teacher_id,
+          schedule: classData.class.schedule || "Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 20:00)",
+          description: classData.class.description || "Lớp luyện thi IELTS chuyên sâu target 7.5+",
+          max_slots: classData.class.max_slots || 30,
         });
       }
 
-      // 2. Fetch Enrollments & Students directly from PostgreSQL DB
-      const { data: enrData } = await supabase
-        .from("enrollments")
-        .select("*")
-        .eq("class_id", classId);
+      // 2. Fetch Members (Students & Assignments) from API
+      const membersRes = await fetch(`/api/teacher/classes/${classId}/members`);
+      if (!membersRes.ok) {
+        const errData = await membersRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể tải danh sách thành viên.");
+      }
+      const membersData = await membersRes.json();
 
-      const studentIds = (enrData || []).map((e: any) => e.student_id);
+      setStudents(
+        (membersData.students || []).map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          username: u.id,
+          phone: u.phone || "",
+          status: u.status || "ACTIVE",
+          submission_count: u.submission_count ?? 0,
+          latest_total: u.latest_total ?? null,
+        }))
+      );
 
-      if (studentIds.length > 0) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("*")
-          .in("id", studentIds);
-
-        setStudents(
-          (userData || []).map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            username: u.username || u.id,
-            phone: u.phone || "0912345678",
-            created_at: new Date(u.created_at || Date.now()).toLocaleDateString("vi-VN"),
-          }))
-        );
-      } else {
-        setStudents([]);
+      // 3. Fetch All Exams from Repository
+      const examsRes = await fetch("/api/teacher/exams");
+      let examDict: Record<string, any> = {};
+      if (examsRes.ok) {
+        const examsData = await examsRes.json();
+        const exList = examsData.exams || [];
+        setAllExamsRepo(exList);
+        exList.forEach((ex: any) => {
+          examDict[ex.id] = ex;
+        });
       }
 
-      // 3. Fetch All Exams from Repository directly from PostgreSQL `exams` table
-      const { data: examData } = await supabase
-        .from("exams")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      setAllExamsRepo(examData || []);
-
-      const examDict: Record<string, any> = {};
-      (examData || []).forEach((ex: any) => {
-        examDict[ex.id] = ex;
-      });
-
-      // 4. Fetch Assigned Exams directly from PostgreSQL `class_assignments` table
-      const { data: assignData, error: assignErr } = await supabase
-        .from("class_assignments")
-        .select("*")
-        .eq("class_id", classId);
-
-      if (assignErr) {
-        console.error("Fetch class_assignments error:", assignErr);
-      }
-
-      if (assignData && assignData.length > 0) {
+      if (membersData.assignments && membersData.assignments.length > 0) {
         setAssignedExams(
-          assignData.map((a: any) => {
+          membersData.assignments.map((a: any) => {
             const exInfo = examDict[a.exam_id] || {};
             return {
               id: a.exam_id,
               assignment_id: a.id,
               exam_id: a.exam_id,
-              title: exInfo.title || `Đề Thi #${a.exam_id}`,
+              title: a.exam_title || exInfo.title || `Đề Thi #${a.exam_id}`,
               duration_minutes: exInfo.duration_minutes || 60,
               skills: exInfo.skills || ["Reading", "Writing", "Speaking"],
               due_date: a.due_date ? new Date(a.due_date).toLocaleDateString("vi-VN") : "Linh hoạt",
@@ -204,17 +179,9 @@ export default function TeacherClassDetailPage() {
       } else {
         setAssignedExams([]);
       }
-
-      // 5. Fetch Submissions directly from PostgreSQL `submissions` table
-      const { data: subData } = await supabase.from("submissions").select("*");
-      const subMap: Record<string, any> = {};
-      (subData || []).forEach((s: any) => {
-        const key = `${s.student_id}_${s.exam_id}`;
-        subMap[key] = s;
-      });
-      setSubmissionsMap(subMap);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setErrorMessage(e.message || "Lỗi tải dữ liệu lớp học.");
     } finally {
       setLoading(false);
     }
@@ -224,33 +191,34 @@ export default function TeacherClassDetailPage() {
     fetchClassData();
   }, [classId]);
 
-  // Insert assigned exam directly into PostgreSQL `class_assignments` table
+  // Assign exam to class via API
   const handleAssignExamToClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedExamId) return;
 
     setIsSubmitting(true);
     try {
-      const assignmentId = `asg_${Date.now().toString().slice(-4)}`;
       const dueTimestamp = dueDate ? new Date(dueDate).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString();
 
-      const { error } = await supabase.from("class_assignments").insert([
-        {
-          id: assignmentId,
-          class_id: classId,
+      const res = await fetch(`/api/teacher/classes/${classId}/assignments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           exam_id: selectedExamId,
           due_date: dueTimestamp,
           max_attempts: Number(maxAttempts) || 1,
-        },
-      ]);
+        }),
+      });
 
-      if (error) {
-        alert("Lỗi giao bài thi vào PostgreSQL DB: " + error.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi giao bài thi: " + (data.error || "Không thể giao bài"));
         return;
       }
 
-      setSuccessMsg("Đã giao bài thi thành công vào CSDL PostgreSQL!");
+      setSuccessMsg("Đã giao bài thi thành công vào lớp!");
       setShowAssignModal(false);
+      setSelectedExamId("");
       fetchClassData();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
@@ -261,17 +229,22 @@ export default function TeacherClassDetailPage() {
     }
   };
 
-  // Delete assigned exam directly from PostgreSQL `class_assignments` table
+  // Delete assigned exam via API
   const handleUnassignExam = async (assignmentId: string, examTitle: string) => {
     if (!confirm(`Bạn có chắc chắn muốn hủy giao bài thi "${examTitle}" khỏi lớp này không?`)) return;
 
     try {
-      const { error } = await supabase.from("class_assignments").delete().eq("id", assignmentId);
-      if (error) {
-        alert("Lỗi hủy giao bài thi khỏi PostgreSQL DB: " + error.message);
+      const res = await fetch(`/api/teacher/classes/${classId}/assignments?id=${assignmentId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi hủy giao bài thi: " + (data.error || "Không thể hủy"));
         return;
       }
-      setSuccessMsg(`Đã hủy giao bài thi "${examTitle}" khỏi CSDL!`);
+
+      setSuccessMsg(`Đã hủy giao bài thi "${examTitle}" thành công!`);
       fetchClassData();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
@@ -280,53 +253,46 @@ export default function TeacherClassDetailPage() {
     }
   };
 
+  // Create student / enroll in class via API
   const handleCreateStudentForThisClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !defaultPassword.trim()) return;
+    if (!name.trim() || !email.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const studentId = `student_${Date.now().toString().slice(-4)}`;
-      const studentUsername = username.trim() || `st_${Date.now().toString().slice(-4)}`;
-      const studentEmail = email.trim() || `${studentUsername}@student.edu.vn`;
-
-      const { error: userErr } = await supabase.from("users").insert([
-        {
-          id: studentId,
+      const res = await fetch(`/api/teacher/classes/${classId}/students`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: name.trim(),
-          username: studentUsername,
-          email: studentEmail,
-          password: defaultPassword.trim(),
-          role: "STUDENT",
-          phone: phone.trim() || "0912345678",
-          target_band: "IELTS 7.0",
-          must_change_password: true,
-        },
-      ]);
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+        }),
+      });
 
-      if (userErr) {
-        alert("Lỗi tạo tài khoản học sinh: " + userErr.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi thêm học sinh: " + (data.error || "Không thể thêm vào lớp"));
         return;
       }
 
-      await supabase.from("enrollments").insert([
-        {
-          id: `enr_${Date.now().toString().slice(-4)}`,
-          student_id: studentId,
-          class_id: classId,
-        },
-      ]);
+      if (data.temp_password) {
+        setNewStudentTempPassword({ name: name.trim(), password: data.temp_password });
+        setSuccessMsg(
+          `Đã tạo tài khoản học sinh "${name}" thành công! Mật khẩu tạm thời: "${data.temp_password}". Vui lòng lưu lại mật khẩu này.`
+        );
+      } else {
+        setSuccessMsg(`Học sinh "${name}" (${email}) đã có tài khoản và đã được ghi danh vào lớp!`);
+      }
 
-      setSuccessMsg(`Đã tạo học sinh "${name}" và gán vào lớp này thành công!`);
       setShowCreateStudentModal(false);
       setName("");
-      setUsername("");
       setEmail("");
       setPhone("");
       fetchClassData();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert("Đã xảy ra lỗi khi thêm học sinh: " + e.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -355,27 +321,18 @@ export default function TeacherClassDetailPage() {
 
     setIsSavingReview(true);
     try {
-      const existingFeedback = selectedSubmission.ai_feedback || {};
-      const updatedFeedback = {
-        ...existingFeedback,
-        teacher_note: teacherNote.trim(),
-        overridden_score: overrideScore,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user?.name || "Giáo Viên Phụ Trách",
-      };
+      const res = await fetch("/api/exam/grade-override", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId: selectedSubmission.id,
+          feedback: teacherNote.trim(),
+        }),
+      });
 
-      const { error } = await supabase
-        .from("submissions")
-        .update({
-          score: overrideScore,
-          final_score: overrideScore,
-          ai_feedback: updatedFeedback,
-          status: "TEACHER_REVIEWED",
-        })
-        .eq("id", selectedSubmission.id);
-
-      if (error) {
-        alert("Lỗi lưu nhận xét: " + error.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi lưu nhận xét: " + (data.error || "Không thể cập nhật"));
         return;
       }
 
@@ -383,8 +340,9 @@ export default function TeacherClassDetailPage() {
       setSelectedSubmission(null);
       fetchClassData();
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi lưu nhận xét: " + err.message);
     } finally {
       setIsSavingReview(false);
     }
@@ -402,7 +360,7 @@ export default function TeacherClassDetailPage() {
       <TeacherLayout>
         <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6] max-w-4xl mx-auto my-8">
           <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
-          <span>Đang nạp dữ liệu Lớp học &amp; Sổ điểm Gradebook từ PostgreSQL...</span>
+          <span>Đang nạp dữ liệu Lớp học &amp; Sổ điểm Gradebook từ API PostgreSQL...</span>
         </div>
       </TeacherLayout>
     );
@@ -418,76 +376,96 @@ export default function TeacherClassDetailPage() {
               <ArrowLeft className="w-4 h-4 mr-1 text-[#6d3807]" />
               Quay lại Danh sách Lớp học
             </Link>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight flex items-center space-x-3 font-headline">
-              <span>{cls?.name}</span>
-              <span className="px-3 py-1 rounded-lg bg-[#fff1ea] text-[#6d3807] text-xs font-mono font-bold border border-[#ffb782]">
+            <div className="flex items-center space-x-3">
+              <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">{cls?.name}</h1>
+              <span className="px-2.5 py-1 bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-xs font-bold rounded-lg font-mono">
                 Mã: {cls?.code}
               </span>
-            </h1>
-            <p className="text-sm text-[#52443a] mt-1">{cls?.description}</p>
+            </div>
+            <p className="text-xs text-[#52443a] mt-1 flex items-center gap-4">
+              <span>{cls?.description}</span>
+              <span className="text-[#857469] font-mono">&bull; {cls?.schedule}</span>
+            </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 shrink-0">
             <button
-              onClick={() => setShowAssignModal(true)}
-              className="px-4 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold flex items-center space-x-2 transition-all shadow cursor-pointer font-headline"
+              onClick={copyInviteLink}
+              className="px-4 py-2 bg-white border border-[#d8c2b6] hover:bg-[#fff8f5] text-[#6d3807] rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
             >
-              <PlusCircle className="w-4 h-4 text-[#ffb782]" />
-              <span>+ Giao Bài Thi Mới Cho Lớp</span>
+              {copiedCode ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-[#6d3807]" />}
+              <span>{copiedCode ? "Đã copy link mời!" : "Copy Link Mời Lớp"}</span>
             </button>
 
             <button
-              onClick={copyInviteLink}
-              className="px-4 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] hover:bg-[#f9ebe4] text-[#6d3807] rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer font-headline"
+              onClick={() => setShowCreateStudentModal(true)}
+              className="px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
             >
-              {copiedCode ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-[#6d3807]" />}
-              <span>{copiedCode ? "Đã Copy!" : "Copy Mã Lớp"}</span>
+              <UserPlus className="w-4 h-4 text-[#ffb782]" />
+              <span>+ Thêm Học Viên</span>
             </button>
           </div>
         </div>
 
-        {successMsg && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span className="text-xs font-bold">{successMsg}</span>
+        {/* Error Notification with Retry */}
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{errorMessage}</span>
+            </div>
+            <button
+              onClick={fetchClassData}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Thử lại</span>
+            </button>
           </div>
         )}
 
-        {/* LMS Class Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-5 rounded-2xl border border-[#d8c2b6] shadow-sm flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-[#fff1ea] text-[#6d3807] border border-[#ffb782]">
-              <Users className="w-6 h-6" />
+        {/* Success / Notification Banner */}
+        {successMsg && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-bold">{successMsg}</span>
             </div>
-            <div>
-              <span className="text-xs text-[#52443a] font-medium block">Sĩ Số Học Viên</span>
-              <span className="text-xl font-bold text-[#6d3807]">{students.length} / {cls?.max_slots} Học sinh</span>
-            </div>
+            <button onClick={() => setSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer text-xs font-bold">
+              ✕
+            </button>
           </div>
+        )}
 
-          <div className="bg-white p-5 rounded-2xl border border-[#d8c2b6] shadow-sm flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-[#fff1ea] text-[#6d3807] border border-[#ffb782]">
-              <FileText className="w-6 h-6" />
+        {/* New Student Password Modal/Banner One-time Display */}
+        {newStudentTempPassword && (
+          <div className="p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2">
+            <div className="flex items-center space-x-2">
+              <KeyRound className="w-5 h-5 text-amber-700 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Mật Khẩu Tạm Thời Khởi Tạo Cho Học Sinh (Chỉ Hiện 1 Lần)
+              </span>
             </div>
-            <div>
-              <span className="text-xs text-[#52443a] font-medium block">Đề Thi Đã Giao</span>
-              <span className="text-xl font-bold text-[#6d3807]">{assignedExams.length} Bài thi</span>
-            </div>
+            <p className="text-xs">
+              Học sinh: <strong>{newStudentTempPassword.name}</strong> &bull; Mật khẩu đăng nhập lần đầu:{" "}
+              <code className="px-2 py-0.5 bg-white border border-amber-300 rounded font-mono font-bold text-sm text-[#6d3807]">
+                {newStudentTempPassword.password}
+              </code>
+            </p>
+            <p className="text-[11px] text-amber-800 italic">
+              Vui lòng copy hoặc gửi lại cho học sinh ngay. Hệ thống không lưu trữ mật khẩu ở dạng thô và sẽ yêu cầu học sinh đổi mật khẩu trong lần đăng nhập đầu tiên.
+            </p>
+            <button
+              onClick={() => setNewStudentTempPassword(null)}
+              className="mt-1 px-3 py-1 bg-amber-200 hover:bg-amber-300 rounded-lg text-xs font-bold text-amber-900 cursor-pointer"
+            >
+              Đã ghi lại
+            </button>
           </div>
+        )}
 
-          <div className="bg-[#ffffff] p-5 rounded-2xl border border-[#d8c2b6] shadow-sm flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="text-xs text-[#52443a] font-medium block">Lịch Học Lớp</span>
-              <span className="text-xs font-bold text-[#211a16]">{cls?.schedule}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* LMS Tabs */}
-        <div className="flex border-b border-[#d8c2b6] space-x-2">
+        {/* Tab Navigation Controls */}
+        <div className="flex space-x-2 border-b border-[#d8c2b6]/40">
           <button
             onClick={() => setActiveTab("gradebook")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
@@ -535,7 +513,7 @@ export default function TeacherClassDetailPage() {
                   <span>Ma Trận Sổ Điểm Lớp Học (Class Gradebook Matrix)</span>
                 </h2>
                 <p className="text-xs text-[#52443a] mt-0.5">
-                  Dữ liệu được lưu trực tiếp 100% trong PostgreSQL DB <code>public.class_assignments</code>.
+                  Dữ liệu bài tập &amp; học viên được đồng bộ trực tiếp qua API PostgreSQL.
                 </p>
               </div>
 
@@ -639,6 +617,10 @@ export default function TeacherClassDetailPage() {
                                       Review &amp; Duyệt &rarr;
                                     </button>
                                   </div>
+                                ) : st.latest_total !== null && st.latest_total !== undefined ? (
+                                  <span className="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-[11px] font-bold">
+                                    Band {st.latest_total}
+                                  </span>
                                 ) : (
                                   <span className="inline-block px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-mono text-[10px]">
                                     Chưa Nộp Bài
@@ -680,29 +662,41 @@ export default function TeacherClassDetailPage() {
                 <thead>
                   <tr className="bg-[#fff8f5] border-b border-[#d8c2b6] text-[#52443a] font-bold">
                     <th className="p-3.5">Họ &amp; Tên Học Viên</th>
-                    <th className="p-3.5">Username Đăng Nhập</th>
                     <th className="p-3.5">Email</th>
                     <th className="p-3.5">Số Điện Thoại</th>
-                    <th className="p-3.5 text-right">Trạng Thái Mật Khẩu</th>
+                    <th className="p-3.5 text-center">Số Bài Nộp</th>
+                    <th className="p-3.5 text-center">Điểm Gần Nhất</th>
+                    <th className="p-3.5 text-right">Trạng Thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#d8c2b6]/30">
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-xs text-[#857469]">
-                        Chưa có học sinh nào trong lớp. Nhấp "+ Thêm Học Viên" để tạo tài khoản mới.
+                      <td colSpan={6} className="p-8 text-center text-xs text-[#857469]">
+                        Chưa có học sinh nào trong lớp. Nhấp "+ Thêm Học Viên" để thêm hoặc ghi danh học sinh.
                       </td>
                     </tr>
                   ) : (
                     students.map((st) => (
                       <tr key={st.id} className="hover:bg-[#fff8f5] transition-colors">
                         <td className="p-3.5 font-bold text-[#211a16]">{st.name}</td>
-                        <td className="p-3.5 font-mono font-bold text-[#6d3807]">{st.username}</td>
                         <td className="p-3.5 text-[#004d5e]">{st.email}</td>
-                        <td className="p-3.5 text-[#52443a]">{st.phone}</td>
+                        <td className="p-3.5 text-[#52443a]">{st.phone || "—"}</td>
+                        <td className="p-3.5 text-center font-mono font-bold text-[#6d3807]">
+                          {st.submission_count ?? 0}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          {st.latest_total !== null && st.latest_total !== undefined ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold text-[11px]">
+                              {st.latest_total}
+                            </span>
+                          ) : (
+                            <span className="text-[#857469]">—</span>
+                          )}
+                        </td>
                         <td className="p-3.5 text-right">
-                          <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
-                            Mật khẩu mặc định (123456)
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                            {st.status || "ACTIVE"}
                           </span>
                         </td>
                       </tr>
@@ -810,7 +804,7 @@ export default function TeacherClassDetailPage() {
               <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
                 <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2 font-headline">
                   <UserPlus className="w-5 h-5 text-[#6d3807]" />
-                  <span>Tạo Tài Khoản Học Viên Lớp {cls?.name}</span>
+                  <span>Thêm Học Viên Vào Lớp {cls?.name}</span>
                 </h2>
                 <button onClick={() => setShowCreateStudentModal(false)} className="text-[#857469] cursor-pointer">
                   <X className="w-5 h-5" />
@@ -827,53 +821,32 @@ export default function TeacherClassDetailPage() {
                     required
                     placeholder="Nguyễn Văn An"
                     value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      if (!username) {
-                        const suggested = e.target.value
-                          .toLowerCase()
-                          .normalize("NFD")
-                          .replace(/[\u0300-\u036f]/g, "")
-                          .replace(/[^a-z0-9]/g, "");
-                        setUsername(suggested);
-                      }
-                    }}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
-                    Username Đăng Nhập (*)
-                  </label>
+                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Email (*)</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    className="w-full p-3 bg-[#fff1ea] border border-[#ffb782] rounded-xl text-xs font-bold text-[#6d3807] focus:outline-none"
+                    placeholder="hocsinh@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">SĐT</label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Số Điện Thoại (Tùy chọn)</label>
+                  <input
+                    type="tel"
+                    placeholder="0912345678"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                  />
                 </div>
 
                 <div className="pt-2 flex space-x-3">
@@ -890,7 +863,7 @@ export default function TeacherClassDetailPage() {
                     className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
-                    <span>Tạo &amp; Gán Lớp</span>
+                    <span>Thêm / Ghi Danh Học Sinh</span>
                   </button>
                 </div>
               </form>
