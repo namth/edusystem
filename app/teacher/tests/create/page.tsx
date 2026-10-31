@@ -8,6 +8,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { INITIAL_COURSES } from "@/lib/mock-data";
 import RichTextEditor from "@/components/RichTextEditor";
+import AiExamIngestionStudio from "@/components/teacher/AiExamIngestionStudio";
 import { getMediaStimulusInfo, buildStandardQuestionContent, parseSentenceRewriteCue, parseFillInGaps } from "@/lib/question-content-types";
 import {
   PlusCircle,
@@ -113,7 +114,17 @@ function TeacherTestCreatorInner() {
   const router = useRouter();
   const { user } = useAuth();
   const editId = searchParams.get("editId");
+  const tabParam = searchParams.get("tab");
+  const modeParam = searchParams.get("mode");
+  const sourceParam = searchParams.get("source");
+  const courseIdParam = searchParams.get("courseId");
+  const unitIdParam = searchParams.get("unitId");
   const [isLoadingEditData, setIsLoadingEditData] = useState(false);
+  const [creationMode, setCreationMode] = useState<"manual" | "ai-ingest">(
+    tabParam === "ai-ingest" || modeParam === "upload" || sourceParam === "course"
+      ? "ai-ingest"
+      : "manual"
+  );
 
   // Global Exam Fields
   const [testTitle, setTestTitle] = useState("");
@@ -1578,7 +1589,6 @@ function TeacherTestCreatorInner() {
           duration_minutes: Number(duration) || 60,
           skills: finalSkills,
           question_ids: qIdsArray,
-          scoring_rubric_id: selectedRubricId || null,
           created_by: user?.id || "usr_teacher_01",
         },
       ]);
@@ -1670,42 +1680,82 @@ function TeacherTestCreatorInner() {
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
-          <div>
-            <h1 className="font-headline text-3xl font-bold text-[#6d3807] tracking-tight">
-              {editId ? "Chỉnh Sửa Bộ Đề Thi" : "Soạn Bộ Đề Thi Mới"}
-            </h1>
-            <p className="text-sm text-[#52443a] mt-1">
-              Chỉnh sửa thông tin bộ đề, bài đọc/ngữ cảnh HTML phong phú, thêm/bớt và sửa trực tiếp từng câu hỏi trong đề.
-            </p>
-          </div>
+        {/* Creation Mode Tabs */}
+        <div className="flex items-center gap-3 border-b border-[#d8c2b6] pb-3">
+          <button
+            type="button"
+            onClick={() => setCreationMode("manual")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              creationMode === "manual"
+                ? "bg-[#6d3807] text-white shadow-xs"
+                : "bg-white text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Soạn Đề Thủ Công (Manual Editor)</span>
+          </button>
 
           <button
-            onClick={handleSaveTest}
-            disabled={Boolean(isSubmitting || !testTitle.trim())}
-            suppressHydrationWarning
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 font-headline disabled:opacity-50 shrink-0 cursor-pointer"
+            type="button"
+            onClick={() => setCreationMode("ai-ingest")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+              creationMode === "ai-ingest"
+                ? "bg-[#6d3807] text-white shadow-xs"
+                : "bg-white text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+            }`}
           >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
-            ) : (
-              <Save className="w-4 h-4 text-[#ffb782]" />
-            )}
-            <span>{editId ? "Cập Nhật Bộ Đề Thi" : "Lưu Bộ Đề Thi Mới"}</span>
+            <Sparkles className="w-4 h-4 text-[#ffb782]" />
+            <span>Upload đề thi / bài tập</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold uppercase">
+              Mới
+            </span>
           </button>
         </div>
 
-        {showSavedMsg && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs font-bold">Đã lưu bộ đề thi mới thành công vào PostgreSQL Database!</span>
-          </div>
-        )}
+        {creationMode === "ai-ingest" ? (
+          <AiExamIngestionStudio
+            initialDestinationType={sourceParam === "course" || courseIdParam ? "curriculum" : "standalone"}
+            initialCourseId={courseIdParam || undefined}
+            initialUnitId={unitIdParam || undefined}
+          />
+        ) : (
+          <>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+              <div>
+                <h1 className="font-headline text-3xl font-bold text-[#6d3807] tracking-tight">
+                  {editId ? "Chỉnh Sửa Bộ Đề Thi" : "Soạn Bộ Đề Thi Mới"}
+                </h1>
+                <p className="text-sm text-[#52443a] mt-1">
+                  Chỉnh sửa thông tin bộ đề, bài đọc/ngữ cảnh HTML phong phú, thêm/bớt và sửa trực tiếp từng câu hỏi trong đề.
+                </p>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Question Authoring Form Pane */}
-          <div className="lg:col-span-8 space-y-6">
+              <button
+                onClick={handleSaveTest}
+                disabled={Boolean(isSubmitting || !testTitle.trim())}
+                suppressHydrationWarning
+                className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 font-headline disabled:opacity-50 shrink-0 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <Save className="w-4 h-4 text-[#ffb782]" />
+                )}
+                <span>{editId ? "Cập Nhật Bộ Đề Thi" : "Lưu Bộ Đề Thi Mới"}</span>
+              </button>
+            </div>
+
+            {showSavedMsg && (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span className="text-xs font-bold">Đã lưu bộ đề thi mới thành công vào PostgreSQL Database!</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Main Question Authoring Form Pane */}
+              <div className="lg:col-span-8 space-y-6">
             {/* Exam Metadata */}
             <div className="bg-[#ffffff] p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
               <h2 className="text-base font-bold text-[#6d3807]">Thông Tin Tổng Quan Đề Thi</h2>
@@ -2909,6 +2959,8 @@ function TeacherTestCreatorInner() {
               </div>
             </div>
           )}
+          </>
+        )}
         </div>
       </TeacherLayout>
     );

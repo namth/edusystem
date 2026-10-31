@@ -127,6 +127,21 @@ export async function ensureSchema() {
         UNIQUE (class_id, exam_id)
       );
       CREATE INDEX IF NOT EXISTS idx_class_assignments_class ON class_assignments (class_id);
+
+      -- Migration 005: cấu hình hệ thống (mô hình AI bóc tách đề)
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value JSONB NOT NULL,
+        description TEXT,
+        updated_by VARCHAR(255),
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO system_settings (key, value, description)
+      VALUES (
+        'ai_exam_ingestion_model',
+        '{"provider": "google", "model": "gemini-flash-lite-latest", "temperature": 0.1, "max_tokens": 8192}'::jsonb,
+        'Mô hình AI sử dụng để bóc tách câu hỏi từ file DOCX/PDF/Ảnh'
+      ) ON CONFLICT (key) DO NOTHING;
     `);
     schemaInitialized = true;
   } catch (err) {

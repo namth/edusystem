@@ -16,6 +16,7 @@ import {
   User,
   ChevronDown,
   Bookmark,
+  Settings,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -47,6 +48,7 @@ export default function AdminLayout({
     { href: "/admin/teachers", label: "Quản Lý Giáo Viên", icon: UserCheck },
     { href: "/admin/students", label: "Quản Lý Học Sinh", icon: GraduationCap },
     { href: "/admin/accounts", label: "Quản Lý Tài Khoản", icon: Users },
+    { href: "/admin/settings", label: "Cấu Hình AI & Hệ Thống", icon: Settings },
   ];
 
   return (

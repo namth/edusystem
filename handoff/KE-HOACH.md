@@ -58,7 +58,10 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ TASK-005 trang làm bài / xem lại / tham gia lớp qua link dùng API pg; route công khai `classes/lookup`
 - ✅ Deploy lên server 192.168.1.36 (ghi đè code server cũ theo quyết định người dùng; sao lưu `edusystem-backup-20261031.tar.gz`)
 
+- ✅ Khôi phục FEAT-009 AI Import (DOCX/PDF/ảnh → đề thi) từ bản sao lưu server, gắn requireRole, kiểm quyền sở hữu khóa học, SAVEPOINT cho log; migration 005 `system_settings`; Dockerfile Node 22
+
 ### Còn lại
+- Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
 - **TASK-006** chấm trắc nghiệm phía server, không gửi đáp án xuống trình duyệt (hiện client tự chấm và gửi `auto_graded_score`)
 - Khu admin (students, students/[id], requests, accounts, teachers, profile) → API pg
 - Khu giáo viên (classes, classes/[classId], slots, students/create, grading, flashcards) → API pg
