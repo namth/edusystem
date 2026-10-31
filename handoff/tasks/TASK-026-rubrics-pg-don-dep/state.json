@@ -1,13 +1,33 @@
 {
   "id": "TASK-026",
   "title": "Rubric bằng pg, xoá route chết, bỏ mock-data trang lộ trình",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "e271b881-34b6-4e22-b91b-adaa6bb413b0",
   "history": [
     {
       "at": "2026-10-31T22:45:45",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T22:45:46",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T22:46:08",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T22:55:32",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T22:59:04",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -47,5 +67,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-026-rubrics-pg-don-dep/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
