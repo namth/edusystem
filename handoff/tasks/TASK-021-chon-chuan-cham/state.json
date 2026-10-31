@@ -1,13 +1,33 @@
 {
   "id": "TASK-021",
   "title": "Chọn chuẩn chấm khi soạn đề và chuẩn mặc định của khóa học",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "eee034c3-b670-4afd-83f5-df7dc8e79861",
   "history": [
     {
       "at": "2026-10-31T14:47:59",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:48:31",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:48:44",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T15:22:12",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T15:30:13",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -43,5 +63,6 @@
     "vitest.config.ts",
     "docs/db-migration-009-scoring-standards.sql",
     "handoff/tasks/TASK-021-chon-chuan-cham/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }

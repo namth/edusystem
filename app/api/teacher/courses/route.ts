@@ -3,7 +3,7 @@ import { queryPg } from "@/lib/db-pg";
 import { getAuthenticatedUserFromCookie } from "@/lib/auth";
 import { runCypherQuery } from "@/lib/neo4j";
 
-export async function GET() {
+export async function GET(req?: Request) {
   try {
     const authUser = await getAuthenticatedUserFromCookie();
 
@@ -24,6 +24,7 @@ export async function GET() {
       id: row.id,
       title: row.title,
       description: row.description || "",
+      default_scoring_standard_id: row.default_scoring_standard_id || null,
       created_by: row.created_by,
       created_at: row.created_at,
     }));
@@ -43,10 +44,22 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description } = body;
+    const { title, description, default_scoring_standard_id } = body;
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, error: "Vui lòng nhập tên Khóa học." }, { status: 400 });
+    }
+
+    let cleanDefaultStandardId: string | null = null;
+    if (default_scoring_standard_id !== undefined && default_scoring_standard_id !== null) {
+      if (typeof default_scoring_standard_id !== "string" || !default_scoring_standard_id.trim()) {
+        return NextResponse.json({ success: false, error: "default_scoring_standard_id không hợp lệ." }, { status: 400 });
+      }
+      cleanDefaultStandardId = default_scoring_standard_id.trim();
+      const stdRes = await queryPg("SELECT id FROM scoring_standards WHERE id = $1", [cleanDefaultStandardId]);
+      if (stdRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: "Chuẩn chấm điểm không tồn tại." }, { status: 400 });
+      }
     }
 
     const cleanTitle = title.trim();
@@ -54,10 +67,15 @@ export async function POST(req: Request) {
     const newCourseId = `crs_${Date.now().toString().slice(-6)}`;
 
     // 1. Insert into PostgreSQL
-    await queryPg(
-      `INSERT INTO courses (id, title, description, created_by, created_at) VALUES ($1, $2, $3, $4, NOW());`,
-      [newCourseId, cleanTitle, cleanDesc, authUser.userId]
-    );
+    let insertSql = `INSERT INTO courses (id, title, description, created_by, created_at) VALUES ($1, $2, $3, $4, NOW());`;
+    let insertParams: any[] = [newCourseId, cleanTitle, cleanDesc, authUser.userId];
+
+    if (cleanDefaultStandardId) {
+      insertSql = `INSERT INTO courses (id, title, description, default_scoring_standard_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, NOW());`;
+      insertParams = [newCourseId, cleanTitle, cleanDesc, cleanDefaultStandardId, authUser.userId];
+    }
+
+    await queryPg(insertSql, insertParams);
 
     // 2. Polyglot Sync to Neo4j Graph DB
     try {
@@ -75,6 +93,7 @@ export async function POST(req: Request) {
         id: newCourseId,
         title: cleanTitle,
         description: cleanDesc,
+        default_scoring_standard_id: cleanDefaultStandardId,
         created_by: authUser.userId,
       },
       message: "Đã tạo Khóa học mới thành công!",
@@ -93,7 +112,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { id, title, description } = body;
+    const { id, title, description, default_scoring_standard_id } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Missing course id" }, { status: 400 });
@@ -101,6 +120,20 @@ export async function PUT(req: Request) {
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, error: "Vui lòng nhập tên Khóa học." }, { status: 400 });
+    }
+
+    let cleanDefaultStandardId: string | null = null;
+    if (default_scoring_standard_id !== undefined) {
+      if (default_scoring_standard_id !== null) {
+        if (typeof default_scoring_standard_id !== "string" || !default_scoring_standard_id.trim()) {
+          return NextResponse.json({ success: false, error: "default_scoring_standard_id không hợp lệ." }, { status: 400 });
+        }
+        cleanDefaultStandardId = default_scoring_standard_id.trim();
+        const stdRes = await queryPg("SELECT id FROM scoring_standards WHERE id = $1", [cleanDefaultStandardId]);
+        if (stdRes.rows.length === 0) {
+          return NextResponse.json({ success: false, error: "Chuẩn chấm điểm không tồn tại." }, { status: 400 });
+        }
+      }
     }
 
     const cleanId = id.trim();
@@ -111,9 +144,18 @@ export async function PUT(req: Request) {
     let updateSql = `UPDATE courses SET title = $1, description = $2 WHERE id = $3 RETURNING id;`;
     let updateParams: any[] = [cleanTitle, cleanDesc, cleanId];
 
-    if (authUser.role === "TEACHER") {
-      updateSql = `UPDATE courses SET title = $1, description = $2 WHERE id = $3 AND created_by = $4 RETURNING id;`;
-      updateParams = [cleanTitle, cleanDesc, cleanId, authUser.userId];
+    if (default_scoring_standard_id === undefined) {
+      if (authUser.role === "TEACHER") {
+        updateSql = `UPDATE courses SET title = $1, description = $2 WHERE id = $3 AND created_by = $4 RETURNING id;`;
+        updateParams = [cleanTitle, cleanDesc, cleanId, authUser.userId];
+      }
+    } else {
+      updateSql = `UPDATE courses SET title = $1, description = $2, default_scoring_standard_id = $3 WHERE id = $4 RETURNING id;`;
+      updateParams = [cleanTitle, cleanDesc, cleanDefaultStandardId, cleanId];
+      if (authUser.role === "TEACHER") {
+        updateSql = `UPDATE courses SET title = $1, description = $2, default_scoring_standard_id = $3 WHERE id = $4 AND created_by = $5 RETURNING id;`;
+        updateParams = [cleanTitle, cleanDesc, cleanDefaultStandardId, cleanId, authUser.userId];
+      }
     }
 
     const res = await queryPg(updateSql, updateParams);
