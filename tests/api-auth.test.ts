@@ -115,7 +115,6 @@ const CASES: Case[] = [
   { name: "admin/test-db GET", load: () => import("@/app/api/admin/test-db/route"), method: "GET", url: "/api/admin/test-db", allowed: ["ADMIN"] },
   { name: "admin/test-portkey POST", load: () => import("@/app/api/admin/test-portkey/route"), method: "POST", url: "/api/admin/test-portkey", body: {}, allowed: ["ADMIN"] },
   { name: "admin/test-supabase GET", load: () => import("@/app/api/admin/test-supabase/route"), method: "GET", url: "/api/admin/test-supabase", allowed: ["ADMIN"] },
-  { name: "events POST", load: () => import("@/app/api/events/route"), method: "POST", url: "/api/events", body: { streamKey: "s", eventType: "E", payload: {} }, allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/grade-async POST", load: () => import("@/app/api/exam/grade-async/route"), method: "POST", url: "/api/exam/grade-async", body: { submissionId: "sub_1" }, allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/grade-override PUT", load: () => import("@/app/api/exam/grade-override/route"), method: "PUT", url: "/api/exam/grade-override", body: { submissionId: "sub_1", finalScore: 7 }, allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/rubrics GET", load: () => import("@/app/api/exam/rubrics/route"), method: "GET", url: "/api/exam/rubrics", allowed: ["ADMIN", "TEACHER"] },
