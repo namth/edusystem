@@ -3,14 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { UserCheck, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight } from "lucide-react";
+import { UserCheck, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight, AlertCircle } from "lucide-react";
 
 interface TeacherUser {
   id: string;
   name: string;
   email: string;
-  password?: string;
   phone?: string;
   created_at: string;
   slot_limit?: number;
@@ -20,6 +18,7 @@ export default function AdminTeachersPage() {
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -36,31 +35,30 @@ export default function AdminTeachersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchTeachers = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("role", "TEACHER")
-        .order("created_at", { ascending: false });
+      const res = await fetch("/api/admin/users?role=TEACHER");
+      const data = await res.json();
 
-      if (userError) {
-        console.error("Teachers load error:", userError);
+      if (!res.ok || !data.users) {
+        setError(data.error || "Không thể tải danh sách giảng viên.");
         return;
       }
 
-      const formatted: TeacherUser[] = (userData || []).map((row: any) => ({
+      const formatted: TeacherUser[] = (data.users || []).map((row: any) => ({
         id: row.id,
         name: row.name,
         email: row.email,
-        password: row.password,
         phone: row.phone || "0912345679",
         created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
         slot_limit: row.slot_limit || 250,
       }));
 
       setTeachers(formatted);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải danh sách giảng viên.");
     } finally {
       setLoading(false);
     }
@@ -211,6 +209,21 @@ export default function AdminTeachersPage() {
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold">{successMsg}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={fetchTeachers}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
           </div>
         )}
 

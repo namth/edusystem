@@ -3,14 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { GraduationCap, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight } from "lucide-react";
+import { GraduationCap, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight, AlertCircle } from "lucide-react";
 
 interface StudentUser {
   id: string;
   name: string;
   email: string;
-  password?: string;
   phone?: string;
   created_at: string;
   enrolled_class_ids?: string[];
@@ -30,6 +28,7 @@ export default function AdminStudentsPage() {
   const [classList, setClassList] = useState<ClassItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modal States
@@ -45,67 +44,46 @@ export default function AdminStudentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchStudentsAndData = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      // 1. Fetch Students
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("role", "STUDENT")
-        .order("created_at", { ascending: false });
+      const [resUsers, resClasses] = await Promise.all([
+        fetch("/api/admin/users?role=STUDENT"),
+        fetch("/api/admin/classes"),
+      ]);
 
-      if (userError) {
-        console.error("Students load error:", userError);
+      const dataUsers = await resUsers.json();
+      const dataClasses = await resClasses.json();
+
+      if (!resUsers.ok || !dataUsers.users) {
+        setError(dataUsers.error || "Không thể tải danh sách học sinh.");
+        return;
+      }
+      if (!resClasses.ok || !dataClasses.classes) {
+        setError(dataClasses.error || "Không thể tải danh sách lớp học.");
         return;
       }
 
-      // 2. Fetch Classes
-      const { data: clsData } = await supabase.from("classes").select("*");
-      setClassList(clsData || []);
+      setClassList(dataClasses.classes || []);
 
-      // 3. Fetch Enrollments
-      const { data: enrData } = await supabase.from("enrollments").select("*");
-      const studentClassIdsMap: Record<string, string[]> = {};
-
-      if (enrData) {
-        enrData.forEach((e: any) => {
-          if (!studentClassIdsMap[e.student_id]) studentClassIdsMap[e.student_id] = [];
-          studentClassIdsMap[e.student_id].push(e.class_id);
-        });
-      }
-
-      // 4. Fetch Submissions
-      const { data: subData } = await supabase.from("submissions").select("*");
-      const studentSubMap: Record<string, { count: number; sum: number }> = {};
-      if (subData) {
-        subData.forEach((s: any) => {
-          if (!studentSubMap[s.student_id]) {
-            studentSubMap[s.student_id] = { count: 0, sum: 0 };
-          }
-          studentSubMap[s.student_id].count += 1;
-          studentSubMap[s.student_id].sum += Number(s.ai_score || s.final_score || 7.0);
-        });
-      }
-
-      const formatted: StudentUser[] = (userData || []).map((row: any) => {
-        const stats = studentSubMap[row.id] || { count: 0, sum: 0 };
-        const avg = stats.count > 0 ? Math.round((stats.sum / stats.count) * 10) / 10 : 7.0;
-
-        return {
-          id: row.id,
-          name: row.name,
-          email: row.email,
-          password: row.password,
-          phone: row.phone || "0912345678",
-          created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
-          enrolled_class_ids: studentClassIdsMap[row.id] || ["cls_101"],
-          tests_count: stats.count,
-          avg_score: avg,
-        };
-      });
+      const formatted: StudentUser[] = (dataUsers.users || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone || "0912345678",
+        created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
+        enrolled_class_ids: row.class_ids || [],
+        tests_count: Number(row.submission_count) || 0,
+        avg_score:
+          row.latest_score !== null && row.latest_score !== undefined
+            ? Number(row.latest_score)
+            : 0,
+      }));
 
       setStudents(formatted);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải danh sách học sinh.");
     } finally {
       setLoading(false);
     }
@@ -189,14 +167,24 @@ export default function AdminStudentsPage() {
     if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản Học viên "${stName}" không?`)) return;
 
     try {
-      const { error } = await supabase.from("users").delete().eq("id", id);
-      if (error) {
-        console.error("Delete student error:", error);
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi xóa học sinh: " + (data.error || "Không rõ nguyên nhân"));
         return;
       }
+
+      setSuccessMsg(`Đã xóa thành công học viên "${stName}" khỏi hệ thống.`);
       fetchStudentsAndData();
-    } catch (e) {
-      console.error(e);
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (e: any) {
+      console.error("Delete student error:", e);
+      alert("Lỗi kết nối khi xóa tài khoản.");
     }
   };
 
@@ -238,7 +226,22 @@ export default function AdminStudentsPage() {
           </div>
         )}
 
-        {/* Clean Students List (No target band, No class names) */}
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={fetchStudentsAndData}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
+
+        {/* Clean Students List */}
         {loading ? (
           <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
             <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
@@ -274,7 +277,7 @@ export default function AdminStudentsPage() {
                   <div className="pt-2 border-t border-[#d8c2b6]/30 flex items-center justify-between text-xs text-[#6d3807]">
                     <span className="flex items-center font-medium">
                       <Award className="w-4 h-4 mr-1 text-[#6d3807]" />
-                      Đã nộp: <strong>{st.tests_count} bài thi</strong> &bull; Score TB: <strong className="ml-1 text-[#6d3807] font-bold">{st.avg_score} / 10</strong>
+                      Đã nộp: <strong>{st.tests_count} bài thi</strong> &bull; Điểm bài mới nhất: <strong className="ml-1 text-[#6d3807] font-bold">{st.avg_score} / 10</strong>
                     </span>
                   </div>
                 </div>

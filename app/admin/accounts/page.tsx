@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { supabase } from "@/lib/supabase";
-import { UserPlus, Filter, BookOpen, Loader2, CheckCircle2, X, Save, Users } from "lucide-react";
+import { UserPlus, BookOpen, Loader2, CheckCircle2, X, Save, Users, AlertCircle } from "lucide-react";
 
 interface AccountUser {
   id: string;
@@ -28,6 +27,7 @@ export default function AdminAccountsPage() {
   const [accounts, setAccounts] = useState<AccountUser[]>([]);
   const [classList, setClassList] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filter & Search states
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -47,68 +47,64 @@ export default function AdminAccountsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const fetchAccountsAndClasses = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      // 1. Fetch all classes
-      const { data: clsData } = await supabase.from("classes").select("*");
-      setClassList(clsData || []);
+      const [resUsers, resClasses] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/classes"),
+      ]);
 
-      // 2. Fetch all enrollments
-      const { data: enrData } = await supabase.from("enrollments").select("*");
+      const dataUsers = await resUsers.json();
+      const dataClasses = await resClasses.json();
 
-      // 3. Fetch all users sorted by created_at DESC
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (userError) {
-        console.error("Accounts fetch error:", userError);
+      if (!resUsers.ok || !dataUsers.users) {
+        setError(dataUsers.error || "Không thể tải danh sách tài khoản.");
+        return;
+      }
+      if (!resClasses.ok || !dataClasses.classes) {
+        setError(dataClasses.error || "Không thể tải danh sách lớp học.");
         return;
       }
 
-      // Build class mapping for teachers and students
-      const userClassIdsMap: Record<string, string[]> = {};
-      const userClassNamesMap: Record<string, string[]> = {};
+      const classes: ClassItem[] = dataClasses.classes || [];
+      setClassList(classes);
 
-      if (clsData) {
-        // Teacher class mappings
-        clsData.forEach((c: any) => {
-          if (!userClassIdsMap[c.teacher_id]) userClassIdsMap[c.teacher_id] = [];
-          if (!userClassNamesMap[c.teacher_id]) userClassNamesMap[c.teacher_id] = [];
-          userClassIdsMap[c.teacher_id].push(c.id);
-          userClassNamesMap[c.teacher_id].push(c.name);
-        });
-      }
+      const classMap: Record<string, string> = {};
+      classes.forEach((c) => {
+        classMap[c.id] = c.name;
+      });
 
-      if (enrData && clsData) {
-        // Student enrollment mappings
-        enrData.forEach((e: any) => {
-          if (!userClassIdsMap[e.student_id]) userClassIdsMap[e.student_id] = [];
-          if (!userClassNamesMap[e.student_id]) userClassNamesMap[e.student_id] = [];
+      const formatted: AccountUser[] = (dataUsers.users || []).map((row: any) => {
+        let classIds: string[] = [];
+        let classNames: string[] = [];
 
-          userClassIdsMap[e.student_id].push(e.class_id);
-          const matchedClass = clsData.find((c) => c.id === e.class_id);
-          if (matchedClass) {
-            userClassNamesMap[e.student_id].push(matchedClass.name);
-          }
-        });
-      }
+        if (row.role === "TEACHER") {
+          const teacherClasses = classes.filter((c) => c.teacher_id === row.id);
+          classIds = teacherClasses.map((c) => c.id);
+          classNames = teacherClasses.map((c) => c.name);
+        } else if (row.role === "STUDENT") {
+          classIds = row.class_ids || [];
+          classNames = classIds.map((cid) => classMap[cid] || cid);
+        }
 
-      const formatted: AccountUser[] = (userData || []).map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        role: row.role,
-        phone: row.phone,
-        target_band: row.target_band,
-        created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
-        class_ids: userClassIdsMap[row.id] || [],
-        classes_names: userClassNamesMap[row.id] || [],
-      }));
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          role: row.role,
+          phone: row.phone,
+          target_band: row.target_band,
+          created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
+          class_ids: classIds,
+          classes_names: classNames,
+        };
+      });
 
       setAccounts(formatted);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải danh sách tài khoản.");
     } finally {
       setLoading(false);
     }
@@ -236,6 +232,21 @@ export default function AdminAccountsPage() {
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold">{successMsg}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={fetchAccountsAndClasses}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
           </div>
         )}
 
