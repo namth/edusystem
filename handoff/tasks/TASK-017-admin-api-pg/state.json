@@ -1,13 +1,33 @@
 {
   "id": "TASK-017",
   "title": "Khu admin chuyển sang API pg: người dùng, lớp, duyệt đơn mua slot",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "a1c8a7d2-b9cf-4be2-884e-7d1a2ce68f90",
   "history": [
     {
       "at": "2026-10-31T13:27:45",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T13:30:05",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T13:30:17",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T13:40:30",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T13:42:33",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -36,5 +56,6 @@
     "tests/student-pages.test.ts",
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts"
-  ]
+  ],
+  "via": "agy"
 }

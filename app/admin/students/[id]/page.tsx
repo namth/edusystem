@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { GraduationCap, Edit3, BookOpen, Loader2, CheckCircle2, Award, ArrowLeft, FileText, X, Save, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
+import { GraduationCap, Edit3, BookOpen, Loader2, CheckCircle2, ArrowLeft, FileText, X, Clock, AlertCircle } from "lucide-react";
 
 interface StudentDetail {
   id: string;
@@ -33,7 +32,6 @@ interface SubmissionItem {
 
 export default function AdminStudentDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const studentId = (params?.id || "student_01") as string;
 
   const [student, setStudent] = useState<StudentDetail | null>(null);
@@ -41,6 +39,7 @@ export default function AdminStudentDetailPage() {
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
   const [classList, setClassList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Edit Modals
@@ -56,111 +55,70 @@ export default function AdminStudentDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchStudentData = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      // 1. Fetch Student User
-      const { data: userData } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", studentId)
-        .maybeSingle();
+      const [resUser, resClasses] = await Promise.all([
+        fetch(`/api/admin/users/${studentId}`),
+        fetch("/api/admin/classes"),
+      ]);
 
-      if (userData) {
-        const sObj: StudentDetail = {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          phone: userData.phone || "0912345678",
-          target_band: userData.target_band || "IELTS 7.5",
-          created_at: new Date(userData.created_at).toLocaleDateString("vi-VN"),
-        };
-        setStudent(sObj);
-        setName(sObj.name);
-        setEmail(sObj.email);
-        setPhone(sObj.phone || "");
-        setTargetBand(sObj.target_band || "IELTS 7.5");
-      } else {
-        // Fallback
-        const fallbackObj: StudentDetail = {
-          id: studentId,
-          name: "Học Viên Trần Hoàng Nam",
-          email: "namtran.student@gmail.com",
-          phone: "0912345678",
-          target_band: "IELTS 7.5",
-          created_at: "18/07/2026",
-        };
-        setStudent(fallbackObj);
-        setName(fallbackObj.name);
-        setEmail(fallbackObj.email);
-        setPhone(fallbackObj.phone || "");
-        setTargetBand(fallbackObj.target_band || "IELTS 7.5");
+      const dataUser = await resUser.json();
+      const dataClasses = await resClasses.json();
+
+      if (!resUser.ok || !dataUser.user) {
+        setError(dataUser.error || "Không thể tải thông tin học sinh.");
+        return;
       }
 
-      // 2. Fetch All Classes
-      const { data: clsData } = await supabase.from("classes").select("*");
-      setClassList(clsData || []);
+      const allClasses = dataClasses.classes || [];
+      setClassList(allClasses);
 
-      // 3. Fetch Student Enrollments
-      const { data: enrData } = await supabase
-        .from("enrollments")
-        .select("*")
-        .eq("student_id", studentId);
+      const u = dataUser.user;
+      const sObj: StudentDetail = {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone || "0912345678",
+        target_band: u.target_band || "IELTS 7.5",
+        created_at: new Date(u.created_at).toLocaleDateString("vi-VN"),
+      };
+      setStudent(sObj);
+      setName(sObj.name);
+      setEmail(sObj.email);
+      setPhone(sObj.phone || "");
+      setTargetBand(sObj.target_band || "IELTS 7.5");
 
-      const enrolledIds = (enrData || []).map((e: any) => e.class_id);
-      setSelectedClassIds(enrolledIds.length > 0 ? enrolledIds : ["cls_101"]);
+      const userClasses = dataUser.classes || [];
+      const enrolledIds = userClasses.map((c: any) => c.id);
+      setSelectedClassIds(enrolledIds);
 
-      if (clsData) {
-        const matched = clsData.filter((c: any) => enrolledIds.includes(c.id));
-        if (matched.length > 0) {
-          setEnrolledClasses(
-            matched.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              code: c.code,
-              teacher_name: "Thầy Nguyễn Văn Đức",
-            }))
-          );
-        } else {
-          setEnrolledClasses([
-            {
-              id: "cls_101",
-              name: "IELTS Master 7.5 - K24",
-              code: "IELTS75K24",
-              teacher_name: "Thầy Nguyễn Văn Đức",
-            },
-          ]);
-        }
-      }
+      const classTeacherMap: Record<string, string> = {};
+      allClasses.forEach((c: any) => {
+        classTeacherMap[c.id] = c.teacher_name || "Giảng viên phụ trách";
+      });
 
-      // 4. Fetch Student Submissions
-      const { data: subData } = await supabase
-        .from("submissions")
-        .select("*")
-        .eq("student_id", studentId)
-        .order("submitted_at", { ascending: false });
+      setEnrolledClasses(
+        userClasses.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          code: c.code,
+          teacher_name: classTeacherMap[c.id] || "Giảng viên phụ trách",
+        }))
+      );
 
-      if (subData && subData.length > 0) {
-        setSubmissions(
-          subData.map((s: any) => ({
-            id: s.id,
-            exam_title: "Đề Thi Thử IELTS Mock Test Standard #01",
-            overall_score: Number(s.ai_score || s.final_score || 8.0),
-            submitted_at: new Date(s.submitted_at || Date.now()).toLocaleDateString("vi-VN"),
-            status: s.status || "TEACHER_VERIFIED",
-          }))
-        );
-      } else {
-        setSubmissions([
-          {
-            id: "sub_101",
-            exam_title: "Đề Thi Thử IELTS Mock Test Standard #01",
-            overall_score: 8.0,
-            submitted_at: "19/07/2026",
-            status: "TEACHER_VERIFIED",
-          },
-        ]);
-      }
-    } catch (e) {
+      setSubmissions(
+        (dataUser.submissions || []).map((s: any) => ({
+          id: s.id,
+          exam_title: s.exam_title || s.title || "Đề thi IELTS Mock Test",
+          overall_score: Number(s.final_score ?? s.ai_score ?? 0),
+          submitted_at: new Date(s.submitted_at || s.created_at || Date.now()).toLocaleDateString("vi-VN"),
+          status: s.status || "TEACHER_VERIFIED",
+        }))
+      );
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải thông tin học sinh.");
     } finally {
       setLoading(false);
     }
@@ -180,22 +138,23 @@ export default function AdminStudentDetailPage() {
 
   const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!name.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
+      const res = await fetch(`/api/admin/users/${studentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: name.trim(),
-          email: email.trim(),
           phone: phone.trim(),
           target_band: targetBand.trim(),
-        })
-        .eq("id", studentId);
+        }),
+      });
 
-      if (error) {
-        console.error("Update student info error:", error);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi cập nhật thông tin: " + (data.error || "Không rõ lỗi"));
         return;
       }
 
@@ -203,8 +162,9 @@ export default function AdminStudentDetailPage() {
       setShowEditInfoModal(false);
       fetchStudentData();
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert("Lỗi kết nối khi cập nhật thông tin học sinh.");
     } finally {
       setIsSubmitting(false);
     }
@@ -214,24 +174,27 @@ export default function AdminStudentDetailPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Clear old enrollments & insert new
-      await supabase.from("enrollments").delete().eq("student_id", studentId);
+      const res = await fetch(`/api/admin/users/${studentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          class_ids: selectedClassIds,
+        }),
+      });
 
-      if (selectedClassIds.length > 0) {
-        const rows = selectedClassIds.map((cId) => ({
-          id: `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 100)}`,
-          student_id: studentId,
-          class_id: cId,
-        }));
-        await supabase.from("enrollments").insert(rows);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi gán lớp học: " + (data.error || "Không rõ lỗi"));
+        return;
       }
 
       setSuccessMsg("Đã cập nhật danh sách lớp học ghi danh!");
       setShowEditClassesModal(false);
       fetchStudentData();
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert("Lỗi kết nối khi gán lớp học.");
     } finally {
       setIsSubmitting(false);
     }
@@ -274,6 +237,21 @@ export default function AdminStudentDetailPage() {
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold">{successMsg}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={fetchStudentData}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
           </div>
         )}
 
@@ -333,21 +311,25 @@ export default function AdminStudentDetailPage() {
               </div>
 
               <div className="space-y-3">
-                {enrolledClasses.map((c) => (
-                  <div key={c.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-[#fff8f5] flex items-center justify-between">
-                    <div>
-                      <span className="px-2.5 py-0.5 rounded bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-[10px] font-bold">
-                        Mã Lớp: {c.code}
-                      </span>
-                      <h3 className="text-base font-bold text-[#211a16] mt-1">{c.name}</h3>
-                      <p className="text-xs text-[#52443a]">Giảng viên: {c.teacher_name}</p>
-                    </div>
+                {enrolledClasses.length === 0 ? (
+                  <p className="text-xs text-[#52443a] italic p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6]">Học viên chưa ghi danh vào lớp học nào.</p>
+                ) : (
+                  enrolledClasses.map((c) => (
+                    <div key={c.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-[#fff8f5] flex items-center justify-between">
+                      <div>
+                        <span className="px-2.5 py-0.5 rounded bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-[10px] font-bold">
+                          Mã Lớp: {c.code}
+                        </span>
+                        <h3 className="text-base font-bold text-[#211a16] mt-1">{c.name}</h3>
+                        <p className="text-xs text-[#52443a]">Giảng viên: {c.teacher_name}</p>
+                      </div>
 
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                      Đang Học Active
-                    </span>
-                  </div>
-                ))}
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                        Đang Học Active
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -355,25 +337,29 @@ export default function AdminStudentDetailPage() {
             <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
               <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2 border-b border-[#d8c2b6]/40 pb-3">
                 <FileText className="w-5 h-5 text-[#6d3807]" />
-                <span>Lịch Sử Bài Thi &amp; Điểm Số AI ({submissions.length} Bài)</span>
+                <span>Lịch Sử Bài Thi &amp; Điểm Số ({submissions.length} Bài)</span>
               </h2>
 
               <div className="space-y-3">
-                {submissions.map((sub) => (
-                  <div key={sub.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-white flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-[#211a16]">{sub.exam_title}</h3>
-                      <p className="text-xs text-[#857469] flex items-center mt-1">
-                        <Clock className="w-3.5 h-3.5 mr-1" /> Nộp bài: {sub.submitted_at}
-                      </p>
-                    </div>
+                {submissions.length === 0 ? (
+                  <p className="text-xs text-[#52443a] italic p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6]">Học viên chưa nộp bài thi nào.</p>
+                ) : (
+                  submissions.map((sub) => (
+                    <div key={sub.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-white flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-[#211a16]">{sub.exam_title}</h3>
+                        <p className="text-xs text-[#857469] flex items-center mt-1">
+                          <Clock className="w-3.5 h-3.5 mr-1" /> Nộp bài: {sub.submitted_at}
+                        </p>
+                      </div>
 
-                    <div className="text-right">
-                      <span className="text-xs text-[#52443a] block">AI Overall Band Score:</span>
-                      <span className="text-xl font-bold text-[#6d3807]">{sub.overall_score} / 10</span>
+                      <div className="text-right">
+                        <span className="text-xs text-[#52443a] block">Điểm số:</span>
+                        <span className="text-xl font-bold text-[#6d3807]">{sub.overall_score} / 10</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -403,13 +389,12 @@ export default function AdminStudentDetailPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Email Đăng Nhập (*)</label>
+                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Email Đăng Nhập</label>
                   <input
                     type="email"
-                    required
+                    disabled
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-[#f0eae5] border border-[#d8c2b6] rounded-xl text-sm opacity-70 cursor-not-allowed"
                   />
                 </div>
 

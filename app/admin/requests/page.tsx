@@ -2,80 +2,52 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { supabase } from "@/lib/supabase";
-import { CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Info } from "lucide-react";
 
 interface SlotRequest {
   id: string;
+  teacher_id: string;
   teacher_name: string;
   teacher_email: string;
   requested_slots: number;
   total_cost: number;
-  status: "PENDING" | "APPROVED";
-  created_at: string;
-}
-
-interface PurchaseOrder {
-  id: string;
-  student_name: string;
-  student_email: string;
-  course_title: string;
-  amount: number;
-  transfer_code: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   created_at: string;
 }
 
 export default function AdminRequestsPage() {
   const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchRequests = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      // 1. Fetch Slot Requests
-      const { data: slotData, error: slotError } = await supabase
-        .from("slot_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const res = await fetch("/api/admin/requests");
+      const data = await res.json();
 
-      // 2. Fetch Orders
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (slotError || orderError) {
-        console.error("Requests query error:", slotError, orderError);
+      if (!res.ok || !data.slot_requests) {
+        setError(data.error || "Không thể tải danh sách đơn mua slot.");
         return;
       }
 
       setSlotRequests(
-        (slotData || []).map((row: any) => ({
+        (data.slot_requests || []).map((row: any) => ({
           id: row.id,
+          teacher_id: row.teacher_id,
           teacher_name: row.teacher_name,
           teacher_email: row.teacher_email,
-          requested_slots: row.requested_slots,
+          requested_slots: Number(row.requested_slots),
           total_cost: Number(row.total_cost),
           status: row.status,
           created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
         }))
       );
-
-      setOrders(
-        (orderData || []).map((row: any) => ({
-          id: row.id,
-          student_name: row.student_name,
-          student_email: row.student_email,
-          course_title: row.course_title,
-          amount: Number(row.amount),
-          transfer_code: row.transfer_code,
-          status: row.status,
-          created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
-        }))
-      );
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải các yêu cầu thanh toán.");
     } finally {
       setLoading(false);
     }
@@ -85,37 +57,37 @@ export default function AdminRequestsPage() {
     fetchRequests();
   }, []);
 
-  const handleApproveSlot = async (id: string) => {
+  const handleAction = async (id: string, action: "APPROVE" | "REJECT") => {
+    setProcessingId(id);
     try {
-      const { error } = await supabase
-        .from("slot_requests")
-        .update({ status: "APPROVED" })
-        .eq("id", id);
+      const res = await fetch(`/api/admin/requests/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
 
-      if (error) {
-        console.error("Approve slot failed:", error);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi xử lý đơn: " + (data.error || "Không rõ nguyên nhân"));
         return;
       }
-      fetchRequests();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const handleApproveOrder = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "APPROVED" })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Approve order failed:", error);
-        return;
-      }
-      fetchRequests();
-    } catch (err) {
+      // Cập nhật dòng tại chỗ
+      setSlotRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                status: data.slot_request?.status || (action === "APPROVE" ? "APPROVED" : "REJECTED"),
+              }
+            : r
+        )
+      );
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi gửi yêu cầu xử lý đơn.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -128,9 +100,24 @@ export default function AdminRequestsPage() {
             Purchase Request Approval
           </h1>
           <p className="text-sm text-[#52443a] mt-1">
-            Bám sát thiết kế Stitch `Admin Portal: Request Management`. Quản lý phê duyệt giao dịch mua khoá học của học viên &amp; mua thêm slot của giảng viên.
+            Bám sát thiết kế Stitch `Admin Portal: Request Management`. Quản lý phê duyệt giao dịch mua thêm slot của giảng viên.
           </p>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={fetchRequests}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center space-x-2 font-mono text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
@@ -164,17 +151,31 @@ export default function AdminRequestsPage() {
                         </div>
                       </div>
 
-                      <div>
+                      <div className="flex items-center space-x-2">
                         {req.status === "PENDING" ? (
-                          <button
-                            onClick={() => handleApproveSlot(req.id)}
-                            className="px-3.5 py-1.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[10px] font-mono font-bold rounded-lg shadow"
-                          >
-                            Duyệt
-                          </button>
-                        ) : (
+                          <>
+                            <button
+                              disabled={processingId === req.id}
+                              onClick={() => handleAction(req.id, "APPROVE")}
+                              className="px-3.5 py-1.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[10px] font-mono font-bold rounded-lg shadow disabled:opacity-50"
+                            >
+                              Duyệt
+                            </button>
+                            <button
+                              disabled={processingId === req.id}
+                              onClick={() => handleAction(req.id, "REJECT")}
+                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-mono font-bold rounded-lg shadow disabled:opacity-50"
+                            >
+                              Từ chối
+                            </button>
+                          </>
+                        ) : req.status === "APPROVED" ? (
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold rounded">
                             APPROVED
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-mono font-bold rounded">
+                            REJECTED
                           </span>
                         )}
                       </div>
@@ -184,48 +185,21 @@ export default function AdminRequestsPage() {
               </div>
             </div>
 
-            {/* Right: Course Orders */}
+            {/* Right: Course Orders placeholder */}
             <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-4">
               <h2 className="text-base font-bold font-headline text-[#6d3807] flex items-center space-x-2">
-                <AlertCircle className="w-5 h-5 text-[#6d3807]" />
-                <span>Thanh Toán Khóa Học Của Học Viên ({orders.filter((o) => o.status === "PENDING").length})</span>
+                <Info className="w-5 h-5 text-[#6d3807]" />
+                <span>Thanh Toán Khóa Học Của Học Viên</span>
               </h2>
 
-              <div className="space-y-3">
-                {orders.length === 0 ? (
-                  <p className="text-xs text-[#52443a]">Không có giao dịch khóa học nào.</p>
-                ) : (
-                  orders.map((ord) => (
-                    <div key={ord.id} className="p-4 rounded-xl border border-[#d8c2b6]/40 bg-[#fff8f5] flex justify-between items-center">
-                      <div>
-                        <div className="text-xs font-bold text-[#211a16] font-headline">
-                          {ord.student_name} &bull; {ord.course_title}
-                        </div>
-                        <div className="text-[10px] font-mono text-[#857469]">
-                          Cú pháp CK: <strong className="text-[#6d3807]">{ord.transfer_code}</strong> &bull; {ord.created_at}
-                        </div>
-                        <div className="text-xs font-mono font-bold text-[#6d3807] mt-1">
-                          Số tiền: {ord.amount.toLocaleString()} VNĐ
-                        </div>
-                      </div>
-
-                      <div>
-                        {ord.status === "PENDING" ? (
-                          <button
-                            onClick={() => handleApproveOrder(ord.id)}
-                            className="px-3.5 py-1.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[10px] font-mono font-bold rounded-lg shadow"
-                          >
-                            Duyệt
-                          </button>
-                        ) : (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold rounded">
-                            APPROVED
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="p-8 text-center border-2 border-dashed border-[#d8c2b6] rounded-2xl bg-[#fff8f5] space-y-2">
+                <Info className="w-8 h-8 text-[#857469] mx-auto" />
+                <p className="text-sm font-semibold text-[#52443a]">
+                  Chưa hỗ trợ đơn mua khóa học của học sinh
+                </p>
+                <p className="text-xs text-[#857469]">
+                  Tính năng thanh toán khóa học đang chờ hoàn thiện bảng dữ liệu và mô hình giá.
+                </p>
               </div>
             </div>
           </div>
