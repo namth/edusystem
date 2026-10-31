@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { parseExamRawTextWithAI, StructuredExamData } from "@/lib/ai-engine";
+import type { StructuredExamData } from "@/lib/ai-engine";
 import { Sparkles, FileText, CheckCircle2, BookOpen, Mic, PenTool, Headphones, Loader2 } from "lucide-react";
 
 export default function AIExamImporterPage() {
@@ -16,8 +16,14 @@ export default function AIExamImporterPage() {
     setIsParsing(true);
     setIsPublished(false);
     try {
-      const result = await parseExamRawTextWithAI(rawContent);
-      setParsedData(result);
+      const res = await fetch("/api/admin/parse-exam-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawContent }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Lỗi bóc tách đề thi.");
+      setParsedData(json.data);
     } catch (e) {
       console.error(e);
     } finally {

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, memo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { evaluateWritingSubmission, evaluateSpeakingSubmission } from "@/lib/ai-engine";
 import { getMediaStimulusInfo, parseSentenceRewriteCue } from "@/lib/question-content-types";
 import { uploadAudioToSupabaseStorage } from "@/lib/audio-storage";
 import {
