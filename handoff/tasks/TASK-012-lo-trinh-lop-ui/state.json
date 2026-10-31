@@ -1,13 +1,33 @@
 {
   "id": "TASK-012",
   "title": "Giao diện tab Lộ trình lớp cho giáo viên và học sinh",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "0dc54369-0afc-423a-8c74-ddc02e2d6ff2",
   "history": [
     {
       "at": "2026-10-31T12:29:25",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:33:39",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:33:59",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:46:22",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:49:35",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -32,5 +52,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-012-lo-trinh-lop-ui/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
