@@ -269,44 +269,14 @@ describe("GET /api/exams/[id] — chi tiết đề", () => {
 describe("/api/submissions chạy trên PostgreSQL (pg)", () => {
   const load = () => import("@/app/api/submissions/route");
 
-  it("POST STUDENT: lưu vào bảng submissions, student_id lấy từ token", async () => {
-    await loginAs("STUDENT", "s3");
+  it("POST (đường nộp cũ) đã ngừng → 410 với mọi vai trò, không ghi DB (thay thế bởi DEC-018)", async () => {
     const { POST } = await load();
-    const res = await POST(req("POST", "/api/submissions", { exam_id: "e1", student_id: "s2", answers: { q1: "A" } }));
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.success).toBe(true);
-    expect(json.data).toMatchObject({ exam_id: "e1", student_id: "s3" });
-    const rows = (await h.pg!.db.query<any>(`SELECT * FROM submissions WHERE exam_id='e1' AND student_id='s3'`)).rows;
-    expect(rows).toHaveLength(1);
-    expect(rows[0].answers).toEqual({ q1: "A" });
-    expect(rows[0].id).toBe(json.data.id);
-    expect((await h.pg!.db.query<any>(`SELECT COUNT(*) n FROM submissions WHERE student_id='s2'`)).rows[0].n).toBe(1);
-  });
-
-  it("POST thiếu exam_id → 400, không ghi", async () => {
-    await loginAs("STUDENT", "s3");
-    const { POST } = await load();
-    const res = await POST(req("POST", "/api/submissions", { answers: {} }));
-    expect(res.status).toBe(400);
-    expect((await h.pg!.db.query<any>(`SELECT COUNT(*) n FROM submissions WHERE student_id='s3'`)).rows[0].n).toBe(0);
-  });
-
-  it("POST TEACHER/ADMIN thiếu student_id → 400 (không còn mặc định student_01)", async () => {
-    await loginAs("TEACHER", "t1");
-    const { POST } = await load();
-    const res = await POST(req("POST", "/api/submissions", { exam_id: "e1", answers: {} }));
-    expect(res.status).toBe(400);
-    expect((await h.pg!.db.query<any>(`SELECT COUNT(*) n FROM submissions WHERE student_id='student_01'`)).rows[0].n).toBe(0);
-  });
-
-  it("POST bài viết đủ dài → lưu điểm AI vào ai_score", async () => {
-    await loginAs("STUDENT", "s3");
-    const { POST } = await load();
-    const res = await POST(req("POST", "/api/submissions", { exam_id: "e3", answers: {}, writing_essay: "This is a sufficiently long essay text for grading." }));
-    expect(res.status).toBe(200);
-    const row = (await h.pg!.db.query<any>(`SELECT * FROM submissions WHERE exam_id='e3' AND student_id='s3'`)).rows[0];
-    expect(Number(row.ai_score)).toBe(6.5);
+    for (const [role, id] of [["STUDENT", "s3"], ["TEACHER", "t1"]] as const) {
+      await loginAs(role, id);
+      const res = await POST(req("POST", "/api/submissions", { exam_id: "e1", student_id: "s2", answers: { q1: "A" } }));
+      expect(res.status).toBe(410);
+    }
+    expect((await h.pg!.db.query<any>(`SELECT COUNT(*)::int n FROM submissions WHERE student_id IN ('s3','student_01')`)).rows[0].n).toBe(0);
   });
 
   it("GET STUDENT: chỉ bài của mình, mới nhất trước, bỏ qua student_id trên query", async () => {

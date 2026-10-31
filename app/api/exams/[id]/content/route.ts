@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import {
+  sanitizeQuestionForStudent,
+  sanitizeFlashcardForStudent,
+} from "@/lib/grading";
 
 export async function GET(
   request: Request,
@@ -88,6 +92,11 @@ export async function GET(
         );
         flashcards = fcRes.rows;
       }
+    }
+
+    if (auth.user.role === "STUDENT") {
+      questions = questions.map((q) => sanitizeQuestionForStudent(q));
+      flashcards = flashcards.map((fc) => sanitizeFlashcardForStudent(fc));
     }
 
     return NextResponse.json({

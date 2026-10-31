@@ -332,5 +332,7 @@ describe("Đường nộp cũ bị khoá", () => {
     await loginAs("STUDENT", "s1");
     const { POST } = await import("@/app/api/submissions/route");
     expect((await POST(req("POST", "/x", { exam_id: "eObj", auto_graded_score: 9 }))).status).toBe(410);
+    expect((await POST(req("POST", "/x", { exam_id: "eObj", answers: {}, writing_essay: "x".repeat(50) }))).status).toBe(410);
+    expect((await POST(req("POST", "/x", {}))).status).toBe(410);
   });
 });
