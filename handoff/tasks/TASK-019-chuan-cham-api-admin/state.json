@@ -1,0 +1,44 @@
+{
+  "id": "TASK-019",
+  "title": "API chuẩn chấm + trang admin + rubric-resolver bằng pg",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-10-31T14:30:29",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-019-chuan-cham-api-admin/verify.sh",
+    "tests/admin-api.test.ts",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/class-roadmap-ui.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exam-scoring.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/flashcards-uploads-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lesson-library-ui.test.ts",
+    "tests/lesson-player.test.ts",
+    "tests/lesson-preview.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/scoring-standards-api.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "docs/db-migration-009-scoring-standards.sql",
+    "handoff/tasks/TASK-019-chuan-cham-api-admin/tsconfig.verify.json"
+  ]
+}
