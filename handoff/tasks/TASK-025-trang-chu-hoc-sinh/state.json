@@ -1,13 +1,33 @@
 {
   "id": "TASK-025",
   "title": "Trang chủ học sinh: bỏ bán khóa học, dùng API pg",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "cb210d19-93bb-4b43-8c20-23c1abd8bfdd",
   "history": [
     {
       "at": "2026-10-31T22:42:20",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T22:42:22",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T22:42:37",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T22:46:49",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T22:48:40",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -45,5 +65,6 @@
     "tests/teacher-classes-api.test.ts",
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts"
-  ]
+  ],
+  "via": "agy"
 }
