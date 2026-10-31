@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hệ thống học tiếng Anh & thi thử có chấm AI
 
-## Getting Started
+Next.js 16 (App Router) · PostgreSQL · Neo4j · Redis Streams · Portkey/OpenAI/Gemini.
+Danh mục tính năng: `FEATURE_INDEX.md` · Bất biến & quy ước: `CONTEXT.md` · Quyết định: `docs/14-decisions.md`.
 
-First, run the development server:
+## Chạy ở máy local
 
 ```bash
+npm ci
+cp .env.example .env.local   # điền DATABASE_URL, JWT_SECRET (≥ 32 ký tự), INTERNAL_API_TOKEN, NEXT_PUBLIC_SUPABASE_*, SUPABASE_SERVICE_ROLE_KEY, khoá AI…
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Lần đầu kết nối DB, `ensureSchema()` tự tạo/bổ sung bảng theo `docs/db-migration-00*.sql`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Biến môi trường thường dùng: `DATABASE_URL`, `JWT_SECRET`, `INTERNAL_API_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (upload Storage), `PORTKEY_API_KEY`, `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `REDIS_URL`, `NEO4J_*`, `SLOT_UNIT_PRICE_VND` (giá mỗi slot AI), `SEED_DEFAULT_PASSWORD` (chỉ khi chạy `lib/db-init.js`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Kiểm thử
 
-## Learn More
+```bash
+npm test                      # Vitest + PGlite (Postgres thật trong bộ nhớ)
+npx tsc --noEmit -p tsconfig.json
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+scripts/deploy.sh             # build image ở máy local (cần Docker Desktop), đẩy lên server, docker compose up --no-build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Phối hợp Claude ↔ Antigravity
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Quy trình giao việc/nghiệm thu: `handoff/README.md`, tiến độ: `handoff/KE-HOACH.md`. Chạy task song song theo worktree (nhiều tài khoản, máy thợ qua SSH): `scripts/agy-worktree.sh`.
