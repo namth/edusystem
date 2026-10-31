@@ -29,3 +29,10 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 - Thông điệp lỗi hiển thị cho người dùng bằng tiếng Việt.
 - Test: Vitest, đặt ở `tests/**/*.test.ts`, chạy `npm test`. Alias `@/` trỏ về gốc repo.
 - `stitch_english_mock_exam_portal/` là mockup thiết kế, chỉ tham khảo, không sửa.
+
+## 5. Bản đồ tài liệu & tính năng
+- `docs/14-decisions.md` — quyết định đã chốt (DEC), thắng khi mâu thuẫn.
+- `docs/features/ai-exam-ingestion.md` — FEAT-009 AI Import DOCX/PDF/ảnh → đề thi.
+- `docs/features/lesson-library.md` — FEAT-010 Kho bài học & học theo lộ trình lớp (TASK-007 → TASK-013).
+- `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
+- `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

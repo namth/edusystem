@@ -1,0 +1,47 @@
+{
+  "id": "TASK-006",
+  "title": "Cây lộ trình: API đầy đủ, cập nhật tại chỗ không tải lại, sửa lỗi kéo thả",
+  "status": "accepted",
+  "conversation_id": "5ad0b76d-b82c-4471-87c6-04d1237abeb4",
+  "history": [
+    {
+      "at": "2026-10-31T10:18:31",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T10:19:45",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T10:20:05",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T10:34:18",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T10:40:26",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-006-cay-lo-trinh-muot/verify.sh",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/ai-import.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/student-api.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "tests/api-auth.test.ts",
+    "tests/secrets-password.test.ts",
+    "vitest.config.ts"
+  ],
+  "via": "agy"
+}

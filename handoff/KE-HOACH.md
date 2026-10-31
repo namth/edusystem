@@ -60,9 +60,21 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 
 - ✅ Khôi phục FEAT-009 AI Import (DOCX/PDF/ảnh → đề thi) từ bản sao lưu server, gắn requireRole, kiểm quyền sở hữu khóa học, SAVEPOINT cho log; migration 005 `system_settings`; Dockerfile Node 22
 
+- ✅ TASK-006 cây lộ trình: API đủ GET/POST/PUT/DELETE, cập nhật tại chỗ, sửa lỗi kéo thả
+- ✅ Đặc tả FEAT-010 Kho bài học (`docs/features/lesson-library.md`, DEC-001…013)
+
+### Đang làm — FEAT-010 Kho bài học
+- TASK-007 migration 006 + `lib/grading.ts` (chấm khách quan server, ẩn đáp án)
+- TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id`
+- TASK-009 tách trình soạn câu hỏi thành component dùng chung
+- TASK-010 UI Kho bài học + soạn bài + bộ chọn trong lộ trình
+- TASK-011 API cài đặt lớp, mở/khoá, tính trạng thái mục
+- TASK-012 API học sinh: lộ trình, làm bài, chấm AI nền
+- TASK-013 UI lộ trình lớp (GV) + tab Lộ trình + trang làm bài (HS)
+
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
-- **TASK-006** chấm trắc nghiệm phía server, không gửi đáp án xuống trình duyệt (hiện client tự chấm và gửi `auto_graded_score`)
+- Đề thi: chuyển sang chấm phía server bằng `lib/grading.ts` (từ TASK-007), không gửi đáp án xuống trình duyệt (hiện client tự chấm và gửi `auto_graded_score`)
 - Khu admin (students, students/[id], requests, accounts, teachers, profile) → API pg
 - Khu giáo viên (classes, classes/[classId], slots, students/create, grading, flashcards) → API pg
 - Trang tạo đề `teacher/tests/create`, `teacher/tests` → API pg, gỡ `mock-data`

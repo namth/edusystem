@@ -1,0 +1,38 @@
+{
+  "id": "TASK-007",
+  "title": "Migration 006 + lib/grading.ts: chấm khách quan phía server và ẩn đáp án",
+  "status": "accepted",
+  "conversation_id": "bfcb8ae8-0fa2-468c-9e24-a90c45a6b137",
+  "history": [
+    {
+      "at": "2026-10-31T11:34:19",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T11:35:38",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T11:35:58",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T11:49:57",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T11:53:31",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-007-grading-migration-006/verify.sh",
+    "vitest.config.ts"
+  ],
+  "via": "agy"
+}

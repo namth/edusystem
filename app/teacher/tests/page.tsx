@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { isNoopGap, computeDrop, type DndItem } from "@/lib/curriculum-dnd";
 import { 
   PlusCircle, 
   Sparkles, 
@@ -32,10 +33,10 @@ import {
 } from "lucide-react";
 import { INITIAL_COURSES } from "@/lib/mock-data";
 
-interface CurriculumItem {
+interface CurriculumItem extends DndItem {
   id: string;
   course_id: string;
-  parent_id?: string | null;
+  parent_id: string | null;
   title: string;
   type: "UNIT" | "LESSON" | "EXAM";
   exam_id?: string | null;
@@ -111,6 +112,23 @@ export default function TeacherTestManagerPage() {
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [selectedExamId, setSelectedExamId] = useState<string>("");
+
+  // In-page non-blocking notification and action loading states
+  const [bannerMessage, setBannerMessage] = useState<{ text: string; type: "error" | "success" } | null>(null);
+  const [submittingActionId, setSubmittingActionId] = useState<string | null>(null);
+
+  const showError = (msg: string) => {
+    setBannerMessage({ text: msg, type: "error" });
+  };
+  const showSuccess = (msg: string) => {
+    setBannerMessage({ text: msg, type: "success" });
+    setTimeout(() => setBannerMessage(null), 4000);
+  };
+
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   // Fetch Curriculum Tree for selected course
   // Fetch Courses owned by logged-in teacher
@@ -252,6 +270,7 @@ export default function TeacherTestManagerPage() {
 
   // Quick add unassigned exam to current syllabus
   const handleAddUnassignedExam = async (exam: ExamOption) => {
+    setSubmittingActionId(`unassigned_${exam.id}`);
     try {
       const res = await fetch("/api/teacher/curriculum", {
         method: "POST",
@@ -259,21 +278,27 @@ export default function TeacherTestManagerPage() {
         body: JSON.stringify({
           course_id: selectedCourseId,
           title: exam.title,
-          type: "LESSON",
+          type: "EXAM",
           parent_id: null,
           exam_id: exam.id,
-          order_index: items.length + 1,
         }),
       });
 
       const json = await res.json();
-      if (json.success) {
-        fetchCurriculum(selectedCourseId);
+      if (json.success && json.item) {
+        const newItem: CurriculumItem = {
+          ...json.item,
+          exam: { id: exam.id, title: exam.title },
+        };
+        setItems((prev) => [...prev, newItem]);
+        showSuccess(`Đã thêm "${exam.title}" vào lộ trình.`);
       } else {
-        alert("Lỗi thêm bài tập vào lộ trình: " + json.error);
+        showError("Lỗi thêm bài tập vào lộ trình: " + (json.error || ""));
       }
-    } catch (err) {
-      console.error("Add unassigned exam error:", err);
+    } catch (err: any) {
+      showError("Lỗi kết nối: " + (err.message || ""));
+    } finally {
+      setSubmittingActionId(null);
     }
   };
 
@@ -313,6 +338,7 @@ export default function TeacherTestManagerPage() {
       }
     }
 
+    setSubmittingActionId("modal_submit");
     try {
       if (editingItem) {
         // Edit Mode
@@ -324,7 +350,6 @@ export default function TeacherTestManagerPage() {
               {
                 id: editingItem.id,
                 title: finalTitle,
-                type: modalType,
                 exam_id: modalType !== "UNIT" ? selectedExamId || null : null,
               },
             ],
@@ -332,11 +357,25 @@ export default function TeacherTestManagerPage() {
         });
 
         const json = await res.json();
-        if (json.success) {
+        if (json.success && json.items?.[0]) {
+          const updated = json.items[0];
+          setItems((prev) =>
+            prev.map((it) =>
+              it.id === updated.id
+                ? {
+                    ...it,
+                    ...updated,
+                    exam: selectedExamObj
+                      ? { id: selectedExamObj.id, title: selectedExamObj.title }
+                      : (updated.exam_id ? it.exam : null),
+                  }
+                : it
+            )
+          );
           setShowModal(false);
-          fetchCurriculum(selectedCourseId);
+          showSuccess("Đã cập nhật mục thành công!");
         } else {
-          alert("Lỗi cập nhật: " + json.error);
+          showError("Lỗi cập nhật: " + (json.error || "Không thể cập nhật mục."));
         }
       } else {
         // Create Mode
@@ -345,93 +384,97 @@ export default function TeacherTestManagerPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_id: selectedCourseId,
+            parent_id: targetParentId,
             title: finalTitle,
             type: modalType,
-            parent_id: targetParentId,
             exam_id: modalType !== "UNIT" ? selectedExamId || null : null,
-            order_index: items.length + 1,
           }),
         });
 
         const json = await res.json();
-        if (json.success) {
+        if (json.success && json.item) {
+          const newItem: CurriculumItem = {
+            ...json.item,
+            exam: selectedExamObj ? { id: selectedExamObj.id, title: selectedExamObj.title } : null,
+          };
+          setItems((prev) => [...prev, newItem]);
+          if (newItem.type === "UNIT") {
+            setExpandedUnits((prev) => ({ ...prev, [newItem.id]: true }));
+          }
           setShowModal(false);
-          fetchCurriculum(selectedCourseId);
+          showSuccess("Đã tạo mục mới thành công!");
         } else {
-          alert("Lỗi tạo mục mới: " + json.error);
+          showError("Lỗi tạo mục mới: " + (json.error || "Không thể tạo mục mới."));
         }
       }
     } catch (err: any) {
-      console.error("Submit modal error:", err);
+      showError("Lỗi kết nối: " + (err.message || ""));
+    } finally {
+      setSubmittingActionId(null);
     }
   };
 
   // Delete Node
   const handleDeleteNode = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa mục này khỏi lộ trình học không?")) return;
+    setSubmittingActionId(`delete_${id}`);
     try {
       const res = await fetch(`/api/teacher/curriculum?id=${id}`, { method: "DELETE" });
       const json = await res.json();
-      if (json.success) {
-        fetchCurriculum(selectedCourseId);
+      if (json.success && Array.isArray(json.deletedIds)) {
+        const deletedSet = new Set(json.deletedIds);
+        setItems((prev) => prev.filter((it) => !deletedSet.has(it.id)));
+        showSuccess("Đã xóa mục khỏi lộ trình!");
+      } else {
+        showError("Lỗi xóa mục: " + (json.error || "Không thể xóa mục."));
       }
-    } catch (err) {
-      console.error("Delete node error:", err);
+    } catch (err: any) {
+      showError("Lỗi kết nối khi xóa: " + (err.message || ""));
+    } finally {
+      setSubmittingActionId(null);
     }
   };
 
   // Reorder via Arrow Buttons
-  const handleMoveArrow = (index: number, direction: "UP" | "DOWN", parentId: string | null) => {
+  const handleMoveArrow = async (index: number, direction: "UP" | "DOWN", parentId: string | null) => {
     const siblingList = items
       .filter((i) => (i.parent_id || null) === parentId)
       .sort((a, b) => a.order_index - b.order_index);
 
-    const targetIndex = direction === "UP" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= siblingList.length) return;
+    const targetItem = siblingList[index];
+    if (!targetItem) return;
 
-    const reordered = [...siblingList];
-    const temp = reordered[index];
-    reordered[index] = reordered[targetIndex];
-    reordered[targetIndex] = temp;
+    const gapIndex = direction === "UP" ? index - 1 : index + 2;
+    const result = computeDrop(items, targetItem.id, parentId, gapIndex);
 
-    applyNewSiblingOrder(reordered, parentId);
-  };
+    if (result.noop) return;
 
-  // Apply new sibling order to React state & DB
-  const applyNewSiblingOrder = (reorderedSiblings: CurriculumItem[], parentId: string | null) => {
-    const updatedSiblings = reorderedSiblings.map((item, idx) => ({
-      ...item,
-      order_index: idx + 1,
-      parent_id: parentId,
-    }));
+    const prevItems = items;
+    setItems(result.items);
 
-    setItems((prevItems) => {
-      const nonSiblings = prevItems.filter((i) => (i.parent_id || null) !== parentId && i.id !== updatedSiblings[0]?.id);
-      const newFullList = [...nonSiblings, ...updatedSiblings].sort((a, b) => a.order_index - b.order_index);
-      syncToBackend(updatedSiblings);
-      return newFullList;
-    });
-  };
-
-  const syncToBackend = async (updatedItems: CurriculumItem[]) => {
-    const payload = updatedItems.map((item) => ({
-      id: item.id,
-      order_index: item.order_index,
-      parent_id: item.parent_id || null,
-    }));
-
+    setSubmittingActionId(`arrow_${targetItem.id}`);
     try {
       const res = await fetch("/api/teacher/curriculum", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payload }),
+        body: JSON.stringify({
+          items: result.changed.map(({ id, parent_id, order_index }) => ({
+            id,
+            parent_id: parent_id ?? null,
+            order_index,
+          })),
+        }),
       });
       const json = await res.json();
       if (!json.success) {
-        console.warn("Backend order sync failed:", json.error);
+        setItems(prevItems);
+        showError("Lỗi cập nhật vị trí: " + (json.error || ""));
       }
-    } catch (err) {
-      console.error("Sync order error:", err);
+    } catch (err: any) {
+      setItems(prevItems);
+      showError("Lỗi kết nối: " + (err.message || ""));
+    } finally {
+      setSubmittingActionId(null);
     }
   };
 
@@ -549,36 +592,36 @@ export default function TeacherTestManagerPage() {
 
       if (pointerDragInfoRef.current) {
         const { activeId, targetParentId, targetIndex } = pointerDragInfoRef.current;
+        const currentItems = itemsRef.current;
+        const result = computeDrop(currentItems, activeId, targetParentId, targetIndex);
 
-        setItems((latestItems) => {
-          const draggedObj = latestItems.find((i) => i.id === activeId);
-          if (!draggedObj) return latestItems;
+        if (!result.noop) {
+          const prevItems = currentItems;
+          setItems(result.items);
 
-          const itemsWithoutDragged = latestItems.filter((i) => i.id !== activeId);
-
-          const targetSiblings = itemsWithoutDragged
-            .filter((i) => (i.parent_id || null) === targetParentId)
-            .sort((a, b) => a.order_index - b.order_index);
-
-          const updatedDraggedObj: CurriculumItem = {
-            ...draggedObj,
-            parent_id: targetParentId,
-          };
-
-          const clampTargetIdx = Math.max(0, Math.min(targetIndex, targetSiblings.length));
-          targetSiblings.splice(clampTargetIdx, 0, updatedDraggedObj);
-
-          const reorderedTargetSiblings = targetSiblings.map((it, idx) => ({
-            ...it,
-            order_index: idx + 1,
-          }));
-
-          const nonTargetSiblings = itemsWithoutDragged.filter((i) => (i.parent_id || null) !== targetParentId);
-          const fullNewItems = [...nonTargetSiblings, ...reorderedTargetSiblings].sort((a, b) => a.order_index - b.order_index);
-
-          syncToBackend(reorderedTargetSiblings);
-          return fullNewItems;
-        });
+          fetch("/api/teacher/curriculum", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: result.changed.map(({ id, parent_id, order_index }) => ({
+                id,
+                parent_id: parent_id ?? null,
+                order_index,
+              })),
+            }),
+          })
+            .then(async (res) => {
+              const json = await res.json();
+              if (!json.success) {
+                setItems(prevItems);
+                showError("Lỗi cập nhật vị trí kéo thả: " + (json.error || ""));
+              }
+            })
+            .catch((err) => {
+              setItems(prevItems);
+              showError("Lỗi kết nối khi kéo thả: " + (err.message || ""));
+            });
+        }
       }
 
       setActivePointerDragId(null);
@@ -642,6 +685,26 @@ export default function TeacherTestManagerPage() {
             </Link>
           </div>
         </div>
+
+        {/* In-page Non-blocking Alert Banner */}
+        {bannerMessage && (
+          <div
+            className={`p-4 rounded-xl border flex items-center justify-between transition-all shadow-xs ${
+              bannerMessage.type === "error"
+                ? "bg-rose-50 border-rose-200 text-rose-800"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800"
+            }`}
+          >
+            <span className="text-xs font-bold">{bannerMessage.text}</span>
+            <button
+              type="button"
+              onClick={() => setBannerMessage(null)}
+              className="p-1 rounded-lg hover:bg-black/5 text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Content Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -754,11 +817,16 @@ export default function TeacherTestManagerPage() {
                       </div>
                       <button
                         type="button"
+                        disabled={submittingActionId === `unassigned_${ex.id}`}
                         onClick={() => handleAddUnassignedExam(ex)}
-                        className="p-1.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#6d3807] hover:text-white rounded-lg transition-all border border-[#d8c2b6] shrink-0"
+                        className="p-1.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#6d3807] hover:text-white rounded-lg transition-all border border-[#d8c2b6] shrink-0 disabled:opacity-50"
                         title="Thêm vào cuối lộ trình"
                       >
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        {submittingActionId === `unassigned_${ex.id}` ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
                   ))}
@@ -837,9 +905,13 @@ export default function TeacherTestManagerPage() {
                           className="space-y-2 transition-all duration-200"
                         >
                           {/* DASHED TARGET PREVIEW SLOT FOR ROOT LEVEL (BEFORE ITEM) */}
-                          {isTargetHoveredRoot && !isBeingDragged && (
-                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
-                          )}
+                          {isTargetHoveredRoot &&
+                            !isBeingDragged &&
+                            activePointerDragId &&
+                            pointerTargetState &&
+                            !isNoopGap(items, activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
+                              <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
+                            )}
 
                           {/* Main Root Item Card (FULL BAR DRAG) */}
                           <div
@@ -954,11 +1026,16 @@ export default function TeacherTestManagerPage() {
                                 {/* Delete Item */}
                                 <button
                                   type="button"
+                                  disabled={submittingActionId === `delete_${rootNode.id}`}
                                   onClick={() => handleDeleteNode(rootNode.id)}
-                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-all border border-rose-200"
+                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-all border border-rose-200 disabled:opacity-40"
                                   title="Xóa"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  {submittingActionId === `delete_${rootNode.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -972,7 +1049,9 @@ export default function TeacherTestManagerPage() {
                               >
                                 {/* PREVIEW FRAME FOR EMPTY UNIT DROP ZONE */}
                                 {children.length === 0 ? (
-                                  pointerTargetState?.parentId === rootNode.id ? (
+                                  pointerTargetState?.parentId === rootNode.id &&
+                                  activePointerDragId &&
+                                  !isNoopGap(items, activePointerDragId, rootNode.id, pointerTargetState.hoverIndex) ? (
                                     <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-14 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner flex items-center justify-center">
                                       <span className="text-xs font-bold text-[#6d3807] animate-pulse">Thả bài học vào đây...</span>
                                     </div>
@@ -1008,9 +1087,13 @@ export default function TeacherTestManagerPage() {
                                         className="space-y-1.5 transition-all duration-200"
                                       >
                                         {/* DASHED TARGET PREVIEW SLOT FOR CHILD LEVEL (BEFORE CHILD) */}
-                                        {isTargetHoveredChild && !isChildBeingDragged && (
-                                          <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
-                                        )}
+                                        {isTargetHoveredChild &&
+                                          !isChildBeingDragged &&
+                                          activePointerDragId &&
+                                          pointerTargetState &&
+                                          !isNoopGap(items, activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
+                                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
+                                          )}
 
                                         <div
                                           onPointerDown={(e) => handleStartPointerDrag(e, child, childIdx)}
@@ -1087,19 +1170,28 @@ export default function TeacherTestManagerPage() {
 
                                             <button
                                               type="button"
+                                              disabled={submittingActionId === `delete_${child.id}`}
                                               onClick={() => handleDeleteNode(child.id)}
-                                              className="p-1 text-rose-600 hover:bg-rose-50 rounded border border-rose-200"
+                                              className="p-1 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 disabled:opacity-40"
                                               title="Xóa"
                                             >
-                                              <Trash2 className="w-3.5 h-3.5" />
+                                              {submittingActionId === `delete_${child.id}` ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                              ) : (
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              )}
                                             </button>
                                           </div>
                                         </div>
 
                                         {/* DASHED TARGET PREVIEW SLOT AT VERY END OF UNIT CHILDREN */}
-                                        {isTargetHoveredChildEnd && !isChildBeingDragged && (
-                                          <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
-                                        )}
+                                        {isTargetHoveredChildEnd &&
+                                          !isChildBeingDragged &&
+                                          activePointerDragId &&
+                                          pointerTargetState &&
+                                          !isNoopGap(items, activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
+                                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
+                                          )}
                                       </div>
                                     );
                                   })
@@ -1109,9 +1201,13 @@ export default function TeacherTestManagerPage() {
                           </div>
 
                           {/* DASHED TARGET PREVIEW SLOT AT VERY END OF ROOT LIST */}
-                          {isTargetHoveredRootEnd && !isBeingDragged && (
-                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
-                          )}
+                          {isTargetHoveredRootEnd &&
+                            !isBeingDragged &&
+                            activePointerDragId &&
+                            pointerTargetState &&
+                            !isNoopGap(items, activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
+                              <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
+                            )}
                         </div>
                       );
                     })}
@@ -1260,10 +1356,12 @@ export default function TeacherTestManagerPage() {
                 Hủy
               </button>
               <button
+                disabled={submittingActionId === "modal_submit"}
                 onClick={handleSubmitModal}
-                className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-[#ffffff] font-bold rounded-xl text-xs shadow-sm transition-all"
+                className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-[#ffffff] font-bold rounded-xl text-xs shadow-sm transition-all disabled:opacity-50 flex items-center space-x-1.5"
               >
-                {editingItem ? "Lưu Thay Đổi" : "Tạo Mới"}
+                {submittingActionId === "modal_submit" && <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />}
+                <span>{editingItem ? "Lưu Thay Đổi" : "Tạo Mới"}</span>
               </button>
             </div>
           </div>

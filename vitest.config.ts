@@ -8,5 +8,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // PGlite khởi tạo Postgres WASM mỗi test; chạy song song cả bộ có thể > 5s
+    testTimeout: 20000,
   },
 });
