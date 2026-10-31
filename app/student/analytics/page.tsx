@@ -4,19 +4,21 @@ import { useState, useEffect } from "react";
 import StudentLayout from "@/components/StudentLayout";
 import Link from "next/link";
 import { FileText, ChevronDown, MessageSquare, Loader2, AlertCircle } from "lucide-react";
+import {
+  submissionScore,
+  submissionSkillScores,
+  formatScore,
+  SubmissionScoreResult,
+  SkillScoreItem,
+} from "@/lib/score-display";
 
 interface SubItem {
   id: string;
   exam_id: string;
   title: string;
   date: string;
-  score: number | null;
-  skills: {
-    listening: number | null;
-    reading: number | null;
-    writing: number | null;
-    speaking: number | null;
-  };
+  scoreInfo: SubmissionScoreResult;
+  skills: Record<"Listening" | "Reading" | "Writing" | "Speaking", SkillScoreItem>;
   feedback: string;
 }
 
@@ -59,7 +61,8 @@ export default function StudentAnalyticsPage() {
       const rawSubs: any[] = subsJson.data || [];
       const list: SubItem[] = rawSubs.map((sub: any) => {
         const dateStr = sub.created_at ? new Date(sub.created_at).toLocaleDateString("vi-VN") : "";
-        const rawScore = sub.final_score != null ? Number(sub.final_score) : (sub.ai_score != null ? Number(sub.ai_score) : null);
+        const scoreInfo = submissionScore(sub);
+        const skillScores = submissionSkillScores(sub);
 
         let feedbackText = "Chưa có nhận xét.";
         if (sub.final_feedback) {
@@ -82,13 +85,8 @@ export default function StudentAnalyticsPage() {
           exam_id: sub.exam_id,
           title: examsMap[sub.exam_id] || "Đề thi đã xoá",
           date: dateStr,
-          score: rawScore,
-          skills: {
-            listening: sub.listening_score != null ? Number(sub.listening_score) : null,
-            reading: sub.reading_score != null ? Number(sub.reading_score) : null,
-            writing: sub.writing_score != null ? Number(sub.writing_score) : null,
-            speaking: sub.speaking_score != null ? Number(sub.speaking_score) : null,
-          },
+          scoreInfo,
+          skills: skillScores,
           feedback: feedbackText,
         };
       });
@@ -96,9 +94,9 @@ export default function StudentAnalyticsPage() {
       setSubmissions(list);
       if (list.length > 0) {
         setExpandedTest(list[0].id);
-        const scoredItems = list.filter((s) => s.score != null);
+        const scoredItems = list.filter((s) => s.scoreInfo.percent != null);
         if (scoredItems.length > 0) {
-          const sum = scoredItems.reduce((acc, curr) => acc + (curr.score as number), 0);
+          const sum = scoredItems.reduce((acc, curr) => acc + (curr.scoreInfo.percent as number), 0);
           setAvgScore(Math.round((sum / scoredItems.length) * 10) / 10);
         } else {
           setAvgScore(null);
@@ -124,7 +122,12 @@ export default function StudentAnalyticsPage() {
 
   const getSkillsBreakdown = () => {
     if (submissions.length === 0) {
-      return { listening: null, reading: null, writing: null, speaking: null };
+      return {
+        Listening: { score: null, min: 0, max: 9 },
+        Reading: { score: null, min: 0, max: 9 },
+        Writing: { score: null, min: 0, max: 9 },
+        Speaking: { score: null, min: 0, max: 9 },
+      };
     }
     const target = submissions.find((s) => s.id === expandedTest) || submissions[0];
     return target.skills;
@@ -132,17 +135,21 @@ export default function StudentAnalyticsPage() {
 
   const currentSkills = getSkillsBreakdown();
 
-  // Radar points rendering based on current selected test skills
-  const scale = 45 / 9;
-  const rScore = currentSkills.reading ?? 0;
-  const lScore = currentSkills.listening ?? 0;
-  const wScore = currentSkills.writing ?? 0;
-  const sScore = currentSkills.speaking ?? 0;
+  const getSkillPercent = (item: SkillScoreItem) => {
+    if (item.score == null || item.max <= item.min) return 0;
+    const pct = ((item.score - item.min) / (item.max - item.min)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  };
 
-  const p1y = 50 - Math.min(9, Math.max(0, rScore)) * scale;
-  const p2x = 50 + Math.min(9, Math.max(0, lScore)) * scale;
-  const p3y = 50 + Math.min(9, Math.max(0, wScore)) * scale;
-  const p4x = 50 - Math.min(9, Math.max(0, sScore)) * scale;
+  const rPercent = getSkillPercent(currentSkills.Reading);
+  const lPercent = getSkillPercent(currentSkills.Listening);
+  const wPercent = getSkillPercent(currentSkills.Writing);
+  const sPercent = getSkillPercent(currentSkills.Speaking);
+
+  const p1y = 50 - rPercent * 0.45;
+  const p2x = 50 + lPercent * 0.45;
+  const p3y = 50 + wPercent * 0.45;
+  const p4x = 50 - sPercent * 0.45;
 
   return (
     <StudentLayout>
@@ -223,25 +230,25 @@ export default function StudentAnalyticsPage() {
                   </svg>
 
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
-                    Reading ({currentSkills.reading != null ? currentSkills.reading : "—"})
+                    Reading ({formatScore({ value: currentSkills.Reading.score, max: currentSkills.Reading.max })})
                   </span>
                   <span className="absolute top-1/2 -right-8 -translate-y-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
-                    Listening ({currentSkills.listening != null ? currentSkills.listening : "—"})
+                    Listening ({formatScore({ value: currentSkills.Listening.score, max: currentSkills.Listening.max })})
                   </span>
                   <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
-                    Writing ({currentSkills.writing != null ? currentSkills.writing : "—"})
+                    Writing ({formatScore({ value: currentSkills.Writing.score, max: currentSkills.Writing.max })})
                   </span>
                   <span className="absolute top-1/2 -left-8 -translate-y-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
-                    Speaking ({currentSkills.speaking != null ? currentSkills.speaking : "—"})
+                    Speaking ({formatScore({ value: currentSkills.Speaking.score, max: currentSkills.Speaking.max })})
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="bg-[#fff8f5] p-4 rounded-xl border border-[#d8c2b6] text-center">
-                  <p className="font-mono text-xs text-[#52443a] mb-1">Avg. Band Score</p>
+                  <p className="font-mono text-xs text-[#52443a] mb-1">Avg. Score</p>
                   <p className="font-headline text-3xl font-bold text-[#6d3807]">
-                    {avgScore != null ? avgScore : "—"}
+                    {avgScore != null ? `${avgScore}%` : "—"}
                   </p>
                 </div>
                 <div className="bg-[#fff8f5] p-4 rounded-xl border border-[#d8c2b6] text-center">
@@ -256,83 +263,97 @@ export default function StudentAnalyticsPage() {
               <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#d8c2b6] font-mono text-xs text-[#52443a]">
                 <div className="col-span-5 font-bold">Test Name</div>
                 <div className="col-span-3">Date</div>
-                <div className="col-span-2 text-center">Band Score</div>
+                <div className="col-span-2 text-center">Score</div>
                 <div className="col-span-2 text-right">Chi Tiết</div>
               </div>
 
-              {submissions.map((sub) => (
-                <div key={sub.id} className="bg-[#ffffff] rounded-2xl border border-[#d8c2b6] shadow-sm overflow-hidden transition-all">
-                  <div
-                    onClick={() => toggleExpand(sub.id)}
-                    className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-[#fff1ea] transition-colors"
-                  >
-                    <div className="col-span-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#ffb782] flex items-center justify-center text-[#6d3807]">
-                        <FileText className="w-5 h-5" />
+              {submissions.map((sub) => {
+                const scoreText = formatScore(sub.scoreInfo);
+                const scoreBadgeLabel =
+                  sub.scoreInfo.value != null
+                    ? sub.scoreInfo.standard_name
+                      ? `${scoreText} (${sub.scoreInfo.standard_name})`
+                      : scoreText
+                    : sub.scoreInfo.status === "GRADING"
+                    ? "Đang chấm"
+                    : sub.scoreInfo.status === "NEEDS_REVIEW"
+                    ? "Chờ giáo viên chấm"
+                    : "—";
+
+                return (
+                  <div key={sub.id} className="bg-[#ffffff] rounded-2xl border border-[#d8c2b6] shadow-sm overflow-hidden transition-all">
+                    <div
+                      onClick={() => toggleExpand(sub.id)}
+                      className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-[#fff1ea] transition-colors"
+                    >
+                      <div className="col-span-5 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#ffb782] flex items-center justify-center text-[#6d3807]">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-headline text-sm font-bold text-[#211a16]">{sub.title}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-headline text-sm font-bold text-[#211a16]">{sub.title}</p>
+                      <div className="col-span-3 font-mono text-xs text-[#52443a]">{sub.date}</div>
+                      <div className="col-span-2 text-center">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#DCFCE7] text-emerald-800 font-mono text-xs font-bold">
+                          {scoreBadgeLabel}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right flex justify-end">
+                        <ChevronDown
+                          className={`w-5 h-5 text-[#6d3807] transition-transform ${
+                            expandedTest === sub.id ? "rotate-180" : ""
+                          }`}
+                        />
                       </div>
                     </div>
-                    <div className="col-span-3 font-mono text-xs text-[#52443a]">{sub.date}</div>
-                    <div className="col-span-2 text-center">
-                      <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#DCFCE7] text-emerald-800 font-mono text-xs font-bold">
-                        {sub.score != null ? sub.score : "—"}
-                      </span>
-                    </div>
-                    <div className="col-span-2 text-right flex justify-end">
-                      <ChevronDown
-                        className={`w-5 h-5 text-[#6d3807] transition-transform ${
-                          expandedTest === sub.id ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
+
+                    {expandedTest === sub.id && (
+                      <div className="border-t border-[#d8c2b6] bg-[#fff8f5] p-6 space-y-6">
+                        {/* Skill Breakdown */}
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
+                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Listening</span>
+                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                              {formatScore({ value: sub.skills.Listening.score, max: sub.skills.Listening.max })}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
+                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Reading</span>
+                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                              {formatScore({ value: sub.skills.Reading.score, max: sub.skills.Reading.max })}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
+                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Writing</span>
+                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                              {formatScore({ value: sub.skills.Writing.score, max: sub.skills.Writing.max })}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
+                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Speaking</span>
+                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                              {formatScore({ value: sub.skills.Speaking.score, max: sub.skills.Speaking.max })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Feedback */}
+                        <div className="space-y-3">
+                          <h4 className="font-headline text-xs font-bold text-[#6d3807] uppercase flex items-center space-x-2">
+                            <MessageSquare className="w-4 h-4 text-[#6d3807]" />
+                            <span>Nhận Xét Chi Tiết Từ Giáo Viên / AI</span>
+                          </h4>
+                          <div className="p-4 rounded-xl bg-[#fff1ea] border border-[#ffb783] text-xs text-[#52443a] leading-relaxed">
+                            "{sub.feedback}"
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  {expandedTest === sub.id && (
-                    <div className="border-t border-[#d8c2b6] bg-[#fff8f5] p-6 space-y-6">
-                      {/* Skill Breakdown */}
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                          <span className="font-mono text-[10px] uppercase text-[#52443a]">Listening</span>
-                          <span className="font-headline text-xl font-bold text-[#211a16]">
-                            {sub.skills.listening != null ? sub.skills.listening : "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                          <span className="font-mono text-[10px] uppercase text-[#52443a]">Reading</span>
-                          <span className="font-headline text-xl font-bold text-[#211a16]">
-                            {sub.skills.reading != null ? sub.skills.reading : "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                          <span className="font-mono text-[10px] uppercase text-[#52443a]">Writing</span>
-                          <span className="font-headline text-xl font-bold text-[#211a16]">
-                            {sub.skills.writing != null ? sub.skills.writing : "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                          <span className="font-mono text-[10px] uppercase text-[#52443a]">Speaking</span>
-                          <span className="font-headline text-xl font-bold text-[#211a16]">
-                            {sub.skills.speaking != null ? sub.skills.speaking : "—"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Feedback */}
-                      <div className="space-y-3">
-                        <h4 className="font-headline text-xs font-bold text-[#6d3807] uppercase flex items-center space-x-2">
-                          <MessageSquare className="w-4 h-4 text-[#6d3807]" />
-                          <span>Nhận Xét Chi Tiết Từ Giáo Viên / AI</span>
-                        </h4>
-                        <div className="p-4 rounded-xl bg-[#fff1ea] border border-[#ffb783] text-xs text-[#52443a] leading-relaxed">
-                          "{sub.feedback}"
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

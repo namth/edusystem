@@ -19,6 +19,7 @@ import {
   Route,
 } from "lucide-react";
 import StudentRoadmap from "@/components/class-roadmap/StudentRoadmap";
+import { submissionScore, formatScore, SubmissionScoreResult } from "@/lib/score-display";
 
 interface UserClass {
   id: string;
@@ -44,7 +45,7 @@ interface GradedSubmission {
   id: string;
   exam_id: string;
   exam_title: string;
-  score: number | null;
+  scoreInfo: SubmissionScoreResult;
   status: string;
   created_at: string;
   ai_feedback?: any;
@@ -132,12 +133,12 @@ export default function StudentClassDetailPage() {
       }
 
       const gradedList: GradedSubmission[] = (classJson.submissions || []).map((s: any) => {
-        const rawScore = s.final_score != null ? Number(s.final_score) : (s.ai_score != null ? Number(s.ai_score) : null);
+        const scoreInfo = submissionScore(s);
         return {
           id: s.id,
           exam_id: s.exam_id,
           exam_title: examTitleMap[s.exam_id] || "Đề thi không còn tồn tại",
-          score: rawScore,
+          scoreInfo,
           status: s.status || "AI_GRADED",
           created_at: s.created_at ? new Date(s.created_at).toLocaleDateString("vi-VN") : "",
           ai_feedback: s.ai_feedback,
@@ -414,45 +415,72 @@ export default function StudentClassDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {gradedSubmissions.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
-                          {sub.status === "TEACHER_REVIEWED" ? "✅ Đã Giáo Viên Review" : "⚡ Đã Chấm AI"}
-                        </span>
-                        <span className="text-xs font-mono text-[#857469]">Ngày nộp: {sub.created_at}</span>
+                {gradedSubmissions.map((sub) => {
+                  const formatted = formatScore(sub.scoreInfo);
+                  const scoreDisplay =
+                    sub.scoreInfo.value != null
+                      ? sub.scoreInfo.standard_name
+                        ? `${formatted} (${sub.scoreInfo.standard_name})`
+                        : formatted
+                      : sub.scoreInfo.status === "GRADING"
+                      ? "Đang chấm"
+                      : sub.scoreInfo.status === "NEEDS_REVIEW"
+                      ? "Chờ giáo viên chấm"
+                      : "Chưa chấm";
+
+                  const statusBadgeLabel =
+                    sub.scoreInfo.status === "GRADING"
+                      ? "⚡ Đang Chấm"
+                      : sub.scoreInfo.status === "NEEDS_REVIEW"
+                      ? "⏳ Chờ giáo viên chấm"
+                      : sub.status === "TEACHER_REVIEWED"
+                      ? "✅ Đã Giáo Viên Review"
+                      : sub.status === "GRADED"
+                      ? "✅ Đã Chấm"
+                      : "⚡ Đã Chấm AI";
+
+                  return (
+                    <div
+                      key={sub.id}
+                      className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                            {statusBadgeLabel}
+                          </span>
+                          <span className="text-xs font-mono text-[#857469]">Ngày nộp: {sub.created_at}</span>
+                        </div>
+
+                        <h3 className="text-base font-bold font-headline text-[#211a16]">
+                          {sub.exam_title}
+                        </h3>
+                        <p className="text-xs text-[#52443a]">
+                          Mã bài nộp: <strong className="font-mono text-[#6d3807]">{sub.id}</strong>
+                        </p>
                       </div>
 
-                      <h3 className="text-base font-bold font-headline text-[#211a16]">
-                        {sub.exam_title}
-                      </h3>
-                      <p className="text-xs text-[#52443a]">
-                        Mã bài nộp: <strong className="font-mono text-[#6d3807]">{sub.id}</strong>
-                      </p>
-                    </div>
+                      <div className="flex items-center space-x-4 shrink-0">
+                        <div className="text-right">
+                          <span className="text-[10px] font-mono text-[#857469] block uppercase">
+                            {sub.scoreInfo.standard_name ? sub.scoreInfo.standard_name : "Điểm Số"}
+                          </span>
+                          <span className="text-xl font-extrabold text-[#6d3807] font-headline">
+                            {scoreDisplay}
+                          </span>
+                        </div>
 
-                    <div className="flex items-center space-x-4 shrink-0">
-                      <div className="text-right">
-                        <span className="text-[10px] font-mono text-[#857469] block uppercase">Band Score</span>
-                        <span className="text-xl font-extrabold text-[#6d3807] font-headline">
-                          {sub.score != null ? `Band ${sub.score}` : "Chưa chấm"}
-                        </span>
+                        <Link
+                          href={`/student/exam/review/${sub.id}`}
+                          className="px-4 py-2.5 bg-[#fff8f5] hover:bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 font-headline"
+                        >
+                          <Eye className="w-4 h-4 text-[#6d3807]" />
+                          <span>Xem Review Chi Tiết</span>
+                        </Link>
                       </div>
-
-                      <Link
-                        href={`/student/exam/review/${sub.id}`}
-                        className="px-4 py-2.5 bg-[#fff8f5] hover:bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 font-headline"
-                      >
-                        <Eye className="w-4 h-4 text-[#6d3807]" />
-                        <span>Xem Review Chi Tiết</span>
-                      </Link>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

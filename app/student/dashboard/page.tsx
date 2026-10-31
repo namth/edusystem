@@ -5,6 +5,7 @@ import StudentLayout from "@/components/StudentLayout";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Flame, Clock, ArrowRight, PlusCircle, CheckCircle2, Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { submissionScore, formatScore } from "@/lib/score-display";
 
 interface UserClass {
   id: string;
@@ -252,18 +253,36 @@ export default function StudentDashboardPage() {
               ) : (
                 <div className="space-y-2.5">
                   {recentSubmissions.map((sub) => {
-                    const scoreVal = sub.final_score ?? sub.ai_score;
-                    const scoreDisplay = scoreVal != null ? `${scoreVal} điểm` : "Chưa chấm";
+                    const scoreInfo = submissionScore(sub);
+                    const formatted = formatScore(scoreInfo);
+                    const scoreDisplay =
+                      scoreInfo.value != null
+                        ? scoreInfo.standard_name
+                          ? `${formatted} (${scoreInfo.standard_name})`
+                          : formatted
+                        : scoreInfo.status === "GRADING"
+                        ? "Đang chấm"
+                        : scoreInfo.status === "NEEDS_REVIEW"
+                        ? "Chờ giáo viên chấm"
+                        : "Chưa chấm";
+
+                    const statusBadgeLabel =
+                      scoreInfo.status === "GRADING"
+                        ? "Đang chấm"
+                        : scoreInfo.status === "NEEDS_REVIEW"
+                        ? "Chờ giáo viên chấm"
+                        : scoreInfo.status === "GRADED" || scoreInfo.status === "TEACHER_REVIEWED"
+                        ? "Đã Chấm"
+                        : scoreInfo.status === "AI_GRADED"
+                        ? "Đã Chấm AI"
+                        : "Đang Chấm";
+
                     return (
                       <div key={sub.id} className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2">
                         <div className="flex justify-between items-start">
                           <span className="font-bold text-xs text-[#211a16]">Mã bài: {sub.id}</span>
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
-                            {sub.status === "GRADED" || sub.status === "TEACHER_REVIEWED"
-                              ? "Đã Chấm"
-                              : sub.status === "AI_GRADED"
-                              ? "Đã Chấm AI"
-                              : "Đang Chấm"}
+                            {statusBadgeLabel}
                           </span>
                         </div>
                         <div className="text-xs text-[#6d3807] font-bold">
