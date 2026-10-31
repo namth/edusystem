@@ -72,6 +72,22 @@ async function main() {
             } catch (gradingErr) {
               console.error(`❌ [Grading Worker] Grading trigger error for ${payload.submissionId}:`, gradingErr);
             }
+          } else if (eventType === "LESSON_GRADING_REQUESTED" && payload.attemptId) {
+            // Trigger internal lesson grade-async API endpoint
+            try {
+              const res = await fetch(`${APP_URL}/api/lessons/grade-async`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-internal-token": process.env.INTERNAL_API_TOKEN || "",
+                },
+                body: JSON.stringify({ attemptId: payload.attemptId }),
+              });
+              const json = await res.json();
+              console.log(`✅ [Grading Worker] Attempt ${payload.attemptId} graded:`, json);
+            } catch (gradingErr) {
+              console.error(`❌ [Grading Worker] Grading trigger error for ${payload.attemptId}:`, gradingErr);
+            }
           }
 
           // Acknowledge message in Redis Stream
