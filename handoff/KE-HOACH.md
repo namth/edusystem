@@ -73,17 +73,11 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ TASK-016 xem trước bài học cho giáo viên
 - ✅ TASK-017 khu admin chuyển sang API pg (duyệt đơn mua slot cộng slot_limit)
 
-### Đang làm — FEAT-011 Chấm đề thi phía server (`docs/features/exam-server-grading.md`, DEC-014…018)
-- ✅ TASK-018 migration 009 + `lib/exam-scoring.ts` + chấm Speaking bằng AI (đã merge)
-- ✅ TASK-019 API chuẩn chấm + trang `/admin/scoring-standards` + `rubric-resolver` bằng pg (đã merge; kèm sửa bundle trình duyệt `/api/admin/parse-exam-text`)
-- TASK-020 API lượt thi học sinh, chấm khi nộp, `grade-async`/`grade-override` pg, `POST /api/submissions` → 410 — đang chạy, tài khoản 1, worktree `agy-worktrees/TASK-020`
-- TASK-022 (test + brief sẵn sàng, giao khi TASK-020 merge) trang làm đề `/student/exam/[examId]` dùng `LessonPlayer` + ghi âm Speaking (upload `kind: speaking`), màn hình bắt đầu, đồng hồ theo `deadline_at`, lưu tạm, tự nộp; trang xem lại hiện `section_scores`/`total_score` — cần hợp đồng API TASK-020
-- TASK-021 chọn chuẩn khi soạn đề (đang chạy, tài khoản 2) — (`QuestionSetEditor` mode EXAM, `/api/teacher/exams` nhận `scoring_standard_id`) + chuẩn mặc định khóa (`/api/teacher/courses` nhận `default_scoring_standard_id`, modal khóa ở `/teacher/tests`) — cần TASK-019
-- Quy trình mỗi task: test + brief do Claude viết → `python3 scripts/handoff.py lock` → commit → `scripts/agy-worktree.sh new/dispatch/merge` (xem bộ nhớ `agy-parallel-worktrees`)
+### ✅ FEAT-011 Chấm đề thi phía server (`docs/features/exam-server-grading.md`, DEC-014…018)
+- TASK-018 `lib/exam-scoring.ts` + migration 009 · TASK-019 chuẩn chấm + `/admin/scoring-standards` · TASK-020 API lượt thi, chấm khi nộp, `grade-async`/`grade-override` pg, `POST /api/submissions` → 410 · TASK-021 chọn chuẩn cho đề/khóa · TASK-022 trang làm đề mới (giờ theo server, ghi âm Speaking) + xem lại — đã merge, 559 test xanh
 
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
-- Đề thi: chuyển sang chấm phía server bằng `lib/grading.ts` (từ TASK-007), không gửi đáp án xuống trình duyệt (hiện client tự chấm và gửi `auto_graded_score`)
 - `app/profile/page.tsx` → API pg
 - Khu giáo viên (classes, classes/[classId], slots, students/create, grading, flashcards) → API pg
 - Trang tạo đề `teacher/tests/create`, `teacher/tests` → API pg, gỡ `mock-data`
