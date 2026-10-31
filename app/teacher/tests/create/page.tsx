@@ -26,6 +26,7 @@ function TeacherTestCreateContent() {
     description?: string;
     duration?: number;
     courseId?: string | null;
+    scoring_standard_id?: string | null;
     questions?: any[];
     flashcards?: any[];
   }>({});
@@ -46,6 +47,7 @@ function TeacherTestCreateContent() {
         description: data.exam?.description || "",
         duration: data.exam?.duration_minutes || 60,
         courseId: data.course_id || null,
+        scoring_standard_id: data.exam?.scoring_standard_id || null,
         questions: data.questions || [],
         flashcards: data.flashcards || [],
       });
@@ -144,6 +146,7 @@ function TeacherTestCreateContent() {
             initialDescription={initialData.description}
             initialDuration={initialData.duration}
             initialCourseId={initialData.courseId || courseIdParam || null}
+            initialScoringStandardId={initialData.scoring_standard_id || null}
             initialQuestions={initialData.questions}
             initialFlashcards={initialData.flashcards}
             isLoading={isLoading}

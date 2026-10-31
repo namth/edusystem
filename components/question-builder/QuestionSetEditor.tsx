@@ -96,6 +96,7 @@ export interface QuestionSetSavePayload {
   description: string;
   duration_minutes: number;
   course_id: string | null;
+  scoring_standard_id?: string | null;
   question_ids: string[];
 }
 
@@ -105,6 +106,7 @@ export interface QuestionSetEditorProps {
   initialDescription?: string;
   initialDuration?: number;
   initialCourseId?: string | null;
+  initialScoringStandardId?: string | null;
   initialQuestions?: any[];
   initialFlashcards?: any[];
   isLoading?: boolean;
@@ -124,6 +126,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     initialDescription = "",
     initialDuration = 60,
     initialCourseId = null,
+    initialScoringStandardId = null,
     initialQuestions,
     initialFlashcards,
     isLoading = false,
@@ -137,6 +140,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
   const [creationMode, setCreationMode] = useState<"manual" | "ai-ingest">("manual");
   const [testTitle, setTestTitle] = useState(initialTitle);
   const [selectedCourseId, setSelectedCourseId] = useState<string>(initialCourseId || "");
+  const [scoringStandards, setScoringStandards] = useState<any[]>([]);
+  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(initialScoringStandardId || null);
   const [testDescription, setTestDescription] = useState(initialDescription);
   const [duration, setDuration] = useState(String(initialDuration || 60));
   const [skillType, setSkillType] = useState<SkillType>("Reading");
@@ -301,6 +306,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     }
   }, [initialCourseId]);
 
+  useEffect(() => {
+    if (initialScoringStandardId !== undefined) {
+      setSelectedStandardId(initialScoringStandardId);
+    }
+  }, [initialScoringStandardId]);
+
   // Load initial courses and rubrics
   useEffect(() => {
     fetch("/api/teacher/courses")
@@ -315,6 +326,17 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       })
       .catch((e) => console.warn("Load courses error:", e));
 
+    if (isExamMode) {
+      fetch("/api/scoring-standards")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.standards && Array.isArray(json.standards)) {
+            setScoringStandards(json.standards);
+          }
+        })
+        .catch((e) => console.warn("Load scoring standards error:", e));
+    }
+
     fetch("/api/exam/rubrics")
       .then((res) => res.json())
       .then((json) => {
@@ -323,7 +345,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         }
       })
       .catch((e) => console.warn("Load rubrics error:", e));
-  }, []);
+  }, [isExamMode]);
 
   // Hydrate questions from initialQuestions
   useEffect(() => {
@@ -1510,6 +1532,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         description: testDescription.trim(),
         duration_minutes: Number(duration) || 60,
         course_id: isExamMode ? (selectedCourseId || null) : null,
+        scoring_standard_id: isExamMode ? (selectedStandardId || null) : null,
         question_ids: qIdsArray,
       };
 
@@ -1541,6 +1564,11 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
   const editingIndex = questionsList.findIndex((q) => q.id === editingQuestionId);
   const editingQuestionNumber = editingIndex !== -1 ? editingIndex + 1 : null;
+
+  const currentCourse = coursesList.find((c) => c.id === selectedCourseId);
+  const currentCourseDefaultStd = currentCourse?.default_scoring_standard_id
+    ? scoringStandards.find((s) => s.id === currentCourse.default_scoring_standard_id)
+    : null;
 
   return (
     <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
@@ -1684,6 +1712,31 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                     </>
                   )}
                 </div>
+
+                {isExamMode && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                      Chuẩn chấm điểm
+                    </label>
+                    <select
+                      value={selectedStandardId || ""}
+                      onChange={(e) => setSelectedStandardId(e.target.value ? e.target.value : null)}
+                      className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807] font-medium text-[#6d3807]"
+                    >
+                      <option value="">— Theo khóa học / mặc định —</option>
+                      {scoringStandards.map((std) => (
+                        <option key={std.id} value={std.id}>
+                          {std.name} {std.framework ? `(${std.framework})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {!selectedStandardId && currentCourseDefaultStd && (
+                      <p className="text-[11px] text-[#857469] mt-1">
+                        Gợi ý chuẩn mặc định của khóa: <strong className="text-[#6d3807]">{currentCourseDefaultStd.name} {currentCourseDefaultStd.framework ? `(${currentCourseDefaultStd.framework})` : ""}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">

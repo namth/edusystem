@@ -127,7 +127,7 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id } = body;
+    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id } = body;
     const sets: string[] = [];
     const params: any[] = [];
     let pIdx = 1;
@@ -153,6 +153,24 @@ export async function PUT(
       }
       sets.push(`duration_minutes = $${pIdx++}`);
       params.push(duration_minutes);
+    }
+
+    if (scoring_standard_id !== undefined) {
+      if (scoring_standard_id === null) {
+        sets.push(`scoring_standard_id = $${pIdx++}`);
+        params.push(null);
+      } else {
+        if (typeof scoring_standard_id !== "string" || !scoring_standard_id.trim()) {
+          return NextResponse.json({ success: false, error: "scoring_standard_id không hợp lệ." }, { status: 400 });
+        }
+        const cleanStdId = scoring_standard_id.trim();
+        const stdRes = await queryPg("SELECT id FROM scoring_standards WHERE id = $1", [cleanStdId]);
+        if (stdRes.rows.length === 0) {
+          return NextResponse.json({ success: false, error: "Chuẩn chấm điểm không tồn tại." }, { status: 400 });
+        }
+        sets.push(`scoring_standard_id = $${pIdx++}`);
+        params.push(cleanStdId);
+      }
     }
 
     if (question_ids !== undefined) {

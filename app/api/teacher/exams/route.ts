@@ -11,7 +11,7 @@ function canUseQuestion(question: any, authUser: { userId: string; role: string 
   return question.created_by === authUser.userId || question.created_by === null || question.created_by === undefined;
 }
 
-export async function GET() {
+export async function GET(req?: Request) {
   try {
     const authUser = await getAuthenticatedUserFromCookie();
 
@@ -32,6 +32,7 @@ export async function GET() {
       id: row.id,
       title: row.title,
       description: row.description || "",
+      scoring_standard_id: row.scoring_standard_id || null,
       created_by: row.created_by,
       created_at: row.created_at,
     }));
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id } = body;
+    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id } = body;
 
     const cleanTitle = typeof title === "string" ? title.trim() : "";
     if (!cleanTitle || cleanTitle.length > 255) {
@@ -120,23 +121,51 @@ export async function POST(req: Request) {
       courseTitle = courseRow.title;
     }
 
+    let cleanScoringStandardId: string | null = null;
+    if (scoring_standard_id !== undefined && scoring_standard_id !== null) {
+      if (typeof scoring_standard_id !== "string" || !scoring_standard_id.trim()) {
+        return NextResponse.json({ success: false, error: "scoring_standard_id không hợp lệ." }, { status: 400 });
+      }
+      cleanScoringStandardId = scoring_standard_id.trim();
+      const stdRes = await queryPg("SELECT id FROM scoring_standards WHERE id = $1", [cleanScoringStandardId]);
+      if (stdRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: "Chuẩn chấm điểm không tồn tại." }, { status: 400 });
+      }
+    }
+
     const examId = "exam_" + crypto.randomUUID();
     const cleanDesc = description !== undefined && description !== null ? String(description) : null;
 
-    const insertRes = await queryPg(
-      `INSERT INTO exams (id, title, description, duration_minutes, skills, question_ids, created_by, created_at)
+    let insertSql = `INSERT INTO exams (id, title, description, duration_minutes, skills, question_ids, created_by, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-       RETURNING *;`,
-      [
+       RETURNING *;`;
+    let insertParams: any[] = [
+      examId,
+      cleanTitle,
+      cleanDesc,
+      finalDuration,
+      skills,
+      JSON.stringify(cleanQIds),
+      authUser.userId,
+    ];
+
+    if (cleanScoringStandardId) {
+      insertSql = `INSERT INTO exams (id, title, description, duration_minutes, skills, question_ids, scoring_standard_id, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+       RETURNING *;`;
+      insertParams = [
         examId,
         cleanTitle,
         cleanDesc,
         finalDuration,
         skills,
         JSON.stringify(cleanQIds),
+        cleanScoringStandardId,
         authUser.userId,
-      ]
-    );
+      ];
+    }
+
+    const insertRes = await queryPg(insertSql, insertParams);
 
     const examRow = insertRes.rows[0];
     const exam = {
@@ -145,6 +174,7 @@ export async function POST(req: Request) {
         ? examRow.question_ids
         : (typeof examRow.question_ids === "string" ? JSON.parse(examRow.question_ids) : []),
       skills: Array.isArray(examRow.skills) ? examRow.skills : [],
+      scoring_standard_id: examRow.scoring_standard_id ?? null,
     };
 
     if (cleanCourseId && courseTitle) {

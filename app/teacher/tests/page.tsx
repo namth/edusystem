@@ -68,6 +68,7 @@ interface CourseItem {
   id: string;
   title: string;
   description?: string;
+  default_scoring_standard_id?: string | null;
   level?: string;
   created_by?: string;
 }
@@ -75,6 +76,7 @@ interface CourseItem {
 export default function TeacherTestManagerPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("crs_01");
   const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [scoringStandards, setScoringStandards] = useState<any[]>([]);
   const [items, setItems] = useState<CurriculumItem[]>([]);
   const [availableExams, setAvailableExams] = useState<ExamOption[]>([]);
   const [availableLessons, setAvailableLessons] = useState<LessonOption[]>([]);
@@ -89,6 +91,7 @@ export default function TeacherTestManagerPage() {
   const [editingCourse, setEditingCourse] = useState<CourseItem | null>(null);
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDesc, setCourseDesc] = useState("");
+  const [courseDefaultStandardId, setCourseDefaultStandardId] = useState<string>("");
   const [isCourseSubmitting, setIsCourseSubmitting] = useState(false);
 
   // Flexible Cross-Level Drag State
@@ -206,9 +209,23 @@ export default function TeacherTestManagerPage() {
     }
   };
 
+  // Fetch scoring standards
+  const fetchScoringStandards = async () => {
+    try {
+      const res = await fetch("/api/scoring-standards");
+      const json = await res.json();
+      if (json.standards && Array.isArray(json.standards)) {
+        setScoringStandards(json.standards);
+      }
+    } catch (err) {
+      console.error("Fetch scoring standards error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchCourses();
     fetchExams();
+    fetchScoringStandards();
   }, []);
 
   const handleCreateCourse = async (e: React.FormEvent) => {
@@ -219,13 +236,18 @@ export default function TeacherTestManagerPage() {
       const res = await fetch("/api/teacher/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: courseTitle.trim(), description: courseDesc.trim() }),
+        body: JSON.stringify({
+          title: courseTitle.trim(),
+          description: courseDesc.trim(),
+          default_scoring_standard_id: courseDefaultStandardId.trim() || null,
+        }),
       });
       const json = await res.json();
       if (json.success) {
         setShowAddCourseModal(false);
         setCourseTitle("");
         setCourseDesc("");
+        setCourseDefaultStandardId("");
         await fetchCourses();
         if (json.course?.id) setSelectedCourseId(json.course.id);
       } else {
@@ -246,12 +268,18 @@ export default function TeacherTestManagerPage() {
       const res = await fetch("/api/teacher/courses", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingCourse.id, title: courseTitle.trim(), description: courseDesc.trim() }),
+        body: JSON.stringify({
+          id: editingCourse.id,
+          title: courseTitle.trim(),
+          description: courseDesc.trim(),
+          default_scoring_standard_id: courseDefaultStandardId.trim() || null,
+        }),
       });
       const json = await res.json();
       if (json.success) {
         setShowEditCourseModal(false);
         setEditingCourse(null);
+        setCourseDefaultStandardId("");
         await fetchCourses();
       } else {
         alert("Lỗi cập nhật: " + (json.error || "Không thể cập nhật khóa học"));
@@ -784,6 +812,7 @@ export default function TeacherTestManagerPage() {
                   onClick={() => {
                     setCourseTitle("");
                     setCourseDesc("");
+                    setCourseDefaultStandardId("");
                     setShowAddCourseModal(true);
                   }}
                   className="px-2.5 py-1 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[11px] font-bold rounded-lg transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
@@ -822,6 +851,7 @@ export default function TeacherTestManagerPage() {
                             setEditingCourse(course);
                             setCourseTitle(course.title);
                             setCourseDesc(course.description || "");
+                            setCourseDefaultStandardId(course.default_scoring_standard_id || "");
                             setShowEditCourseModal(true);
                           }}
                           className={`p-1 rounded-lg transition-all cursor-pointer ${
@@ -1599,6 +1629,22 @@ export default function TeacherTestManagerPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Chuẩn Chấm Mặc Định</label>
+                <select
+                  value={courseDefaultStandardId}
+                  onChange={(e) => setCourseDefaultStandardId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                >
+                  <option value="">— Không đặt chuẩn mặc định —</option>
+                  {scoringStandards.map((std) => (
+                    <option key={std.id} value={std.id}>
+                      {std.name} {std.framework ? `(${std.framework})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="pt-2 flex space-x-3">
                 <button type="button" onClick={() => setShowAddCourseModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
                 <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
@@ -1644,6 +1690,22 @@ export default function TeacherTestManagerPage() {
                   onChange={(e) => setCourseDesc(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Chuẩn Chấm Mặc Định</label>
+                <select
+                  value={courseDefaultStandardId}
+                  onChange={(e) => setCourseDefaultStandardId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                >
+                  <option value="">— Không đặt chuẩn mặc định —</option>
+                  {scoringStandards.map((std) => (
+                    <option key={std.id} value={std.id}>
+                      {std.name} {std.framework ? `(${std.framework})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="pt-2 flex space-x-3">
