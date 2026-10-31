@@ -69,13 +69,14 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id` (đang chạy, worktree riêng)
 - TASK-009 API cài đặt lớp, mở/khoá, tiến độ, `lib/roadmap.ts`
 - ✅ TASK-010 → TASK-014 đã merge (Kho bài học, lộ trình lớp, trang làm bài học)
-- TASK-015 API flashcard + upload qua server, gỡ Supabase trình duyệt (đang chạy, tài khoản 2)
-- TASK-016 xem trước bài học cho giáo viên (đang chạy, tài khoản 1)
+- ✅ TASK-015 API flashcard + upload qua server, gỡ Supabase trình duyệt
+- ✅ TASK-016 xem trước bài học cho giáo viên
+- ✅ TASK-017 khu admin chuyển sang API pg (duyệt đơn mua slot cộng slot_limit)
 
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
 - Đề thi: chuyển sang chấm phía server bằng `lib/grading.ts` (từ TASK-007), không gửi đáp án xuống trình duyệt (hiện client tự chấm và gửi `auto_graded_score`)
-- Khu admin (students, students/[id], requests, accounts, teachers, profile) → API pg
+- `app/profile/page.tsx` → API pg
 - Khu giáo viên (classes, classes/[classId], slots, students/create, grading, flashcards) → API pg
 - Trang tạo đề `teacher/tests/create`, `teacher/tests` → API pg, gỡ `mock-data`
 - `app/student/page.tsx` (danh mục khoá học / đặt mua) — cần quyết định mô hình giá
