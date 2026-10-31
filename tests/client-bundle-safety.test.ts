@@ -6,7 +6,7 @@ import path from "path";
 
 const SERVER_ONLY = ["@/lib/db-pg", "@/lib/ai-engine", "@/lib/rubric-resolver", "@/lib/neo4j", "@/lib/supabase-server",
   "@/lib/exam-attempts", "@/lib/exam-ai-grading", "@/lib/lesson-ai-grading", "@/lib/lesson-access", "@/lib/roadmap-data",
-  "@/lib/redis-queue", "@/lib/kafka", "@/lib/portkey", "@/lib/document-parser", "@/lib/ai-model-resolver"];
+  "@/lib/redis-queue", "@/lib/kafka", "@/lib/portkey", "@/lib/document-parser", "@/lib/ai-model-resolver", "@/lib/seed", "@/lib/supabase"];
 
 function walk(dir: string, out: string[] = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -18,7 +18,7 @@ function walk(dir: string, out: string[] = []) {
 }
 
 describe("Client component không import module chỉ chạy server", () => {
-  const files = [...walk("app"), ...walk("components")].filter((f) => {
+  const files = [...walk("app"), ...walk("components"), ...walk("context")].filter((f) => {
     const src = fs.readFileSync(f, "utf8").trimStart();
     return src.startsWith('"use client"') || src.startsWith("'use client'");
   });
@@ -35,4 +35,10 @@ describe("Client component không import module chỉ chạy server", () => {
       expect(offenders).toEqual([]);
     });
   }
+});
+
+describe("Không còn Supabase client trình duyệt và dữ liệu giả", () => {
+  it("lib/supabase.ts, lib/mock-data.ts, lib/audio-storage.ts đã bị xoá", () => {
+    for (const f of ["lib/supabase.ts", "lib/mock-data.ts", "lib/audio-storage.ts"]) expect(fs.existsSync(f), f).toBe(false);
+  });
 });

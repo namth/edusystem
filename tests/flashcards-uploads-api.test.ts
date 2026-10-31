@@ -192,7 +192,7 @@ describe("POST /api/uploads — upload qua server (service role)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Gỡ Supabase phía trình duyệt cho flashcard/upload", () => {
   const read = (p: string) => fs.readFileSync(p, "utf8");
-  for (const file of ["app/teacher/flashcards/page.tsx", "components/question-builder/QuestionSetEditor.tsx", "lib/audio-storage.ts"]) {
+  for (const file of ["app/teacher/flashcards/page.tsx", "components/question-builder/QuestionSetEditor.tsx"]) {
     it(file, () => {
       const s = read(file);
       expect(s).not.toContain('"@/lib/supabase"');
@@ -204,7 +204,6 @@ describe("Gỡ Supabase phía trình duyệt cho flashcard/upload", () => {
       expect(read(file), file).toContain("/api/teacher/flashcards");
       expect(read(file), file).toContain("/api/uploads");
     }
-    expect(read("lib/audio-storage.ts")).toContain("/api/uploads");
   });
   it("không còn ảnh mặc định viết cứng từ Unsplash cho flashcard", () => {
     expect(read("app/teacher/flashcards/page.tsx")).not.toContain("images.unsplash.com");

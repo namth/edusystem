@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { runStartupSeed } from "@/lib/seed";
 
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN";
 
@@ -35,8 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    runStartupSeed();
-
     // 1. Check initial active session from Native Backend API
     async function initAuth() {
       try {
