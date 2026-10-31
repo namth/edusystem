@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Văn phòng ảo</title>
 <style>
-  :root { --bg:#191b26; --panel:#232636; --line:#33374b; --text:#e9e7f1; --muted:#9a9db4; --test:#a99bff; }
+  :root { --bg:#191b26; --panel:#232636; --line:#33374b; --text:#e9e7f1; --muted:#9a9db4; --test:#a99bff; --ask:#f2a541; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif; display:flex; height:100vh; overflow:hidden; }
   #stage { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; padding:12px; }
@@ -17,6 +17,7 @@
   .bub { max-width:240px; overflow:hidden; text-overflow:ellipsis; background:#fff; color:#1d1d24; padding:3px 8px; border-radius:8px; font-size:12px; box-shadow:0 2px 8px #0006; opacity:0; transition:opacity .25s; border:2px solid transparent; }
   .bub.on { opacity:1; }
   .bub.test { border-color:var(--test); background:#f3f0ff; }
+  .bub.ask { border-color:var(--ask); background:#fff6e8; }
   .sign { font-size:11px; padding:2px 8px; border-radius:6px; background:#0d1520d9; color:#cfe3ff; border:1px solid #3d5a80; max-width:60%; overflow:hidden; text-overflow:ellipsis; }
   .sign i { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; background:#e5484d; }
   .sign.on i { background:#3fd17a; box-shadow:0 0 6px #3fd17a; }
@@ -33,6 +34,7 @@
   .person span { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .person small { grid-column:2 / 4; color:#7f9cc4; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .person .testing { color:var(--test); }
+  .person .asking, #log div.ask { color:var(--ask); }
   .dot { width:10px; height:10px; border-radius:3px; flex:none; }
   .task { display:flex; align-items:center; gap:6px; padding:3px 0; }
   .task code { font-size:11px; color:var(--muted); flex:none; }
@@ -101,7 +103,7 @@ function reset() {
     const p = P[id];
     C[id] = { id, p, x: p.seat.x, y: p.seat.y, atSeat: true, walking: false, facing: 'back', state: 'idle', carry: null,
               icon: '', iconUntil: 0, q: [], cur: null, bubble: null, idleSince: now(), lastWork: 0, coffeeDone: false,
-              pendingWork: null, testing: null, task: null, present: !p.remote };
+              pendingWork: null, testing: null, meeting: false, interviewAt: 0, task: null, present: !p.remote };
   }
   tasks = {};
   logItems = [];
@@ -206,6 +208,7 @@ function flush(c) {
   c.walking = false;
   if (c.pendingWork) { const e = c.pendingWork; c.pendingWork = null; doWork(c, e, false); flush(c); }
   if (c.testing) { const v = P[c.testing.owner].visit; c.x = v.x; c.y = v.y; c.atSeat = false; c.facing = 'back'; return; }
+  if (c.meeting) { const v = P.giamdoc.visit; c.x = v.x; c.y = v.y; c.atSeat = false; c.facing = 'front'; return; }
   if (!c.atSeat) apply(c, { k: 'go', to: 'seat' }, false);
   c.facing = 'back';
 }
@@ -243,6 +246,32 @@ function doWork(c, e, live) {
   if (live) setBubble(c, (c.id.startsWith('agy') ? '⌨️ ' : '') + (e.text || 'Đang làm'), 3500);
 }
 
+// ---------- Hỏi / phỏng vấn giám đốc: trưởng phòng cầm sổ vào phòng, đứng hỏi và chờ trả lời ----------
+const INTERVIEW_MS = 30 * 60 * 1000;
+const LIGHT_WORK = /^(Đọc|Tìm|Tra cứu|Dùng skill|Xem trình duyệt|Gọi trợ lý)/; // việc làm được ngay trong phòng
+const interviewing = (c) => c.interviewAt && now() - c.interviewAt < INTERVIEW_MS;
+
+function goAsk(c, text) {
+  if (c.testing) { const o = C[c.testing.owner]; if (o?.icon === '🔍') setIcon(o, ''); c.testing = null; }
+  c.pendingWork = null;
+  setIcon(C.giamdoc, '💬');
+  if (c.meeting) { enq(c, [{ k: 'set', state: 'asking' }, { k: 'say', text, ms: 6000, kind: 'ask' }]); return; }
+  c.meeting = true;
+  enq(c, [
+    { k: 'set', carry: 'notebook' },
+    { k: 'go', to: 'giamdoc' },
+    { k: 'set', state: 'asking', facing: 'front' },
+    { k: 'say', text, ms: 6000, kind: 'ask' },
+  ]);
+}
+
+function leaveMeeting(c) {
+  if (!c.meeting) return;
+  c.meeting = false;
+  setIcon(C.giamdoc, '');
+  enq(c, [{ k: 'set', carry: null, state: 'idle' }, { k: 'go', to: 'seat' }]);
+}
+
 function endTesting(c) {
   const o = c.testing && C[c.testing.owner];
   c.testing = null;
@@ -265,8 +294,29 @@ function onEvent(e, live) {
   interrupt(to);
   const T = e.task || '';
   switch (e.type) {
+    case 'interview':
+      c.interviewAt = now();
+      goAsk(c, '🎤 ' + (e.text || 'Phỏng vấn giám đốc'));
+      break;
+    case 'ask':
+      if (interviewing(c)) c.interviewAt = now();
+      goAsk(c, '❓ ' + (e.text || 'Xin ý kiến giám đốc'));
+      break;
+    case 'answer':
+      setIcon(c, '');
+      if (!to) break;
+      if (interviewing(to)) to.interviewAt = now();
+      enq(to, [{ k: 'say', who: 'giamdoc', text: '💬 ' + (e.text || 'Đã trả lời'), ms: 4500 }, { k: 'say', text: '📝 Em ghi lại ạ', ms: 2000, kind: 'ask' }]);
+      break;
     case 'assign':
       if (!to || to === c) break;
+      if (c.id === 'giamdoc' && (to.meeting || interviewing(to))) { // đang phỏng vấn: lời nhắn của giám đốc là câu trả lời
+        if (interviewing(to)) to.interviewAt = now();
+        if (!to.meeting) goAsk(to, '👂 Em nghe ạ');
+        setIcon(c, '');
+        enq(to, [{ k: 'say', who: 'giamdoc', text: '💬 ' + (e.text || '…'), ms: 4500 }, { k: 'set', state: 'asking' }]);
+        break;
+      }
       if (c.id === 'giamdoc') {
         setIcon(c, '');
         to.testing = null;
@@ -296,7 +346,15 @@ function onEvent(e, live) {
       enq(c, [{ k: 'go', to: 'seat' }, { k: 'set', state: 'work', icon: '' }, { k: 'say', text: '👍 Nhận ' + T + ', bắt đầu làm', ms: 2500 }]);
       break;
     case 'work':
-      if (c.testing) { // trưởng phòng đang ở bàn nhân sự: lệnh nào cũng là để kiểm tra bài
+      if (c.meeting) { // đang đứng trong phòng giám đốc: tra cứu thì đứng luôn đó, việc khác thì về bàn
+        if (LIGHT_WORK.test(e.text || '')) {
+          c.lastWork = now();
+          if (live) setBubble(c, '📝 ' + e.text, 3500, 'ask');
+          break;
+        }
+        leaveMeeting(c);
+        c.pendingWork = e;
+      } else if (c.testing) { // trưởng phòng đang ở bàn nhân sự: lệnh nào cũng là để kiểm tra bài
         c.lastWork = now();
         if (live) setBubble(c, '🧪 ' + (e.text || 'Đang kiểm tra'), 3500, 'test');
       } else if (c.cur || c.q.length || !c.atSeat) {
@@ -314,6 +372,7 @@ function onEvent(e, live) {
         break;
       }
       c.pendingWork = null;
+      if (c.meeting) { c.meeting = false; setIcon(C.giamdoc, ''); }
       const again = c.testing?.owner === o.id;
       c.testing = { task: e.task, owner: o.id };
       c.lastWork = now();
@@ -332,6 +391,7 @@ function onEvent(e, live) {
       if (!to) break;
       const ok = e.type === 'approve';
       c.testing = null;
+      if (c.meeting) { c.meeting = false; setIcon(C.giamdoc, ''); }
       enq(c, [
         { k: 'set', carry: 'clipboard' },
         { k: 'go', to: to.id },
@@ -348,11 +408,15 @@ function onEvent(e, live) {
       break;
     }
     case 'wait':
-      enq(c, [{ k: 'set', state: c.testing ? 'testing' : 'wait', icon: '✋' }, { k: 'say', text: e.text || 'Chờ duyệt', ms: 4000 }]);
-      if (c.id !== 'giamdoc') setIcon(C.giamdoc, '📞');
+      enq(c, [{ k: 'set', state: c.testing ? 'testing' : c.meeting ? 'asking' : 'wait', icon: '✋' }, { k: 'say', text: e.text || 'Chờ duyệt', ms: 4000 }]);
+      if (c.id !== 'giamdoc' && !c.meeting) setIcon(C.giamdoc, '📞');
       break;
     case 'idle':
       c.pendingWork = null;
+      if (c.id === 'truongphong' && (c.meeting || interviewing(c))) { // hết lượt giữa buổi phỏng vấn: đứng chờ trả lời
+        goAsk(c, '⏳ Chờ giám đốc trả lời…');
+        break;
+      }
       if (c.testing) { if (c.icon === '✋') setIcon(c, ''); break; } // hết lượt nhưng vẫn đứng ở bàn đang kiểm tra
       enq(c, [{ k: 'set', state: 'idle', icon: c.icon === '✋' ? '' : c.icon }]);
       if (c.id === 'truongphong') setIcon(C.giamdoc, '');
@@ -514,7 +578,9 @@ function drawChair(p) {
 function drawPerson(c, t) {
   if (!c.present) return;
   const p = c.p, X = Math.round(c.x), Y = Math.round(c.y), ph = Math.floor(t / 140) % 2;
-  const seated = c.atSeat && !c.walking, back = c.facing === 'back';
+  const tp = C.truongphong;
+  const turned = c.id === 'giamdoc' && tp.meeting && tp.state === 'asking' && !tp.walking; // giám đốc quay ghế ra nói chuyện
+  const seated = c.atSeat && !c.walking, back = c.facing === 'back' && !turned;
   const typing = seated && c.state === 'work';
   if (!seated) {
     R('rgba(0,0,0,.22)', X - 5, Y - 1, 10, 2);
@@ -540,6 +606,10 @@ function drawPerson(c, t) {
   }
   if (c.carry === 'folder') { R('#f2c94c', X + 4, Y - 12, 5, 4); R('#d4a72c', X + 4, Y - 12, 5, 1); }
   if (c.carry === 'cup') { R('#fff', X + 5, Y - 11, 3, 3); R('#6b3e1f', X + 5, Y - 11, 3, 1); R('rgba(255,255,255,.7)', X + 6, Y - 14 - ph, 1, 1); }
+  if (c.carry === 'notebook') {
+    R('#2f5fa8', X + 4, Y - 13, 5, 6); R('#f4f4ef', X + 5, Y - 12, 3, 4);
+    R('#f2a541', X + 5, Y - 11 + (c.state === 'asking' ? ph : 0), 3, 1);
+  }
   if (c.carry === 'clipboard') {
     R('#8d5c33', X + 4, Y - 13, 5, 6); R('#f4f4ef', X + 5, Y - 12, 3, 4);
     R(c.state === 'testing' && ph ? '#5cc98a' : '#a99bff', X + 5, Y - 11, 3, 1);
@@ -591,7 +661,11 @@ function updateOverlay() {
     e.key = key;
     e.tag.textContent = tagText;
     e.tag.style.transform = `translate(${c.x * scale}px, ${(c.y + 2) * scale}px) translateX(-50%)`;
-    if (show) { e.bub.textContent = c.bubble.text; e.bub.classList.toggle('test', c.bubble.kind === 'test'); }
+    if (show) {
+      e.bub.textContent = c.bubble.text;
+      e.bub.classList.toggle('test', c.bubble.kind === 'test');
+      e.bub.classList.toggle('ask', c.bubble.kind === 'ask');
+    }
     e.bub.classList.toggle('on', !!show);
     e.bub.style.transform = `translate(${c.x * scale}px, ${(c.y - 23) * scale}px) translate(-50%, -100%)`;
   }
@@ -634,18 +708,25 @@ function describe(e) {
     case 'wait': return `✋ ${esc(e.text || 'đang chờ')}`;
     case 'idle': return 'rảnh tay';
     case 'error': return `❗ ${esc(e.text)}`;
+    case 'interview': return `🎤 vào phòng phỏng vấn giám đốc${e.text ? ' (' + esc(e.text) + ')' : ''}`;
+    case 'ask': return `❓ hỏi: ${esc(e.text)}`;
+    case 'answer': return `💬 trả lời: ${esc(e.text)}`;
   }
   return esc(e.type);
 }
 
 function addLog(e) {
-  logItems.push({ e, html: describe(e), test: e.type === 'review' || e.type === 'approve' || e.type === 'reject' || (e.who === 'truongphong' && C.truongphong.testing) });
+  const cls = ['interview', 'ask', 'answer'].includes(e.type) || (e.type === 'assign' && C.truongphong.meeting) ? 'ask'
+    : e.type === 'review' || e.type === 'approve' || e.type === 'reject' || (e.who === 'truongphong' && C.truongphong.testing) ? 'test' : '';
+  logItems.push({ e, html: describe(e), cls });
   if (logItems.length > 80) logItems.shift();
   dirty.log = true;
 }
 
 function statusText(c) {
   if (!c.present) return presence[c.id] ? 'Ngoại tuyến' : 'Chưa kết nối';
+  if (c.id === 'truongphong' && c.meeting) return `<span class="asking">${interviewing(c) ? '🎤 Phỏng vấn giám đốc' : '💬 Đang hỏi giám đốc'}</span>`;
+  if (c.id === 'giamdoc' && C.truongphong.meeting) return '<span class="asking">Đang trao đổi với Claude</span>';
   if (c.id === 'truongphong' && c.testing) return `<span class="testing">🧪 Kiểm tra ${esc(c.testing.task)} tại bàn ${esc(nameOf(c.testing.owner))}</span>`;
   if (c.icon === '🔍') return '<span class="testing">Claude đang kiểm tra bài</span>';
   if (c.walking) return 'Đang di chuyển';
@@ -678,9 +759,9 @@ function renderPanel() {
   }
   if (dirty.log) {
     dirty.log = false;
-    document.getElementById('log').innerHTML = logItems.slice().reverse().map(({ e, html, test }) => {
+    document.getElementById('log').innerHTML = logItems.slice().reverse().map(({ e, html, cls }) => {
       const time = e.ts ? new Date(e.ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
-      return `<div class="${test ? 'test' : ''}"><time>${time}</time><b>${esc(nameOf(e.who))}</b> ${html}</div>`;
+      return `<div class="${cls}"><time>${time}</time><b>${esc(nameOf(e.who))}</b> ${html}</div>`;
     }).join('');
   }
 }

@@ -20,6 +20,9 @@ export const TYPES = [
   'wait', // who đang chờ người khác (text)
   'idle', // who rảnh
   'error', // who gặp lỗi (text)
+  'interview', // trưởng phòng bắt đầu phỏng vấn giám đốc (grill-master / grill-feature)
+  'ask', // trưởng phòng hỏi giám đốc (text: câu hỏi)
+  'answer', // giám đốc trả lời câu hỏi (text)
 ];
 
 export function isEvent(e) {

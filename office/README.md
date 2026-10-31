@@ -34,9 +34,20 @@ remote_agent.py (máy Agy 2) ┘   (qua POST /emit, /presence)
 - File sự kiện mặc định `~/.office-sim/events.jsonl` (đổi bằng `OFFICE_EVENTS`), dùng chung cho mọi worktree.
 - Mỗi dòng: `{"ts","who","type","to?","task?","text?"}`; `who` ∈ `giamdoc|truongphong|agy1|agy2`,
   `type` ∈ `assign|accept|work|submit|review|approve|reject|wait|idle|error` (xem `events.mjs`).
-- **Claude**: `.claude/settings.json` gắn `hook.mjs` vào `UserPromptSubmit`, `PreToolUse`, `Notification`, `Stop`.
-  Phiên Claude mới mở trong repo mới nạp hook. Nội dung prompt (60 ký tự đầu) được ghi vào file sự kiện trên máy.
-  Muốn tắt: xoá khối `hooks` trong `.claude/settings.json`.
+- **Claude**: cài một lần cho mọi phiên Claude trên máy (không phụ thuộc nhánh/worktree):
+
+```bash
+npm run office:hooks                          # cài / cập nhật
+node office/install-hooks.mjs --uninstall     # gỡ
+```
+
+  Lệnh chép `hook.mjs` + `events.mjs` sang `~/.office-sim/bin/`, gắn vào `~/.claude/settings.json`
+  (`UserPromptSubmit`, `PreToolUse`, `PostToolUse` của `AskUserQuestion`, `Notification`, `Stop`; bản cũ lưu ở
+  `settings.json.bak-office`) và chỉ ghi cho các dự án trong `~/.office-sim/config.json` (repo learningsystem và
+  `agy-worktrees`). Phiên Claude mở sau khi cài mới có hook. Nội dung prompt (60 ký tự đầu) được ghi vào file sự kiện trên máy.
+- **Phỏng vấn / hỏi giám đốc**: `AskUserQuestion`, hoặc đang chạy `/grill-master`, `/grill-feature` → Claude cầm sổ vào phòng
+  giám đốc đứng hỏi (bong bóng viền cam), giám đốc quay ghế ra; câu trả lời hiện ở giám đốc. Tra cứu (đọc, tìm) thì
+  Claude đứng luôn trong phòng; sửa/viết/chạy lệnh thì về bàn, hết lượt lại vào phòng chờ trả lời (30 phút không hỏi thì thôi).
 - **Agy 1 (máy này)**: server tự theo dõi `handoff/tasks/*/state.json` ở repo chính và mọi worktree trong
   `../agy-worktrees/` (đổi bằng `AGY_WT_DIR`), cùng file đang bị sửa trong các worktree đó. Không cần sửa `handoff.py`.
   Nhân sự mặc định của máy này là `agy1` (đổi bằng `OFFICE_LOCAL_AGENT`).
