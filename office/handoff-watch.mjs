@@ -171,7 +171,7 @@ for wt in sorted(glob.glob(os.path.join(base, "*"))):
         out["tasks"].append({"id": s.get("id"), "title": s.get("title"), "status": s.get("status"),
                              "history": (s.get("history") or [])[-1:], "review": review})
     try:
-        st = subprocess.run(["git", "-C", wt, "status", "--porcelain"], capture_output=True, text=True, timeout=10).stdout
+        st = subprocess.run(["git", "-C", wt, "status", "--porcelain", "-uall"], capture_output=True, text=True, timeout=10).stdout
     except Exception:
         continue
     best = None
@@ -225,10 +225,11 @@ function sshPoll(r) {
 /** Máy thợ qua SSH: trạng thái task, file đang sửa, và có mặt (tên máy + IP). */
 export function watchRemote(r, { taskInfo, emit, onPresence, log }) {
   const see = createTracker({ taskInfo, emit });
-  const fileSeen = new Map();
+  const fileSeen = new Map(); // worktree (= mã task) → mtime file mới sửa nhất đã thấy
   const ip = r.ssh.split('@').pop();
   let busy = false;
   let failing = false;
+  let first = true;
 
   async function poll() {
     if (busy) return;
@@ -239,13 +240,16 @@ export function watchRemote(r, { taskInfo, emit, onPresence, log }) {
       failing = false;
       onPresence(r.agent, { host: data.host, ip, platform: data.platform, via: 'ssh' });
       for (const t of data.tasks) see(t, r.agent, t.review);
-      for (const [task, [rel, mtime]] of Object.entries(data.files)) {
-        const prev = fileSeen.get(task);
-        fileSeen.set(task, mtime);
-        if (prev !== undefined && mtime > prev) {
-          emit({ who: r.agent, type: 'work', task, text: `Sửa ${path.basename(rel)}` });
-        }
+      // Worktree chưa sửa gì vẫn có mốc 0, để lần sửa đầu tiên của task cũng được báo.
+      // Lần quét đầu khi server vừa bật chỉ lấy mốc, không báo lại việc cũ.
+      const names = new Set([...data.tasks.map((t) => t.id), ...Object.keys(data.files)]);
+      for (const task of names) {
+        const [rel, mtime] = data.files[task] || [null, 0];
+        const prev = fileSeen.get(task) ?? 0;
+        fileSeen.set(task, Math.max(prev, mtime));
+        if (!first && rel && mtime > prev) emit({ who: r.agent, type: 'work', task, text: `Sửa ${path.basename(rel)}` });
       }
+      first = false;
     } catch (err) {
       if (!failing) log(`Không đọc được máy thợ ${r.ssh}: ${err.message}`);
       failing = true;

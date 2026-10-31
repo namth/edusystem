@@ -137,7 +137,7 @@ class Watcher:
 
     def scan_work(self) -> None:
         try:
-            out = subprocess.run(["git", "-C", str(self.root), "status", "--porcelain"],
+            out = subprocess.run(["git", "-C", str(self.root), "status", "--porcelain", "-uall"],
                                  capture_output=True, text=True, timeout=20).stdout
         except (OSError, subprocess.SubprocessError):
             return

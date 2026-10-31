@@ -76,9 +76,9 @@ const P = {
                  desk: { x: 310, y: 128, w: 48 }, seat: { x: 334, y: 154 }, door: { x: 334, y: 154 }, visit: { x: 302, y: 152 }, lamp: true },
   truongphong: { name: 'Claude', role: 'Trưởng phòng', shirt: '#d97757', pants: '#3b3a48', hair: '#6b4226', skin: '#f3cfa8', glasses: true,
                  desk: { x: 190, y: 56, w: 40 }, seat: { x: 210, y: 82 }, door: { x: 210, y: 82 }, visit: { x: 240, y: 84 } },
-  agy1:        { name: 'Agy 1', role: 'Nhân viên', shirt: '#3fa66b', pants: '#2c3e50', hair: '#1f1f1f', skin: '#e8b88f', hood: true,
+  agy1:        { name: 'INOVA Antigravity', role: 'Nhân viên', shirt: '#3fa66b', pants: '#2c3e50', hair: '#1f1f1f', skin: '#e8b88f', hood: true,
                  desk: { x: 30, y: 140, w: 40 }, seat: { x: 50, y: 166 }, door: { x: 76, y: 166 }, visit: { x: 80, y: 166 } },
-  agy2:        { name: 'Agy 2', role: 'Nhân viên từ xa', shirt: '#4a7fd4', pants: '#34344a', hair: '#b5651d', skin: '#f6d3b3', remote: true,
+  agy2:        { name: 'Nam Antigravity', role: 'Nhân viên từ xa', shirt: '#4a7fd4', pants: '#34344a', hair: '#b5651d', skin: '#f6d3b3', remote: true,
                  desk: { x: 150, y: 222, w: 40 }, seat: { x: 170, y: 248 }, door: { x: 196, y: 248 }, visit: { x: 200, y: 248 } },
 };
 const ORDER = ['giamdoc', 'truongphong', 'agy1', 'agy2'];
@@ -217,7 +217,9 @@ function idleLogic(c) {
   if (c.id === 'giamdoc' || !c.present) return;
   const t = now();
   if (c.testing && t - c.lastWork > 120000) endTesting(c); // không thấy kết luận nghiệm thu thì tự về bàn
-  if (c.state === 'work' && t - c.lastWork > 90000) setState(c, 'idle');
+  // Nhân sự còn task đang làm (đã nhận, chưa nộp) thì vẫn là đang làm dù lâu không sửa file (đang nghĩ, chạy test…).
+  const busyTask = c.id.startsWith('agy') && tasks[c.task]?.status === 'doing';
+  if (c.state === 'work' && t - c.lastWork > 90000 && !busyTask) setState(c, 'idle');
   if (c.state === 'idle' && c.atSeat && !c.icon && !c.coffeeDone && t - c.idleSince > 25000 && !c.p.remote) {
     c.coffeeDone = true;
     enq(c, [
