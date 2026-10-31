@@ -1,13 +1,33 @@
 {
   "id": "TASK-024",
   "title": "Hồ sơ, mua slot, trang chấm bài qua API pg (gỡ ghi mật khẩu plaintext từ trình duyệt)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "81c65bb2-1f30-471c-a6bd-269ce6ffdc6c",
   "history": [
     {
       "at": "2026-10-31T16:24:17",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T16:24:48",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T16:25:09",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T16:43:51",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T16:46:43",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -45,5 +65,6 @@
     "tests/helpers/pg-fake.ts",
     "vitest.config.ts",
     "handoff/tasks/TASK-024-ho-so-slot-cham-bai/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
