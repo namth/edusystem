@@ -31,6 +31,31 @@ async function checkCourseAccess(
   }
 }
 
+async function validateLessonForCurriculum(
+  lessonId: unknown,
+  authUser: { userId: string; role: string }
+): Promise<{ ok: boolean; error: string; lessonId?: string }> {
+  if (!lessonId || typeof lessonId !== "string" || !lessonId.trim()) {
+    return { ok: false, error: "LESSON bắt buộc phải có lesson_id." };
+  }
+  const cleanId = lessonId.trim();
+  const res = await queryPg("SELECT id, created_by, question_ids FROM lessons WHERE id = $1", [cleanId]);
+  if (res.rows.length === 0) {
+    return { ok: false, error: "Bài học không tồn tại." };
+  }
+  const lesson = res.rows[0];
+  if (authUser.role === "TEACHER" && lesson.created_by !== authUser.userId) {
+    return { ok: false, error: "Bạn không có quyền sử dụng bài học này." };
+  }
+  const qIds = Array.isArray(lesson.question_ids)
+    ? lesson.question_ids
+    : (typeof lesson.question_ids === "string" ? JSON.parse(lesson.question_ids) : []);
+  if (!Array.isArray(qIds) || qIds.length < 1) {
+    return { ok: false, error: "Bài học chưa có câu hỏi nào." };
+  }
+  return { ok: true, error: "", lessonId: cleanId };
+}
+
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
   if (auth.error) return auth.error;
@@ -50,7 +75,7 @@ export async function GET(req: Request) {
     }
 
     const result = await queryPg(
-      `SELECT id, course_id, parent_id, title, type, exam_id, order_index
+      `SELECT id, course_id, parent_id, title, type, exam_id, lesson_id, order_index
        FROM curriculum_items
        WHERE course_id = $1
        ORDER BY order_index ASC;`,
@@ -64,6 +89,7 @@ export async function GET(req: Request) {
       title: r.title,
       type: r.type,
       exam_id: r.exam_id,
+      lesson_id: r.lesson_id ?? null,
       order_index: r.order_index ?? 0,
     }));
 
@@ -85,7 +111,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { course_id, parent_id, title, type, exam_id } = body;
+    const { course_id, parent_id, title, type, exam_id, lesson_id } = body;
 
     if (!course_id || typeof course_id !== "string" || !course_id.trim()) {
       return NextResponse.json({ success: false, error: "Thiếu course_id." }, { status: 400 });
@@ -127,6 +153,8 @@ export async function POST(req: Request) {
     }
 
     let finalExamId: string | null = null;
+    let finalLessonId: string | null = null;
+
     if (type === "EXAM") {
       if (!exam_id || typeof exam_id !== "string" || !exam_id.trim()) {
         return NextResponse.json({ success: false, error: "EXAM thiếu exam_id." }, { status: 400 });
@@ -138,6 +166,14 @@ export async function POST(req: Request) {
       finalExamId = exam_id.trim();
     } else if (exam_id) {
       finalExamId = exam_id;
+    }
+
+    if (type === "LESSON") {
+      const vLesson = await validateLessonForCurriculum(lesson_id, authUser);
+      if (!vLesson.ok) {
+        return NextResponse.json({ success: false, error: vLesson.error }, { status: 400 });
+      }
+      finalLessonId = vLesson.lessonId!;
     }
 
     let maxOrderSql = "SELECT COALESCE(MAX(order_index), 0) AS max_order FROM curriculum_items WHERE course_id = $1 AND parent_id IS NULL";
@@ -153,10 +189,10 @@ export async function POST(req: Request) {
     const cleanTitle = title.trim();
 
     const insertRes = await queryPg(
-      `INSERT INTO curriculum_items (id, course_id, parent_id, title, type, exam_id, order_index, created_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-       RETURNING id, course_id, parent_id, title, type, exam_id, order_index;`,
-      [newId, course_id, normParentId, cleanTitle, type, finalExamId, orderIndex, authUser.userId]
+      `INSERT INTO curriculum_items (id, course_id, parent_id, title, type, exam_id, lesson_id, order_index, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+       RETURNING id, course_id, parent_id, title, type, exam_id, lesson_id, order_index;`,
+      [newId, course_id, normParentId, cleanTitle, type, finalExamId, finalLessonId, orderIndex, authUser.userId]
     );
 
     const inserted = insertRes.rows[0];
@@ -170,6 +206,7 @@ export async function POST(req: Request) {
           title: inserted.title,
           type: inserted.type,
           exam_id: inserted.exam_id,
+          lesson_id: inserted.lesson_id ?? null,
           order_index: inserted.order_index,
         },
       },
@@ -264,6 +301,16 @@ export async function PUT(req: Request) {
           return NextResponse.json({ success: false, error: "Đề thi không tồn tại." }, { status: 400 });
         }
       }
+
+      if (item.lesson_id !== undefined) {
+        if (existing.type !== "LESSON") {
+          return NextResponse.json({ success: false, error: "Chỉ mục loại LESSON mới được gắn lesson_id." }, { status: 400 });
+        }
+        const vLesson = await validateLessonForCurriculum(item.lesson_id, authUser);
+        if (!vLesson.ok) {
+          return NextResponse.json({ success: false, error: vLesson.error }, { status: 400 });
+        }
+      }
     }
 
     const pool = getPgPool();
@@ -293,21 +340,31 @@ export async function PUT(req: Request) {
           sets.push(`exam_id = $${pIdx++}`);
           params.push(item.exam_id || null);
         }
+        if (item.lesson_id !== undefined) {
+          sets.push(`lesson_id = $${pIdx++}`);
+          params.push(item.lesson_id ? item.lesson_id.trim() : null);
+        }
 
         if (sets.length > 0) {
           params.push(item.id);
-          const q = `UPDATE curriculum_items SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING id, course_id, parent_id, title, type, exam_id, order_index;`;
+          const q = `UPDATE curriculum_items SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING id, course_id, parent_id, title, type, exam_id, lesson_id, order_index;`;
           const uRes = await client.query(q, params);
           if (uRes.rows[0]) {
-            updatedList.push(uRes.rows[0]);
+            updatedList.push({
+              ...uRes.rows[0],
+              lesson_id: uRes.rows[0].lesson_id ?? null,
+            });
           }
         } else {
           const sRes = await client.query(
-            "SELECT id, course_id, parent_id, title, type, exam_id, order_index FROM curriculum_items WHERE id = $1",
+            "SELECT id, course_id, parent_id, title, type, exam_id, lesson_id, order_index FROM curriculum_items WHERE id = $1",
             [item.id]
           );
           if (sRes.rows[0]) {
-            updatedList.push(sRes.rows[0]);
+            updatedList.push({
+              ...sRes.rows[0],
+              lesson_id: sRes.rows[0].lesson_id ?? null,
+            });
           }
         }
       }

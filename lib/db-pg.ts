@@ -191,6 +191,9 @@ export async function ensureSchema() {
         graded_at TIMESTAMPTZ
       );
       CREATE INDEX IF NOT EXISTS idx_lesson_attempts_lookup ON lesson_attempts (class_id, student_id, lesson_id);
+
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+      CREATE INDEX IF NOT EXISTS idx_questions_created_by ON questions (created_by);
     `);
     schemaInitialized = true;
   } catch (err) {

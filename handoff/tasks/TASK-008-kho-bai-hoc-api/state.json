@@ -1,13 +1,33 @@
 {
   "id": "TASK-008",
   "title": "API câu hỏi dùng chung, Kho bài học, lộ trình nhận lesson_id",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "23e17df2-3ac3-494c-a7ce-ffff7a1d70d6",
   "history": [
     {
       "at": "2026-10-31T11:55:15",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T11:56:52",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T11:57:11",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:07:42",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:10:02",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -28,5 +48,6 @@
     "vitest.config.ts",
     "docs/db-migration-006-lessons.sql",
     "docs/db-migration-007-question-owner.sql"
-  ]
+  ],
+  "via": "agy"
 }
