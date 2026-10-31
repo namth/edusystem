@@ -68,10 +68,9 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ TASK-007 migration 006 + `lib/grading.ts` (chấm khách quan server, ẩn đáp án)
 - TASK-008 API câu hỏi + kho bài học + lộ trình nhận `lesson_id` (đang chạy, worktree riêng)
 - TASK-009 API cài đặt lớp, mở/khoá, tiến độ, `lib/roadmap.ts`
-- TASK-010 tách trình soạn câu hỏi thành component dùng chung
-- TASK-011 API học sinh: lộ trình, làm bài, chấm AI nền
-- TASK-012 UI Kho bài học + soạn bài + bộ chọn trong lộ trình
-- TASK-013 UI lộ trình lớp (GV) + tab Lộ trình + trang làm bài (HS)
+- ✅ TASK-010, TASK-011, TASK-012 đã merge
+- TASK-013 UI Kho bài học + soạn bài + bộ chọn trong lộ trình (đang chạy, tài khoản 2)
+- TASK-014 UI trang làm bài học + xem trước (chờ TASK-011)
 
 ### Còn lại
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
