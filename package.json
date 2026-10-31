@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "office": "node office/server.mjs",
-    "office:demo": "node office/demo.mjs"
+    "office:demo": "node office/demo.mjs",
+    "office:lan": "OFFICE_LAN=1 node office/server.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

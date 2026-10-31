@@ -38,11 +38,21 @@ function describeTool(name, input = {}) {
   return name.split('__').pop();
 }
 
+// Claude chạy verify/accept/reject của handoff = trưởng phòng đi kiểm tra bài của nhân sự.
+// (Agent Antigravity tự chạy verify ở máy nó, không qua hook này.)
+const REVIEW_CMD = /(?:handoff\.py|agy-worktree\.sh)\s+(verify|accept|reject)\s+(?:--\S+\s+)*(TASK-\d+|\d+)/i;
+
+function taskId(raw) {
+  return /^\d+$/.test(raw) ? `TASK-${raw.padStart(3, '0')}` : raw.toUpperCase();
+}
+
 function toEvent(h) {
   switch (h.hook_event_name) {
     case 'UserPromptSubmit':
       return { who: 'giamdoc', type: 'assign', to: 'truongphong', text: cut(h.prompt) };
     case 'PreToolUse': {
+      const m = h.tool_name === 'Bash' && REVIEW_CMD.exec(h.tool_input?.command || '');
+      if (m) return { who: 'truongphong', type: 'review', task: taskId(m[2]), text: cut(`$ handoff ${m[1]}`) };
       const text = describeTool(h.tool_name || '', h.tool_input);
       return text && { who: 'truongphong', type: 'work', text: cut(text) };
     }
