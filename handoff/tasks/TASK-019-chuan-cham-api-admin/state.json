@@ -1,13 +1,33 @@
 {
   "id": "TASK-019",
   "title": "API chuẩn chấm + trang admin + rubric-resolver bằng pg",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "e51d1318-de0f-49f3-9054-a4fe82d5707c",
   "history": [
     {
       "at": "2026-10-31T14:30:29",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:32:05",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:32:25",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T14:43:09",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T14:45:18",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -40,5 +60,6 @@
     "vitest.config.ts",
     "docs/db-migration-009-scoring-standards.sql",
     "handoff/tasks/TASK-019-chuan-cham-api-admin/tsconfig.verify.json"
-  ]
+  ],
+  "via": "agy"
 }
