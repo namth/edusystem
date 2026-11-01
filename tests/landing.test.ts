@@ -61,9 +61,11 @@ describe("Trang chủ / là landing (Server Component)", () => {
     const s = read("app/page.tsx");
     expect(s.trimStart().startsWith('"use client"')).toBe(false);
     expect(s).toMatch(/export const metadata/);
-    const all = [s, ...fs.readdirSync("components/landing").map((f) => read(path.join("components/landing", f)))].join("\n");
+    const all = [s, ...fs.readdirSync("components/landing").filter((f) => f.endsWith(".tsx")).map((f) => read(path.join("components/landing", f)))].join("\n");
     expect(all).toContain("/brand/kitokit-logo-horizontal.png");
-    for (const id of ['id="mon-hoc"', 'id="tinh-nang"', 'id="giao-vien"', 'id="faq"', 'id="lien-he"']) expect(all, id).toContain(id);
+    for (const id of ['id="tinh-nang"', 'id="hoc-sinh"', 'id="giao-vien"', 'id="faq"', 'id="lien-he"']) expect(all, id).toContain(id);
+    // 02/11: bỏ mục liệt kê môn học (để mở rộng dần), tập trung giới thiệu tính năng
+    expect(all).not.toContain('id="mon-hoc"');
     expect(all).toContain('"/register"');
     expect(all).toContain('"/login"');
     expect(all).toContain("/api/leads");
@@ -94,6 +96,25 @@ describe("Trang chủ / là landing (Server Component)", () => {
   it("/student/landing chuyển về /", async () => {
     const Old = (await import("@/app/student/landing/page")).default as any;
     expect(await redirectTarget(() => Old())).toBe("/");
+  });
+});
+
+describe("Landing — icon động & bản quyền INOVA", () => {
+  it("6 icon động cho tính năng (AI chấm, soạn thảo, AI nhập đề, lộ trình, điểm tức thì, thông báo) dùng keyframes kk-*", () => {
+    const m = read("components/landing/motion/MotionIcons.tsx");
+    for (const name of ["AiGradingMotion", "EditorMotion", "AiImportMotion", "RoadmapMotion", "InstantResultMotion", "ProgressNotifyMotion"]) {
+      expect(m, name).toMatch(new RegExp(`export function ${name}`));
+    }
+    expect(m.trimStart().startsWith('"use client"')).toBe(false);
+    const css = read("app/globals.css");
+    expect(css).toMatch(/@keyframes kk-/);
+    expect(css).toMatch(/prefers-reduced-motion/);
+  });
+
+  it("footer ghi bản quyền thuộc Công ty Công nghệ INOVA, liên kết inova.io.vn", () => {
+    const f = read("components/landing/LandingFooter.tsx");
+    expect(f).toMatch(/Công ty Công nghệ INOVA/);
+    expect(f).toContain("https://inova.io.vn");
   });
 });
 

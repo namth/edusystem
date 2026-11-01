@@ -9,9 +9,9 @@ export default function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: "#mon-hoc", label: "Môn học" },
     { href: "#tinh-nang", label: "Tính năng" },
-    { href: "#giao-vien", label: "Giáo viên & Trung tâm" },
+    { href: "#hoc-sinh", label: "Học sinh" },
+    { href: "#giao-vien", label: "Thầy cô & Trung tâm" },
     { href: "#faq", label: "Hỏi đáp" },
   ];
 

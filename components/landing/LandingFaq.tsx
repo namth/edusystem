@@ -8,8 +8,8 @@ export default function LandingFaq() {
 
   const faqs = [
     {
-      q: "KitoKit hiện tại hỗ trợ những môn học nào?",
-      a: "Hiện tại KitoKit tập trung phát triển sâu chương trình Tiếng Anh đầy đủ 4 kỹ năng Nghe – Nói – Đọc – Viết và các bài thi chứng chỉ Cambridge, IELTS. Các môn Toán, Tiếng Việt, Khoa học, Lịch sử & Địa lý, Tin học đang được mở rộng kho học liệu.",
+      q: "KitoKit hỗ trợ những môn học nào?",
+      a: "KitoKit mạnh nhất ở Tiếng Anh với đủ 4 kỹ năng Nghe – Nói – Đọc – Viết và AI chấm bài. Các môn khác đang được mở rộng dần; trung tâm và thầy cô có thể tự tạo môn học riêng để soạn bài và đề trắc nghiệm.",
     },
     {
       q: "Công nghệ AI chấm bài Viết và Nói hoạt động như thế nào?",

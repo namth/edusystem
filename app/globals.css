@@ -224,3 +224,48 @@ body {
 .rich-editor-wrapper .ql-editor td {
   background-color: #ffffff;
 }
+
+/* ── Landing KitoKit: chuyển động cho icon động (tiền tố kk-) ───────────────── */
+@keyframes kk-scan { 0% { transform: translateY(-120%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(520%); opacity: 0; } }
+@keyframes kk-ring { 0%, 10% { stroke-dashoffset: 100; } 55%, 90% { stroke-dashoffset: 15; } 100% { stroke-dashoffset: 100; } }
+@keyframes kk-pop { 0%, 8% { transform: scale(0.6); opacity: 0; } 18%, 82% { transform: scale(1); opacity: 1; } 92%, 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes kk-type { 0%, 5% { width: 0; } 45%, 85% { width: var(--kk-w, 100%); } 100% { width: 0; } }
+@keyframes kk-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes kk-dash { to { stroke-dashoffset: -24; } }
+@keyframes kk-fill { 0%, 5% { width: 0; } 70%, 90% { width: 100%; } 100% { width: 0; } }
+@keyframes kk-travel { 0%, 5% { left: 0%; } 70%, 90% { left: 100%; } 100% { left: 0%; } }
+@keyframes kk-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes kk-drop { 0%, 10% { transform: translate(-18px, -26px) rotate(-6deg); opacity: 0; } 35% { opacity: 1; } 55%, 85% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(0, 0); opacity: 0; } }
+@keyframes kk-ping { 0% { transform: scale(0.8); opacity: 0.7; } 80%, 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes kk-swing { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(14deg); } 80% { transform: rotate(-12deg); } 90% { transform: rotate(6deg); } }
+@keyframes kk-bar { 0%, 5% { transform: scaleY(0.15); } 50%, 85% { transform: scaleY(1); } 100% { transform: scaleY(0.15); } }
+@keyframes kk-slide { 0%, 20% { transform: translateX(24px); opacity: 0; } 32%, 85% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(0); opacity: 0; } }
+@keyframes kk-orbit { to { transform: rotate(360deg); } }
+@keyframes kk-orbit-rev { to { transform: rotate(-360deg); } }
+@keyframes kk-marquee { to { transform: translateX(-50%); } }
+
+.kk-scan { animation: kk-scan 3.2s ease-in-out infinite; }
+.kk-ring { stroke-dasharray: 100; animation: kk-ring 4s ease-in-out infinite; }
+.kk-pop { animation: kk-pop 4s ease-out infinite both; }
+.kk-type { animation: kk-type 4s steps(18, end) infinite; overflow: hidden; white-space: nowrap; }
+.kk-blink { animation: kk-blink 1s step-end infinite; }
+.kk-dash { stroke-dasharray: 4 8; animation: kk-dash 0.9s linear infinite; }
+.kk-fill { animation: kk-fill 4.5s ease-in-out infinite; }
+.kk-travel { animation: kk-travel 4.5s ease-in-out infinite; }
+.kk-float { animation: kk-float 3.6s ease-in-out infinite; }
+.kk-drop { animation: kk-drop 4.5s ease-in-out infinite; }
+.kk-ping { animation: kk-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.kk-swing { animation: kk-swing 3s ease-in-out infinite; transform-origin: 50% 10%; }
+.kk-bar { animation: kk-bar 3.6s ease-in-out infinite; transform-origin: bottom; }
+.kk-slide { animation: kk-slide 4s ease-out infinite both; }
+.kk-orbit { animation: kk-orbit 36s linear infinite; }
+.kk-orbit-rev { animation: kk-orbit-rev 36s linear infinite; }
+.kk-marquee { animation: kk-marquee 40s linear infinite; }
+.kk-grid-bg {
+  background-image: linear-gradient(var(--color-line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--color-line-soft) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="kk-"] { animation: none !important; }
+}

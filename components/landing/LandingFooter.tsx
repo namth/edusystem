@@ -28,13 +28,13 @@ export default function LandingFooter() {
             <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Khám phá</h4>
             <ul className="space-y-2 text-xs text-ink-muted">
               <li>
-                <a href="#mon-hoc" className="hover:text-brand-600 transition-colors">
-                  Kho môn học
+                <a href="#hoc-sinh" className="hover:text-brand-600 transition-colors">
+                  Dành cho học sinh
                 </a>
               </li>
               <li>
                 <a href="#tinh-nang" className="hover:text-brand-600 transition-colors">
-                  Tính năng học sinh
+                  Tính năng nổi bật
                 </a>
               </li>
               <li>
@@ -74,10 +74,16 @@ export default function LandingFooter() {
         </div>
 
         <div className="pt-8 border-t border-line-soft flex flex-col sm:flex-row items-center justify-between text-xs text-ink-subtle gap-4">
-          <p>© {new Date().getFullYear()} KitoKit. Bản quyền thuộc về KitoKit.</p>
-          <div className="flex gap-6">
-            <span>Học vui – Thi chắc</span>
-          </div>
+          <p>
+            © {new Date().getFullYear()} KitoKit. Bản quyền thuộc về{" "}
+            <a href="https://inova.io.vn" target="_blank" rel="noopener noreferrer" className="font-bold text-ink-muted hover:text-brand-600 transition-colors">
+              Công ty Công nghệ INOVA
+            </a>
+            .
+          </p>
+          <a href="https://inova.io.vn" target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 transition-colors">
+            Phát triển bởi INOVA · inova.io.vn
+          </a>
         </div>
       </div>
     </footer>
