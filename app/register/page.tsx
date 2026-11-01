@@ -79,10 +79,10 @@ export default function RegisterPage() {
             <div className="space-y-4">
               <h1 className="text-4xl font-extrabold text-brand-600 leading-tight tracking-tight">
                 Khởi Đầu Hành Trình <br />
-                <span className="text-ink-muted">Bứt Phá Band Điểm IELTS</span>
+                <span className="text-ink-muted">Chinh Phục Tri Thức Cùng KitoKit</span>
               </h1>
               <p className="text-sm text-ink-muted leading-relaxed max-w-md">
-                Tạo hồ sơ học viên chuẩn hóa để truy cập ngân hàng đề thi IELTS mô phỏng, luyện tập 4 kỹ năng và nhận báo cáo phân tích học thuật tự động.
+                Tạo tài khoản học viên để truy cập kho bài học & đề thi đa môn phong phú, luyện tập phản xạ và nhận đánh giá học thuật tự động bằng công nghệ AI.
               </p>
             </div>
 
@@ -96,22 +96,20 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Social Proof */}
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  S
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  M
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  T
-                </div>
+            {/* Features Highlight */}
+            <div className="flex flex-col gap-2.5 text-xs text-ink-muted">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-500" />
+                <span>Trải nghiệm làm bài thi thử miễn phí không giới hạn</span>
               </div>
-              <p className="text-xs font-medium text-ink-muted">
-                Tham gia cộng đồng <strong className="text-brand-600 font-bold">12.000+</strong> học viên toàn quốc
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-400" />
+                <span>AI phân tích chi tiết điểm mạnh và điểm cần cải thiện</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-600" />
+                <span>Lớp học tương tác trực tiếp cùng thầy cô</span>
+              </div>
             </div>
           </div>
 
