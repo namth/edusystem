@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { emptyAnswerFor, setAnswerPart } from "@/lib/lesson-player";
 import SpeakingRecorder from "./SpeakingRecorder";
+import { sanitizeStimulusHtml } from "@/lib/stimulus-html";
 import {
   Volume2,
   CheckCircle2,
@@ -188,9 +189,10 @@ export default function LessonPlayer({
 
             {/* Stimulus text (Ngữ cảnh văn bản) */}
             {q.stimulus_text && (
-              <div className="mb-4 rounded-xl border border-[#d8c2b6] bg-[#fff8f5] p-4 text-sm leading-relaxed text-[#211a16] whitespace-pre-wrap">
-                {q.stimulus_text}
-              </div>
+              <div
+                className="mb-4 rounded-xl border border-[#d8c2b6] bg-[#fff8f5] p-4 text-sm leading-relaxed text-[#211a16] [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-lg [&_p]:my-1"
+                dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(q.stimulus_text) }}
+              />
             )}
 
             {/* Stimulus audio (Ngữ cảnh âm thanh) */}
