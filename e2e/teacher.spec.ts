@@ -15,8 +15,10 @@ test.describe("Giáo viên", () => {
     await page.goto("/teacher/library?tab=exams");
     await expect(page.getByText("Đề trắc nghiệm E2E")).toBeVisible();
     await expect(page.getByText("Đề riêng thầy Minh")).toHaveCount(0);
-    await page.getByRole("tab", { name: /Bài học/ }).or(page.getByRole("button", { name: /^Bài học/ })).first().click();
-    await expect(page).toHaveURL(/tab=lessons/);
+    await expect(async () => {
+      await page.getByRole("button", { name: "Bài học", exact: true }).click();
+      await expect(page).toHaveURL(/tab=lessons/, { timeout: 2000 });
+    }).toPass();
   });
 
   test("tạo khoá học mới qua API rồi thấy trong danh sách", async ({ page }) => {

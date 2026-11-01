@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import TeacherLayout from "@/components/TeacherLayout";
 import LessonLibraryPanel from "@/components/teacher/LessonLibraryPanel";
 import ExamLibraryPanel from "@/components/teacher/ExamLibraryPanel";
@@ -9,13 +9,13 @@ import { BookMarked, FileText, Loader2 } from "lucide-react";
 
 function TeacherLibraryContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const tabParam = searchParams.get("tab");
   const activeTab: "lessons" | "exams" = tabParam === "exams" ? "exams" : "lessons";
 
+  // router.replace không đổi URL khi trang được mở sẵn ?tab=… (Next 16) → dùng History API, Next tự đồng bộ useSearchParams
   const handleSelectTab = (tab: "lessons" | "exams") => {
-    router.replace(`/teacher/library?tab=${tab}`);
+    window.history.replaceState(null, "", `/teacher/library?tab=${tab}`);
   };
 
   return (

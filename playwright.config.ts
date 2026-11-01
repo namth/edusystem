@@ -21,10 +21,11 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /responsive\.spec\.ts/ },
   ],
   webServer: {
-    command: `npx next dev -p ${E2E_PORT}`,
+    // Chạy bản build production (sát thực tế; next dev/Turbopack từng treo khi biên dịch /admin/requests).
+    command: `npx next build && npx next start -p ${E2E_PORT}`,
     url: `http://localhost:${E2E_PORT}/login`,
-    timeout: 180_000,
+    timeout: 600_000,
     reuseExistingServer: false,
-    env: { ...E2E_ENV, NODE_ENV: "development" },
+    env: { ...E2E_ENV, NODE_ENV: "production" },
   },
 });
