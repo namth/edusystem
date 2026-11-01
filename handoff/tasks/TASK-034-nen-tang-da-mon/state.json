@@ -1,0 +1,17 @@
+{
+  "id": "TASK-034",
+  "title": "Nền tảng đa môn: bảng môn học, subject_id cho khoá/đề/bài học, trang quản lý môn, lọc theo môn",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-01T19:31:21",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-034-nen-tang-da-mon/verify.sh",
+    "tests/subjects.test.ts"
+  ]
+}
