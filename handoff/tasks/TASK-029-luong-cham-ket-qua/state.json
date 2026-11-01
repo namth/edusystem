@@ -1,0 +1,20 @@
+{
+  "id": "TASK-029",
+  "title": "Sửa luồng chấm đề + màn kết quả báo điểm từng phần (DEC-021)",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-01T13:07:48",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-029-luong-cham-ket-qua/verify.sh",
+    "tests/exam-attempts-api.test.ts",
+    "tests/attempt-summary.test.ts",
+    "tests/client-bundle-safety.test.ts",
+    "tests/notifications-lib.test.ts"
+  ]
+}

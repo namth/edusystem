@@ -7,7 +7,7 @@ import { createFakePg } from "./helpers/pg-fake";
 const h = vi.hoisted(() => {
   process.env.JWT_SECRET = "test_secret_for_vitest_only_0123456789abcdef";
   process.env.INTERNAL_API_TOKEN = "internal_test_token_xyz";
-  return { token: undefined as string | undefined, pg: null as any, events: [] as any[], aiCalls: [] as any[], aiScore: 6 as number | Error };
+  return { token: undefined as string | undefined, pg: null as any, events: [] as any[], aiCalls: [] as any[], aiScore: 6 as number | Error, pushFail: false };
 });
 
 vi.mock("next/headers", () => ({
@@ -23,13 +23,18 @@ vi.mock("@/lib/db-pg", () => ({
 }));
 vi.mock("@/lib/redis-queue", () => ({
   pushRedisStreamEvent: async (...a: any[]) => { h.events.push(a); },
-  pushGradingEvent: async (...a: any[]) => { h.events.push(["grading", ...a]); },
+  // Ghi lại trạng thái bài ở thời điểm đẩy sự kiện (TASK-029: phải là GRADING, không còn IN_PROGRESS)
+  pushGradingEvent: async (...a: any[]) => {
+    const st = (await h.pg.db.query("SELECT status FROM submissions WHERE id=$1", [a[0]])).rows[0]?.status;
+    h.events.push(["grading", ...a, st]);
+    if (h.pushFail) throw new Error("redis down");
+  },
 }));
 vi.mock("@/lib/exam-ai-grading", () => ({
   gradeExamOpenAnswer: async (input: any) => {
     h.aiCalls.push(input);
     if (h.aiScore instanceof Error) throw h.aiScore;
-    return h.aiScore;
+    return { score: h.aiScore, feedback: `Nhận xét ${input.category}` };
   },
 }));
 vi.mock("@/lib/supabase", () => ({ supabase: new Proxy({}, { get() { throw new Error("không dùng Supabase client"); } }) }));
@@ -60,6 +65,7 @@ beforeEach(async () => {
   h.events.length = 0;
   h.aiCalls.length = 0;
   h.aiScore = 6;
+  h.pushFail = false;
   h.pg = await createFakePg(["db-migration-004-enrollments-assignments.sql"]);
   await h.pg.db.exec(`
     ALTER TABLE users ADD COLUMN slot_limit INT DEFAULT 0;
@@ -69,6 +75,7 @@ beforeEach(async () => {
   `);
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-006-lessons.sql", "utf8"));
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-009-scoring-standards.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-010-notifications.sql", "utf8"));
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,slot_limit) VALUES ('t1','GV','t1@x.vn','TEACHER',3), ('t2','GV2','t2@x.vn','TEACHER',0),
       ('s1','HS1','s1@x.vn','STUDENT',0), ('s2','HS2','s2@x.vn','STUDENT',0);
@@ -235,6 +242,41 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
     expect(JSON.stringify(h.events)).toContain(a.id);
   });
 
+  it("đẩy sự kiện chấm SAU khi đã lưu trạng thái GRADING (tránh worker bỏ qua) (TASK-029)", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
+    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    const ev = h.events.find((e) => e[0] === "grading");
+    expect(ev).toBeTruthy();
+    expect(ev[ev.length - 1]).toBe("GRADING");
+  });
+
+  it("đẩy sự kiện lỗi → NEEDS_REVIEW, hoàn slot, báo GV; vẫn trả 200 cho học sinh", async () => {
+    h.pushFail = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
+    const res = await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).attempt.status).toBe("NEEDS_REVIEW");
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
+    expect(await rows(`SELECT user_id FROM notifications WHERE ref_id=$1 AND type='EXAM_NEEDS_REVIEW'`, [a.id])).toEqual([{ user_id: "t1" }]);
+  });
+
+  it("hết slot → NEEDS_REVIEW cũng báo giáo viên", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eFree")).json()).attempt;
+    await submit(a.id, { w1: "Essay" });
+    expect(await rows(`SELECT user_id FROM notifications WHERE ref_id=$1 AND type='EXAM_NEEDS_REVIEW'`, [a.id])).toEqual([{ user_id: "t2" }]);
+  });
+
+  it("bài toàn khách quan chấm ngay: KHÔNG tạo thông báo (học sinh đã thấy điểm tại chỗ)", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eObj")).json()).attempt;
+    await submit(a.id, { r1: { a: "A", b: "B" } });
+    expect(await rows(`SELECT * FROM notifications`)).toEqual([]);
+  });
+
   it("đề luyện tập có AI, người tạo đề hết slot → NEEDS_REVIEW, không đẩy sự kiện", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eFree")).json()).attempt;
@@ -275,16 +317,32 @@ describe("POST /api/exam/grade-async — worker chấm AI theo thang phần", ()
     expect(h.aiCalls.find((c) => c.category === "WRITING_ESSAY")).toMatchObject({ answer: "Essay text", rubric_id: "rubric_ielts_writing" });
   });
 
-  it("AI lỗi 3 lần → điểm phần AI = min, ghi last_grading_error, vẫn GRADED", async () => {
+  it("AI lỗi 3 lần → NEEDS_REVIEW (không cho điểm min), hoàn slot, giữ điểm phần đã chấm, báo GV (DEC-021)", async () => {
     const id = await gradingAttempt();
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(2);
     h.aiScore = new Error("AI down");
     vi.spyOn(console, "error").mockImplementation(() => {});
     await grade({ submissionId: id });
-    const row = (await rows(`SELECT status, section_scores, last_grading_error FROM submissions WHERE id=$1`, [id]))[0];
-    expect(row.status).toBe("GRADED");
-    expect(row.section_scores.Writing.score).toBe(0);
+    const row = (await rows(`SELECT status, section_scores, total_score, last_grading_error FROM submissions WHERE id=$1`, [id]))[0];
+    expect(row.status).toBe("NEEDS_REVIEW");
+    expect(row.section_scores.Reading.score).toBe(9);
+    expect(row.section_scores.Writing.score).toBeNull();
+    expect(row.total_score).toBeNull();
     expect(row.last_grading_error).toBeTruthy();
     expect(h.aiCalls.length).toBe(6);
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
+    expect(await rows(`SELECT user_id, type FROM notifications WHERE ref_id=$1`, [id])).toEqual([{ user_id: "t1", type: "EXAM_NEEDS_REVIEW" }]);
+  });
+
+  it("chấm xong → lưu nhận xét AI vào results và tạo thông báo EXAM_GRADED cho học sinh", async () => {
+    const id = await gradingAttempt();
+    await grade({ submissionId: id });
+    const row = (await rows(`SELECT results FROM submissions WHERE id=$1`, [id]))[0];
+    const w = row.results.find((r: any) => r.question_id === "w1");
+    expect(w.score).toBe(6);
+    expect(w.feedback).toBe("Nhận xét WRITING_ESSAY");
+    const n = await rows(`SELECT user_id, type, link FROM notifications WHERE ref_id=$1`, [id]);
+    expect(n).toEqual([{ user_id: "s1", type: "EXAM_GRADED", link: `/student/exam/review/${id}` }]);
   });
 
   it("lượt không ở GRADING → 200 bỏ qua; không có → 404", async () => {
@@ -324,6 +382,41 @@ describe("PUT /api/exam/grade-override — giáo viên chấm/sửa điểm ph�
     expect((await override({ submissionId: a.id, section_scores: { Reading: 5 } })).status).toBe(403);
     await loginAs("STUDENT", "s1");
     expect((await override({ submissionId: a.id, section_scores: { Reading: 5 } })).status).toBe(403);
+  });
+});
+
+describe("GET /api/submissions/[id] — không lộ đáp án khi đang làm (DEC-018, TASK-029)", () => {
+  const getSub = async (id: string) =>
+    (await import("@/app/api/submissions/[id]/route")).GET(req("GET", "/x"), { params: Promise.resolve({ id }) });
+
+  it("học sinh gọi khi lượt còn IN_PROGRESS → 409, thân trả về không chứa đáp án", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eObj")).json()).attempt;
+    const res = await getSub(a.id);
+    expect(res.status).toBe(409);
+    const text = await res.text();
+    expect(text).not.toContain("correct_answer");
+    expect(text).not.toContain('"questions"');
+  });
+
+  it("sau khi nộp: học sinh xem được bài của mình (kèm câu hỏi để xem lại); bài người khác 403", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eObj")).json()).attempt;
+    await submit(a.id, { r1: { a: "A", b: "B" } });
+    const res = await getSub(a.id);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.submission.status).toBe("GRADED");
+    expect(json.questions.length).toBe(2);
+    await loginAs("STUDENT", "s2");
+    expect((await getSub(a.id)).status).toBe(403);
+  });
+
+  it("giáo viên xem được cả lượt đang làm (theo dõi lớp)", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eObj")).json()).attempt;
+    await loginAs("TEACHER", "t1");
+    expect((await getSub(a.id)).status).toBe(200);
   });
 });
 

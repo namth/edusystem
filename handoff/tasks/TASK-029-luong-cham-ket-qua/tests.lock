@@ -1,0 +1,5 @@
+caef74efa7ecc141a7c130f8a6cb33c631665b7210f17d42ed239fa41ce266f6  handoff/tasks/TASK-029-luong-cham-ket-qua/verify.sh
+c11d33ef0500519de30bbf501fa86ebd1ddf1360d9ef5e43835c273ed96bedba  tests/exam-attempts-api.test.ts
+a5389c7a7e9a4d1a3ef5dcf8fc910cd80015210cab7fff93c58f72e4ff9d786a  tests/attempt-summary.test.ts
+b9605f55c844b2bd75a2b4b3072f905e093645aaaa8f3e6df08a57da25ac7a78  tests/client-bundle-safety.test.ts
+a53297442ff78f29ad552a9973579de88827907344c4ad6d5a9d3dc6326e6e35  tests/notifications-lib.test.ts
