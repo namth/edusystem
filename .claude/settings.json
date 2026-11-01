@@ -1,37 +1,8 @@
 {
-  "enabledPlugins": {
-    "context7@claude-plugins-official": true
-  },
   "enabledMcpjsonServers": ["postgres-e2e"],
   "permissions": {
     "allow": [
-      "Bash(npm test:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npx vitest:*)",
-      "Bash(npx tsc --noEmit:*)",
-      "Bash(npx eslint:*)",
-      "Bash(python3 scripts/handoff.py:*)",
-      "Bash(git status:*)",
-      "Bash(git log:*)",
-      "Bash(git diff:*)",
-      "Bash(git show:*)",
-      "Bash(git branch:*)",
-      "mcp__plugin_context7_context7",
       "mcp__postgres-e2e"
-    ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/eslint-sau-khi-sua.sh",
-            "timeout": 60
-          }
-        ]
-      }
     ]
   }
 }
