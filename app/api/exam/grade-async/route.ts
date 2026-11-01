@@ -43,6 +43,20 @@ export async function POST(req: Request) {
     );
   }
 
+  // Worker đã giao quá số lần cho phép mà vẫn lỗi → chuyển giáo viên chấm tay thay vì kẹt GRADING
+  if (body?.giveUp === true && hasValidInternalToken(req)) {
+    const moved = await queryPg(
+      `UPDATE submissions
+       SET status = 'NEEDS_REVIEW', total_score = NULL, passed = NULL,
+           last_grading_error = COALESCE(last_grading_error, $2)
+       WHERE id = $1 AND status = 'GRADING'
+       RETURNING id`,
+      [submissionId, "Worker chấm AI thất bại sau nhiều lần thử"]
+    );
+    if (moved.rows.length > 0) await refundSlotAndNotify(sub);
+    return NextResponse.json({ success: true, submissionId, status: "NEEDS_REVIEW", gaveUp: true });
+  }
+
   const snapshot: ScoringStandard =
     typeof sub.standard_snapshot === "string"
       ? JSON.parse(sub.standard_snapshot)
@@ -159,29 +173,7 @@ export async function POST(req: Request) {
       ]
     );
 
-    let teacherId: string | null = null;
-    if (sub.class_ref) {
-      const classRes = await queryPg(
-        "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
-        [sub.class_ref]
-      );
-      teacherId = classRes.rows[0]?.teacher_id || null;
-    }
-    if (!teacherId && sub.exam_id) {
-      const examRes = await queryPg(
-        "SELECT created_by FROM exams WHERE id = $1 LIMIT 1",
-        [sub.exam_id]
-      );
-      teacherId = examRes.rows[0]?.created_by || null;
-    }
-    if (teacherId) {
-      await queryPg(
-        "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
-        [teacherId]
-      );
-    }
-
-    await notifyNeedsReview(submissionId);
+    await refundSlotAndNotify(sub);
 
     return NextResponse.json({
       success: true,
@@ -229,4 +221,30 @@ export async function POST(req: Request) {
     total_score: total,
     passed,
   });
+}
+
+// Hoàn slot đã trừ lúc nộp (GV lớp, không thì người tạo đề) và báo giáo viên chấm tay
+async function refundSlotAndNotify(sub: any) {
+  let teacherId: string | null = null;
+  if (sub.class_ref) {
+    const classRes = await queryPg(
+      "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
+      [sub.class_ref]
+    );
+    teacherId = classRes.rows[0]?.teacher_id || null;
+  }
+  if (!teacherId && sub.exam_id) {
+    const examRes = await queryPg(
+      "SELECT created_by FROM exams WHERE id = $1 LIMIT 1",
+      [sub.exam_id]
+    );
+    teacherId = examRes.rows[0]?.created_by || null;
+  }
+  if (teacherId) {
+    await queryPg(
+      "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
+      [teacherId]
+    );
+  }
+  await notifyNeedsReview(sub.id);
 }

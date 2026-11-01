@@ -429,3 +429,28 @@ describe("Đường nộp cũ bị khoá", () => {
     expect((await POST(req("POST", "/x", {}))).status).toBe(410);
   });
 });
+
+describe("Worker bỏ cuộc sau nhiều lần giao (giveUp) — không để bài kẹt GRADING", () => {
+  const grade = async (body: unknown, token = "internal_test_token_xyz") =>
+    (await import("@/app/api/exam/grade-async/route")).POST(req("POST", "/x", body, token ? { "x-internal-token": token } : {}));
+
+  it("giveUp với token nội bộ → NEEDS_REVIEW, hoàn slot một lần, báo GV; gọi lại không hoàn thêm", async () => {
+    await loginAs("STUDENT", "s1");
+    const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
+    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    h.token = undefined;
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(2);
+
+    expect((await grade({ submissionId: a.id, giveUp: true })).status).toBe(200);
+    const row = (await rows(`SELECT status, last_grading_error, total_score FROM submissions WHERE id=$1`, [a.id]))[0];
+    expect(row.status).toBe("NEEDS_REVIEW");
+    expect(row.last_grading_error).toBeTruthy();
+    expect(row.total_score).toBeNull();
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
+    expect(await rows(`SELECT user_id FROM notifications WHERE ref_id=$1 AND type='EXAM_NEEDS_REVIEW'`, [a.id])).toEqual([{ user_id: "t1" }]);
+
+    await grade({ submissionId: a.id, giveUp: true });
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
+    expect(h.aiCalls).toEqual([]);
+  });
+});

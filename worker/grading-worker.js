@@ -104,6 +104,21 @@ async function processMessage(redis, streamName, messageId, fields) {
     console.error(
       `❌ [Grading Worker] Message ${messageId} exceeded MAX_DELIVERIES (${MAX_DELIVERIES}); XACK to prevent infinite loop.`
     );
+    // Bài thi: báo server chuyển sang giáo viên chấm tay (hoàn slot) để không kẹt "đang chấm"
+    if (eventType === "GRADING_REQUESTED" && payload.submissionId) {
+      try {
+        await fetch(`${APP_URL}/api/exam/grade-async`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-token": process.env.INTERNAL_API_TOKEN || "",
+          },
+          body: JSON.stringify({ submissionId: payload.submissionId, giveUp: true }),
+        });
+      } catch (giveUpErr) {
+        console.error(`❌ [Grading Worker] Give-up call failed for ${payload.submissionId}:`, giveUpErr);
+      }
+    }
     await redis.xack(streamName, GROUP, messageId);
     deliveryCounts.delete(messageId);
   }
