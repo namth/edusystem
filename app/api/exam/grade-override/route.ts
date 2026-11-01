@@ -9,6 +9,7 @@ import {
   ensureAttemptsSchema,
   formatAttemptResponse,
 } from "@/lib/exam-attempts";
+import { notifyExamGraded } from "@/lib/notifications";
 
 export async function PUT(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -140,6 +141,8 @@ export async function PUT(req: Request) {
       submissionId,
     ]
   );
+
+  await notifyExamGraded(submissionId);
 
   return NextResponse.json({
     success: true,

@@ -1,13 +1,33 @@
 {
   "id": "TASK-030",
   "title": "Thông báo trong ứng dụng: API + chuông + GV chấm tay báo học sinh (DEC-021)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "d4058fd0-c95a-4374-a5c4-9d191d22201f",
   "history": [
     {
       "at": "2026-11-01T13:07:48",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T13:11:52",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T13:12:10",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T13:24:30",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T13:32:25",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -15,5 +35,6 @@
     "tests/notifications-api.test.ts",
     "tests/client-bundle-safety.test.ts",
     "tests/notifications-lib.test.ts"
-  ]
+  ],
+  "via": "agy"
 }
