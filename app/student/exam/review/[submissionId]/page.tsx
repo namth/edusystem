@@ -2,26 +2,23 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
-  XCircle,
   Sparkles,
   Award,
   BookOpen,
   Loader2,
   UserCheck,
   AlertCircle,
-  Clock,
-  ExternalLink,
 } from "lucide-react";
 import LessonPlayer from "@/components/lesson-player/LessonPlayer";
 import { sanitizeQuestionForStudent } from "@/lib/grading";
+import { summarizeAttemptResult } from "@/lib/attempt-summary";
 
 export default function ExamSubmissionReviewPage() {
   const params = useParams();
-  const router = useRouter();
   const submissionId = params.submissionId as string;
 
   const [submission, setSubmission] = useState<any>(null);
@@ -157,14 +154,44 @@ export default function ExamSubmissionReviewPage() {
     );
   }
 
-  const isGrading =
-    submission.status === "GRADING" ||
-    submission.status === "PENDING_GRADING" ||
-    submission.status === "AI_GRADING_IN_PROGRESS";
-  const isNeedsReview = submission.status === "NEEDS_REVIEW";
-  const isGraded = submission.status === "GRADED";
-  const sectionScores = submission.section_scores || {};
+  const summary = summarizeAttemptResult({
+    status: submission.status,
+    total_score: submission.total_score,
+    passed: submission.passed,
+    section_scores: submission.section_scores,
+    standard_snapshot: submission.standard_snapshot,
+  });
+  const pendingLabel = summary.pending.length > 0 ? summary.pending.join(", ") : "tự luận";
   const teacherFeedback = submission.teacher_feedback || submission.teacher_review?.teacher_note;
+
+  const rawResults: any[] = Array.isArray(submission.results)
+    ? submission.results
+    : typeof submission.results === "string"
+    ? (() => {
+        try {
+          return JSON.parse(submission.results);
+        } catch {
+          return [];
+        }
+      })()
+    : [];
+
+  const normalizedResults = rawResults.map((r: any) => {
+    if (r && r.kind === "AI" && typeof r.score === "number") {
+      const items = Array.isArray(r.items) && r.items.length > 0
+        ? r.items.map((it: any, idx: number) => (idx === 0 ? { ...it, band: r.score, score: r.score } : it))
+        : [{ key: "ai", correct: true, given: "", expected: "", band: r.score, score: r.score }];
+      return { ...r, items };
+    }
+    return r;
+  });
+
+  const resultByQuestionId = new Map<string, any>();
+  for (const r of normalizedResults) {
+    if (r && r.question_id) {
+      resultByQuestionId.set(String(r.question_id), r);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#fff8f5] text-[#211a16] font-sans pb-16">
@@ -192,17 +219,17 @@ export default function ExamSubmissionReviewPage() {
             </span>
           )}
 
-          {isGrading ? (
+          {summary.state === "PARTIAL" || summary.state === "WAITING_AI" ? (
             <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg border border-blue-300 flex items-center gap-1.5 animate-pulse">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Đang chấm Writing/Speaking…</span>
+              <span>AI đang chấm phần {pendingLabel}…</span>
             </span>
-          ) : isNeedsReview ? (
+          ) : summary.state === "WAITING_TEACHER" ? (
             <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-300 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
-              <span>Chờ giáo viên chấm phần tự luận</span>
+              <span>Giáo viên sẽ chấm phần {pendingLabel}</span>
             </span>
-          ) : isGraded ? (
+          ) : summary.state === "FINAL" ? (
             <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-300 flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
               <span>Đã hoàn thành chấm điểm</span>
@@ -214,14 +241,24 @@ export default function ExamSubmissionReviewPage() {
       {/* Main Container */}
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Banner trạng thái đang chấm */}
-        {isGrading && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 text-xs flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-700 shrink-0" />
-              <span>
-                Hệ thống AI đang chấm bài thi tự luận của bạn. Trang sẽ tự động cập nhật kết quả khi
-                hoàn tất...
-              </span>
+        {(summary.state === "PARTIAL" || summary.state === "WAITING_AI") && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 text-xs flex items-start gap-2.5">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold">AI đang chấm phần {pendingLabel}…</div>
+              <div>
+                Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang). Trang cũng tự động cập nhật khi hoàn tất.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {summary.state === "WAITING_TEACHER" && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold">Giáo viên sẽ chấm phần {pendingLabel}.</div>
+              <div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div>
             </div>
           </div>
         )}
@@ -256,11 +293,15 @@ export default function ExamSubmissionReviewPage() {
               <span className="text-xs font-bold text-[#857469] uppercase tracking-wider block">
                 Tổng điểm
               </span>
-              <div className="text-3xl font-extrabold text-[#6d3807]">
-                {submission.total_score !== null && submission.total_score !== undefined
-                  ? submission.total_score
-                  : "—"}
-              </div>
+              {summary.state === "FINAL" ? (
+                <div className="text-3xl font-extrabold text-[#6d3807]">
+                  {summary.total !== null ? summary.total : "—"}
+                </div>
+              ) : (
+                <div className="text-base font-extrabold text-[#6d3807] pt-1">
+                  Chờ phần {pendingLabel}
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#ede0d9] text-center space-y-1">
@@ -268,36 +309,38 @@ export default function ExamSubmissionReviewPage() {
                 Kết quả xếp loại
               </span>
               <div className="text-2xl font-extrabold">
-                {submission.passed === true ? (
-                  <span className="text-emerald-700">Đạt</span>
-                ) : submission.passed === false ? (
-                  <span className="text-rose-700">Chưa đạt</span>
+                {summary.state === "FINAL" ? (
+                  summary.passed === true ? (
+                    <span className="text-emerald-700">Đạt</span>
+                  ) : summary.passed === false ? (
+                    <span className="text-rose-700">Chưa đạt</span>
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )
                 ) : (
-                  <span className="text-gray-500">—</span>
+                  <span className="text-sm font-semibold text-[#857469]">Chờ chấm xong</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Điểm từng phần theo kỹ năng (section_scores) */}
-          {Object.keys(sectionScores).length > 0 && (
+          {/* Các phần đã chấm */}
+          {summary.graded.length > 0 && (
             <div className="space-y-3 pt-2">
               <span className="text-xs font-bold text-[#52443a] uppercase tracking-wider block">
-                Điểm từng kỹ năng (section_scores):
+                {summary.state === "FINAL" ? "Điểm từng phần:" : "Đã chấm:"}
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {Object.entries(sectionScores).map(([skill, sData]: [string, any]) => (
+                {summary.graded.map((g) => (
                   <div
-                    key={skill}
+                    key={g.skill}
                     className="p-3.5 rounded-xl border border-[#ede0d9] bg-[#fffdfc] text-center space-y-1"
                   >
-                    <div className="text-xs font-bold text-[#52443a]">{skill}</div>
-                    <div className="text-xl font-bold text-[#6d3807]">
-                      {sData?.score !== undefined ? sData.score : "—"}
-                    </div>
-                    {sData?.max !== undefined && sData?.earned !== undefined && (
+                    <div className="text-xs font-bold text-[#52443a]">{g.skill}</div>
+                    <div className="text-xl font-bold text-[#6d3807]">{g.score}</div>
+                    {g.max !== undefined && g.earned !== undefined && (
                       <div className="text-[11px] text-[#857469]">
-                        {sData.earned}/{sData.max} câu
+                        {g.earned}/{g.max} câu
                       </div>
                     )}
                   </div>
@@ -305,24 +348,83 @@ export default function ExamSubmissionReviewPage() {
               </div>
             </div>
           )}
+
+          {/* Các phần đang chờ chấm */}
+          {summary.pending.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold text-[#52443a] uppercase tracking-wider block">
+                {summary.state === "WAITING_TEACHER" ? "Chờ giáo viên chấm:" : "AI đang chấm:"}
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {summary.pending.map((skill) => (
+                  <div
+                    key={skill}
+                    className="p-3.5 rounded-xl border border-dashed border-[#d8c2b6] bg-[#fff8f5] text-center space-y-1"
+                  >
+                    <div className="text-xs font-bold text-[#52443a]">{skill}</div>
+                    <div className="text-xs font-semibold text-[#857469]">
+                      {summary.state === "WAITING_TEACHER"
+                        ? "Giáo viên sẽ chấm"
+                        : "AI đang chấm…"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Danh sách câu hỏi hiển thị qua LessonPlayer ở chế độ kết quả */}
+        {/* Danh sách câu hỏi hiển thị qua LessonPlayer ở chế độ kết quả + nhận xét AI */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-[#6d3807] font-bold text-sm uppercase tracking-wide">
             <BookOpen className="w-4 h-4" />
             <span>Chi tiết từng câu hỏi &amp; bài làm:</span>
           </div>
 
-          <LessonPlayer
-            questions={questions}
-            flashcards={[]}
-            answers={submission.answers || {}}
-            results={submission.results || []}
-            onChange={() => {}}
-            disabled={true}
-            allowSpeaking={true}
-          />
+          <div className="space-y-6">
+            {questions.map((q, idx) => {
+              const qResult = resultByQuestionId.get(String(q.id));
+              const isAiQuestion = qResult?.kind === "AI";
+              const hasAiScore = isAiQuestion && typeof qResult?.score === "number";
+              const aiFeedback = isAiQuestion && qResult?.feedback ? String(qResult.feedback) : null;
+
+              return (
+                <div key={q.id || idx} className="space-y-2">
+                  <LessonPlayer
+                    questions={[q]}
+                    flashcards={[]}
+                    answers={submission.answers || {}}
+                    results={normalizedResults}
+                    onChange={() => {}}
+                    disabled={true}
+                    allowSpeaking={true}
+                    startNumber={idx + 1}
+                  />
+
+                  {isAiQuestion && (hasAiScore || aiFeedback) && (
+                    <div className="rounded-2xl border border-purple-200 bg-purple-50/70 p-4 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-800">
+                          <Sparkles className="w-4 h-4 text-purple-700" />
+                          <span>Đánh giá &amp; Nhận xét từ AI</span>
+                        </div>
+                        {hasAiScore && (
+                          <span className="inline-flex items-center rounded-xl bg-white border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-900">
+                            Điểm: {qResult.score}
+                          </span>
+                        )}
+                      </div>
+                      {aiFeedback && (
+                        <p className="text-xs text-[#211a16] leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
+                          {aiFeedback}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </main>
     </div>

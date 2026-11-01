@@ -8,6 +8,7 @@ import LessonPlayer, { FlashcardItem } from "@/components/lesson-player/LessonPl
 import { emptyExamAnswerFor, groupQuestionsBySkill, formatRemaining } from "@/lib/exam-player";
 import { countAnswered } from "@/lib/lesson-player";
 import { sanitizeStimulusHtml } from "@/lib/stimulus-html";
+import { summarizeAttemptResult } from "@/lib/attempt-summary";
 import {
   buildScreens, navStatus, screenIndexOfQuestion, clampScreenIndex,
   unansweredNumbers, formatSavedAt, keyToOptionLetter, isTypingTarget, applyOptionShortcut,
@@ -30,10 +31,11 @@ interface AttemptData {
   deadline_at: string;
   status: "IN_PROGRESS" | "GRADED" | "GRADING" | "NEEDS_REVIEW";
   answers?: Record<string, unknown>;
-  section_scores?: Record<string, { score: number; earned?: number; max?: number }>;
+  section_scores?: Record<string, { score: number | null; earned?: number; max?: number }>;
   total_score?: number | null;
   passed?: boolean | null;
   is_late?: boolean;
+  standard_snapshot?: any;
 }
 
 function StudentExamInner() {
@@ -380,46 +382,45 @@ function StudentExamInner() {
   }
 
   if (phase === "result" && attempt) {
-    const isGrading = attempt.status === "GRADING";
-    const isNeedsReview = attempt.status === "NEEDS_REVIEW";
-    const sectionScores = attempt.section_scores || {};
+    const summary = summarizeAttemptResult({ ...attempt, standard_snapshot: attempt.standard_snapshot || contentData?.standard || null });
+    const pendingLabel = summary.pending.length > 0 ? summary.pending.join(", ") : "tự luận";
     return (
       <div className="max-w-3xl mx-auto my-8 p-6 md:p-8 rounded-3xl bg-white border border-[#d8c2b6] space-y-6">
         <div className="flex items-center justify-between border-b border-[#ede0d9] pb-4">
           <div><h1 className="text-xl font-bold font-headline text-[#211a16]">Kết Quả Bài Thi</h1><p className="text-xs text-[#857469]">Mã bài nộp: {attempt.id}</p></div>
           {attempt.is_late && <span className="px-3 py-1 bg-rose-100 border border-rose-300 text-rose-800 rounded-lg text-xs font-bold">Nộp trễ</span>}
         </div>
-        {isGrading && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3 text-xs text-blue-900 font-medium"><Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" /><span>Đang chấm Writing/Speaking… Hệ thống sẽ tự động cập nhật kết quả.</span></div>}
-        {isNeedsReview && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3 text-xs text-amber-900 font-medium"><AlertCircle className="w-5 h-5 text-amber-700 shrink-0" /><span>Chờ giáo viên chấm phần tự luận. Điểm tổng sẽ được cập nhật sau.</span></div>}
+        {(summary.state === "PARTIAL" || summary.state === "WAITING_AI") && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-3 text-xs text-blue-900 font-medium"><Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0 mt-0.5" /><div className="space-y-1"><div className="font-bold">AI đang chấm phần {pendingLabel}…</div><div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div></div></div>}
+        {summary.state === "WAITING_TEACHER" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 text-xs text-amber-900 font-medium"><AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" /><div className="space-y-1"><div className="font-bold">Giáo viên sẽ chấm phần {pendingLabel}.</div><div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div></div></div>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 rounded-2xl bg-[#fff8f5] border border-[#ede0d9] text-center space-y-1">
             <div className="text-xs font-bold text-[#857469] uppercase tracking-wider">Tổng điểm</div>
-            <div className="text-3xl font-extrabold text-[#6d3807]">{attempt.total_score !== null && attempt.total_score !== undefined ? attempt.total_score : "—"}</div>
+            {summary.state === "FINAL" ? <div className="text-3xl font-extrabold text-[#6d3807]">{summary.total !== null ? summary.total : "—"}</div> : <div className="text-base font-extrabold text-[#6d3807] pt-1">Chờ phần {pendingLabel}</div>}
           </div>
           <div className="p-5 rounded-2xl bg-[#fff8f5] border border-[#ede0d9] text-center space-y-1">
             <div className="text-xs font-bold text-[#857469] uppercase tracking-wider">Kết quả xếp loại</div>
-            <div className="text-2xl font-extrabold">{attempt.passed === true ? <span className="text-emerald-700">Đạt</span> : attempt.passed === false ? <span className="text-rose-700">Chưa đạt</span> : <span className="text-gray-500">—</span>}</div>
+            <div className="text-2xl font-extrabold">{summary.state === "FINAL" ? (summary.passed === true ? <span className="text-emerald-700">Đạt</span> : summary.passed === false ? <span className="text-rose-700">Chưa đạt</span> : <span className="text-gray-500">—</span>) : <span className="text-sm font-semibold text-[#857469]">Chờ chấm xong</span>}</div>
           </div>
         </div>
-        {Object.keys(sectionScores).length > 0 && (
+        {summary.graded.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-[#211a16] uppercase tracking-wider">Điểm theo kỹ năng:</h3>
+            <h3 className="text-sm font-bold text-[#211a16] uppercase tracking-wider">{summary.state === "FINAL" ? "Điểm từng phần:" : "Đã chấm:"}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {Object.entries(sectionScores).map(([skill, sData]) => (
-                <div key={skill} className="p-3.5 rounded-xl border border-[#ede0d9] bg-[#fffdfc] text-center space-y-1">
-                  <div className="text-xs font-bold text-[#52443a]">{skill}</div>
-                  <div className="text-xl font-bold text-[#6d3807]">{sData?.score !== undefined ? sData.score : "—"}</div>
-                  {sData?.max !== undefined && sData?.earned !== undefined && <div className="text-[11px] text-[#857469]">{sData.earned}/{sData.max} câu</div>}
-                </div>
-              ))}
+              {summary.graded.map((g) => (<div key={g.skill} className="p-3.5 rounded-xl border border-[#ede0d9] bg-[#fffdfc] text-center space-y-1"><div className="text-xs font-bold text-[#52443a]">{g.skill}</div><div className="text-xl font-bold text-[#6d3807]">{g.score}</div>{g.max !== undefined && g.earned !== undefined && <div className="text-[11px] text-[#857469]">{g.earned}/{g.max} câu</div>}</div>))}
+            </div>
+          </div>
+        )}
+        {summary.pending.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-[#211a16] uppercase tracking-wider">{summary.state === "WAITING_TEACHER" ? "Chờ giáo viên chấm:" : "AI đang chấm:"}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {summary.pending.map((skill) => (<div key={skill} className="p-3.5 rounded-xl border border-dashed border-[#d8c2b6] bg-[#fff8f5] text-center space-y-1"><div className="text-xs font-bold text-[#52443a]">{skill}</div><div className="text-xs font-semibold text-[#857469]">{summary.state === "WAITING_TEACHER" ? "Giáo viên sẽ chấm" : "AI đang chấm…"}</div></div>))}
             </div>
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#ede0d9]">
           <Link href="/student/dashboard" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold">Về Dashboard</Link>
-          <Link href={`/student/exam/review/${attempt.id}`} className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow-xs">
-            <span>Xem chi tiết</span><ExternalLink className="w-3.5 h-3.5" />
-          </Link>
+          <Link href={`/student/exam/review/${attempt.id}`} className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow-xs"><span>Xem chi tiết</span><ExternalLink className="w-3.5 h-3.5" /></Link>
         </div>
       </div>
     );
