@@ -126,6 +126,8 @@ export default function AdminTeacherDetailPage() {
   const handleTestPortkeyLive = async () => {
     if (!teacher) return;
     setIsTestingPortkey(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
     try {
       const apiRes = await fetch("/api/admin/test-portkey", {
         method: "POST",
@@ -133,32 +135,25 @@ export default function AdminTeacherDetailPage() {
         body: JSON.stringify({
           teacherId: teacher.id,
           userPrompt: "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
-          studentId: "student_01",
           submissionId: `test_sub_${Date.now().toString().slice(-4)}`,
         }),
       });
 
       const res = await apiRes.json();
       if (!apiRes.ok || !res.success) {
-        alert("Lỗi kết nối Portkey Gateway: " + (res.error || "Không thể gửi request"));
+        setErrorMsg("Lỗi kết nối Portkey Gateway: " + (res.error || "Không thể gửi request"));
         return;
       }
 
-      if (res.isSimulated) {
-        setSuccessMsg(
-          `Đã chạy thử nghiệm Portkey Gateway (Chế độ Simulation)! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và đã ghi nhật ký vào PostgreSQL. (Để kết nối API live thực tế, hãy thêm PORTKEY_API_KEY vào .env.local).`
-        );
-      } else {
-        setSuccessMsg(
-          `Đã gọi LIVE Portkey AI Gateway thành công! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và ghi nhật ký trực tiếp vào CSDL.`
-        );
-      }
+      setSuccessMsg(
+        `Đã gọi LIVE Portkey AI Gateway thành công! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và ghi nhật ký trực tiếp vào CSDL.`
+      );
 
       fetchTeacherData();
       setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err: any) {
       console.error(err);
-      alert("Lỗi kết nối Portkey Gateway: " + (err.message || err));
+      setErrorMsg("Lỗi kết nối Portkey Gateway: " + (err.message || err));
     } finally {
       setIsTestingPortkey(false);
     }

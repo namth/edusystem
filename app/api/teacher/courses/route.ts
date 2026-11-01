@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
-import { getAuthenticatedUserFromCookie } from "@/lib/auth";
+import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery } from "@/lib/neo4j";
 
 export async function GET(req?: Request) {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+  const authUser = auth.user;
+
   try {
-    const authUser = await getAuthenticatedUserFromCookie();
-
-    if (!authUser) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
     let sql = `SELECT * FROM courses ORDER BY created_at DESC;`;
     let params: any[] = [];
 
@@ -37,12 +35,11 @@ export async function GET(req?: Request) {
 }
 
 export async function POST(req: Request) {
-  try {
-    const authUser = await getAuthenticatedUserFromCookie();
-    if (!authUser) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+  const authUser = auth.user;
 
+  try {
     const body = await req.json();
     const { title, description, default_scoring_standard_id } = body;
 
@@ -105,12 +102,11 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  try {
-    const authUser = await getAuthenticatedUserFromCookie();
-    if (!authUser) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+  const authUser = auth.user;
 
+  try {
     const body = await req.json();
     const { id, title, description, default_scoring_standard_id } = body;
 
@@ -160,7 +156,7 @@ export async function PUT(req: Request) {
 
     const res = await queryPg(updateSql, updateParams);
     if (res.rowCount === 0) {
-      return NextResponse.json({ success: false, error: "Bạn không có quyền chỉnh sửa Khóa học này!" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Không tìm thấy khóa học hoặc bạn không có quyền." }, { status: 404 });
     }
 
     // Polyglot Sync to Neo4j
@@ -181,12 +177,11 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  try {
-    const authUser = await getAuthenticatedUserFromCookie();
-    if (!authUser) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+  const authUser = auth.user;
 
+  try {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("id");
 
@@ -207,7 +202,7 @@ export async function DELETE(req: Request) {
     const res = await queryPg(deleteSql, deleteParams);
 
     if (res.rowCount === 0) {
-      return NextResponse.json({ success: false, error: "Bạn không có quyền xóa Khóa học này!" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Không tìm thấy khóa học hoặc bạn không có quyền." }, { status: 404 });
     }
 
     // Clean curriculum items for this course

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       systemPrompt: "You are an expert IELTS examiner. Grade the submission accurately and provide structured band scores and detailed feedback.",
       userPrompt: userPrompt || "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
       teacherId: teacherId,
-      studentId: studentId || "student_01",
+      studentId: studentId,
       submissionId: submissionId || `test_sub_${Date.now().toString().slice(-4)}`,
     });
 
@@ -27,13 +27,12 @@ export async function POST(req: Request) {
       content: res.content,
       usage: res.usage,
       logId: res.logId,
-      isSimulated: res.isSimulated,
     });
   } catch (err: any) {
     console.error("API /api/admin/test-portkey Error:", err);
     return NextResponse.json(
       { success: false, error: err.message || "Lỗi khi gọi Portkey AI Gateway." },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }

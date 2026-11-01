@@ -1,18 +1,35 @@
 {
   "id": "TASK-032",
   "title": "Vá lỗi chặn production: phân quyền khoá học/đề, bỏ điểm AI giả, gỡ route chẩn đoán, giới hạn đăng nhập",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "1e111c94-6131-4e1f-9856-b0f3e208d107",
   "history": [
     {
       "at": "2026-11-01T18:48:34",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T18:52:09",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T18:52:33",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T19:07:57",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
     "handoff/tasks/TASK-032-va-loi-chan-production/verify.sh",
     "tests/prod-hardening.test.ts",
-    "tests/api-auth.test.ts"
-  ]
+    "tests/api-auth.test.ts",
+    "tests/exam-flow.test.ts"
+  ],
+  "via": "agy"
 }
