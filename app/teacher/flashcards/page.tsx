@@ -246,24 +246,24 @@ export default function TeacherFlashcardManagerPage() {
 
   return (
     <TeacherLayout>
-      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
+      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <h1 className="font-headline text-3xl font-bold text-[#6d3807] tracking-tight flex items-center space-x-3">
-              <Bookmark className="w-8 h-8 text-[#6d3807]" />
+            <h1 className="font-headline text-3xl font-bold text-brand-600 tracking-tight flex items-center space-x-3">
+              <Bookmark className="w-8 h-8 text-brand-600" />
               <span>Quản Lý Thẻ Từ Vựng Flashcards</span>
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Tạo và quản lý kho thẻ học từ vựng (Hình ảnh, Nghĩa Tiếng Việt, Từ Tiếng Anh và Các lựa chọn gây nhiễu) sử dụng cho đề thi.
             </p>
           </div>
 
           <button
             onClick={handleOpenCreateModal}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-2 shrink-0 font-headline"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-2 shrink-0 font-headline"
           >
-            <Plus className="w-4.5 h-4.5 text-[#ffb782]" />
+            <Plus className="w-4.5 h-4.5 text-accent-400" />
             <span>Thêm Flashcard Mới</span>
           </button>
         </div>
@@ -277,44 +277,44 @@ export default function TeacherFlashcardManagerPage() {
         )}
 
         {/* Filter and Search Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-line shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-[#857469] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-ink-subtle absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Tìm kiếm từ tiếng Anh, tiếng Việt..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+              className="w-full pl-10 pr-4 py-2 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
             />
           </div>
 
-          <div className="text-xs text-[#52443a] font-bold">
-            Tổng số thẻ: <span className="text-[#6d3807] text-sm">{flashcards.length}</span> thẻ từ vựng
+          <div className="text-xs text-ink-muted font-bold">
+            Tổng số thẻ: <span className="text-brand-600 text-sm">{flashcards.length}</span> thẻ từ vựng
           </div>
         </div>
 
         {/* Grid View of Flashcards */}
         {loading ? (
-          <div className="flex items-center justify-center space-x-2 text-xs text-[#52443a] py-20 bg-white rounded-3xl border border-[#d8c2b6]">
-            <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
+          <div className="flex items-center justify-center space-x-2 text-xs text-ink-muted py-20 bg-white rounded-3xl border border-line">
+            <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
             <span className="font-bold">Đang nạp danh sách thẻ Flashcards từ Database...</span>
           </div>
         ) : flashcards.length === 0 ? (
-          <div className="py-16 text-center bg-white rounded-3xl border border-[#d8c2b6] space-y-4">
-            <div className="w-14 h-14 bg-[#fff1ea] rounded-full flex items-center justify-center mx-auto text-[#6d3807]">
+          <div className="py-16 text-center bg-white rounded-3xl border border-line space-y-4">
+            <div className="w-14 h-14 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600">
               <Bookmark className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-[#211a16]">Chưa có thẻ Flashcard nào</h3>
-              <p className="text-xs text-[#52443a] max-w-md mx-auto">
+              <h3 className="text-base font-bold text-ink">Chưa có thẻ Flashcard nào</h3>
+              <p className="text-xs text-ink-muted max-w-md mx-auto">
                 {searchQuery ? "Không tìm thấy thẻ phù hợp với từ khóa." : "Hãy bắt đầu tạo thẻ flashcard từ vựng đầu tiên cho học sinh."}
               </p>
             </div>
             {!searchQuery && (
               <button
                 onClick={handleOpenCreateModal}
-                className="px-4 py-2 bg-[#6d3807] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-[#8a4f1e] transition-all"
+                className="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-brand-700 transition-all"
               >
                 + Tạo Thẻ Đầu Tiên
               </button>
@@ -325,10 +325,10 @@ export default function TeacherFlashcardManagerPage() {
             {flashcards.map((card) => (
               <div
                 key={card.id}
-                className="bg-white rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
+                className="bg-white rounded-2xl border border-line shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
               >
                 {/* Image Container */}
-                <div className="relative aspect-video w-full bg-[#fff8f5] border-b border-[#d8c2b6] overflow-hidden flex items-center justify-center">
+                <div className="relative aspect-video w-full bg-surface-alt border-b border-line overflow-hidden flex items-center justify-center">
                   {card.image_url ? (
                     <img
                       src={card.image_url}
@@ -336,15 +336,15 @@ export default function TeacherFlashcardManagerPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-[#857469] space-y-1">
+                    <div className="flex flex-col items-center justify-center text-ink-subtle space-y-1">
                       <Bookmark className="w-8 h-8 opacity-25" />
-                      <span className="text-[11px] font-medium text-[#857469]">Chưa có hình ảnh</span>
+                      <span className="text-[11px] font-medium text-ink-subtle">Chưa có hình ảnh</span>
                     </div>
                   )}
                   <div className="absolute top-2 right-2 flex space-x-1">
                     <button
                       onClick={() => handlePlayAudio(card)}
-                      className="p-2 bg-white/90 backdrop-blur hover:bg-[#6d3807] hover:text-white text-[#6d3807] rounded-xl shadow-sm transition-all"
+                      className="p-2 bg-white/90 backdrop-blur hover:bg-brand-600 hover:text-white text-brand-600 rounded-xl shadow-sm transition-all"
                       title="Nghe phát âm từ vựng"
                     >
                       <Volume2 className={`w-4 h-4 ${playingAudioId === card.id ? "animate-bounce text-amber-500" : ""}`} />
@@ -355,13 +355,13 @@ export default function TeacherFlashcardManagerPage() {
                 {/* Card Body */}
                 <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-[#857469] uppercase tracking-wider block">Nghĩa Tiếng Việt</span>
-                    <h3 className="text-base font-bold text-[#6d3807] leading-snug">{card.vietnamese_name}</h3>
+                    <span className="text-[11px] font-bold text-ink-subtle uppercase tracking-wider block">Nghĩa Tiếng Việt</span>
+                    <h3 className="text-base font-bold text-brand-600 leading-snug">{card.vietnamese_name}</h3>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-[#fff8f5] border border-[#ffb782]/60 space-y-1">
-                    <span className="text-[10px] font-bold text-[#857469] uppercase tracking-wider block">Từ Tiếng Anh Chuẩn</span>
-                    <p className="text-sm font-bold text-[#211a16] font-mono tracking-wide flex items-center space-x-1.5">
+                  <div className="p-2.5 rounded-xl bg-surface-alt border border-brand-300/60 space-y-1">
+                    <span className="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block">Từ Tiếng Anh Chuẩn</span>
+                    <p className="text-sm font-bold text-ink font-mono tracking-wide flex items-center space-x-1.5">
                       <span>{card.correct_english_word}</span>
                     </p>
                   </div>
@@ -369,7 +369,7 @@ export default function TeacherFlashcardManagerPage() {
                   {/* Options Distractors */}
                   {card.options.length > 0 && (
                     <div className="space-y-1 pt-1">
-                      <span className="text-[10px] font-bold text-[#857469] block">Các lựa chọn trắc nghiệm:</span>
+                      <span className="text-[10px] font-bold text-ink-subtle block">Các lựa chọn trắc nghiệm:</span>
                       <div className="flex flex-wrap gap-1">
                         {card.options.map((opt, i) => (
                           <span
@@ -377,7 +377,7 @@ export default function TeacherFlashcardManagerPage() {
                             className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
                               opt === card.correct_english_word
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                                : "bg-gray-50 text-[#52443a] border-gray-200"
+                                : "bg-gray-50 text-ink-muted border-gray-200"
                             }`}
                           >
                             {opt}
@@ -390,10 +390,10 @@ export default function TeacherFlashcardManagerPage() {
 
                 {/* Footer Action Buttons */}
                 {card.can_edit !== false && (
-                  <div className="p-3 bg-[#fff8f5] border-t border-[#d8c2b6] flex items-center justify-end space-x-2">
+                  <div className="p-3 bg-surface-alt border-t border-line flex items-center justify-end space-x-2">
                     <button
                       onClick={() => handleOpenEditModal(card)}
-                      className="px-3 py-1.5 bg-white border border-[#d8c2b6] hover:bg-[#fff1ea] text-[#6d3807] rounded-xl text-xs font-bold flex items-center space-x-1 transition-all shadow-2xs"
+                      className="px-3 py-1.5 bg-white border border-line hover:bg-brand-50 text-brand-600 rounded-xl text-xs font-bold flex items-center space-x-1 transition-all shadow-2xs"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Sửa</span>
@@ -416,17 +416,17 @@ export default function TeacherFlashcardManagerPage() {
         {/* Modal Form Create / Edit */}
         {showModal && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-lg rounded-3xl border border-[#d8c2b6] shadow-2xl overflow-hidden font-sans space-y-0 animate-in zoom-in-95">
+            <div className="bg-white w-full max-w-lg rounded-3xl border border-line shadow-2xl overflow-hidden font-sans space-y-0 animate-in zoom-in-95">
               {/* Modal Header */}
-              <div className="p-5 bg-[#fff8f5] border-b border-[#d8c2b6] flex items-center justify-between">
-                <h3 className="font-headline text-lg font-bold text-[#6d3807] flex items-center space-x-2">
-                  <Bookmark className="w-5 h-5 text-[#6d3807]" />
+              <div className="p-5 bg-surface-alt border-b border-line flex items-center justify-between">
+                <h3 className="font-headline text-lg font-bold text-brand-600 flex items-center space-x-2">
+                  <Bookmark className="w-5 h-5 text-brand-600" />
                   <span>{editingCard ? "Chỉnh Sửa Flashcard" : "Tạo Thẻ Flashcard Mới"}</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="p-1.5 rounded-full hover:bg-gray-200 text-[#857469]"
+                  className="p-1.5 rounded-full hover:bg-gray-200 text-ink-subtle"
                 >
                   <XCircle className="w-5 h-5" />
                 </button>
@@ -435,7 +435,7 @@ export default function TeacherFlashcardManagerPage() {
               {/* Modal Body Form */}
               <form onSubmit={handleSaveFlashcard} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Nghĩa Tiếng Việt (*)
                   </label>
                   <input
@@ -444,12 +444,12 @@ export default function TeacherFlashcardManagerPage() {
                     placeholder="Ví dụ: Chỗ ở, nơi lưu trú"
                     value={vnName}
                     onChange={(e) => setVnName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm font-medium text-[#211a16] focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm font-medium text-ink focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Từ Tiếng Anh Chuẩn (*)
                   </label>
                   <input
@@ -458,12 +458,12 @@ export default function TeacherFlashcardManagerPage() {
                     placeholder="Ví dụ: accommodation"
                     value={engWord}
                     onChange={(e) => setEngWord(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm font-bold text-[#6d3807] focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm font-bold text-brand-600 focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Danh Sách Lựa Chọn Trắc Nghiệm (Cách nhau bằng dấu phẩy)
                   </label>
                   <input
@@ -471,15 +471,15 @@ export default function TeacherFlashcardManagerPage() {
                     placeholder="Ví dụ: accommodation, destination, transportation, reservation"
                     value={optionsInput}
                     onChange={(e) => setOptionsInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium text-[#211a16] focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-brand-600"
                   />
-                  <span className="text-[11px] text-[#857469] mt-1 block">
+                  <span className="text-[11px] text-ink-subtle mt-1 block">
                     Nếu để trống, từ tiếng Anh chuẩn sẽ tự động được làm 1 lựa chọn.
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     URL Hình Ảnh Minh Họa
                   </label>
                   <input
@@ -487,47 +487,47 @@ export default function TeacherFlashcardManagerPage() {
                     placeholder="Ví dụ: https://..."
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-mono text-[#6d3807] focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-mono text-brand-600 focus:outline-none focus:border-brand-600"
                   />
                   <div className="flex items-center space-x-2 mt-2">
-                    <span className="text-[11px] text-[#857469]">Hoặc upload file ảnh từ máy tính:</span>
+                    <span className="text-[11px] text-ink-subtle">Hoặc upload file ảnh từ máy tính:</span>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleFileUpload}
-                      className="text-xs text-[#52443a]"
+                      className="text-xs text-ink-muted"
                     />
                   </div>
                 </div>
 
                 {/* Preview Image */}
                 {imageUrl && (
-                  <div className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-1">
-                    <span className="text-[11px] font-bold text-[#6d3807] block">Preview Ảnh Minh Họa:</span>
-                    <div className="aspect-video w-full rounded-lg overflow-hidden border border-[#d8c2b6]">
+                  <div className="p-3 bg-surface-alt rounded-xl border border-line space-y-1">
+                    <span className="text-[11px] font-bold text-brand-600 block">Preview Ảnh Minh Họa:</span>
+                    <div className="aspect-video w-full rounded-lg overflow-hidden border border-line">
                       <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="pt-4 border-t border-[#d8c2b6] flex justify-end space-x-3">
+                <div className="pt-4 border-t border-line flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2.5 bg-gray-100 text-[#52443a] hover:bg-gray-200 text-xs font-bold rounded-xl transition-all"
+                    className="px-4 py-2.5 bg-gray-100 text-ink-muted hover:bg-gray-200 text-xs font-bold rounded-xl transition-all"
                   >
                     Hủy Bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
+                    className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
                     ) : (
-                      <Bookmark className="w-4 h-4 text-[#ffb782]" />
+                      <Bookmark className="w-4 h-4 text-accent-400" />
                     )}
                     <span>{editingCard ? "Cập Nhật Thẻ" : "Lưu Flashcard Mới"}</span>
                   </button>

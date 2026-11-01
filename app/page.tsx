@@ -22,9 +22,9 @@ export default function RootPage() {
   }, [user, router]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f9ff]">
-      <Loader2 className="w-8 h-8 text-[#00236f] animate-spin mb-3" />
-      <p className="text-xs font-mono text-[#006a61] font-bold">Đang điều hướng đến phân hệ tương ứng...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-brand-50">
+      <Loader2 className="w-8 h-8 text-brand-800 animate-spin mb-3" />
+      <p className="text-xs font-mono text-emerald-700 font-bold">Đang điều hướng đến phân hệ tương ứng...</p>
     </div>
   );
 }

@@ -196,25 +196,25 @@ export default function AdminStudentsPage() {
     >
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-              <GraduationCap className="w-4 h-4 text-[#004d5e]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+              <GraduationCap className="w-4 h-4 text-brand-800" />
               <span>Super Admin &bull; Global Student Roster</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Quản Lý Học Sinh &amp; Tiến Độ Học Tập
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Theo dõi danh sách học viên toàn hệ thống và tiến độ nộp bài thi trong PostgreSQL Database.
             </p>
           </div>
 
           <button
             onClick={openCreateModal}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
-            <UserPlus className="w-4 h-4 text-[#ffb782]" />
+            <UserPlus className="w-4 h-4 text-accent-400" />
             <span>+ Thêm Học Sinh Mới</span>
           </button>
         </div>
@@ -243,20 +243,20 @@ export default function AdminStudentsPage() {
 
         {/* Clean Students List */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
             <span>Đang nạp danh sách học sinh từ PostgreSQL...</span>
           </div>
         ) : filteredStudents.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <p className="text-xs text-[#52443a]">Không tìm thấy học sinh nào khớp với từ khóa tìm kiếm.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <p className="text-xs text-ink-muted">Không tìm thấy học sinh nào khớp với từ khóa tìm kiếm.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredStudents.map((st) => (
               <div
                 key={st.id}
-                className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
+                className="bg-white p-6 rounded-2xl border border-line shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
@@ -264,31 +264,31 @@ export default function AdminStudentsPage() {
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
                         STUDENT
                       </span>
-                      <span className="text-xs text-[#857469]">ID: {st.id}</span>
+                      <span className="text-xs text-ink-subtle">ID: {st.id}</span>
                     </div>
-                    <span className="text-xs text-[#857469]">Tham gia: {st.created_at}</span>
+                    <span className="text-xs text-ink-subtle">Tham gia: {st.created_at}</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-[#211a16]">{st.name}</h3>
-                  <p className="text-xs text-[#52443a]">
-                    Email: <strong className="text-[#004d5e]">{st.email}</strong> &bull; SĐT: {st.phone}
+                  <h3 className="text-lg font-bold text-ink">{st.name}</h3>
+                  <p className="text-xs text-ink-muted">
+                    Email: <strong className="text-brand-800">{st.email}</strong> &bull; SĐT: {st.phone}
                   </p>
 
-                  <div className="pt-2 border-t border-[#d8c2b6]/30 flex items-center justify-between text-xs text-[#6d3807]">
+                  <div className="pt-2 border-t border-line/30 flex items-center justify-between text-xs text-brand-600">
                     <span className="flex items-center font-medium">
-                      <Award className="w-4 h-4 mr-1 text-[#6d3807]" />
-                      Đã nộp: <strong>{st.tests_count} bài thi</strong> &bull; Điểm bài mới nhất: <strong className="ml-1 text-[#6d3807] font-bold">{st.avg_score} / 10</strong>
+                      <Award className="w-4 h-4 mr-1 text-brand-600" />
+                      Đã nộp: <strong>{st.tests_count} bài thi</strong> &bull; Điểm bài mới nhất: <strong className="ml-1 text-brand-600 font-bold">{st.avg_score} / 10</strong>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#d8c2b6]/20">
+                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-line/20">
                   <Link
                     href={`/admin/students/${st.id}`}
-                    className="px-3.5 py-2 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-medium hover:bg-[#f9ebe4] flex items-center space-x-1 transition-all"
+                    className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 flex items-center space-x-1 transition-all"
                   >
                     <span>Xem Hồ Sơ &amp; Kết Quả</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#6d3807]" />
+                    <ArrowRight className="w-3.5 h-3.5 text-brand-600" />
                   </Link>
 
                   <button
@@ -307,20 +307,20 @@ export default function AdminStudentsPage() {
         {/* Modal: Create Student */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                  <UserPlus className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-brand-600" />
                   <span>Khởi Tạo Học Sinh Mới</span>
                 </h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <button onClick={() => setShowCreateModal(false)} className="text-ink-subtle hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateStudent} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Họ &amp; Tên Học Sinh (*)
                   </label>
                   <input
@@ -329,12 +329,12 @@ export default function AdminStudentsPage() {
                     placeholder="Ví dụ: Trần Hoàng Nam"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Email Đăng Nhập (*)
                   </label>
                   <input
@@ -343,12 +343,12 @@ export default function AdminStudentsPage() {
                     placeholder="namtran.student@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Khởi Tạo (*)
                   </label>
                   <input
@@ -357,12 +357,12 @@ export default function AdminStudentsPage() {
                     placeholder="Nhập mật khẩu..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Số Điện Thoại
                   </label>
                   <input
@@ -370,12 +370,12 @@ export default function AdminStudentsPage() {
                     placeholder="0912345678"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mục Tiêu Band Điểm
                   </label>
                   <input
@@ -383,23 +383,23 @@ export default function AdminStudentsPage() {
                     placeholder="IELTS 7.5"
                     value={targetBand}
                     onChange={(e) => setTargetBand(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 {/* Multi-Class Checkboxes */}
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-2">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-2">
                     Chọn Các Lớp Học Tham Gia (Học Đồng Thời Nhiều Lớp)
                   </label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl">
+                  <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-surface-alt border border-line rounded-xl">
                     {classList.map((cls) => (
                       <label key={cls.id} className="flex items-center space-x-2 text-xs font-medium cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedClassIds.includes(cls.id)}
                           onChange={() => toggleClassSelection(cls.id)}
-                          className="accent-[#6d3807] rounded"
+                          className="accent-brand-600 rounded"
                         />
                         <span>{cls.name} ({cls.code})</span>
                       </label>
@@ -411,16 +411,16 @@ export default function AdminStudentsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5]"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Tạo Học Sinh</span>
                   </button>
                 </div>

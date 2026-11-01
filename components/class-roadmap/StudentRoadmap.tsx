@@ -115,9 +115,9 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-        <Loader2 className="w-6 h-6 animate-spin text-[#6d3807]" />
-        <span className="text-xs font-medium text-[#52443a]">
+      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-line space-y-3">
+        <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
+        <span className="text-xs font-medium text-ink-muted">
           Đang tải dữ liệu lộ trình lớp học...
         </span>
       </div>
@@ -129,14 +129,14 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
       <div className="p-6 rounded-2xl bg-white border border-red-200 text-center space-y-4">
         <AlertCircle className="w-10 h-10 text-red-600 mx-auto" />
         <div>
-          <h3 className="text-base font-bold text-[#211a16] font-headline mb-1">
+          <h3 className="text-base font-bold text-ink font-headline mb-1">
             Không thể tải lộ trình
           </h3>
           <p className="text-xs text-red-700 font-medium">{error}</p>
         </div>
         <button
           onClick={loadRoadmap}
-          className="px-5 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl transition-all cursor-pointer font-headline inline-flex items-center space-x-1.5"
+          className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer font-headline inline-flex items-center space-x-1.5"
         >
           <span>Thử lại</span>
         </button>
@@ -160,12 +160,12 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
 
   if (items.length === 0) {
     return (
-      <div className="p-12 text-center bg-white rounded-3xl border border-[#d8c2b6] space-y-3">
-        <BookOpen className="w-12 h-12 text-[#6d3807] mx-auto opacity-40" />
-        <h3 className="text-base font-bold text-[#211a16] font-headline">
+      <div className="p-12 text-center bg-white rounded-3xl border border-line space-y-3">
+        <BookOpen className="w-12 h-12 text-brand-600 mx-auto opacity-40" />
+        <h3 className="text-base font-bold text-ink font-headline">
           Giáo viên chưa gắn khóa học cho lớp này hoặc khóa học chưa có lộ trình.
         </h3>
-        <p className="text-xs text-[#52443a]">
+        <p className="text-xs text-ink-muted">
           Vui lòng liên hệ giáo viên phụ trách để cập nhật chương trình học cho lớp.
         </p>
       </div>
@@ -193,8 +193,8 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
                 <Lock className="w-4 h-4" />
               </div>
             ) : isOpen ? (
-              <div className="p-2 rounded-xl bg-[#fff1ea] text-[#6d3807]">
-                <Play className="w-4 h-4 fill-[#6d3807]" />
+              <div className="p-2 rounded-xl bg-brand-50 text-brand-600">
+                <Play className="w-4 h-4 fill-brand-600" />
               </div>
             ) : (
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
@@ -205,12 +205,12 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
 
           <div>
             <div className="flex items-center space-x-2">
-              <span className="px-2 py-0.5 rounded-md bg-[#fff8f5] border border-[#d8c2b6] text-[10px] font-mono font-bold uppercase text-[#6d3807]">
+              <span className="px-2 py-0.5 rounded-md bg-surface-alt border border-line text-[10px] font-mono font-bold uppercase text-brand-600">
                 {item.type === "LESSON" ? "Bài học" : item.type === "EXAM" ? "Đề thi" : item.type}
               </span>
               <h4
                 className={`text-xs font-bold font-headline ${
-                  isLocked ? "text-neutral-500" : "text-[#211a16] group-hover:text-[#6d3807]"
+                  isLocked ? "text-neutral-500" : "text-ink group-hover:text-brand-600"
                 }`}
               >
                 {item.title}
@@ -231,7 +231,7 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
                   className={`flex items-center space-x-1 ${
                     isOverdue
                       ? "text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-md border border-red-200"
-                      : "text-[#857469]"
+                      : "text-ink-subtle"
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -255,14 +255,14 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
               <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold">
                 Đã hoàn thành
               </span>
-              <ArrowRight className="w-4 h-4 text-[#857469] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-ink-subtle group-hover:translate-x-1 transition-transform" />
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <span className="px-3 py-1 rounded-xl bg-[#6d3807] text-white text-xs font-bold shadow-xs">
+              <span className="px-3 py-1 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-xs">
                 Vào làm bài
               </span>
-              <ArrowRight className="w-4 h-4 text-[#6d3807] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-brand-600 group-hover:translate-x-1 transition-transform" />
             </div>
           )}
         </div>
@@ -286,7 +286,7 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
         <Link
           key={item.id}
           href={`/student/lesson/${item.lesson_id}?classId=${classId}`}
-          className="block p-4 rounded-2xl bg-white hover:bg-[#fff8f5] border border-[#d8c2b6] shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+          className="block p-4 rounded-2xl bg-white hover:bg-surface-alt border border-line shadow-xs hover:shadow-sm transition-all group cursor-pointer"
         >
           {content}
         </Link>
@@ -297,7 +297,7 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
       <Link
         key={item.id}
         href={`/student/exam/${item.exam_id}`}
-        className="block p-4 rounded-2xl bg-white hover:bg-[#fff8f5] border border-[#d8c2b6] shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+        className="block p-4 rounded-2xl bg-white hover:bg-surface-alt border border-line shadow-xs hover:shadow-sm transition-all group cursor-pointer"
       >
         {content}
       </Link>
@@ -305,32 +305,32 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
   };
 
   return (
-    <div className="space-y-6 font-sans text-[#211a16]">
+    <div className="space-y-6 font-sans text-ink">
       {/* KHỐI TIẾN ĐỘ TỔNG QUAN */}
-      <section className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
+      <section className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold font-headline text-[#6d3807] flex items-center space-x-2">
-              <Route className="w-5 h-5 text-[#6d3807]" />
+            <h2 className="text-base font-bold font-headline text-brand-600 flex items-center space-x-2">
+              <Route className="w-5 h-5 text-brand-600" />
               <span>Tiến Độ Lộ Trình Lớp Học</span>
             </h2>
             {modeSubtitle && (
-              <p className="text-xs text-[#52443a] mt-0.5 font-medium">{modeSubtitle}</p>
+              <p className="text-xs text-ink-muted mt-0.5 font-medium">{modeSubtitle}</p>
             )}
           </div>
 
           <div className="text-right">
-            <span className="text-2xl font-extrabold text-[#6d3807] font-headline">
+            <span className="text-2xl font-extrabold text-brand-600 font-headline">
               {progressPercent}%
             </span>
-            <span className="text-xs text-[#857469] block">Hoàn thành</span>
+            <span className="text-xs text-ink-subtle block">Hoàn thành</span>
           </div>
         </div>
 
         {/* Thanh tiến độ progress_percent */}
-        <div className="w-full bg-[#fff1ea] h-3 rounded-full overflow-hidden border border-[#ffb783]/40">
+        <div className="w-full bg-brand-50 h-3 rounded-full overflow-hidden border border-brand-300/40">
           <div
-            className="bg-[#6d3807] h-full rounded-full transition-all duration-500 ease-out"
+            className="bg-brand-600 h-full rounded-full transition-all duration-500 ease-out"
             style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
           />
         </div>
@@ -348,34 +348,34 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
               return (
                 <div
                   key={unit.id}
-                  className="bg-white rounded-3xl border border-[#d8c2b6] shadow-sm overflow-hidden"
+                  className="bg-white rounded-3xl border border-line shadow-sm overflow-hidden"
                 >
                   {/* Unit Header (gấp/mở) */}
                   <button
                     type="button"
                     onClick={() => toggleUnit(unit.id)}
-                    className="w-full p-4 sm:p-5 flex items-center justify-between bg-[#fff8f5] hover:bg-[#fff1ea] transition-colors cursor-pointer text-left border-b border-[#d8c2b6]/40"
+                    className="w-full p-4 sm:p-5 flex items-center justify-between bg-surface-alt hover:bg-brand-50 transition-colors cursor-pointer text-left border-b border-line/40"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-xl bg-white border border-[#d8c2b6] text-[#6d3807]">
+                      <div className="p-2 rounded-xl bg-white border border-line text-brand-600">
                         <Folder className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="px-2 py-0.5 rounded-md bg-[#6d3807] text-white text-[10px] font-mono font-bold uppercase">
+                          <span className="px-2 py-0.5 rounded-md bg-brand-600 text-white text-[10px] font-mono font-bold uppercase">
                             Unit
                           </span>
-                          <h3 className="text-sm font-bold font-headline text-[#211a16]">
+                          <h3 className="text-sm font-bold font-headline text-ink">
                             {unit.title}
                           </h3>
                         </div>
-                        <span className="text-[11px] text-[#52443a] mt-0.5 block">
+                        <span className="text-[11px] text-ink-muted mt-0.5 block">
                           Đã hoàn thành {completedCount}/{children.length} mục
                         </span>
                       </div>
                     </div>
 
-                    <div className="p-1 rounded-lg text-[#6d3807]">
+                    <div className="p-1 rounded-lg text-brand-600">
                       {isCollapsed ? (
                         <ChevronRight className="w-5 h-5" />
                       ) : (
@@ -388,7 +388,7 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
                   {!isCollapsed && (
                     <div className="p-4 sm:p-6 space-y-3 bg-white">
                       {children.length === 0 ? (
-                        <p className="text-xs text-[#857469] italic text-center py-4">
+                        <p className="text-xs text-ink-subtle italic text-center py-4">
                           Unit này chưa có bài học hoặc đề thi.
                         </p>
                       ) : (
@@ -402,8 +402,8 @@ export default function StudentRoadmap({ classId }: StudentRoadmapProps) {
 
             {/* Root items without unit */}
             {rootStandaloneItems.length > 0 && (
-              <div className="bg-white rounded-3xl border border-[#d8c2b6] shadow-sm p-6 space-y-3">
-                <h3 className="text-xs font-bold uppercase text-[#857469] font-headline mb-2">
+              <div className="bg-white rounded-3xl border border-line shadow-sm p-6 space-y-3">
+                <h3 className="text-xs font-bold uppercase text-ink-subtle font-headline mb-2">
                   Các mục khác
                 </h3>
                 {rootStandaloneItems.map((item) => renderItemRow(item))}

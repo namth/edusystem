@@ -179,16 +179,16 @@ export default function AdminTeachersPage() {
     >
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-              <UserCheck className="w-4 h-4 text-[#004d5e]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+              <UserCheck className="w-4 h-4 text-brand-800" />
               <span>Super Admin &bull; Faculty &amp; Teacher Management</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Quản Lý Giáo Viên &amp; Hạn Mức Sĩ Số
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Theo dõi hồ sơ giảng viên và điều chỉnh hạn mức slot sinh viên trong PostgreSQL Database.
             </p>
           </div>
@@ -198,9 +198,9 @@ export default function AdminTeachersPage() {
               setModalError(null);
               setShowCreateModal(true);
             }}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
-            <UserPlus className="w-4 h-4 text-[#ffb782]" />
+            <UserPlus className="w-4 h-4 text-accent-400" />
             <span>+ Thêm Giáo Viên Mới</span>
           </button>
         </div>
@@ -229,52 +229,52 @@ export default function AdminTeachersPage() {
 
         {/* Clean Teachers List */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
             <span>Đang nạp danh sách giảng viên từ PostgreSQL...</span>
           </div>
         ) : filteredTeachers.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <p className="text-xs text-[#52443a]">Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <p className="text-xs text-ink-muted">Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredTeachers.map((t) => (
               <div
                 key={t.id}
-                className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
+                className="bg-white p-6 rounded-2xl border border-line shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#fff1ea] text-[#6d3807] text-xs font-bold border border-[#ffb782]">
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-600 text-xs font-bold border border-brand-300">
                         TEACHER
                       </span>
-                      <span className="text-xs text-[#857469]">ID: {t.id}</span>
+                      <span className="text-xs text-ink-subtle">ID: {t.id}</span>
                     </div>
-                    <span className="text-xs text-[#857469]">Tạo ngày: {t.created_at}</span>
+                    <span className="text-xs text-ink-subtle">Tạo ngày: {t.created_at}</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-[#211a16]">{t.name}</h3>
-                  <p className="text-xs text-[#52443a]">
-                    Email: <strong className="text-[#004d5e]">{t.email}</strong> &bull; SĐT: {t.phone}
+                  <h3 className="text-lg font-bold text-ink">{t.name}</h3>
+                  <p className="text-xs text-ink-muted">
+                    Email: <strong className="text-brand-800">{t.email}</strong> &bull; SĐT: {t.phone}
                   </p>
 
-                  <div className="pt-2 border-t border-[#d8c2b6]/30 flex items-center justify-between text-xs text-[#6d3807]">
+                  <div className="pt-2 border-t border-line/30 flex items-center justify-between text-xs text-brand-600">
                     <span className="flex items-center font-medium">
-                      <Award className="w-4 h-4 mr-1 text-[#6d3807]" />
-                      Hạn mức Slot Sĩ Số: <strong className="ml-1 text-[#6d3807] font-bold">{t.slot_limit} Slots</strong>
+                      <Award className="w-4 h-4 mr-1 text-brand-600" />
+                      Hạn mức Slot Sĩ Số: <strong className="ml-1 text-brand-600 font-bold">{t.slot_limit} Slots</strong>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#d8c2b6]/20">
+                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-line/20">
                   <Link
                     href={`/admin/teachers/${t.id}`}
-                    className="px-3.5 py-2 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-medium hover:bg-[#f9ebe4] flex items-center space-x-1 transition-all"
+                    className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 flex items-center space-x-1 transition-all"
                   >
                     <span>Xem Hồ Sơ &amp; Sửa Slot</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#6d3807]" />
+                    <ArrowRight className="w-3.5 h-3.5 text-brand-600" />
                   </Link>
 
                   <button
@@ -294,13 +294,13 @@ export default function AdminTeachersPage() {
         {/* Modal: Create Teacher */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                  <UserPlus className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-brand-600" />
                   <span>Tạo Tài Khoản Giáo Viên Mới</span>
                 </h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <button onClick={() => setShowCreateModal(false)} className="text-ink-subtle hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -313,7 +313,7 @@ export default function AdminTeachersPage() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Họ &amp; Tên Giảng Viên (*)
                   </label>
                   <input
@@ -322,12 +322,12 @@ export default function AdminTeachersPage() {
                     placeholder="Ví dụ: Thầy Nguyễn Văn Đức"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Email Đăng Nhập (*)
                   </label>
                   <input
@@ -336,12 +336,12 @@ export default function AdminTeachersPage() {
                     placeholder="teacher.duc@edtech.edu.vn"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Khởi Tạo (*)
                   </label>
                   <input
@@ -350,12 +350,12 @@ export default function AdminTeachersPage() {
                     placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Số Điện Thoại Liên Hệ
                   </label>
                   <input
@@ -363,12 +363,12 @@ export default function AdminTeachersPage() {
                     placeholder="0912345679"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Bằng Cấp &amp; Trình Độ Giảng Dạy
                   </label>
                   <input
@@ -376,7 +376,7 @@ export default function AdminTeachersPage() {
                     placeholder="M.A TESOL (IELTS 8.5)"
                     value={qualification}
                     onChange={(e) => setQualification(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
@@ -384,16 +384,16 @@ export default function AdminTeachersPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5]"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Lưu Giảng Viên</span>
                   </button>
                 </div>

@@ -292,7 +292,7 @@ export default function TeacherLessonDetailPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/teacher/library?tab=lessons"
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#6d3807] hover:text-[#8a4f1e] bg-[#fff1ea] hover:bg-[#ffdcc5] px-4 py-2 rounded-xl transition-all border border-[#d8c2b6]"
+            className="inline-flex items-center space-x-2 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-xl transition-all border border-line"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>← Kho bài học</span>
@@ -303,12 +303,12 @@ export default function TeacherLessonDetailPage() {
               <button
                 type="button"
                 onClick={handleOpenPreview}
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#6d3807] hover:text-[#8a4f1e] bg-white hover:bg-[#fff1ea] px-4 py-2 rounded-xl transition-all border border-[#6d3807] shadow-2xs cursor-pointer"
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 bg-white hover:bg-brand-50 px-4 py-2 rounded-xl transition-all border border-brand-600 shadow-2xs cursor-pointer"
               >
                 <Eye className="w-4 h-4" />
                 <span>Xem trước như học sinh</span>
               </button>
-              <span className="text-xs text-[#52443a] font-medium">
+              <span className="text-xs text-ink-muted font-medium">
                 ID bài học: <code className="bg-gray-100 px-2 py-0.5 rounded text-[11px]">{id}</code>
               </span>
             </div>
@@ -317,9 +317,9 @@ export default function TeacherLessonDetailPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="bg-white p-16 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col items-center justify-center text-center space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-[#6d3807]" />
-            <p className="text-xs font-semibold text-[#52443a]">Đang tải thông tin bài học...</p>
+          <div className="bg-white p-16 rounded-2xl border border-line shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+            <p className="text-xs font-semibold text-ink-muted">Đang tải thông tin bài học...</p>
           </div>
         )}
 
@@ -337,7 +337,7 @@ export default function TeacherLessonDetailPage() {
             </div>
             <Link
               href="/teacher/library?tab=lessons"
-              className="inline-flex items-center px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
             >
               Quay lại Kho bài học
             </Link>
@@ -346,19 +346,19 @@ export default function TeacherLessonDetailPage() {
 
         {/* 404 Not Found State */}
         {!isLoading && errorCode === 404 && (
-          <div className="bg-white border border-[#d8c2b6] p-10 rounded-2xl text-center space-y-4 shadow-sm">
+          <div className="bg-white border border-line p-10 rounded-2xl text-center space-y-4 shadow-sm">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 text-gray-600 mx-auto flex items-center justify-center">
               <FileQuestion className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#211a16]">404 — Không tìm thấy bài học</h2>
-              <p className="text-xs text-[#52443a] mt-1 max-w-md mx-auto">
+              <h2 className="text-base font-bold text-ink">404 — Không tìm thấy bài học</h2>
+              <p className="text-xs text-ink-muted mt-1 max-w-md mx-auto">
                 {errorMessage || "Không tìm thấy bài học hoặc bài học đã bị xóa."}
               </p>
             </div>
             <Link
               href="/teacher/library?tab=lessons"
-              className="inline-flex items-center px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
             >
               Về Kho bài học
             </Link>
@@ -387,7 +387,7 @@ export default function TeacherLessonDetailPage() {
 
         {/* Main Editor Component */}
         {!isLoading && !errorMessage && (
-          <div className="bg-white rounded-2xl border border-[#d8c2b6] shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-line shadow-sm p-6">
             <QuestionSetEditor
               mode="LESSON"
               initialTitle={lessonData.title}
@@ -402,23 +402,23 @@ export default function TeacherLessonDetailPage() {
 
         {/* Modal Toàn màn hình: Xem trước như học sinh (SCR-L3) */}
         {showPreviewModal && (
-          <div className="fixed inset-0 z-50 bg-[#fcf9f7] flex flex-col overflow-hidden animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 bg-surface-alt flex flex-col overflow-hidden animate-in fade-in duration-200">
             {/* Header Modal */}
-            <div className="h-16 shrink-0 border-b border-[#ede0d9] bg-white px-4 sm:px-8 flex items-center justify-between shadow-2xs">
+            <div className="h-16 shrink-0 border-b border-line-soft bg-white px-4 sm:px-8 flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-3 overflow-hidden">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fff1ea] text-[#6d3807] border border-[#ffb782]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 border border-brand-300">
                   <Eye className="w-5 h-5" />
                 </span>
                 <div className="truncate">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-headline font-bold text-base text-[#211a16] truncate">
+                    <h2 className="font-headline font-bold text-base text-ink truncate">
                       Xem trước như học sinh: {previewLesson?.title || lessonData.title || "Bài học"}
                     </h2>
                     <span className="hidden sm:inline-flex rounded-full bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 text-[11px] font-bold">
                       Không lưu kết quả
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#52443a] truncate">
+                  <p className="text-[11px] text-ink-muted truncate">
                     Nội dung đã ẩn đáp án đúng như học sinh nhìn thấy.
                   </p>
                 </div>
@@ -428,7 +428,7 @@ export default function TeacherLessonDetailPage() {
                 <button
                   type="button"
                   onClick={handleClosePreview}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8c2b6] bg-white px-3.5 py-1.5 text-xs font-bold text-[#52443a] hover:bg-gray-50 hover:text-[#211a16] transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white px-3.5 py-1.5 text-xs font-bold text-ink-muted hover:bg-gray-50 hover:text-ink transition-all cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                   <span>Đóng</span>
@@ -441,9 +441,9 @@ export default function TeacherLessonDetailPage() {
               <div className="max-w-4xl mx-auto space-y-6">
                 {/* Trạng thái 1: Đang tải */}
                 {previewLoading && (
-                  <div className="bg-white p-16 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col items-center justify-center text-center space-y-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#6d3807]" />
-                    <p className="text-xs font-semibold text-[#52443a]">
+                  <div className="bg-white p-16 rounded-2xl border border-line shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+                    <p className="text-xs font-semibold text-ink-muted">
                       Đang tải nội dung xem trước bài học...
                     </p>
                   </div>
@@ -471,16 +471,16 @@ export default function TeacherLessonDetailPage() {
 
                 {/* Trạng thái 3: Rỗng (không có câu hỏi) */}
                 {!previewLoading && !previewError && previewQuestions.length === 0 && (
-                  <div className="bg-white border border-[#d8c2b6] p-12 rounded-2xl text-center space-y-3 shadow-xs">
+                  <div className="bg-white border border-line p-12 rounded-2xl text-center space-y-3 shadow-xs">
                     <FileQuestion className="w-10 h-10 text-gray-400 mx-auto" />
-                    <h3 className="text-sm font-bold text-[#211a16]">Bài học chưa có câu hỏi</h3>
-                    <p className="text-xs text-[#52443a] max-w-sm mx-auto">
+                    <h3 className="text-sm font-bold text-ink">Bài học chưa có câu hỏi</h3>
+                    <p className="text-xs text-ink-muted max-w-sm mx-auto">
                       Hãy thêm ít nhất một khối câu hỏi trong trang soạn bài trước khi xem trước.
                     </p>
                     <button
                       type="button"
                       onClick={handleClosePreview}
-                      className="inline-flex items-center px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                      className="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
                     >
                       Đóng xem trước
                     </button>
@@ -553,11 +553,11 @@ export default function TeacherLessonDetailPage() {
             </div>
 
             {/* Footer Modal */}
-            <div className="h-16 shrink-0 border-t border-[#ede0d9] bg-white px-4 sm:px-8 flex items-center justify-between shadow-xs">
-              <div className="text-xs text-[#52443a]">
+            <div className="h-16 shrink-0 border-t border-line-soft bg-white px-4 sm:px-8 flex items-center justify-between shadow-xs">
+              <div className="text-xs text-ink-muted">
                 {!previewLoading && !previewError && previewQuestions.length > 0 && (
                   <span>
-                    Đã trả lời: <strong className="text-[#211a16]">{answeredCount}</strong> /{" "}
+                    Đã trả lời: <strong className="text-ink">{answeredCount}</strong> /{" "}
                     {previewQuestions.length} câu
                   </span>
                 )}
@@ -567,7 +567,7 @@ export default function TeacherLessonDetailPage() {
                 <button
                   type="button"
                   onClick={handleClosePreview}
-                  className="rounded-xl border border-[#d8c2b6] bg-white px-4 py-2 text-xs font-bold text-[#52443a] hover:bg-gray-50 transition-all cursor-pointer"
+                  className="rounded-xl border border-line bg-white px-4 py-2 text-xs font-bold text-ink-muted hover:bg-gray-50 transition-all cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -578,7 +578,7 @@ export default function TeacherLessonDetailPage() {
                       <button
                         type="button"
                         onClick={handleResetPreview}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#6d3807] bg-[#fff1ea] hover:bg-[#ffdcc5] px-4 py-2 text-xs font-bold text-[#6d3807] transition-all cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-brand-600 bg-brand-50 hover:bg-brand-100 px-4 py-2 text-xs font-bold text-brand-600 transition-all cursor-pointer shadow-2xs"
                       >
                         <RotateCcw className="w-4 h-4" />
                         <span>Làm lại</span>
@@ -588,7 +588,7 @@ export default function TeacherLessonDetailPage() {
                         type="button"
                         disabled={isPreviewSubmitting}
                         onClick={handleGradePreview}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#6d3807] hover:bg-[#8a4f1e] disabled:opacity-50 text-white px-5 py-2 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-5 py-2 text-xs font-bold transition-all shadow-xs cursor-pointer"
                       >
                         {isPreviewSubmitting ? (
                           <>

@@ -159,29 +159,29 @@ export default function UserProfilePage() {
   const ProfileContent = (
     <div className="max-w-4xl mx-auto space-y-8 font-sans">
       {/* Header */}
-      <div className="border-b border-[#d8c2b6]/40 pb-6">
-        <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-          <User className="w-4 h-4 text-[#004d5e]" />
+      <div className="border-b border-line/40 pb-6">
+        <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+          <User className="w-4 h-4 text-brand-800" />
           <span>User Account Settings &amp; Personal Profile</span>
         </div>
-        <h1 className="text-3xl font-bold text-[#211a16] tracking-tight">
+        <h1 className="text-3xl font-bold text-ink tracking-tight">
           Hồ Sơ Cá Nhân &amp; Cài Đặt Tài Khoản
         </h1>
-        <p className="text-sm text-[#52443a] mt-1">
+        <p className="text-sm text-ink-muted mt-1">
           Xem thông tin cá nhân, cập nhật thông tin liên hệ và quản lý bảo mật mật khẩu tài khoản.
         </p>
       </div>
 
       {isLoading ? (
         <div className="p-12 flex justify-center items-center text-stone-500 space-x-2">
-          <Loader2 className="w-6 h-6 animate-spin text-[#6d3807]" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
           <span className="text-sm font-medium">Đang tải thông tin hồ sơ...</span>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Avatar Card */}
-          <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm flex flex-col items-center text-center space-y-4 h-fit">
-            <div className="relative group w-32 h-32 rounded-full overflow-hidden border-4 border-[#fff1ea] shadow-md">
+          <div className="bg-white p-6 rounded-3xl border border-line shadow-sm flex flex-col items-center text-center space-y-4 h-fit">
+            <div className="relative group w-32 h-32 rounded-full overflow-hidden border-4 border-brand-50 shadow-md">
               <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
               <button
                 type="button"
@@ -197,9 +197,9 @@ export default function UserProfilePage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#211a16]">{name || "Người Dùng"}</h3>
-              <p className="text-xs text-[#52443a] mt-0.5">{email}</p>
-              <span className="inline-block mt-3 px-3 py-1 rounded-full bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-xs font-bold uppercase">
+              <h3 className="text-lg font-bold text-ink">{name || "Người Dùng"}</h3>
+              <p className="text-xs text-ink-muted mt-0.5">{email}</p>
+              <span className="inline-block mt-3 px-3 py-1 rounded-full bg-brand-50 text-brand-600 border border-brand-300 text-xs font-bold uppercase">
                 {role}
               </span>
             </div>
@@ -208,9 +208,9 @@ export default function UserProfilePage() {
           {/* Forms Section */}
           <div className="md:col-span-2 space-y-6">
             {/* Edit Info Form */}
-            <div className="bg-white p-8 rounded-3xl border border-[#d8c2b6] shadow-sm">
-              <h2 className="text-lg font-bold text-[#211a16] mb-4 flex items-center space-x-2">
-                <User className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white p-8 rounded-3xl border border-line shadow-sm">
+              <h2 className="text-lg font-bold text-ink mb-4 flex items-center space-x-2">
+                <User className="w-5 h-5 text-brand-600" />
                 <span>Thông Tin Cơ Bản</span>
               </h2>
 
@@ -230,56 +230,56 @@ export default function UserProfilePage() {
 
               <form onSubmit={handleUpdateProfile} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Họ &amp; Tên (*)
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Địa Chỉ Email Đăng Nhập (Chỉ đọc)
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="email"
                       disabled
                       value={email}
-                      className="w-full pl-9 pr-3 py-2.5 bg-stone-100 border border-[#d8c2b6] rounded-xl text-sm text-stone-600 cursor-not-allowed"
+                      className="w-full pl-9 pr-3 py-2.5 bg-stone-100 border border-line rounded-xl text-sm text-stone-600 cursor-not-allowed"
                     />
                   </div>
-                  <p className="text-[11px] text-[#857469] mt-1">
+                  <p className="text-[11px] text-ink-subtle mt-1">
                     Email là mã định danh đăng nhập, không thể tự chỉnh sửa.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Số Điện Thoại Liên Hệ
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mục Tiêu / Bằng Cấp Năng Lực
                   </label>
                   <input
@@ -287,19 +287,19 @@ export default function UserProfilePage() {
                     value={targetBand}
                     onChange={(e) => setTargetBand(e.target.value)}
                     placeholder="Ví dụ: IELTS 7.5 / M.A TESOL"
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
-                    <Save className="w-4 h-4 text-[#ffb782]" />
+                    <Save className="w-4 h-4 text-accent-400" />
                   )}
                   <span>Lưu Cập Nhật Hồ Sơ</span>
                 </button>
@@ -307,12 +307,12 @@ export default function UserProfilePage() {
             </div>
 
             {/* Change Password Form */}
-            <div className="bg-white p-8 rounded-3xl border border-[#d8c2b6] shadow-sm">
-              <h2 className="text-lg font-bold text-[#211a16] mb-2 flex items-center space-x-2">
-                <Lock className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white p-8 rounded-3xl border border-line shadow-sm">
+              <h2 className="text-lg font-bold text-ink mb-2 flex items-center space-x-2">
+                <Lock className="w-5 h-5 text-brand-600" />
                 <span>Đổi Mật Khẩu An Toàn</span>
               </h2>
-              <p className="text-xs text-[#52443a] mb-5">
+              <p className="text-xs text-ink-muted mb-5">
                 Mật khẩu mới phải có tối thiểu 8 ký tự, bao gồm cả chữ hoa, chữ thường và chữ số (chuẩn OWASP).
               </p>
 
@@ -332,50 +332,50 @@ export default function UserProfilePage() {
 
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Hiện Tại (*)
                   </label>
                   <div className="relative">
-                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="password"
                       autoComplete="current-password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Nhập mật khẩu đang dùng..."
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Mới (*)
                   </label>
                   <div className="relative">
-                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)..."
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Xác Nhận Mật Khẩu Mới (*)
                   </label>
                   <div className="relative">
-                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu mới..."
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
@@ -383,7 +383,7 @@ export default function UserProfilePage() {
                 <button
                   type="submit"
                   disabled={isChangingPass}
-                  className="w-full py-3 bg-[#004d5e] hover:bg-[#003844] text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isChangingPass ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />

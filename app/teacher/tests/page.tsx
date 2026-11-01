@@ -938,7 +938,7 @@ export default function TeacherTestManagerPage() {
 
   return (
     <TeacherLayout>
-      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16] select-none">
+      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink select-none">
         {/* Floating Pointer Drag Preview Box */}
         {activePointerDragId && pointerPos && pointerDragInfoRef.current && (
           <div
@@ -946,10 +946,10 @@ export default function TeacherTestManagerPage() {
               top: `${pointerPos.y + 12}px`,
               left: `${pointerPos.x + 12}px`,
             }}
-            className="fixed pointer-events-none z-50 px-4 py-3 rounded-2xl border-2 border-[#6d3807] bg-[#fff1ea] text-[#6d3807] text-xs font-bold shadow-2xl opacity-95 flex items-center space-x-2 shrink-0 max-w-sm"
+            className="fixed pointer-events-none z-50 px-4 py-3 rounded-2xl border-2 border-brand-600 bg-brand-50 text-brand-600 text-xs font-bold shadow-2xl opacity-95 flex items-center space-x-2 shrink-0 max-w-sm"
           >
-            <GripVertical className="w-4 h-4 text-[#6d3807]" />
-            <span className="px-2 py-0.5 rounded-full bg-[#6d3807] text-white text-[10px]">
+            <GripVertical className="w-4 h-4 text-brand-600" />
+            <span className="px-2 py-0.5 rounded-full bg-brand-600 text-white text-[10px]">
               {pointerDragInfoRef.current.typeStr}
             </span>
             <span className="truncate">{pointerDragInfoRef.current.title}</span>
@@ -957,12 +957,12 @@ export default function TeacherTestManagerPage() {
         )}
 
         {/* Page Top Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="font-headline text-3xl font-bold text-ink tracking-tight">
               Quản Lý Lộ Trình & Khóa Học
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Giao diện đồng bộ: <b>Icon chỉnh sửa đặt cạnh icon xóa</b> và <b>Thanh điều hướng sắp xếp tối ưu</b>.
             </p>
           </div>
@@ -970,17 +970,17 @@ export default function TeacherTestManagerPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/admin/tests/import"
-              className="px-4 py-2.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffdcc5] border border-[#d8c2b6] rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
+              className="px-4 py-2.5 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-[#6d3807]" />
+              <Sparkles className="w-4 h-4 text-brand-600" />
               <span>AI Exam Importer</span>
             </Link>
 
             <Link
               href="/teacher/tests/create"
-              className="px-4 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
+              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
             >
-              <PlusCircle className="w-4 h-4 text-[#ffb782]" />
+              <PlusCircle className="w-4 h-4 text-accent-400" />
               <span>Soạn Bộ Đề Mới</span>
             </Link>
           </div>
@@ -1013,10 +1013,10 @@ export default function TeacherTestManagerPage() {
           {/* Sticky trên desktop: cuộn cây lộ trình dài vẫn giữ sidebar để kéo thả */}
           <div className="lg:col-span-3 space-y-5 lg:sticky lg:top-[88px] lg:self-start lg:max-h-[calc(100vh-112px)] lg:overflow-y-auto lg:pr-1">
             {/* Box 1: Course Categories */}
-            <div className="bg-[#ffffff] p-5 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-3.5">
+            <div className="bg-white p-5 rounded-2xl border border-line shadow-sm space-y-3.5">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#6d3807] flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-[#6d3807]" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-brand-600" />
                   <span>Danh Mục Khóa Học</span>
                 </h2>
                 <button
@@ -1026,7 +1026,7 @@ export default function TeacherTestManagerPage() {
                     setCourseDefaultStandardId("");
                     setShowAddCourseModal(true);
                   }}
-                  className="px-2.5 py-1 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-[11px] font-bold rounded-lg transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
+                  className="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-bold rounded-lg transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm Mới</span>
@@ -1041,8 +1041,8 @@ export default function TeacherTestManagerPage() {
                       key={course.id}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between border ${
                         isSelected
-                          ? "bg-[#6d3807] text-white shadow-sm border-[#6d3807]"
-                          : "text-[#52443a] hover:bg-[#fff8f5] hover:text-[#6d3807] border-transparent hover:border-[#d8c2b6]/40"
+                          ? "bg-brand-600 text-white shadow-sm border-brand-600"
+                          : "text-ink-muted hover:bg-surface-alt hover:text-brand-600 border-transparent hover:border-line/40"
                       }`}
                     >
                       <button
@@ -1054,7 +1054,7 @@ export default function TeacherTestManagerPage() {
                       </button>
 
                       <div className="flex items-center space-x-1 shrink-0">
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-[#ffb782] shrink-0 mr-1" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-accent-400 shrink-0 mr-1" />}
                         <button
                           title="Sửa khóa học"
                           onClick={(e) => {
@@ -1066,7 +1066,7 @@ export default function TeacherTestManagerPage() {
                             setShowEditCourseModal(true);
                           }}
                           className={`p-1 rounded-lg transition-all cursor-pointer ${
-                            isSelected ? "hover:bg-white/20 text-white" : "hover:bg-[#d8c2b6]/30 text-[#857469]"
+                            isSelected ? "hover:bg-white/20 text-white" : "hover:bg-line/30 text-ink-subtle"
                           }`}
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -1091,24 +1091,24 @@ export default function TeacherTestManagerPage() {
             </div>
 
             {/* Box 2: Unassigned Exams / Exercises */}
-            <div className="bg-[#ffffff] p-5 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-3.5">
+            <div className="bg-white p-5 rounded-2xl border border-line shadow-sm space-y-3.5">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#6d3807] flex items-center space-x-2">
-                  <BookMarked className="w-4 h-4 text-[#6d3807]" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-2">
+                  <BookMarked className="w-4 h-4 text-brand-600" />
                   <span>Bài Tập Chưa Lộ Trình</span>
                 </h2>
-                <span className="px-2 py-0.5 bg-[#fff1ea] text-[#6d3807] text-[10px] font-bold rounded-full border border-[#d8c2b6]">
+                <span className="px-2 py-0.5 bg-brand-50 text-brand-600 text-[10px] font-bold rounded-full border border-line">
                   {unassignedExams.length}
                 </span>
               </div>
 
               {unassignedExams.length === 0 ? (
-                <p className="text-xs text-[#52443a] italic py-2 text-center bg-[#fff8f5] rounded-xl border border-dashed border-[#d8c2b6]">
+                <p className="text-xs text-ink-muted italic py-2 text-center bg-surface-alt rounded-xl border border-dashed border-line">
                   Tất cả bài tập đã gắn vào lộ trình.
                 </p>
               ) : (
                 <div className="flex flex-col space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                  <p className="text-[10px] text-[#857469] italic">
+                  <p className="text-[10px] text-ink-subtle italic">
                     Kéo thả bài tập vào vị trí bất kỳ trong cây lộ trình.
                   </p>
                   {unassignedExams.map((ex) => (
@@ -1117,13 +1117,13 @@ export default function TeacherTestManagerPage() {
                       onPointerDown={(e) => handleStartExamDrag(e, ex)}
                       className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 group cursor-grab active:cursor-grabbing ${
                         activePointerDragId === `${NEW_EXAM_DRAG_PREFIX}${ex.id}`
-                          ? "opacity-40 border-dashed border-[#6d3807] bg-[#fff8f5]"
-                          : "border-[#d8c2b6]/50 bg-[#faf8f6] hover:bg-[#fff8f5] hover:border-[#6d3807]"
+                          ? "opacity-40 border-dashed border-brand-600 bg-surface-alt"
+                          : "border-line/50 bg-surface-alt hover:bg-surface-alt hover:border-brand-600"
                       }`}
                     >
-                      <GripVertical className="w-3.5 h-3.5 text-[#52443a]/50 group-hover:text-[#6d3807] shrink-0" />
+                      <GripVertical className="w-3.5 h-3.5 text-ink-muted/50 group-hover:text-brand-600 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-bold text-[#6d3807] block truncate">
+                        <span className="text-[10px] font-bold text-brand-600 block truncate">
                           {ex.title}
                         </span>
                       </div>
@@ -1131,7 +1131,7 @@ export default function TeacherTestManagerPage() {
                         type="button"
                         disabled={submittingActionId === `unassigned_${ex.id}`}
                         onClick={() => handleAddUnassignedExam(ex)}
-                        className="p-1.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#6d3807] hover:text-white rounded-lg transition-all border border-[#d8c2b6] shrink-0 disabled:opacity-50"
+                        className="p-1.5 bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white rounded-lg transition-all border border-line shrink-0 disabled:opacity-50"
                         title="Thêm vào cuối lộ trình"
                       >
                         {submittingActionId === `unassigned_${ex.id}` ? (
@@ -1149,16 +1149,16 @@ export default function TeacherTestManagerPage() {
 
           {/* Right Panel - Prominently Wrapped Curriculum Syllabus Container */}
           <div className="lg:col-span-9">
-            <div className="bg-white rounded-2xl border border-[#d8c2b6] shadow-sm overflow-hidden space-y-0">
+            <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden space-y-0">
               
               {/* PROMINENT HEADER BANNER */}
-              <div className="bg-gradient-to-r from-[#6d3807] via-[#8a4f1e] to-[#6d3807] text-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="bg-gradient-to-r from-brand-600 via-brand-700 to-brand-600 text-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center space-x-3">
                   <div className="p-2.5 bg-white/10 backdrop-blur-xs rounded-xl text-white">
                     <BookOpen className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#ffb782] block">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-accent-400 block">
                       Lộ Trình Đào Tạo Đang Chọn
                     </span>
                     <h2 className="text-lg font-headline font-bold text-white flex items-center space-x-2.5 mt-0.5">
@@ -1174,24 +1174,24 @@ export default function TeacherTestManagerPage() {
               </div>
 
               {/* EMBEDDED UNIT TREE LIST */}
-              <div data-curriculum-tree className="p-5 bg-[#faf8f6]/40">
+              <div data-curriculum-tree className="p-5 bg-surface-alt/40">
                 {loading ? (
-                  <div className="flex items-center justify-center space-x-2 text-xs text-[#52443a] py-16 bg-white rounded-2xl border border-[#d8c2b6]">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
+                  <div className="flex items-center justify-center space-x-2 text-xs text-ink-muted py-16 bg-white rounded-2xl border border-line">
+                    <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
                     <span className="font-bold">Đang nạp cây lộ trình...</span>
                   </div>
                 ) : rootItems.length === 0 ? (
                   <div className={`py-16 text-center rounded-2xl space-y-4 transition-all ${
                     isDraggingNewExam && pointerTargetState
-                      ? "border-2 border-dashed border-[#6d3807] bg-[#fff8f5]"
-                      : "bg-white border border-[#d8c2b6]"
+                      ? "border-2 border-dashed border-brand-600 bg-surface-alt"
+                      : "bg-white border border-line"
                   }`}>
-                    <div className="w-12 h-12 bg-[#fff1ea] rounded-full flex items-center justify-center mx-auto text-[#6d3807]">
+                    <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600">
                       <BookMarked className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-[#211a16]">Chưa có bài học hoặc đề thi trong khóa này</h3>
-                      <p className="text-xs text-[#52443a] max-w-md mx-auto">
+                      <h3 className="text-sm font-bold text-ink">Chưa có bài học hoặc đề thi trong khóa này</h3>
+                      <p className="text-xs text-ink-muted max-w-md mx-auto">
                         Bắt đầu xây dựng chương trình bằng cách tạo Unit hoặc chèn đề thi phía dưới.
                       </p>
                     </div>
@@ -1228,7 +1228,7 @@ export default function TeacherTestManagerPage() {
                             activePointerDragId &&
                             pointerTargetState &&
                             !isGapNoop(activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
-                              <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
+                              <div className="border-2 border-dashed border-brand-600 bg-surface-alt/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
                             )}
 
                           {/* Main Root Item Card (FULL BAR DRAG) */}
@@ -1236,23 +1236,23 @@ export default function TeacherTestManagerPage() {
                             onPointerDown={(e) => handleStartPointerDrag(e, rootNode, rootIdx)}
                             className={`bg-white rounded-2xl border transition-all duration-150 overflow-hidden cursor-grab active:cursor-grabbing ${
                               isBeingDragged
-                                ? "opacity-40 border-2 border-dashed border-[#6d3807] bg-[#fff8f5] shadow-inner"
-                                : "border-[#d8c2b6] shadow-2xs hover:border-[#6d3807]"
+                                ? "opacity-40 border-2 border-dashed border-brand-600 bg-surface-alt shadow-inner"
+                                : "border-line shadow-2xs hover:border-brand-600"
                             }`}
                           >
                             {/* Root Level Header Row (Unit or Course Exam) */}
                             <div className={`p-4 flex items-center justify-between gap-3 border-b ${
-                              isUnit ? "bg-[#fff8f5] border-[#d8c2b6]/60" : "bg-[#faf8f6] border-[#d8c2b6]/30"
+                              isUnit ? "bg-surface-alt border-line/60" : "bg-surface-alt border-line/30"
                             }`}>
                               <div className="flex items-center space-x-2 max-w-[70%]">
                                 {/* Drag Handle Icon */}
-                                <GripVertical className="w-4.5 h-4.5 text-[#52443a]/60 group-hover:text-[#6d3807] shrink-0" />
+                                <GripVertical className="w-4.5 h-4.5 text-ink-muted/60 group-hover:text-brand-600 shrink-0" />
 
                                 {isUnit ? (
                                   <button
                                     type="button"
                                     onClick={() => toggleUnitExpand(rootNode.id)}
-                                    className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-all shrink-0"
+                                    className="p-1 text-brand-600 hover:bg-brand-50 rounded-lg transition-all shrink-0"
                                   >
                                     {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                                   </button>
@@ -1264,7 +1264,7 @@ export default function TeacherTestManagerPage() {
                                   <div className="flex items-center space-x-2">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                       isUnit
-                                        ? "bg-[#6d3807] text-white"
+                                        ? "bg-brand-600 text-white"
                                         : rootNode.type === "EXAM"
                                         ? "bg-amber-600 text-white"
                                         : "bg-blue-600 text-white"
@@ -1273,14 +1273,14 @@ export default function TeacherTestManagerPage() {
                                     </span>
 
                                     {rootNode.exam && (
-                                      <span className="text-[10px] text-[#52443a] flex items-center space-x-1">
-                                        <Clock className="w-3 h-3 text-[#6d3807]" />
+                                      <span className="text-[10px] text-ink-muted flex items-center space-x-1">
+                                        <Clock className="w-3 h-3 text-brand-600" />
                                         <span>{rootNode.exam.duration_minutes || 60} Phút</span>
                                       </span>
                                     )}
                                   </div>
 
-                                  <h3 className="text-sm font-bold text-[#211a16] mt-0.5">{rootNode.title}</h3>
+                                  <h3 className="text-sm font-bold text-ink mt-0.5">{rootNode.title}</h3>
                                 </div>
                               </div>
 
@@ -1291,7 +1291,7 @@ export default function TeacherTestManagerPage() {
                                   type="button"
                                   onClick={() => handleMoveArrow(rootIdx, "UP", null)}
                                   disabled={rootIdx === 0}
-                                  className="p-1.5 text-[#52443a] hover:bg-[#fff1ea] rounded-lg disabled:opacity-30 transition-all border border-[#d8c2b6]/40"
+                                  className="p-1.5 text-ink-muted hover:bg-brand-50 rounded-lg disabled:opacity-30 transition-all border border-line/40"
                                   title="Lên"
                                 >
                                   <ArrowUp className="w-4 h-4" />
@@ -1300,7 +1300,7 @@ export default function TeacherTestManagerPage() {
                                   type="button"
                                   onClick={() => handleMoveArrow(rootIdx, "DOWN", null)}
                                   disabled={rootIdx === rootItems.length - 1}
-                                  className="p-1.5 text-[#52443a] hover:bg-[#fff1ea] rounded-lg disabled:opacity-30 transition-all border border-[#d8c2b6]/40"
+                                  className="p-1.5 text-ink-muted hover:bg-brand-50 rounded-lg disabled:opacity-30 transition-all border border-line/40"
                                   title="Xuống"
                                 >
                                   <ArrowDown className="w-4 h-4" />
@@ -1311,7 +1311,7 @@ export default function TeacherTestManagerPage() {
                                   <button
                                     type="button"
                                     onClick={() => openAddModal("LESSON", rootNode.id)}
-                                    className="px-2.5 py-1.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffdcc5] text-[11px] font-bold rounded-lg border border-[#d8c2b6] flex items-center space-x-1"
+                                    className="px-2.5 py-1.5 bg-brand-50 text-brand-600 hover:bg-brand-100 text-[11px] font-bold rounded-lg border border-line flex items-center space-x-1"
                                   >
                                     <FilePlus className="w-3.5 h-3.5" />
                                     <span>Bài Học</span>
@@ -1324,7 +1324,7 @@ export default function TeacherTestManagerPage() {
                                     href={`/student/exam/${rootNode.exam_id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1.5 text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-all border border-[#d8c2b6]/40"
+                                    className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all border border-line/40"
                                     title="Xem thử"
                                   >
                                     <Eye className="w-4 h-4" />
@@ -1337,7 +1337,7 @@ export default function TeacherTestManagerPage() {
                                     href={`/teacher/lessons/${rootNode.lesson_id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1.5 text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-all border border-[#d8c2b6]/40"
+                                    className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all border border-line/40"
                                     title="Soạn bài học"
                                   >
                                     <BookMarked className="w-4 h-4" />
@@ -1348,7 +1348,7 @@ export default function TeacherTestManagerPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(rootNode)}
-                                  className="p-1.5 text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-all border border-[#d8c2b6]/40"
+                                  className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all border border-line/40"
                                   title="Chỉnh sửa"
                                 >
                                   <Pencil className="w-4 h-4" />
@@ -1376,22 +1376,22 @@ export default function TeacherTestManagerPage() {
                               <div
                                 data-order-idx="0"
                                 data-parent-id={rootNode.id}
-                                className="p-3 pl-8 bg-white space-y-2 border-t border-[#d8c2b6]/20 transition-all duration-200"
+                                className="p-3 pl-8 bg-white space-y-2 border-t border-line/20 transition-all duration-200"
                               >
                                 {/* PREVIEW FRAME FOR EMPTY UNIT DROP ZONE */}
                                 {children.length === 0 ? (
                                   pointerTargetState?.parentId === rootNode.id &&
                                   activePointerDragId &&
                                   !isGapNoop(activePointerDragId, rootNode.id, pointerTargetState.hoverIndex) ? (
-                                    <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-14 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner flex items-center justify-center">
-                                      <span className="text-xs font-bold text-[#6d3807] animate-pulse">Thả bài học vào đây...</span>
+                                    <div className="border-2 border-dashed border-brand-600 bg-surface-alt/80 rounded-xl h-14 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner flex items-center justify-center">
+                                      <span className="text-xs font-bold text-brand-600 animate-pulse">Thả bài học vào đây...</span>
                                     </div>
                                   ) : (
-                                    <div className="p-4 border-2 border-dashed border-[#d8c2b6] rounded-xl bg-[#fff8f5] text-center space-y-1">
-                                      <p className="text-xs text-[#52443a] italic font-bold">
+                                    <div className="p-4 border-2 border-dashed border-line rounded-xl bg-surface-alt text-center space-y-1">
+                                      <p className="text-xs text-ink-muted italic font-bold">
                                         Chưa có bài học nào trong Unit này.
                                       </p>
-                                      <p className="text-[11px] text-[#6d3807] font-medium">
+                                      <p className="text-[11px] text-brand-600 font-medium">
                                         Nhấp "Bài Học" hoặc <b>Kéo thả bài học vào đây</b>.
                                       </p>
                                     </div>
@@ -1423,36 +1423,36 @@ export default function TeacherTestManagerPage() {
                                           activePointerDragId &&
                                           pointerTargetState &&
                                           !isGapNoop(activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
-                                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
+                                            <div className="border-2 border-dashed border-brand-600 bg-surface-alt/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
                                           )}
 
                                         <div
                                           onPointerDown={(e) => handleStartPointerDrag(e, child, childIdx)}
                                           className={`p-3 rounded-xl border transition-all duration-150 flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing ${
                                             isChildBeingDragged
-                                              ? "opacity-40 border-2 border-dashed border-[#6d3807] bg-gray-50 shadow-inner"
-                                              : "border-[#d8c2b6]/40 hover:border-[#6d3807] bg-[#faf8f6] hover:bg-[#fff8f5]"
+                                              ? "opacity-40 border-2 border-dashed border-brand-600 bg-gray-50 shadow-inner"
+                                              : "border-line/40 hover:border-brand-600 bg-surface-alt hover:bg-surface-alt"
                                           }`}
                                         >
                                           <div className="flex items-center space-x-2.5">
-                                            <GripVertical className="w-3.5 h-3.5 text-[#52443a]/50 group-hover:text-[#6d3807] shrink-0" />
+                                            <GripVertical className="w-3.5 h-3.5 text-ink-muted/50 group-hover:text-brand-600 shrink-0" />
 
-                                            <div className="w-7 h-7 rounded-lg bg-[#fff1ea] text-[#6d3807] font-bold text-xs flex items-center justify-center shrink-0">
+                                            <div className="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 font-bold text-xs flex items-center justify-center shrink-0">
                                               {childIdx + 1}
                                             </div>
                                             <div>
                                               <div className="flex items-center space-x-2">
-                                                <span className="px-2 py-0.2 rounded-md bg-[#6d3807]/10 text-[#6d3807] text-[10px] font-bold">
+                                                <span className="px-2 py-0.2 rounded-md bg-brand-600/10 text-brand-600 text-[10px] font-bold">
                                                   {child.type === "EXAM" ? "Đề Thi" : "Bài Học"}
                                                 </span>
                                                 {child.exam && (
-                                                  <span className="text-[10px] text-[#52443a] flex items-center space-x-1">
-                                                    <Clock className="w-3 h-3 text-[#6d3807]" />
+                                                  <span className="text-[10px] text-ink-muted flex items-center space-x-1">
+                                                    <Clock className="w-3 h-3 text-brand-600" />
                                                     <span>{child.exam.duration_minutes || 45} mins</span>
                                                   </span>
                                                 )}
                                               </div>
-                                              <h4 className="text-xs font-bold text-[#211a16] mt-0.5">{child.title}</h4>
+                                              <h4 className="text-xs font-bold text-ink mt-0.5">{child.title}</h4>
                                             </div>
                                           </div>
 
@@ -1461,7 +1461,7 @@ export default function TeacherTestManagerPage() {
                                               type="button"
                                               onClick={() => handleMoveArrow(childIdx, "UP", rootNode.id)}
                                               disabled={childIdx === 0}
-                                              className="p-1 text-[#52443a] hover:bg-white rounded disabled:opacity-30 border border-[#d8c2b6]/30"
+                                              className="p-1 text-ink-muted hover:bg-white rounded disabled:opacity-30 border border-line/30"
                                               title="Lên"
                                             >
                                               <ArrowUp className="w-3.5 h-3.5" />
@@ -1470,7 +1470,7 @@ export default function TeacherTestManagerPage() {
                                               type="button"
                                               onClick={() => handleMoveArrow(childIdx, "DOWN", rootNode.id)}
                                               disabled={childIdx === children.length - 1}
-                                              className="p-1 text-[#52443a] hover:bg-white rounded disabled:opacity-30 border border-[#d8c2b6]/30"
+                                              className="p-1 text-ink-muted hover:bg-white rounded disabled:opacity-30 border border-line/30"
                                               title="Xuống"
                                             >
                                               <ArrowDown className="w-3.5 h-3.5" />
@@ -1482,7 +1482,7 @@ export default function TeacherTestManagerPage() {
                                                 href={`/student/exam/${child.exam_id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded border border-[#d8c2b6]/30"
+                                                className="p-1 text-brand-600 hover:bg-brand-50 rounded border border-line/30"
                                                 title="Xem thử"
                                               >
                                                 <Eye className="w-3.5 h-3.5" />
@@ -1495,7 +1495,7 @@ export default function TeacherTestManagerPage() {
                                                 href={`/teacher/lessons/${child.lesson_id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded border border-[#d8c2b6]/30"
+                                                className="p-1 text-brand-600 hover:bg-brand-50 rounded border border-line/30"
                                                 title="Soạn bài học"
                                               >
                                                 <BookMarked className="w-3.5 h-3.5" />
@@ -1506,7 +1506,7 @@ export default function TeacherTestManagerPage() {
                                             <button
                                               type="button"
                                               onClick={() => openEditModal(child)}
-                                              className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded border border-[#d8c2b6]/30"
+                                              className="p-1 text-brand-600 hover:bg-brand-50 rounded border border-line/30"
                                               title="Chỉnh sửa"
                                             >
                                               <Pencil className="w-3.5 h-3.5" />
@@ -1534,7 +1534,7 @@ export default function TeacherTestManagerPage() {
                                           activePointerDragId &&
                                           pointerTargetState &&
                                           !isGapNoop(activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
-                                            <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
+                                            <div className="border-2 border-dashed border-brand-600 bg-surface-alt/80 rounded-xl h-12 transition-all duration-200 animate-pulse my-1 shrink-0 pointer-events-none shadow-inner" />
                                           )}
                                       </div>
                                     );
@@ -1550,7 +1550,7 @@ export default function TeacherTestManagerPage() {
                             activePointerDragId &&
                             pointerTargetState &&
                             !isGapNoop(activePointerDragId, pointerTargetState.parentId, pointerTargetState.hoverIndex) && (
-                              <div className="border-2 border-dashed border-[#6d3807] bg-[#fff8f5]/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
+                              <div className="border-2 border-dashed border-brand-600 bg-surface-alt/80 rounded-2xl h-16 transition-all duration-200 animate-pulse my-2 shrink-0 pointer-events-none shadow-inner" />
                             )}
                         </div>
                       );
@@ -1559,20 +1559,20 @@ export default function TeacherTestManagerPage() {
                 )}
 
                 {/* 2 IDENTICAL BRIGHT ACTION BUTTONS AT BOTTOM */}
-                <div className="mt-6 pt-5 border-t border-[#d8c2b6]/60 flex flex-wrap items-center justify-center gap-4">
+                <div className="mt-6 pt-5 border-t border-line/60 flex flex-wrap items-center justify-center gap-4">
                   <button
                     onClick={() => openAddModal("UNIT", null)}
-                    className="px-6 py-3 bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffdcc5] border border-[#d8c2b6] rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all shadow-xs hover:shadow-md"
+                    className="px-6 py-3 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all shadow-xs hover:shadow-md"
                   >
-                    <FolderPlus className="w-4 h-4 text-[#6d3807]" />
+                    <FolderPlus className="w-4 h-4 text-brand-600" />
                     <span>Thêm Unit / Chương Mới</span>
                   </button>
 
                   <button
                     onClick={() => openAddModal("LESSON", null)}
-                    className="px-6 py-3 bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffdcc5] border border-[#d8c2b6] rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all shadow-xs hover:shadow-md"
+                    className="px-6 py-3 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all shadow-xs hover:shadow-md"
                   >
-                    <Plus className="w-4 h-4 text-[#6d3807]" />
+                    <Plus className="w-4 h-4 text-brand-600" />
                     <span>Thêm Bài Học / Đề Thi Mới</span>
                   </button>
                 </div>
@@ -1587,10 +1587,10 @@ export default function TeacherTestManagerPage() {
       {/* Streamlined Unified Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#d8c2b6] space-y-5">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-line space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#d8c2b6]/40 pb-3">
-              <h3 className="text-base font-bold text-[#211a16]">
+            <div className="flex items-center justify-between border-b border-line/40 pb-3">
+              <h3 className="text-base font-bold text-ink">
                 {editingItem
                   ? "Chỉnh Sửa Mục"
                   : modalType === "UNIT"
@@ -1608,13 +1608,13 @@ export default function TeacherTestManagerPage() {
               {/* FIELD 1: Select Category (Radio Buttons) */}
               {modalType !== "UNIT" && (
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-[#52443a]">1. Chọn Phân Loại</label>
+                  <label className="block font-bold text-ink-muted">1. Chọn Phân Loại</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label
                       className={`flex items-center space-x-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
                         modalType === "LESSON"
-                          ? "border-[#6d3807] bg-[#fff8f5] ring-1 ring-[#6d3807]"
-                          : "border-[#d8c2b6] bg-white hover:bg-[#faf8f6]"
+                          ? "border-brand-600 bg-surface-alt ring-1 ring-brand-600"
+                          : "border-line bg-white hover:bg-surface-alt"
                       }`}
                     >
                       <input
@@ -1626,16 +1626,16 @@ export default function TeacherTestManagerPage() {
                           setModalType("LESSON");
                           if (availableLessons.length === 0) fetchLessons();
                         }}
-                        className="w-4 h-4 text-[#6d3807] focus:ring-[#6d3807] accent-[#6d3807]"
+                        className="w-4 h-4 text-brand-600 focus:ring-brand-600 accent-brand-600"
                       />
-                      <span className="text-xs font-bold text-[#211a16]">Bài Học</span>
+                      <span className="text-xs font-bold text-ink">Bài Học</span>
                     </label>
 
                     <label
                       className={`flex items-center space-x-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
                         modalType === "EXAM"
-                          ? "border-[#6d3807] bg-[#fff8f5] ring-1 ring-[#6d3807]"
-                          : "border-[#d8c2b6] bg-white hover:bg-[#faf8f6]"
+                          ? "border-brand-600 bg-surface-alt ring-1 ring-brand-600"
+                          : "border-line bg-white hover:bg-surface-alt"
                       }`}
                     >
                       <input
@@ -1644,9 +1644,9 @@ export default function TeacherTestManagerPage() {
                         value="EXAM"
                         checked={modalType === "EXAM"}
                         onChange={() => setModalType("EXAM")}
-                        className="w-4 h-4 text-[#6d3807] focus:ring-[#6d3807] accent-[#6d3807]"
+                        className="w-4 h-4 text-brand-600 focus:ring-brand-600 accent-brand-600"
                       />
-                      <span className="text-xs font-bold text-[#211a16]">Đề Thi</span>
+                      <span className="text-xs font-bold text-ink">Đề Thi</span>
                     </label>
                   </div>
                 </div>
@@ -1656,13 +1656,13 @@ export default function TeacherTestManagerPage() {
               {modalType === "LESSON" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block font-bold text-[#52443a]">2. Chọn Bài Học Từ Kho</label>
+                    <label className="block font-bold text-ink-muted">2. Chọn Bài Học Từ Kho</label>
                     <div className="flex items-center space-x-2 text-[11px]">
                       <Link
                         href="/teacher/lessons/new"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#6d3807] font-bold hover:underline flex items-center space-x-0.5"
+                        className="text-brand-600 font-bold hover:underline flex items-center space-x-0.5"
                       >
                         <span>Tạo bài học mới</span>
                         <ExternalLink className="w-3 h-3" />
@@ -1672,7 +1672,7 @@ export default function TeacherTestManagerPage() {
                         type="button"
                         onClick={fetchLessons}
                         disabled={isLoadingLessons}
-                        className="text-[#52443a] hover:text-[#6d3807] font-semibold flex items-center space-x-1"
+                        className="text-ink-muted hover:text-brand-600 font-semibold flex items-center space-x-1"
                       >
                         <RefreshCw className={`w-3 h-3 ${isLoadingLessons ? "animate-spin" : ""}`} />
                         <span>Tải lại danh sách</span>
@@ -1686,20 +1686,20 @@ export default function TeacherTestManagerPage() {
                     value={lessonSearchQuery}
                     onChange={(e) => setLessonSearchQuery(e.target.value)}
                     placeholder="Tìm theo tiêu đề bài học..."
-                    className="w-full px-3 py-1.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-1.5 rounded-xl border border-line text-xs font-medium text-ink bg-white focus:outline-none focus:border-brand-600"
                   />
 
                   {/* List of lessons from library */}
-                  <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-[#d8c2b6] bg-[#fff8f5]">
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-line bg-surface-alt">
                     {isLoadingLessons ? (
-                      <div className="py-4 text-center text-xs text-[#52443a] flex items-center justify-center space-x-1.5">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6d3807]" />
+                      <div className="py-4 text-center text-xs text-ink-muted flex items-center justify-center space-x-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-600" />
                         <span>Đang tải kho bài học...</span>
                       </div>
                     ) : availableLessons.filter((l) =>
                         l.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())
                       ).length === 0 ? (
-                      <div className="py-4 text-center text-xs text-[#52443a]">
+                      <div className="py-4 text-center text-xs text-ink-muted">
                         {lessonSearchQuery.trim()
                           ? "Không tìm thấy bài học phù hợp."
                           : "Chưa có bài học nào trong kho."}
@@ -1724,13 +1724,13 @@ export default function TeacherTestManagerPage() {
                                 isZero
                                   ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
                                   : isSelected
-                                  ? "border-[#6d3807] bg-white ring-1 ring-[#6d3807] cursor-pointer shadow-2xs"
-                                  : "border-[#d8c2b6]/60 bg-white hover:border-[#6d3807] hover:bg-[#faf8f6] cursor-pointer"
+                                  ? "border-brand-600 bg-white ring-1 ring-brand-600 cursor-pointer shadow-2xs"
+                                  : "border-line/60 bg-white hover:border-brand-600 hover:bg-surface-alt cursor-pointer"
                               }`}
                             >
                               <div className="min-w-0 pr-2">
-                                <p className="font-bold text-[#211a16] truncate">{l.title}</p>
-                                <p className="text-[10px] text-[#52443a] flex items-center space-x-1.5 mt-0.5">
+                                <p className="font-bold text-ink truncate">{l.title}</p>
+                                <p className="text-[10px] text-ink-muted flex items-center space-x-1.5 mt-0.5">
                                   <span>{l.block_count} khối</span>
                                   {isZero && (
                                     <span className="text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200">
@@ -1744,7 +1744,7 @@ export default function TeacherTestManagerPage() {
                                 readOnly
                                 checked={isSelected}
                                 disabled={isZero}
-                                className="w-3.5 h-3.5 text-[#6d3807] accent-[#6d3807] shrink-0"
+                                className="w-3.5 h-3.5 text-brand-600 accent-brand-600 shrink-0"
                               />
                             </div>
                           );
@@ -1757,11 +1757,11 @@ export default function TeacherTestManagerPage() {
               {/* FIELD 2B: For EXAM -> Select Exam */}
               {modalType === "EXAM" && (
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-[#52443a]">2. Chọn Đề Thi</label>
+                  <label className="block font-bold text-ink-muted">2. Chọn Đề Thi</label>
                   <select
                     value={selectedExamId}
                     onChange={(e) => setSelectedExamId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#6d3807]/15 transition-all shadow-2xs"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-line text-xs font-medium text-ink bg-white focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/15 transition-all shadow-2xs"
                   >
                     {availableExams.length === 0 ? (
                       <option value="">Chưa có đề thi sẵn</option>
@@ -1778,7 +1778,7 @@ export default function TeacherTestManagerPage() {
 
               {/* FIELD 3: Custom Title Input */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-[#52443a]">
+                <label className="block font-bold text-ink-muted">
                   {modalType === "UNIT" ? "Tên Unit / Chương" : "3. Tên Tùy Chọn"}
                 </label>
                 <input
@@ -1790,14 +1790,14 @@ export default function TeacherTestManagerPage() {
                       ? "Nhập tên Unit..."
                       : "Để trống để tự động lấy tên bài học/đề thi"
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] bg-white focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#6d3807]/15 transition-all shadow-2xs placeholder:text-gray-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-xs font-medium text-ink bg-white focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/15 transition-all shadow-2xs placeholder:text-gray-400"
                 />
               </div>
 
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end space-x-2 pt-3 border-t border-[#d8c2b6]/30">
+            <div className="flex justify-end space-x-2 pt-3 border-t border-line/30">
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition-colors"
@@ -1807,7 +1807,7 @@ export default function TeacherTestManagerPage() {
               <button
                 disabled={submittingActionId === "modal_submit"}
                 onClick={handleSubmitModal}
-                className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-[#ffffff] font-bold rounded-xl text-xs shadow-sm transition-all disabled:opacity-50 flex items-center space-x-1.5"
+                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all disabled:opacity-50 flex items-center space-x-1.5"
               >
                 {submittingActionId === "modal_submit" && <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />}
                 <span>{editingItem ? "Lưu Thay Đổi" : "Tạo Mới"}</span>
@@ -1820,47 +1820,47 @@ export default function TeacherTestManagerPage() {
       {/* Modal: Add New Course */}
       {showAddCourseModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-            <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-              <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                <GraduationCap className="w-5 h-5 text-[#6d3807]" />
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-center border-b border-line/40 pb-4">
+              <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                <GraduationCap className="w-5 h-5 text-brand-600" />
                 <span>Thêm Khóa Học Mới</span>
               </h2>
-              <button onClick={() => setShowAddCourseModal(false)} className="text-[#857469] hover:text-[#211a16]">
+              <button onClick={() => setShowAddCourseModal(false)} className="text-ink-subtle hover:text-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreateCourse} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Tên Khóa Học (*)</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Tên Khóa Học (*)</label>
                 <input
                   type="text"
                   required
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
                   placeholder="Ví dụ: IELTS Academic Master 7.5+"
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Mô Tả Chi Tiết Khóa Học</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Mô Tả Chi Tiết Khóa Học</label>
                 <textarea
                   rows={3}
                   value={courseDesc}
                   onChange={(e) => setCourseDesc(e.target.value)}
                   placeholder="Mô tả lộ trình học, mục tiêu đầu ra..."
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Chuẩn Chấm Mặc Định</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Chuẩn Chấm Mặc Định</label>
                 <select
                   value={courseDefaultStandardId}
                   onChange={(e) => setCourseDefaultStandardId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                 >
                   <option value="">— Không đặt chuẩn mặc định —</option>
                   {scoringStandards.map((std) => (
@@ -1872,8 +1872,8 @@ export default function TeacherTestManagerPage() {
               </div>
 
               <div className="pt-2 flex space-x-3">
-                <button type="button" onClick={() => setShowAddCourseModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
-                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
+                <button type="button" onClick={() => setShowAddCourseModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
+                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
                   {isCourseSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <span>Thêm Khóa Học</span>}
                 </button>
               </div>
@@ -1885,45 +1885,45 @@ export default function TeacherTestManagerPage() {
       {/* Modal: Edit Course */}
       {showEditCourseModal && editingCourse && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-            <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-              <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                <Pencil className="w-5 h-5 text-[#6d3807]" />
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-center border-b border-line/40 pb-4">
+              <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                <Pencil className="w-5 h-5 text-brand-600" />
                 <span>Chỉnh Sửa Khóa Học</span>
               </h2>
-              <button onClick={() => setShowEditCourseModal(false)} className="text-[#857469] hover:text-[#211a16]">
+              <button onClick={() => setShowEditCourseModal(false)} className="text-ink-subtle hover:text-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleUpdateCourse} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Tên Khóa Học (*)</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Tên Khóa Học (*)</label>
                 <input
                   type="text"
                   required
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Mô Tả Chi Tiết Khóa Học</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Mô Tả Chi Tiết Khóa Học</label>
                 <textarea
                   rows={3}
                   value={courseDesc}
                   onChange={(e) => setCourseDesc(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Chuẩn Chấm Mặc Định</label>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Chuẩn Chấm Mặc Định</label>
                 <select
                   value={courseDefaultStandardId}
                   onChange={(e) => setCourseDefaultStandardId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                 >
                   <option value="">— Không đặt chuẩn mặc định —</option>
                   {scoringStandards.map((std) => (
@@ -1935,8 +1935,8 @@ export default function TeacherTestManagerPage() {
               </div>
 
               <div className="pt-2 flex space-x-3">
-                <button type="button" onClick={() => setShowEditCourseModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
-                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
+                <button type="button" onClick={() => setShowEditCourseModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
+                <button type="submit" disabled={isCourseSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1">
                   {isCourseSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <span>Lưu Thay Đổi</span>}
                 </button>
               </div>

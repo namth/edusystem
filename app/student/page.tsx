@@ -121,14 +121,14 @@ export default function StudentHomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f9ff]">
+    <div className="min-h-screen flex flex-col bg-brand-50">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
         {/* Banner Welcome */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-[#00236f] to-[#1e3a8a] text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-brand-800 to-brand-800 text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-mono text-[#86f2e4] uppercase tracking-wider mb-2">
+            <div className="flex items-center space-x-2 text-xs font-mono text-teal-200 uppercase tracking-wider mb-2">
               <GraduationCap className="w-4 h-4" />
               <span>Student Workspace Portal</span>
             </div>
@@ -149,7 +149,7 @@ export default function StudentHomePage() {
             </Link>
             <Link
               href="/student/analytics"
-              className="px-4 py-2.5 bg-[#86f2e4] text-[#00236f] hover:bg-white text-sm font-semibold rounded-xl transition-all shadow-sm font-headline"
+              className="px-4 py-2.5 bg-teal-200 text-brand-800 hover:bg-white text-sm font-semibold rounded-xl transition-all shadow-sm font-headline"
             >
               Xem Tiến Độ AI &amp; Band Score &rarr;
             </Link>
@@ -174,12 +174,12 @@ export default function StudentHomePage() {
         )}
 
         {/* Tham gia lớp bằng mã */}
-        <section className="mb-8 bg-white p-6 rounded-2xl border border-[#d3e4fe] shadow-sm max-w-2xl">
-          <h2 className="text-base font-bold font-headline text-[#00236f] mb-2 flex items-center space-x-2">
-            <PlusCircle className="w-5 h-5 text-[#006a61]" />
+        <section className="mb-8 bg-white p-6 rounded-2xl border border-brand-100 shadow-sm max-w-2xl">
+          <h2 className="text-base font-bold font-headline text-brand-800 mb-2 flex items-center space-x-2">
+            <PlusCircle className="w-5 h-5 text-emerald-700" />
             <span>Tham Gia Lớp Bằng Mã</span>
           </h2>
-          <p className="text-xs text-[#52443a] mb-4">
+          <p className="text-xs text-ink-muted mb-4">
             Nhập mã lớp do giáo viên cung cấp để tham gia lớp học mới.
           </p>
 
@@ -190,12 +190,12 @@ export default function StudentHomePage() {
               placeholder="Nhập mã lớp..."
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              className="flex-1 px-4 py-2.5 bg-[#f8f9ff] border border-[#d3e4fe] rounded-xl text-sm font-mono focus:outline-none focus:border-[#00236f] uppercase"
+              className="flex-1 px-4 py-2.5 bg-brand-50 border border-brand-100 rounded-xl text-sm font-mono focus:outline-none focus:border-brand-800 uppercase"
             />
             <button
               type="submit"
               disabled={enrolling}
-              className="px-6 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white text-xs font-bold rounded-xl shadow transition-all font-headline shrink-0 flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-60"
+              className="px-6 py-2.5 bg-brand-800 hover:bg-brand-800 text-white text-xs font-bold rounded-xl shadow transition-all font-headline shrink-0 flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-60"
             >
               {enrolling ? (
                 <>
@@ -231,23 +231,23 @@ export default function StudentHomePage() {
         {/* Lớp của tôi */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold font-headline text-[#00236f] flex items-center space-x-2">
-              <BookOpen className="w-5 h-5 text-[#006a61]" />
+            <h2 className="text-xl font-bold font-headline text-brand-800 flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-emerald-700" />
               <span>Lớp của tôi ({classes.length})</span>
             </h2>
           </div>
 
           {loading ? (
-            <div className="p-8 bg-white rounded-2xl border border-[#d3e4fe] flex items-center justify-center space-x-2 text-xs font-mono text-[#757682]">
-              <Loader2 className="w-4 h-4 animate-spin text-[#00236f]" />
+            <div className="p-8 bg-white rounded-2xl border border-brand-100 flex items-center justify-center space-x-2 text-xs font-mono text-ink-subtle">
+              <Loader2 className="w-4 h-4 animate-spin text-brand-800" />
               <span>Đang tải danh sách lớp học...</span>
             </div>
           ) : classes.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-2xl border border-[#d3e4fe] space-y-2">
-              <p className="text-sm font-bold text-[#0b1c30]">
+            <div className="p-8 text-center bg-white rounded-2xl border border-brand-100 space-y-2">
+              <p className="text-sm font-bold text-ink">
                 Bạn chưa tham gia lớp nào — nhập mã lớp do giáo viên cung cấp.
               </p>
-              <p className="text-xs text-[#52443a]">
+              <p className="text-xs text-ink-muted">
                 Sau khi tham gia lớp, toàn bộ tài liệu học tập và bài tập sẽ hiển thị ở đây.
               </p>
             </div>
@@ -256,28 +256,28 @@ export default function StudentHomePage() {
               {classes.map((cls) => (
                 <div
                   key={cls.id}
-                  className="bg-white p-6 rounded-2xl border border-[#d3e4fe] shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                  className="bg-white p-6 rounded-2xl border border-brand-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-3 gap-2">
-                      <h3 className="text-base font-bold font-headline text-[#0b1c30]">
+                      <h3 className="text-base font-bold font-headline text-ink">
                         {cls.name}
                       </h3>
-                      <span className="px-2.5 py-1 rounded-md bg-[#e5eeff] text-[#00236f] font-mono text-xs font-bold shrink-0">
+                      <span className="px-2.5 py-1 rounded-md bg-brand-100 text-brand-800 font-mono text-xs font-bold shrink-0">
                         {cls.code}
                       </span>
                     </div>
 
-                    <div className="flex items-center text-xs text-[#52443a] mb-4 space-x-1.5 font-mono">
-                      <Calendar className="w-4 h-4 text-[#757682] shrink-0" />
+                    <div className="flex items-center text-xs text-ink-muted mb-4 space-x-1.5 font-mono">
+                      <Calendar className="w-4 h-4 text-ink-subtle shrink-0" />
                       <span>{cls.schedule || "Lịch học linh hoạt"}</span>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-[#e5eeff] flex justify-end">
+                  <div className="pt-4 border-t border-brand-100 flex justify-end">
                     <Link
                       href={`/student/class/${cls.id}`}
-                      className="px-4 py-2 bg-[#00236f] hover:bg-[#1e3a8a] text-white text-xs font-semibold rounded-xl transition-all shadow flex items-center space-x-1 font-headline"
+                      className="px-4 py-2 bg-brand-800 hover:bg-brand-800 text-white text-xs font-semibold rounded-xl transition-all shadow flex items-center space-x-1 font-headline"
                     >
                       <span>Vào Lớp Học</span>
                       <ArrowRight className="w-3.5 h-3.5" />

@@ -103,7 +103,7 @@ function TeacherTestCreateContent() {
             <div className="flex items-center space-x-2 text-xs font-bold">
               <Edit3 className="w-4 h-4 text-amber-700" />
               <span>
-                Chế độ Chỉnh Sửa Bộ Đề: <strong className="text-[#6d3807]">{initialData.title || editId}</strong> (ID: {editId})
+                Chế độ Chỉnh Sửa Bộ Đề: <strong className="text-brand-600">{initialData.title || editId}</strong> (ID: {editId})
               </span>
             </div>
             <Link
@@ -132,7 +132,7 @@ function TeacherTestCreateContent() {
               </button>
               <Link
                 href="/teacher/tests"
-                className="px-4 py-2 bg-white border border-[#d8c2b6] text-[#52443a] text-xs font-bold rounded-xl hover:bg-[#fff8f5] transition flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-line text-ink-muted text-xs font-bold rounded-xl hover:bg-surface-alt transition flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại danh sách</span>
@@ -168,8 +168,8 @@ export default function TeacherTestCreatePage() {
     <Suspense
       fallback={
         <TeacherLayout>
-          <div className="flex items-center justify-center py-20 text-xs font-bold text-[#6d3807] space-x-2">
-            <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
+          <div className="flex items-center justify-center py-20 text-xs font-bold text-brand-600 space-x-2">
+            <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
             <span>Đang tải trình biên soạn &amp; chỉnh sửa đề thi...</span>
           </div>
         </TeacherLayout>

@@ -136,34 +136,34 @@ export default function StudentLandingPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fffbff] font-sans text-[#211a16] selection:bg-[#ffb782] selection:text-[#6d3807]">
+    <div className="min-h-screen flex flex-col bg-surface-alt font-sans text-ink selection:bg-brand-300 selection:text-brand-600">
       {/* 📣 Top Announcement Bar */}
-      <div className="bg-[#6d3807] text-[#fff1ea] py-2 px-4 text-center text-xs font-semibold flex items-center justify-center space-x-2 border-b border-[#ffb782]/30 shadow-2xs">
-        <Sparkles className="w-4 h-4 text-[#ffb782] animate-spin" />
+      <div className="bg-brand-600 text-brand-50 py-2 px-4 text-center text-xs font-semibold flex items-center justify-center space-x-2 border-b border-brand-300/30 shadow-2xs">
+        <Sparkles className="w-4 h-4 text-accent-400 animate-spin" />
         <span>
-          🎁 HỌC THỬ &amp; KHỞI TẠO MOCK TEST 4 KỸ NĂNG MIỄN PHÍ CÙNG AURA ENGLISH!
+          🎁 HỌC THỬ &amp; KHỞI TẠO MOCK TEST 4 KỸ NĂNG MIỄN PHÍ CÙNG KitoKit ENGLISH!
         </span>
         <Link
           href="/student/exam/test_01"
-          className="ml-2 px-2.5 py-0.5 bg-[#ffb782] text-[#6d3807] hover:bg-white transition-all rounded-full text-[11px] font-bold uppercase tracking-wider shadow-2xs"
+          className="ml-2 px-2.5 py-0.5 bg-brand-300 text-brand-600 hover:bg-white transition-all rounded-full text-[11px] font-bold uppercase tracking-wider shadow-2xs"
         >
           Thi Thử Ngay &rarr;
         </Link>
       </div>
 
-      {/* 🧭 Minimalist Header (Icon Logo AURA English - No Nav Items) */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#d8c2b6]/60 shadow-2xs">
+      {/* 🧭 Minimalist Header (Icon Logo KitoKit - No Nav Items) */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-line/60 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
           {/* Brand Logo with Icon */}
           <Link href="/student/landing" className="flex items-center space-x-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#6d3807] via-[#8a4f1e] to-[#ffb782] text-white flex items-center justify-center font-extrabold text-2xl shadow-md group-hover:scale-105 transition-all ring-2 ring-[#ffb782]/50">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 via-brand-700 to-brand-300 text-white flex items-center justify-center font-extrabold text-2xl shadow-md group-hover:scale-105 transition-all ring-2 ring-brand-300/50">
               <Zap className="w-6 h-6 text-white fill-white" />
             </div>
             <div>
-              <span className="font-headline font-extrabold text-xl text-[#6d3807] tracking-tight block leading-tight">
-                AURA English
+              <span className="font-headline font-extrabold text-xl text-brand-600 tracking-tight block leading-tight">
+                KitoKit
               </span>
-              <span className="text-[10px] font-mono font-bold text-[#857469] tracking-widest uppercase block">
+              <span className="text-[10px] font-mono font-bold text-ink-subtle tracking-widest uppercase block">
                 AI 4-Skills Learning Platform
               </span>
             </div>
@@ -173,20 +173,20 @@ export default function StudentLandingPage() {
           <div className="flex items-center space-x-3">
             <Link
               href="/student"
-              className="hidden sm:inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-[#6d3807] bg-[#fff1ea] hover:bg-[#ffb782] border border-[#d8c2b6] rounded-xl transition-all shadow-2xs font-headline"
+              className="hidden sm:inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-300 border border-line rounded-xl transition-all shadow-2xs font-headline"
             >
-              <UserCheck className="w-4 h-4 text-[#6d3807]" />
+              <UserCheck className="w-4 h-4 text-brand-600" />
               <span>Vào Lớp Học</span>
             </Link>
             <Link
               href="/login"
-              className="px-4 py-2 text-xs font-bold text-[#6d3807] hover:bg-[#fff1ea] rounded-xl transition-all border border-transparent font-headline"
+              className="px-4 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50 rounded-xl transition-all border border-transparent font-headline"
             >
               Đăng Nhập
             </Link>
             <Link
               href="/register"
-              className="px-5 py-2.5 text-xs font-bold bg-[#6d3807] text-white hover:bg-[#8a4f1e] rounded-xl transition-all shadow-md font-headline flex items-center space-x-1.5"
+              className="px-5 py-2.5 text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 rounded-xl transition-all shadow-md font-headline flex items-center space-x-1.5"
             >
               <span>Đăng Ký Tài Khoản</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -196,21 +196,21 @@ export default function StudentLandingPage() {
       </header>
 
       {/* 🚀 Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-gradient-to-b from-[#fff1ea]/60 via-[#fffbff] to-[#fff8f5] overflow-hidden border-b border-[#d8c2b6]/40">
+      <section className="relative py-16 lg:py-24 bg-gradient-to-b from-brand-50/60 via-surface-alt to-surface-alt overflow-hidden border-b border-line/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-left">
-              <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white border border-[#d8c2b6] text-[#6d3807] text-xs font-bold shadow-2xs mb-3">
-                <Sparkles className="w-4 h-4 text-[#6d3807] animate-pulse" />
-                <span>AURA English – Nền tảng Tự Động Chấm Điểm AI</span>
+              <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white border border-line text-brand-600 text-xs font-bold shadow-2xs mb-3">
+                <Sparkles className="w-4 h-4 text-brand-600 animate-pulse" />
+                <span>KitoKit – Nền tảng Tự Động Chấm Điểm AI</span>
               </span>
 
-              <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#211a16] leading-[1.15] tracking-tight">
-                Chinh Phục <span className="text-[#6d3807]">4 Kỹ Năng</span> Tiếng Anh Với Trí Tuệ Nhân Tạo
+              <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-extrabold text-ink leading-[1.15] tracking-tight">
+                Chinh Phục <span className="text-brand-600">4 Kỹ Năng</span> Tiếng Anh Với Trí Tuệ Nhân Tạo
               </h1>
 
-              <p className="text-base text-[#52443a] leading-relaxed max-w-2xl font-medium">
+              <p className="text-base text-ink-muted leading-relaxed max-w-2xl font-medium">
                 Đồng hành cùng học viên từ Mầm non đến Tiền IELTS. Hệ thống bài thi mô phỏng chuẩn quốc tế, tự động thu âm bài nói, chấm điểm bài viết theo Band Score và báo cáo tiến bộ liên tục.
               </p>
 
@@ -218,23 +218,23 @@ export default function StudentLandingPage() {
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link
                   href="/student/exam/test_01"
-                  className="px-7 py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2 font-headline uppercase tracking-wider"
+                  className="px-7 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2 font-headline uppercase tracking-wider"
                 >
-                  <PlayCircle className="w-4 h-4 fill-white text-[#6d3807]" />
+                  <PlayCircle className="w-4 h-4 fill-white text-brand-600" />
                   <span>Vào Làm Đề Thi Thử (Free Mock Test)</span>
                 </Link>
 
                 <a
                   href="#contact-form"
-                  className="px-6 py-3.5 bg-white text-[#6d3807] hover:bg-[#fff1ea] border-2 border-[#6d3807] font-bold text-xs rounded-xl transition-all font-headline shadow-2xs flex items-center space-x-2 uppercase tracking-wider"
+                  className="px-6 py-3.5 bg-white text-brand-600 hover:bg-brand-50 border-2 border-brand-600 font-bold text-xs rounded-xl transition-all font-headline shadow-2xs flex items-center space-x-2 uppercase tracking-wider"
                 >
-                  <MessageSquare className="w-4 h-4 text-[#6d3807]" />
+                  <MessageSquare className="w-4 h-4 text-brand-600" />
                   <span>Đăng Ký Tư Vấn &amp; Test Đầu Vào</span>
                 </a>
               </div>
 
               {/* Trust Indicators */}
-              <div className="pt-6 border-t border-[#d8c2b6]/60 grid grid-cols-3 gap-4 text-xs font-medium text-[#52443a]">
+              <div className="pt-6 border-t border-line/60 grid grid-cols-3 gap-4 text-xs font-medium text-ink-muted">
                 <div className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Chấm Writing &amp; Speaking AI</span>
@@ -256,20 +256,20 @@ export default function StudentLandingPage() {
                 <div className="relative aspect-video sm:aspect-square rounded-2xl overflow-hidden">
                   <Image
                     src="/hero_banner.jpg"
-                    alt="Học sinh luyện tiếng Anh 4 kỹ năng tại AURA English"
+                    alt="Học sinh luyện tiếng Anh 4 kỹ năng tại KitoKit"
                     fill
                     className="object-cover hover:scale-105 transition-all duration-700"
                     priority
                   />
                 </div>
-                <div className="p-4 bg-white rounded-xl mt-2 flex items-center justify-between text-xs border border-[#d8c2b6]/60 shadow-2xs">
+                <div className="p-4 bg-white rounded-xl mt-2 flex items-center justify-between text-xs border border-line/60 shadow-2xs">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-[#fff1ea] flex items-center justify-center text-[#6d3807] font-bold">
-                      <Award className="w-5 h-5 text-[#6d3807]" />
+                    <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold">
+                      <Award className="w-5 h-5 text-brand-600" />
                     </div>
                     <div>
-                      <span className="font-bold text-[#211a16] block">Hơn 50,000+ Học Viên</span>
-                      <span className="text-[11px] text-[#857469]">Đã học tập cùng AURA English</span>
+                      <span className="font-bold text-ink block">Hơn 50,000+ Học Viên</span>
+                      <span className="text-[11px] text-ink-subtle">Đã học tập cùng KitoKit</span>
                     </div>
                   </div>
                   <div className="flex text-amber-500 space-x-0.5">
@@ -285,17 +285,17 @@ export default function StudentLandingPage() {
       </section>
 
       {/* 🏫 Program Tabs Section */}
-      <section id="program-tabs" className="py-20 bg-white border-b border-[#d8c2b6]/40">
+      <section id="program-tabs" className="py-20 bg-white border-b border-line/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Section Heading with clear pill tag margin spacing */}
           <div className="text-center max-w-3xl mx-auto">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] text-xs font-bold font-mono uppercase tracking-wider mb-5">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-brand-50 text-brand-600 border border-line text-xs font-bold font-mono uppercase tracking-wider mb-5">
               CHƯƠNG TRÌNH HỌC PHÂN LẠI THEO ĐỘ TUỔI
             </span>
-            <h2 className="font-headline text-3xl sm:text-4xl font-extrabold text-[#211a16] mt-2">
+            <h2 className="font-headline text-3xl sm:text-4xl font-extrabold text-ink mt-2">
               Lộ Trình Đào Tạo Tiếng Anh Chuyên Biệt
             </h2>
-            <p className="text-sm text-[#52443a] leading-relaxed mt-3">
+            <p className="text-sm text-ink-muted leading-relaxed mt-3">
               Lựa chọn độ tuổi phù hợp để khám phá chương trình học tối ưu nhất cho học sinh từ Mầm non đến Tiền IELTS.
             </p>
           </div>
@@ -306,8 +306,8 @@ export default function StudentLandingPage() {
               onClick={() => setActiveTab("kinder")}
               className={`px-6 py-3.5 rounded-2xl font-headline text-xs font-bold transition-all shadow-2xs flex items-center space-x-2 cursor-pointer ${
                 activeTab === "kinder"
-                  ? "bg-[#6d3807] text-white shadow-md ring-2 ring-[#ffb782]"
-                  : "bg-[#fff8f5] text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-md ring-2 ring-brand-300"
+                  : "bg-surface-alt text-ink-muted hover:bg-brand-50 border border-line"
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -318,8 +318,8 @@ export default function StudentLandingPage() {
               onClick={() => setActiveTab("kids")}
               className={`px-6 py-3.5 rounded-2xl font-headline text-xs font-bold transition-all shadow-2xs flex items-center space-x-2 cursor-pointer ${
                 activeTab === "kids"
-                  ? "bg-[#6d3807] text-white shadow-md ring-2 ring-[#ffb782]"
-                  : "bg-[#fff8f5] text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-md ring-2 ring-brand-300"
+                  : "bg-surface-alt text-ink-muted hover:bg-brand-50 border border-line"
               }`}
             >
               <GraduationCap className="w-4 h-4" />
@@ -330,8 +330,8 @@ export default function StudentLandingPage() {
               onClick={() => setActiveTab("academic")}
               className={`px-6 py-3.5 rounded-2xl font-headline text-xs font-bold transition-all shadow-2xs flex items-center space-x-2 cursor-pointer ${
                 activeTab === "academic"
-                  ? "bg-[#6d3807] text-white shadow-md ring-2 ring-[#ffb782]"
-                  : "bg-[#fff8f5] text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-md ring-2 ring-brand-300"
+                  : "bg-surface-alt text-ink-muted hover:bg-brand-50 border border-line"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -342,8 +342,8 @@ export default function StudentLandingPage() {
               onClick={() => setActiveTab("ielts")}
               className={`px-6 py-3.5 rounded-2xl font-headline text-xs font-bold transition-all shadow-2xs flex items-center space-x-2 cursor-pointer ${
                 activeTab === "ielts"
-                  ? "bg-[#6d3807] text-white shadow-md ring-2 ring-[#ffb782]"
-                  : "bg-[#fff8f5] text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-md ring-2 ring-brand-300"
+                  : "bg-surface-alt text-ink-muted hover:bg-brand-50 border border-line"
               }`}
             >
               <Award className="w-4 h-4" />
@@ -352,28 +352,28 @@ export default function StudentLandingPage() {
           </div>
 
           {/* Tab Content Box */}
-          <div className="bg-[#fff8f5] p-8 sm:p-10 rounded-3xl border-2 border-[#d8c2b6] shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="bg-surface-alt p-8 sm:p-10 rounded-3xl border-2 border-line shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-6 text-left">
               <div className="flex items-center space-x-3">
-                <span className="px-3 py-1 bg-[#6d3807] text-white text-[11px] font-bold rounded-lg uppercase tracking-wider">
+                <span className="px-3 py-1 bg-brand-600 text-white text-[11px] font-bold rounded-lg uppercase tracking-wider">
                   {activeProg.badge}
                 </span>
-                <span className="text-xs font-bold text-[#6d3807] font-mono">{activeProg.age}</span>
+                <span className="text-xs font-bold text-brand-600 font-mono">{activeProg.age}</span>
               </div>
 
-              <h3 className="font-headline text-2xl sm:text-3xl font-bold text-[#211a16]">
+              <h3 className="font-headline text-2xl sm:text-3xl font-bold text-ink">
                 {activeProg.title}
               </h3>
 
-              <p className="text-sm text-[#52443a] leading-relaxed font-medium">
+              <p className="text-sm text-ink-muted leading-relaxed font-medium">
                 {activeProg.description}
               </p>
 
               <div className="space-y-3">
-                <span className="text-xs font-bold text-[#6d3807] uppercase block font-mono">Đặc quyền điểm nhấn khóa học:</span>
+                <span className="text-xs font-bold text-brand-600 uppercase block font-mono">Đặc quyền điểm nhấn khóa học:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {activeProg.features.map((feat, idx) => (
-                    <div key={idx} className="p-3 bg-white rounded-xl border border-[#d8c2b6] flex items-center space-x-2.5 text-xs text-[#211a16] font-semibold">
+                    <div key={idx} className="p-3 bg-white rounded-xl border border-line flex items-center space-x-2.5 text-xs text-ink font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>{feat}</span>
                     </div>
@@ -384,7 +384,7 @@ export default function StudentLandingPage() {
               <div className="pt-4 flex items-center space-x-4">
                 <Link
                   href={activeProg.targetPath}
-                  className="px-6 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white font-bold text-xs rounded-xl shadow-md transition-all font-headline uppercase tracking-wider flex items-center space-x-2"
+                  className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition-all font-headline uppercase tracking-wider flex items-center space-x-2"
                 >
                   <span>{activeProg.ctaText}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -392,7 +392,7 @@ export default function StudentLandingPage() {
 
                 <a
                   href="#contact-form"
-                  className="px-5 py-3 bg-white hover:bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] font-bold text-xs rounded-xl transition-all font-headline"
+                  className="px-5 py-3 bg-white hover:bg-brand-50 text-brand-600 border border-line font-bold text-xs rounded-xl transition-all font-headline"
                 >
                   Tư Vấn Miễn Phí
                 </a>
@@ -400,23 +400,23 @@ export default function StudentLandingPage() {
             </div>
 
             {/* Right Tab Showcase Graphic */}
-            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-4 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center mx-auto font-bold">
+            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-line shadow-sm space-y-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto font-bold">
                 {activeTab === "kinder" && <Sparkles className="w-8 h-8" />}
                 {activeTab === "kids" && <GraduationCap className="w-8 h-8" />}
                 {activeTab === "academic" && <BookOpen className="w-8 h-8" />}
                 {activeTab === "ielts" && <Award className="w-8 h-8" />}
               </div>
 
-              <h4 className="font-bold text-[#211a16] text-base font-headline">
+              <h4 className="font-bold text-ink text-base font-headline">
                 Khám Phá Trải Nghiệm Học Tập Sinh Động
               </h4>
 
-              <p className="text-xs text-[#52443a] leading-relaxed">
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Được thiết kế giao diện phù hợp với độ tuổi {activeProg.age}, hỗ trợ làm bài trắc nghiệm, ghép câu, thu âm trực tiếp và nhận điểm số đánh giá chi tiết.
               </p>
 
-              <div className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs text-[#6d3807] font-bold">
+              <div className="p-4 bg-surface-alt rounded-xl border border-line text-xs text-brand-600 font-bold">
                 ⚡ Tự động phân tích điểm theo chuẩn IELTS 9.0 Band Scale
               </div>
             </div>
@@ -425,17 +425,17 @@ export default function StudentLandingPage() {
       </section>
 
       {/* 🎙️ AI 4-Skills Showcase Section */}
-      <section id="ai-features" className="py-20 bg-[#fffbff] border-b border-[#d8c2b6]/40">
+      <section id="ai-features" className="py-20 bg-surface-alt border-b border-line/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           {/* Section Heading with clear pill tag margin spacing */}
           <div className="text-center max-w-3xl mx-auto">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] text-xs font-bold font-mono uppercase tracking-wider mb-5">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-brand-50 text-brand-600 border border-line text-xs font-bold font-mono uppercase tracking-wider mb-5">
               CÔNG NGHỆ ĐỘT PHÁ
             </span>
-            <h2 className="font-headline text-3xl sm:text-4xl font-extrabold text-[#211a16] mt-2">
+            <h2 className="font-headline text-3xl sm:text-4xl font-extrabold text-ink mt-2">
               Bộ Công Cụ Luyện Thi Tiếng Anh 4 Kỹ Năng
             </h2>
-            <p className="text-sm text-[#52443a] leading-relaxed mt-3">
+            <p className="text-sm text-ink-muted leading-relaxed mt-3">
               Tích hợp trí tuệ nhân tạo AI nâng cao trải nghiệm thi thử và phản hồi chi tiết cho học sinh.
             </p>
           </div>
@@ -443,60 +443,60 @@ export default function StudentLandingPage() {
           {/* 4 Skills Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Reading */}
-            <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center font-bold">
+            <div className="bg-white p-6 rounded-2xl border border-line shadow-sm hover:shadow-md transition-all space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
                 <BookOpen className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-[#211a16] text-base font-headline">1. Reading Passage</h3>
-              <p className="text-xs text-[#52443a] leading-relaxed">
+              <h3 className="font-bold text-ink text-base font-headline">1. Reading Passage</h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Đọc bài song song (Passage Split Pane), câu hỏi trắc nghiệm, kéo thả từ điền khuyết (Fill-in Gaps) và giải thích đáp án chi tiết.
               </p>
-              <div className="pt-2 text-[11px] font-bold text-[#6d3807] flex items-center space-x-1">
+              <div className="pt-2 text-[11px] font-bold text-brand-600 flex items-center space-x-1">
                 <span>Trắc nghiệm &amp; Điền từ</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Listening */}
-            <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center font-bold">
+            <div className="bg-white p-6 rounded-2xl border border-line shadow-sm hover:shadow-md transition-all space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
                 <Headphones className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-[#211a16] text-base font-headline">2. Listening Audio</h3>
-              <p className="text-xs text-[#52443a] leading-relaxed">
+              <h3 className="font-bold text-ink text-base font-headline">2. Listening Audio</h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Trình phát âm thanh Audio Player chuẩn HD, hỗ trợ câu hỏi nghe nói MC, sắp xếp thứ tự câu thoại và AI Voice Generator đa giọng đọc.
               </p>
-              <div className="pt-2 text-[11px] font-bold text-[#6d3807] flex items-center space-x-1">
+              <div className="pt-2 text-[11px] font-bold text-brand-600 flex items-center space-x-1">
                 <span>Audio Realtime AI</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Writing */}
-            <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center font-bold">
+            <div className="bg-white p-6 rounded-2xl border border-line shadow-sm hover:shadow-md transition-all space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
                 <PenTool className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-[#211a16] text-base font-headline">3. Writing Essay AI</h3>
-              <p className="text-xs text-[#52443a] leading-relaxed">
+              <h3 className="font-bold text-ink text-base font-headline">3. Writing Essay AI</h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Trình soạn bài viết với Floating Word Counter. AI chấm bài IELTS Writing 4 tiêu chí (Task Achievement, Coherence, Vocabulary, Grammar).
               </p>
-              <div className="pt-2 text-[11px] font-bold text-[#6d3807] flex items-center space-x-1">
+              <div className="pt-2 text-[11px] font-bold text-brand-600 flex items-center space-x-1">
                 <span>AI Chấm Luận Tự Động</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Speaking */}
-            <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm hover:shadow-md transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center font-bold">
+            <div className="bg-white p-6 rounded-2xl border border-line shadow-sm hover:shadow-md transition-all space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
                 <Mic className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-[#211a16] text-base font-headline">4. Speaking Recorder</h3>
-              <p className="text-xs text-[#52443a] leading-relaxed">
+              <h3 className="font-bold text-ink text-base font-headline">4. Speaking Recorder</h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Bộ thu âm micro trực tiếp trên web (`MediaRecorder`). AI đánh giá phát âm, ngữ điệu, độ trôi chảy và giáo viên thẩm định kết quả.
               </p>
-              <div className="pt-2 text-[11px] font-bold text-[#6d3807] flex items-center space-x-1">
+              <div className="pt-2 text-[11px] font-bold text-brand-600 flex items-center space-x-1">
                 <span>Thu âm &amp; Chấm giọng nói</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -504,31 +504,31 @@ export default function StudentLandingPage() {
           </div>
 
           {/* AI Showcase Image Banner */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-[#d8c2b6] shadow-md grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6 relative aspect-video rounded-2xl overflow-hidden border border-[#d8c2b6]">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-line shadow-md grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6 relative aspect-video rounded-2xl overflow-hidden border border-line">
               <Image
                 src="/skills_showcase.jpg"
-                alt="AURA English AI Speaking & Writing evaluation tool"
+                alt="KitoKit AI Speaking & Writing evaluation tool"
                 fill
                 className="object-cover"
               />
             </div>
 
             <div className="lg:col-span-6 space-y-4 text-left">
-              <span className="inline-block px-3 py-1 bg-[#fff1ea] text-[#6d3807] text-xs font-bold rounded-lg uppercase tracking-wider font-mono mb-2">
+              <span className="inline-block px-3 py-1 bg-brand-50 text-brand-600 text-xs font-bold rounded-lg uppercase tracking-wider font-mono mb-2">
                 TRẢI NGHIỆM ĐỀ THI MẪU REALTIME
               </span>
-              <h3 className="font-headline text-2xl font-bold text-[#211a16]">
+              <h3 className="font-headline text-2xl font-bold text-ink">
                 Thử Sức Ngay Với Đề Thi Mock Test Standard #01
               </h3>
-              <p className="text-xs text-[#52443a] leading-relaxed font-medium">
+              <p className="text-xs text-ink-muted leading-relaxed font-medium">
                 Khám phá giao diện làm bài thi thực tế với 4 kỹ năng hoàn chỉnh. Nộp bài để xem AI chấm điểm tự động bài làm của bạn trong vài giây!
               </p>
               <Link
                 href="/student/exam/test_01"
-                className="inline-flex items-center space-x-2 px-6 py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow-md transition-all font-headline uppercase tracking-wider"
+                className="inline-flex items-center space-x-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md transition-all font-headline uppercase tracking-wider"
               >
-                <Zap className="w-4 h-4 text-[#ffb782]" />
+                <Zap className="w-4 h-4 text-accent-400" />
                 <span>Mở Đề Thi Mock Test Standard #01</span>
               </Link>
             </div>
@@ -537,84 +537,84 @@ export default function StudentLandingPage() {
       </section>
 
       {/* ✍️ Consultation & Placement Test Registration Form */}
-      <section id="contact-form" className="py-20 bg-[#fff8f5] border-b border-[#d8c2b6]/40">
+      <section id="contact-form" className="py-20 bg-surface-alt border-b border-line/40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-center">
           {/* Section Heading with clear pill tag margin spacing */}
           <div>
-            <span className="inline-block px-4 py-1.5 rounded-full bg-white text-[#6d3807] border border-[#d8c2b6] text-xs font-bold font-mono uppercase tracking-wider mb-5">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-white text-brand-600 border border-line text-xs font-bold font-mono uppercase tracking-wider mb-5">
               ĐĂNG KÝ TƯ VẤN &amp; TEST ĐẦU VÀO
             </span>
-            <h2 className="font-headline text-3xl font-extrabold text-[#211a16] mt-2">
+            <h2 className="font-headline text-3xl font-extrabold text-ink mt-2">
               Nhận Lộ Trình Học &amp; Đánh Giá AI Miễn Phí
             </h2>
-            <p className="text-xs text-[#52443a] leading-relaxed mt-3">
-              Điền thông tin bên dưới để đăng ký lịch kiểm tra đầu vào và tư vấn xếp lớp từ AURA English.
+            <p className="text-xs text-ink-muted leading-relaxed mt-3">
+              Điền thông tin bên dưới để đăng ký lịch kiểm tra đầu vào và tư vấn xếp lớp từ KitoKit.
             </p>
           </div>
 
           {isSubmitted ? (
             <div className="p-8 bg-white rounded-3xl border-2 border-emerald-500 shadow-lg text-center space-y-4">
               <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto animate-bounce" />
-              <h3 className="text-xl font-bold text-[#6d3807] font-headline">
+              <h3 className="text-xl font-bold text-brand-600 font-headline">
                 🎉 Đăng Ký Kiểm Tra Đầu Vào Thành Công!
               </h3>
-              <p className="text-xs text-[#52443a] leading-relaxed max-w-md mx-auto">
-                Cảm ơn bạn <strong>{formData.fullName}</strong>! Đội ngũ cố vấn học tập AURA English sẽ liên hệ qua SĐT <strong>{formData.phone}</strong> trong vòng 15 phút để sắp xếp lịch thi test AI cho bé.
+              <p className="text-xs text-ink-muted leading-relaxed max-w-md mx-auto">
+                Cảm ơn bạn <strong>{formData.fullName}</strong>! Đội ngũ cố vấn học tập KitoKit sẽ liên hệ qua SĐT <strong>{formData.phone}</strong> trong vòng 15 phút để sắp xếp lịch thi test AI cho bé.
               </p>
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="px-6 py-2.5 bg-[#6d3807] text-white text-xs font-bold rounded-xl hover:bg-[#8a4f1e] transition-all cursor-pointer font-headline"
+                className="px-6 py-2.5 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition-all cursor-pointer font-headline"
               >
                 Gửi Thêm Đăng Ký Khác
               </button>
             </div>
           ) : (
-            <form onSubmit={handleFormSubmit} className="bg-white p-8 sm:p-10 rounded-3xl border-2 border-[#d8c2b6] shadow-md space-y-5 text-left">
+            <form onSubmit={handleFormSubmit} className="bg-white p-8 sm:p-10 rounded-3xl border-2 border-line shadow-md space-y-5 text-left">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-[#6d3807] uppercase">Họ và Tên Phụ Huynh / Học Sinh:</label>
+                  <label className="block text-xs font-bold text-brand-600 uppercase">Họ và Tên Phụ Huynh / Học Sinh:</label>
                   <input
                     type="text"
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     placeholder="Ví dụ: Nguyễn Văn An"
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-[#6d3807] uppercase">Số Điện Thoại Zalo:</label>
+                  <label className="block text-xs font-bold text-brand-600 uppercase">Số Điện Thoại Zalo:</label>
                   <input
                     type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="Ví dụ: 0912 345 678"
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-[#6d3807] uppercase">Địa Chỉ Email:</label>
+                  <label className="block text-xs font-bold text-brand-600 uppercase">Địa Chỉ Email:</label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="Ví dụ: phuhuynh@gmail.com"
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-[#6d3807] uppercase">Độ Tuổi / Trình Độ Của Học Sinh:</label>
+                  <label className="block text-xs font-bold text-brand-600 uppercase">Độ Tuổi / Trình Độ Của Học Sinh:</label>
                   <select
                     value={formData.ageGroup}
                     onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807] cursor-pointer"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600 cursor-pointer"
                   >
                     <option value="3-5">Bé 03 - 05 tuổi (Kinder Journey)</option>
                     <option value="6-10">Bé 06 - 10 tuổi (Kid's Hub - Tiểu Học)</option>
@@ -627,13 +627,13 @@ export default function StudentLandingPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 bg-[#6d3807] hover:bg-[#8a4f1e] text-white font-headline text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                className="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-headline text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 uppercase tracking-wider disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? (
                   <span>Đang gửi thông tin...</span>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 text-[#ffb782]" />
+                    <Send className="w-4 h-4 text-accent-400" />
                     <span>Gửi Đăng Ký Tư Vấn &amp; Xếp Lịch Test AI</span>
                   </>
                 )}
@@ -644,15 +644,15 @@ export default function StudentLandingPage() {
       </section>
 
       {/* ❓ FAQ Accordion Section */}
-      <section id="faqs" className="py-20 bg-white border-b border-[#d8c2b6]/40">
+      <section id="faqs" className="py-20 bg-white border-b border-line/40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           {/* Section Heading with clear pill tag margin spacing */}
           <div className="text-center">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] text-xs font-bold font-mono uppercase tracking-wider mb-5">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-brand-50 text-brand-600 border border-line text-xs font-bold font-mono uppercase tracking-wider mb-5">
               CÂU HỎI THƯỜNG GẶP
             </span>
-            <h2 className="font-headline text-3xl font-extrabold text-[#211a16] mt-2">
-              Giải Đáp Thắc Mắc Về Hệ Thống AURA English
+            <h2 className="font-headline text-3xl font-extrabold text-ink mt-2">
+              Giải Đáp Thắc Mắc Về Hệ Thống KitoKit
             </h2>
           </div>
 
@@ -662,22 +662,22 @@ export default function StudentLandingPage() {
               return (
                 <div
                   key={idx}
-                  className="bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] overflow-hidden transition-all shadow-2xs"
+                  className="bg-surface-alt rounded-2xl border border-line overflow-hidden transition-all shadow-2xs"
                 >
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full p-5 text-left font-bold text-xs sm:text-sm text-[#211a16] flex justify-between items-center hover:text-[#6d3807] transition-all cursor-pointer font-headline"
+                    className="w-full p-5 text-left font-bold text-xs sm:text-sm text-ink flex justify-between items-center hover:text-brand-600 transition-all cursor-pointer font-headline"
                   >
                     <span>{faq.q}</span>
                     {isOpen ? (
-                      <ChevronUp className="w-5 h-5 text-[#6d3807] shrink-0" />
+                      <ChevronUp className="w-5 h-5 text-brand-600 shrink-0" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-[#857469] shrink-0" />
+                      <ChevronDown className="w-5 h-5 text-ink-subtle shrink-0" />
                     )}
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 pb-5 text-xs text-[#52443a] leading-relaxed font-medium border-t border-[#d8c2b6]/40 pt-3">
+                    <div className="px-5 pb-5 text-xs text-ink-muted leading-relaxed font-medium border-t border-line/40 pt-3">
                       {faq.a}
                     </div>
                   )}
@@ -689,17 +689,17 @@ export default function StudentLandingPage() {
       </section>
 
       {/* ⚓ Footer */}
-      <footer className="bg-[#211a16] text-[#d8c2b6] py-12 border-t border-[#6d3807]">
+      <footer className="bg-ink text-line py-12 border-t border-brand-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-xs">
           {/* Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6d3807] to-[#ffb782] text-white flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-300 text-white flex items-center justify-center font-bold text-sm">
                 <Zap className="w-5 h-5 text-white fill-white" />
               </div>
-              <span className="font-headline font-extrabold text-base text-white">AURA English</span>
+              <span className="font-headline font-extrabold text-base text-white">KitoKit</span>
             </div>
-            <p className="text-[11px] leading-relaxed text-[#a89587]">
+            <p className="text-[11px] leading-relaxed text-ink-subtle">
               Hệ thống Học &amp; Luyện Thi Tiếng Anh 4 Kỹ Năng kết hợp AI Engine &amp; Lớp học Giáo viên.
             </p>
           </div>
@@ -715,21 +715,21 @@ export default function StudentLandingPage() {
             </ul>
           </div>
 
-          {/* Contact Details (AURA English Placeholders) */}
+          {/* Contact Details (KitoKit Placeholders) */}
           <div className="space-y-2">
             <h4 className="font-bold text-white font-headline text-xs uppercase tracking-wider">Thông Tin Liên Hệ</h4>
             <div className="space-y-1.5 text-[11px]">
               <div className="flex items-center space-x-2">
-                <Phone className="w-3.5 h-3.5 text-[#ffb782]" />
-                <span>Hotline: 1900 AURA (1900 8888)</span>
+                <Phone className="w-3.5 h-3.5 text-accent-400" />
+                <span>Hotline: 1900 KitoKit (1900 8888)</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Mail className="w-3.5 h-3.5 text-[#ffb782]" />
+                <Mail className="w-3.5 h-3.5 text-accent-400" />
                 <span>Email: contact@auraenglish.edu.vn</span>
               </div>
               <div className="flex items-center space-x-2">
-                <MapPin className="w-3.5 h-3.5 text-[#ffb782]" />
-                <span>Hệ thống Anh ngữ AURA English</span>
+                <MapPin className="w-3.5 h-3.5 text-accent-400" />
+                <span>Hệ thống Anh ngữ KitoKit</span>
               </div>
             </div>
           </div>
@@ -737,8 +737,8 @@ export default function StudentLandingPage() {
           {/* Copyright */}
           <div className="space-y-2 md:text-right">
             <h4 className="font-bold text-white font-headline text-xs uppercase tracking-wider">Bản Quyền</h4>
-            <p className="text-[11px] text-[#a89587]">
-              &copy; {new Date().getFullYear()} AURA English EdTech Platform. All rights reserved.
+            <p className="text-[11px] text-ink-subtle">
+              &copy; {new Date().getFullYear()} KitoKit EdTech Platform. All rights reserved.
             </p>
           </div>
         </div>

@@ -125,14 +125,14 @@ export default function ExamLibraryPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-line shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#fff1ea] text-[#6d3807] flex items-center justify-center font-bold shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold shadow-xs">
             <FileText className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#211a16] font-headline">Kho Đề Thi</h2>
-            <p className="text-xs text-[#52443a]">
+            <h2 className="text-xl font-bold text-ink font-headline">Kho Đề Thi</h2>
+            <p className="text-xs text-ink-muted">
               Quản lý toàn bộ đề thi đã tạo, chỉnh sửa câu hỏi hoặc gắn đề vào lộ trình khóa học
             </p>
           </div>
@@ -141,15 +141,15 @@ export default function ExamLibraryPanel() {
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
             href="/admin/tests/import"
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffdcc5] border border-[#d8c2b6] rounded-xl text-xs font-bold shadow-2xs transition-all space-x-1.5"
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-xl text-xs font-bold shadow-2xs transition-all space-x-1.5"
           >
-            <Sparkles className="w-4 h-4 text-[#6d3807]" />
+            <Sparkles className="w-4 h-4 text-brand-600" />
             <span>AI Import</span>
           </Link>
 
           <Link
             href="/teacher/tests/create"
-            className="inline-flex items-center justify-center px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow-sm transition-all space-x-2"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all space-x-2"
           >
             <Plus className="w-4 h-4" />
             <span>Tạo đề mới</span>
@@ -158,15 +158,15 @@ export default function ExamLibraryPanel() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#d8c2b6] shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-line shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên đề thi..."
-            className="w-full pl-9 pr-3.5 py-2 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs text-[#211a16] placeholder-[#857469] focus:outline-none focus:border-[#6d3807] transition-all"
+            className="w-full pl-9 pr-3.5 py-2 bg-surface-alt border border-line rounded-xl text-xs text-ink placeholder-ink-subtle focus:outline-none focus:border-brand-600 transition-all"
           />
           {searchQuery && (
             <button
@@ -181,9 +181,9 @@ export default function ExamLibraryPanel() {
 
       {/* 1. Loading State */}
       {isLoading && (
-        <div className="bg-white p-12 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col items-center justify-center text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-[#6d3807]" />
-          <p className="text-xs font-semibold text-[#52443a]">Đang tải danh sách đề thi...</p>
+        <div className="bg-white p-12 rounded-2xl border border-line shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+          <p className="text-xs font-semibold text-ink-muted">Đang tải danh sách đề thi...</p>
         </div>
       )}
 
@@ -209,15 +209,15 @@ export default function ExamLibraryPanel() {
 
       {/* 3. Empty State */}
       {!isLoading && !errorMessage && exams.length === 0 && (
-        <div className="bg-white p-12 rounded-2xl border border-[#d8c2b6] shadow-sm text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#fff1ea] text-[#6d3807] mx-auto flex items-center justify-center">
+        <div className="bg-white p-12 rounded-2xl border border-line shadow-sm text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 mx-auto flex items-center justify-center">
             <FileText className="w-7 h-7" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#211a16]">
+            <h3 className="text-sm font-bold text-ink">
               {isFiltered ? "Không tìm thấy đề thi phù hợp" : "Chưa có đề thi — bấm Tạo đề mới"}
             </h3>
-            <p className="text-xs text-[#52443a] mt-1 max-w-md mx-auto">
+            <p className="text-xs text-ink-muted mt-1 max-w-md mx-auto">
               {isFiltered
                 ? "Hãy thử tìm kiếm từ khóa khác."
                 : "Bắt đầu xây dựng kho đề thi bằng cách tạo bộ đề mới hoặc nhập đề tự động bằng AI."}
@@ -226,7 +226,7 @@ export default function ExamLibraryPanel() {
           {!isFiltered ? (
             <Link
               href="/teacher/tests/create"
-              className="inline-flex items-center px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all space-x-2 shadow-xs"
+              className="inline-flex items-center px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all space-x-2 shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Tạo đề mới</span>
@@ -248,7 +248,7 @@ export default function ExamLibraryPanel() {
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className="bg-white rounded-2xl border border-[#d8c2b6] hover:border-[#6d3807] transition-all p-5 shadow-2xs hover:shadow-md flex flex-col justify-between group"
+              className="bg-white rounded-2xl border border-line hover:border-brand-600 transition-all p-5 shadow-2xs hover:shadow-md flex flex-col justify-between group"
             >
               <div>
                 {/* Top Meta: Skills & Actions */}
@@ -258,7 +258,7 @@ export default function ExamLibraryPanel() {
                       exam.skills.map((sk) => (
                         <span
                           key={sk}
-                          className="px-2 py-0.5 rounded-md bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6]/50 text-[10px] font-bold"
+                          className="px-2 py-0.5 rounded-md bg-brand-50 text-brand-600 border border-line/50 text-[10px] font-bold"
                         >
                           {sk}
                         </span>
@@ -275,14 +275,14 @@ export default function ExamLibraryPanel() {
                       href={`/student/exam/${exam.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 text-[#52443a] hover:text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-colors border border-transparent hover:border-[#d8c2b6]/50"
+                      className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
                       title="Xem thử đề thi"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </Link>
                     <Link
                       href={`/teacher/tests/create?editId=${exam.id}`}
-                      className="p-1.5 text-[#52443a] hover:text-[#6d3807] hover:bg-[#fff1ea] rounded-lg transition-colors border border-transparent hover:border-[#d8c2b6]/50"
+                      className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
                       title="Sửa đề thi"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -305,11 +305,11 @@ export default function ExamLibraryPanel() {
 
                 {/* Title & Description */}
                 <Link href={`/teacher/tests/create?editId=${exam.id}`} className="block">
-                  <h3 className="text-sm font-bold text-[#211a16] group-hover:text-[#6d3807] transition-colors line-clamp-2">
+                  <h3 className="text-sm font-bold text-ink group-hover:text-brand-600 transition-colors line-clamp-2">
                     {exam.title}
                   </h3>
                   {exam.description && (
-                    <p className="text-xs text-[#52443a] mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-ink-muted mt-1 line-clamp-2 leading-relaxed">
                       {exam.description}
                     </p>
                   )}
@@ -317,25 +317,25 @@ export default function ExamLibraryPanel() {
               </div>
 
               {/* Footer Info */}
-              <div className="pt-4 mt-4 border-t border-[#d8c2b6]/40 flex flex-col space-y-2 text-[11px] text-[#52443a]">
+              <div className="pt-4 mt-4 border-t border-line/40 flex flex-col space-y-2 text-[11px] text-ink-muted">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center space-x-3">
-                    <span className="flex items-center space-x-1 font-semibold text-[#6d3807]">
+                    <span className="flex items-center space-x-1 font-semibold text-brand-600">
                       <HelpCircle className="w-3.5 h-3.5" />
                       <span>{exam.question_count} câu</span>
                     </span>
-                    <span className="flex items-center space-x-1 text-[#52443a]">
-                      <Clock className="w-3.5 h-3.5 text-[#857469]" />
+                    <span className="flex items-center space-x-1 text-ink-muted">
+                      <Clock className="w-3.5 h-3.5 text-ink-subtle" />
                       <span>{exam.duration_minutes} phút</span>
                     </span>
                   </div>
                   <span className="flex items-center space-x-1">
-                    <GraduationCap className="w-3.5 h-3.5 text-[#857469]" />
+                    <GraduationCap className="w-3.5 h-3.5 text-ink-subtle" />
                     <span>Dùng trong {exam.usage_count} lộ trình</span>
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-1 text-[#857469] text-[10px]">
+                <div className="flex items-center space-x-1 text-ink-subtle text-[10px]">
                   <Calendar className="w-3 h-3" />
                   <span>
                     Ngày tạo: {exam.created_at ? new Date(exam.created_at).toLocaleString("vi-VN") : "—"}
@@ -356,8 +356,8 @@ export default function ExamLibraryPanel() {
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-bold text-[#211a16]">Không thể xóa đề thi này</h3>
-                <p className="text-xs text-[#52443a] mt-1 leading-relaxed">
+                <h3 className="text-sm font-bold text-ink">Không thể xóa đề thi này</h3>
+                <p className="text-xs text-ink-muted mt-1 leading-relaxed">
                   Đề đang được dùng: {conflictUsages.curriculum} mục lộ trình, {conflictUsages.assignments} lớp giao, {conflictUsages.submissions} bài nộp — gỡ khỏi lộ trình trước khi xoá
                 </p>
               </div>
@@ -366,7 +366,7 @@ export default function ExamLibraryPanel() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setConflictUsages(null)}
-                className="px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
               >
                 Đã hiểu
               </button>

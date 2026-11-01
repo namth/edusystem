@@ -156,15 +156,15 @@ export default function TeacherCreateStudentPage() {
     <TeacherLayout>
       <div className="max-w-[800px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="border-b border-[#d8c2b6]/40 pb-6">
-          <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-            <UserPlus className="w-4 h-4 text-[#004d5e]" />
-            <span>Teacher Portal &bull; Student Account Provisioning</span>
+        <div className="border-b border-line/40 pb-6">
+          <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+            <UserPlus className="w-4 h-4 text-brand-800" />
+            <span>Giáo viên &bull; Student Account Provisioning</span>
           </div>
-          <h1 className="text-3xl font-bold text-[#211a16] tracking-tight font-headline">
+          <h1 className="text-3xl font-bold text-ink tracking-tight font-headline">
             Tạo Tài Khoản Học Sinh &amp; Gán Lớp Học
           </h1>
-          <p className="text-sm text-[#52443a] mt-1">
+          <p className="text-sm text-ink-muted mt-1">
             Tạo tài khoản học sinh qua API PostgreSQL, hệ thống tự cấp mật khẩu tạm ngẫu nhiên an toàn (chỉ hiển thị 1 lần) và gán học sinh vào các lớp học.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function TeacherCreateStudentPage() {
             </div>
             <p className="text-xs">
               Học sinh: <strong>{tempPasswordOnce.name}</strong> &bull; Mật khẩu tạm thời:{" "}
-              <code className="px-2.5 py-1 bg-white border border-amber-300 rounded font-mono font-bold text-sm text-[#6d3807]">
+              <code className="px-2.5 py-1 bg-white border border-amber-300 rounded font-mono font-bold text-sm text-brand-600">
                 {tempPasswordOnce.password}
               </code>
             </p>
@@ -227,14 +227,14 @@ export default function TeacherCreateStudentPage() {
         )}
 
         {/* Create Student Form */}
-        <div className="bg-white p-8 rounded-3xl border border-[#d8c2b6] shadow-sm">
+        <div className="bg-white p-8 rounded-3xl border border-line shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+              <label className="block text-xs font-bold uppercase text-ink mb-1">
                 Họ &amp; Tên Học Sinh (*)
               </label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                 <input
                   type="text"
                   required
@@ -251,64 +251,64 @@ export default function TeacherCreateStudentPage() {
                       setUsername(suggested);
                     }
                   }}
-                  className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                  className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+              <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                 Username Đăng Nhập
               </label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6d3807]" />
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-600" />
                 <input
                   type="text"
                   placeholder="namtran01"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                  className="w-full pl-10 pr-3 py-2.5 bg-[#fff1ea] border border-[#ffb782] rounded-xl text-sm font-bold text-[#6d3807] focus:outline-none"
+                  className="w-full pl-10 pr-3 py-2.5 bg-brand-50 border border-brand-300 rounded-xl text-sm font-bold text-brand-600 focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                <label className="block text-xs font-bold uppercase text-ink mb-1">
                   Email (*)
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                   <input
                     type="email"
                     required
                     placeholder="namtran.student@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                <label className="block text-xs font-bold uppercase text-ink mb-1">
                   Số Điện Thoại (Tùy chọn)
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                   <input
                     type="tel"
                     placeholder="0912345678"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+              <label className="block text-xs font-bold uppercase text-ink mb-1">
                 Mục Tiêu Band Điểm
               </label>
               <input
@@ -316,36 +316,36 @@ export default function TeacherCreateStudentPage() {
                 placeholder="IELTS 7.0"
                 value={targetBand}
                 onChange={(e) => setTargetBand(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
               />
             </div>
 
             {/* Multi-Select Class Checkboxes */}
             <div>
-              <label className="block text-xs font-bold uppercase text-[#6d3807] mb-2 flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase text-brand-600 mb-2 flex items-center justify-between">
                 <span>Chọn Các Lớp Học Tham Gia</span>
-                <span className="text-[#857469] font-normal lowercase">Đã chọn: {selectedClassIds.length} lớp</span>
+                <span className="text-ink-subtle font-normal lowercase">Đã chọn: {selectedClassIds.length} lớp</span>
               </label>
 
               {loadingClasses ? (
-                <div className="p-4 text-xs text-[#52443a] bg-[#fff8f5] rounded-xl border border-[#d8c2b6]">
+                <div className="p-4 text-xs text-ink-muted bg-surface-alt rounded-xl border border-line">
                   Đang tải danh sách lớp học...
                 </div>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto p-4 bg-[#fff1ea] border border-[#ffb782] rounded-2xl">
+                <div className="space-y-2 max-h-48 overflow-y-auto p-4 bg-brand-50 border border-brand-300 rounded-2xl">
                   {classes.map((cls) => (
                     <label
                       key={cls.id}
-                      className="flex items-center space-x-3 text-xs font-medium cursor-pointer p-2 rounded-xl hover:bg-white transition-colors border border-transparent hover:border-[#d8c2b6]"
+                      className="flex items-center space-x-3 text-xs font-medium cursor-pointer p-2 rounded-xl hover:bg-white transition-colors border border-transparent hover:border-line"
                     >
                       <input
                         type="checkbox"
                         checked={selectedClassIds.includes(cls.id)}
                         onChange={() => toggleClassSelection(cls.id)}
-                        className="accent-[#6d3807] w-4 h-4 rounded"
+                        className="accent-brand-600 w-4 h-4 rounded"
                       />
-                      <span className="text-[#211a16] font-bold">{cls.name}</span>
-                      <span className="text-[#857469] font-mono">(Mã: {cls.code})</span>
+                      <span className="text-ink font-bold">{cls.name}</span>
+                      <span className="text-ink-subtle font-mono">(Mã: {cls.code})</span>
                     </label>
                   ))}
                 </div>
@@ -355,12 +355,12 @@ export default function TeacherCreateStudentPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
+              className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Save className="w-4 h-4 text-[#ffb782]" />
+                <Save className="w-4 h-4 text-accent-400" />
               )}
               <span>Tạo Học Sinh &amp; Gán Danh Sách Lớp</span>
             </button>

@@ -1555,8 +1555,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-xs font-bold text-[#6d3807] space-y-2">
-        <Loader2 className="w-6 h-6 animate-spin text-[#6d3807]" />
+      <div className="flex flex-col items-center justify-center py-20 text-xs font-bold text-brand-600 space-y-2">
+        <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
         <span>Đang nạp dữ liệu chỉnh sửa...</span>
       </div>
     );
@@ -1571,21 +1571,21 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     : null;
 
   return (
-    <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
+    <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
       {audioPreviewSrc ? (
         <audio controls src={audioPreviewSrc} className="hidden" autoPlay onError={(e) => console.warn(e)} />
       ) : null}
 
       {/* Creation Mode Tabs (Only for EXAM mode) */}
       {isExamMode && (
-        <div className="flex items-center gap-3 border-b border-[#d8c2b6] pb-3">
+        <div className="flex items-center gap-3 border-b border-line pb-3">
           <button
             type="button"
             onClick={() => setCreationMode("manual")}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               creationMode === "manual"
-                ? "bg-[#6d3807] text-white shadow-xs"
-                : "bg-white text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                ? "bg-brand-600 text-white shadow-xs"
+                : "bg-white text-ink-muted hover:bg-brand-50 border border-line"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -1597,11 +1597,11 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
             onClick={() => setCreationMode("ai-ingest")}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               creationMode === "ai-ingest"
-                ? "bg-[#6d3807] text-white shadow-xs"
-                : "bg-white text-[#52443a] hover:bg-[#fff1ea] border border-[#d8c2b6]"
+                ? "bg-brand-600 text-white shadow-xs"
+                : "bg-white text-ink-muted hover:bg-brand-50 border border-line"
             }`}
           >
-            <Sparkles className="w-4 h-4 text-[#ffb782]" />
+            <Sparkles className="w-4 h-4 text-accent-400" />
             <span>Upload đề thi / bài tập</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold uppercase">
               Mới
@@ -1619,14 +1619,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       ) : (
         <>
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
             <div>
-              <h1 className="font-headline text-3xl font-bold text-[#6d3807] tracking-tight">
+              <h1 className="font-headline text-3xl font-bold text-brand-600 tracking-tight">
                 {isExamMode
                   ? (initialQuestions && initialQuestions.length > 0 ? "Chỉnh Sửa Bộ Đề Thi" : "Soạn Bộ Đề Thi Mới")
                   : (initialQuestions && initialQuestions.length > 0 ? "Chỉnh Sửa Bài Học" : "Soạn Bài Học Mới")}
               </h1>
-              <p className="text-sm text-[#52443a] mt-1">
+              <p className="text-sm text-ink-muted mt-1">
                 {isExamMode
                   ? "Chỉnh sửa thông tin bộ đề, bài đọc/ngữ cảnh HTML phong phú, thêm/bớt và sửa trực tiếp từng câu hỏi trong đề."
                   : "Chỉnh sửa nội dung bài học, bài đọc/ngữ cảnh HTML phong phú, thêm/bớt và sửa trực tiếp từng câu hỏi trong bài."}
@@ -1636,12 +1636,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
             <button
               onClick={handleSave}
               disabled={Boolean(isSubmitting || !testTitle.trim())}
-              className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 font-headline disabled:opacity-50 shrink-0 cursor-pointer"
+              className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 font-headline disabled:opacity-50 shrink-0 cursor-pointer"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Save className="w-4 h-4 text-[#ffb782]" />
+                <Save className="w-4 h-4 text-accent-400" />
               )}
               <span>
                 {saveLabel ||
@@ -1662,13 +1662,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
             {/* Main Question Authoring Form Pane */}
             <div className="lg:col-span-8 space-y-6">
               {/* Metadata */}
-              <div className="bg-[#ffffff] p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-                <h2 className="text-base font-bold text-[#6d3807]">
+              <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+                <h2 className="text-base font-bold text-brand-600">
                   {isExamMode ? "Thông Tin Tổng Quan Đề Thi" : "Thông Tin Tổng Quan Bài Học"}
                 </h2>
                 <div className={`grid grid-cols-1 ${isExamMode ? "md:grid-cols-4" : "md:grid-cols-1"} gap-4`}>
                   <div className={isExamMode ? "md:col-span-2" : ""}>
-                    <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                    <label className="block text-xs font-bold uppercase text-ink mb-1">
                       {isExamMode ? "Tên Đề Thi / Bài Tập (*)" : "Tên Bài Học (*)"}
                     </label>
                     <input
@@ -1677,19 +1677,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       placeholder={isExamMode ? "Ví dụ: IELTS Vocabulary & Grammar Mastery #05" : "Ví dụ: Bài 01 - Từ vựng chủ đề Môi trường"}
                       value={testTitle}
                       onChange={(e) => setTestTitle(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                      className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
                   {isExamMode && (
                     <>
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                        <label className="block text-xs font-bold uppercase text-ink mb-1">
                           Khóa Học / Category (*)
                         </label>
                         <select
                           value={selectedCourseId}
                           onChange={(e) => setSelectedCourseId(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807] font-medium text-[#6d3807]"
+                          className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600 font-medium text-brand-600"
                         >
                           {coursesList.map((course) => (
                             <option key={course.id} value={course.id}>
@@ -1699,14 +1699,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                        <label className="block text-xs font-bold uppercase text-ink mb-1">
                           Thời Gian (Phút)
                         </label>
                         <input
                           type="number"
                           value={duration}
                           onChange={(e) => setDuration(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                          className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                         />
                       </div>
                     </>
@@ -1715,13 +1715,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                 {isExamMode && (
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                    <label className="block text-xs font-bold uppercase text-ink mb-1">
                       Chuẩn chấm điểm
                     </label>
                     <select
                       value={selectedStandardId || ""}
                       onChange={(e) => setSelectedStandardId(e.target.value ? e.target.value : null)}
-                      className="w-full px-3.5 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807] font-medium text-[#6d3807]"
+                      className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600 font-medium text-brand-600"
                     >
                       <option value="">— Theo khóa học / mặc định —</option>
                       {scoringStandards.map((std) => (
@@ -1731,15 +1731,15 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       ))}
                     </select>
                     {!selectedStandardId && currentCourseDefaultStd && (
-                      <p className="text-[11px] text-[#857469] mt-1">
-                        Gợi ý chuẩn mặc định của khóa: <strong className="text-[#6d3807]">{currentCourseDefaultStd.name} {currentCourseDefaultStd.framework ? `(${currentCourseDefaultStd.framework})` : ""}</strong>
+                      <p className="text-[11px] text-ink-subtle mt-1">
+                        Gợi ý chuẩn mặc định của khóa: <strong className="text-brand-600">{currentCourseDefaultStd.name} {currentCourseDefaultStd.framework ? `(${currentCourseDefaultStd.framework})` : ""}</strong>
                       </p>
                     )}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     {isExamMode ? "Mô Tả / Hướng Dẫn Tổng Quan Bài Thi" : "Mô Tả / Hướng Dẫn Tổng Quan Bài Học"}
                   </label>
                   <textarea
@@ -1747,29 +1747,29 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                     placeholder="Nhập mô tả hoặc hướng dẫn tổng quan..."
                     value={testDescription}
                     onChange={(e) => setTestDescription(e.target.value)}
-                    className="w-full p-3.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3.5 bg-surface-alt border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
                   />
                 </div>
               </div>
 
               {/* Question Authoring Widget */}
-              <div className={`bg-[#ffffff] p-6 rounded-3xl border transition-all space-y-5 ${editingQuestionNumber ? "border-[#6d3807] ring-2 ring-[#ffb782]/40 shadow-md" : "border-[#d8c2b6] shadow-sm"}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#d8c2b6]/40 pb-4">
+              <div className={`bg-white p-6 rounded-3xl border transition-all space-y-5 ${editingQuestionNumber ? "border-brand-600 ring-2 ring-brand-300/40 shadow-md" : "border-line shadow-sm"}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/40 pb-4">
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2">
-                      <Layers className="w-5 h-5 text-[#6d3807]" />
+                    <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                      <Layers className="w-5 h-5 text-brand-600" />
                       <span>{editingQuestionNumber ? `✏️ Đang Chỉnh Sửa Câu Hỏi Số ${editingQuestionNumber}` : "Biên Soạn Câu Hỏi Mới"}</span>
                     </h2>
                   </div>
 
-                  <div className="flex bg-[#fff8f5] p-1 rounded-xl border border-[#d8c2b6]">
+                  <div className="flex bg-surface-alt p-1 rounded-xl border border-line">
                     {(["Reading", "Listening", "Writing", "Speaking"] as const).map((sk) => (
                       <button
                         key={sk}
                         type="button"
                         onClick={() => handleSwitchSkill(sk)}
                         className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
-                          skillType === sk ? "bg-[#6d3807] text-white shadow-sm" : "text-[#52443a] hover:text-[#6d3807]"
+                          skillType === sk ? "bg-brand-600 text-white shadow-sm" : "text-ink-muted hover:text-brand-600"
                         }`}
                       >
                         <span>{sk}</span>
@@ -1779,16 +1779,16 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                 </div>
 
                 {/* Parent Stimulus Header Builder */}
-                <div className="p-4 rounded-2xl bg-[#fff1ea]/60 border border-[#ffb782] space-y-3">
+                <div className="p-4 rounded-2xl bg-brand-50/60 border border-brand-300 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#6d3807] uppercase flex items-center space-x-1.5">
-                      <Sparkles className="w-4 h-4 text-[#6d3807]" />
+                    <span className="text-xs font-bold text-brand-600 uppercase flex items-center space-x-1.5">
+                      <Sparkles className="w-4 h-4 text-brand-600" />
                       <span>Phần Ngữ Cảnh Bài Tập</span>
                     </span>
                     <select
                       value={stimulusType}
                       onChange={(e: any) => setStimulusType(e.target.value)}
-                      className="px-2.5 py-1 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold text-[#6d3807]"
+                      className="px-2.5 py-1 bg-white border border-line rounded-lg text-xs font-bold text-brand-600"
                     >
                       <option value="TEXT_ONLY">Văn bản (Text Only)</option>
                       <option value="AUDIO_ONLY">Âm thanh (Audio Only)</option>
@@ -1798,7 +1798,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                   {/* Question Prompt */}
                   <div>
-                    <label className="block text-[12px] font-bold text-[#6d3807] mb-1">
+                    <label className="block text-[12px] font-bold text-brand-600 mb-1">
                       Chỉ Dẫn / Hướng Dẫn Bài Tập
                     </label>
                     <input
@@ -1806,13 +1806,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       placeholder="Ví dụ: Đọc đoạn văn sau và hoàn thành các câu hỏi trắc nghiệm..."
                       value={questionPrompt}
                       onChange={(e) => setQuestionPrompt(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#6d3807] focus:outline-none focus:border-[#6d3807] shadow-2xs"
+                      className="w-full px-3.5 py-2 bg-white border border-line rounded-xl text-xs font-bold text-brand-600 focus:outline-none focus:border-brand-600 shadow-2xs"
                     />
                   </div>
 
                   {(stimulusType === "TEXT_ONLY" || stimulusType === "COMBINED") && (
-                    <div className="space-y-2 pt-1 border-t border-[#ffb782]/40">
-                      <label className="block text-[12px] font-bold text-[#6d3807]">
+                    <div className="space-y-2 pt-1 border-t border-brand-300/40">
+                      <label className="block text-[12px] font-bold text-brand-600">
                         Nội Dung Ngữ Cảnh
                       </label>
                       <RichTextEditor
@@ -1824,8 +1824,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                   )}
 
                   {(stimulusType === "AUDIO_ONLY" || stimulusType === "COMBINED") && (
-                    <div className="space-y-2 pt-1 border-t border-[#ffb782]/40 text-xs">
-                      <div className="flex items-center justify-between font-bold text-[#6d3807]">
+                    <div className="space-y-2 pt-1 border-t border-brand-300/40 text-xs">
+                      <div className="flex items-center justify-between font-bold text-brand-600">
                         <span>Âm Thanh Ngữ Cảnh</span>
                         <div className="flex space-x-2">
                           <label className="flex items-center space-x-1 cursor-pointer">
@@ -1833,7 +1833,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               type="radio"
                               checked={stimulusAudioSource === "UPLOAD"}
                               onChange={() => setStimulusAudioSource("UPLOAD")}
-                              className="accent-[#6d3807]"
+                              className="accent-brand-600"
                             />
                             <span>Upload File / Link URL</span>
                           </label>
@@ -1842,7 +1842,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               type="radio"
                               checked={stimulusAudioSource === "TTS"}
                               onChange={() => setStimulusAudioSource("TTS")}
-                              className="accent-[#6d3807]"
+                              className="accent-brand-600"
                             />
                             <span>Giọng đọc AI</span>
                           </label>
@@ -1856,15 +1856,15 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             placeholder="Dán link URL âm thanh (.mp3, .wav) hoặc link Video YouTube..."
                             value={stimulusAudioUrl}
                             onChange={(e) => setStimulusAudioUrl(e.target.value)}
-                            className="w-full px-3.5 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs font-mono text-[#6d3807] focus:outline-none focus:border-[#6d3807] shadow-2xs"
+                            className="w-full px-3.5 py-2 bg-white border border-line rounded-xl text-xs font-mono text-brand-600 focus:outline-none focus:border-brand-600 shadow-2xs"
                           />
                           <div className="flex items-center space-x-2">
-                            <span className="text-[11px] text-[#857469]">Hoặc upload file trực tiếp:</span>
+                            <span className="text-[11px] text-ink-subtle">Hoặc upload file trực tiếp:</span>
                             <input
                               type="file"
                               accept="audio/*"
                               onChange={(e) => handleFileUpload(e, setStimulusAudioUrl)}
-                              className="text-xs text-[#52443a]"
+                              className="text-xs text-ink-muted"
                             />
                           </div>
 
@@ -1882,8 +1882,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             }
                             if (info.type === "AUDIO" && info.rawUrl) {
                               return (
-                                <div className="p-2.5 bg-white border border-[#d8c2b6] rounded-xl flex items-center justify-between shadow-2xs">
-                                  <span className="text-[11px] font-bold text-[#6d3807]">🎵 Preview File Âm Thanh</span>
+                                <div className="p-2.5 bg-white border border-line rounded-xl flex items-center justify-between shadow-2xs">
+                                  <span className="text-[11px] font-bold text-brand-600">🎵 Preview File Âm Thanh</span>
                                   <audio controls src={info.rawUrl} className="h-7 max-w-xs" />
                                 </div>
                               );
@@ -1894,11 +1894,11 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       ) : (
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
-                            <span className="text-[11px] font-bold text-[#52443a]">Chọn giọng đọc AI:</span>
+                            <span className="text-[11px] font-bold text-ink-muted">Chọn giọng đọc AI:</span>
                             <select
                               value={stimulusAudioGender}
                               onChange={(e: any) => setStimulusAudioGender(e.target.value)}
-                              className="px-2 py-1 bg-white border border-[#d8c2b6] rounded-lg text-xs text-[#6d3807] font-bold"
+                              className="px-2 py-1 bg-white border border-line rounded-lg text-xs text-brand-600 font-bold"
                             >
                               <option value="Female">♀ Giọng Nữ</option>
                               <option value="Male">♂ Giọng Nam</option>
@@ -1910,12 +1910,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             placeholder="Nhập nội dung để AI đọc..."
                             value={stimulusAudioText}
                             onChange={(e) => handleStimulusAudioTextChange(e.target.value)}
-                            className="w-full p-2.5 bg-white border border-[#d8c2b6] rounded-xl text-xs focus:outline-none"
+                            className="w-full p-2.5 bg-white border border-line rounded-xl text-xs focus:outline-none"
                           />
 
                           {stimulusAudioText.trim() && (
-                            <div className="p-2.5 bg-white border border-[#d8c2b6] rounded-xl flex items-center justify-between shadow-2xs">
-                              <span className="text-[11px] font-bold text-[#6d3807] flex items-center gap-1">
+                            <div className="p-2.5 bg-white border border-line rounded-xl flex items-center justify-between shadow-2xs">
+                              <span className="text-[11px] font-bold text-brand-600 flex items-center gap-1">
                                 <Volume2 className="w-3.5 h-3.5" />
                                 <span>Preview Âm Thanh AI ({stimulusAudioGender === "Female" ? "Giọng Nữ" : "Giọng Nam"}):</span>
                               </span>
@@ -1952,8 +1952,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             onClick={() => { setReadingCategory(c.id as ReadingQType); resetCategoryStates(); }}
                             className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               readingCategory === c.id
-                                ? "bg-[#fff1ea] border-[#ffb782] text-[#6d3807]"
-                                : "bg-[#fff8f5] border-[#d8c2b6] text-[#52443a]"
+                                ? "bg-brand-50 border-brand-300 text-brand-600"
+                                : "bg-surface-alt border-line text-ink-muted"
                             }`}
                           >
                             {c.label}
@@ -1962,42 +1962,42 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       </div>
 
                       {readingCategory === "READING_MC" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Câu Hỏi Trắc Nghiệm Con ({mcSubQuestions.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Câu Hỏi Trắc Nghiệm Con ({mcSubQuestions.length})</span>
                           <div className="space-y-2">
                             {mcSubQuestions.map((sub, idx) => (
-                              <div key={sub.id} className="p-3 bg-white rounded-xl border border-[#d8c2b6] text-xs flex justify-between items-center">
+                              <div key={sub.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                 <div>
-                                  <span className="font-bold text-[#6d3807]">Câu {idx + 1}: {sub.subQuestionText}</span>
-                                  <div className="text-[11px] text-[#52443a] mt-0.5">Đáp án đúng: <strong>{sub.correctAnswer}</strong></div>
+                                  <span className="font-bold text-brand-600">Câu {idx + 1}: {sub.subQuestionText}</span>
+                                  <div className="text-[11px] text-ink-muted mt-0.5">Đáp án đúng: <strong>{sub.correctAnswer}</strong></div>
                                 </div>
                                 <div className="flex space-x-2">
-                                  <button type="button" onClick={() => handleEditMcSubQ(sub)} className="p-1 text-[#6d3807] hover:bg-[#fff1ea] rounded"><Edit2 className="w-4 h-4" /></button>
+                                  <button type="button" onClick={() => handleEditMcSubQ(sub)} className="p-1 text-brand-600 hover:bg-brand-50 rounded"><Edit2 className="w-4 h-4" /></button>
                                   <button type="button" onClick={() => handleDeleteMcSubQ(sub.id)} className="p-1 text-rose-600 hover:bg-rose-50 rounded"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2">
-                            <input type="text" placeholder="Nội dung câu hỏi con..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs" />
+                          <div className="pt-2 border-t border-line space-y-2">
+                            <input type="text" placeholder="Nội dung câu hỏi con..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
                             <div className="grid grid-cols-2 gap-2">
-                              <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                              <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-[#211a16] mb-1">Đáp Án Đúng:</label>
-                              <select value={subQCorrect} onChange={(e: any) => setSubQCorrect(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold text-emerald-800">
+                              <label className="block text-[11px] font-bold text-ink mb-1">Đáp Án Đúng:</label>
+                              <select value={subQCorrect} onChange={(e: any) => setSubQCorrect(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs font-bold text-emerald-800">
                                 <option value="A">Lựa chọn A</option>
                                 <option value="B">Lựa chọn B</option>
                                 <option value="C">Lựa chọn C</option>
                                 <option value="D">Lựa chọn D</option>
                               </select>
                             </div>
-                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2.5 bg-[#6d3807] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
-                              <Plus className="w-4 h-4 text-[#ffb782]" />
+                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
+                              <Plus className="w-4 h-4 text-accent-400" />
                               <span>{editingSubQId ? "Cập Nhật Câu Hỏi Con" : "Thêm Câu Hỏi Con"}</span>
                             </button>
                           </div>
@@ -2006,19 +2006,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                       {readingCategory === "READING_FILL_IN" && (
                         <div className="space-y-4">
-                          <div className="flex space-x-4 p-2 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs font-bold">
+                          <div className="flex space-x-4 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
                             <label className="flex items-center space-x-1.5 cursor-pointer">
-                              <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-[#6d3807]" />
+                              <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-brand-600" />
                               <span>Ngân hàng từ chung (Option Bank)</span>
                             </label>
                             <label className="flex items-center space-x-1.5 cursor-pointer">
-                              <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-[#6d3807]" />
+                              <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-brand-600" />
                               <span>Dropdown riêng từng ô (Inline Select)</span>
                             </label>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                            <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                               Soạn Đoạn Văn Chứa Đáp Án Trong Ngoặc Vuông <code>[đáp_án_đúng]</code>
                             </label>
                             <textarea
@@ -2026,26 +2026,26 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               value={parenthesesRawText}
                               onChange={(e) => setParenthesesRawText(e.target.value)}
                               placeholder="Ví dụ: Artificial Intelligence is [slowly] transforming... Students learn [flexibly]."
-                              className="w-full p-3.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#6d3807]"
+                              className="w-full p-3.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-brand-600"
                             />
                           </div>
 
                           {fillInSubtype === "OPTION_BANK" ? (
                             <div>
-                              <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                              <label className="block text-xs font-bold uppercase text-ink mb-1">
                                 Ngân Hàng Từ Dùng Chung (Phân cách bằng dấu phẩy)
                               </label>
                               <input
                                 type="text"
                                 value={optionBankWords.join(", ")}
                                 onChange={(e) => setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
-                                className="w-full px-3 py-2 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium"
+                                className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs font-medium"
                               />
                             </div>
                           ) : (
-                            <div className="p-3.5 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6] space-y-3">
-                              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-2">
-                                <span className="text-xs font-bold text-[#6d3807]">
+                            <div className="p-3.5 rounded-2xl bg-surface-alt border border-line space-y-3">
+                              <div className="flex justify-between items-center border-b border-line/40 pb-2">
+                                <span className="text-xs font-bold text-brand-600">
                                   Cấu Hình Bộ Từ Nhiễu Riêng Cho Từng Vị Trí Dropdown ({parseFillInGaps(parenthesesRawText).gaps.length} chỗ trống)
                                 </span>
                               </div>
@@ -2057,9 +2057,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               ) : (
                                 <div className="space-y-2.5">
                                   {parseFillInGaps(parenthesesRawText).gaps.map((correctVal: string, idx: number) => (
-                                    <div key={idx} className="p-3 bg-white rounded-xl border border-[#d8c2b6] space-y-2 text-xs">
+                                    <div key={idx} className="p-3 bg-white rounded-xl border border-line space-y-2 text-xs">
                                       <div className="flex items-center justify-between">
-                                        <span className="font-bold text-[#6d3807]">
+                                        <span className="font-bold text-brand-600">
                                           📍 Vị trí chỗ trống #{idx + 1}
                                         </span>
                                         <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold text-[11px]">
@@ -2067,7 +2067,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                         </span>
                                       </div>
                                       <div className="flex items-center space-x-2">
-                                        <span className="px-3 py-2 bg-[#fff1ea] text-[#6d3807] font-bold text-xs border border-[#ffb782] rounded-xl shrink-0 select-none">
+                                        <span className="px-3 py-2 bg-brand-50 text-brand-600 font-bold text-xs border border-brand-300 rounded-xl shrink-0 select-none">
                                           ✓ {correctVal}
                                         </span>
                                         <input
@@ -2075,7 +2075,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                           placeholder="Nhập các từ gây nhiễu bổ sung (Phân cách bằng dấu phẩy)..."
                                           value={gapDistractorInputs[idx] || ""}
                                           onChange={(e) => setGapDistractorInputs({ ...gapDistractorInputs, [idx]: e.target.value })}
-                                          className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs focus:outline-none focus:border-[#6d3807]"
+                                          className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
                                         />
                                       </div>
                                     </div>
@@ -2089,16 +2089,16 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                       {readingCategory === "READING_ORDERING" && (
                         <div className="space-y-3">
-                          <select value={orderingType} onChange={(e: any) => setOrderingType(e.target.value)} className="w-full px-3 py-2 bg-[#fff1ea] border border-[#ffb782] rounded-xl text-xs font-bold text-[#6d3807]">
+                          <select value={orderingType} onChange={(e: any) => setOrderingType(e.target.value)} className="w-full px-3 py-2 bg-brand-50 border border-brand-300 rounded-xl text-xs font-bold text-brand-600">
                             <option value="SENTENCE_ORDERING">Sắp xếp CÂU (Tách theo dấu chấm .)</option>
                             <option value="WORD_ORDERING">Sắp xếp TỪ (Tách theo khoảng trắng Space)</option>
                           </select>
-                          <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs" />
-                          <div className="p-3.5 rounded-2xl bg-[#fff1ea]/60 border border-[#ffb782]/60 space-y-1.5">
-                            <span className="text-[11px] font-bold text-[#6d3807] uppercase block">Kết Quả Tách Câu/Từ Preview:</span>
+                          <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
+                          <div className="p-3.5 rounded-2xl bg-brand-50/60 border border-brand-300/60 space-y-1.5">
+                            <span className="text-[11px] font-bold text-brand-600 uppercase block">Kết Quả Tách Câu/Từ Preview:</span>
                             <div className="flex flex-wrap gap-1.5">
                               {orderingItems.map((item, i) => (
-                                <span key={i} className="px-2.5 py-1 bg-white border border-[#d8c2b6] rounded-lg text-xs text-[#211a16] font-medium shadow-sm">
+                                <span key={i} className="px-2.5 py-1 bg-white border border-line rounded-lg text-xs text-ink font-medium shadow-sm">
                                   #{i + 1}: {item}
                                 </span>
                               ))}
@@ -2108,62 +2108,62 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       )}
 
                       {readingCategory === "READING_MATCHING" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Cặp Từ Đã Nhập ({matchingPairs.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Cặp Từ Đã Nhập ({matchingPairs.length})</span>
                           <div className="space-y-2">
                             {matchingPairs.map((pair) => (
-                              <div key={pair.id} className="flex items-center justify-between p-2.5 rounded-xl border border-[#ffb782] bg-white text-xs">
-                                <span className="font-bold text-[#211a16]">{pair.left} ↔ {pair.right}</span>
+                              <div key={pair.id} className="flex items-center justify-between p-2.5 rounded-xl border border-brand-300 bg-white text-xs">
+                                <span className="font-bold text-ink">{pair.left} ↔ {pair.right}</span>
                                 <div className="flex space-x-2">
-                                  <button type="button" onClick={() => handleEditMatchingPair(pair)} className="text-[#6d3807]"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button type="button" onClick={() => handleEditMatchingPair(pair)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
                                   <button type="button" onClick={() => handleDeleteMatchingPair(pair.id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             ))}
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                           </div>
-                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                             {editingPairId ? "Cập Nhật Cặp Nối" : "Thêm Cặp Nối"}
                           </button>
                         </div>
                       )}
 
                       {readingCategory === "READING_FLASHCARD_SET" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Tập Hợp Flashcards ({flashcardsList.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Tập Hợp Flashcards ({flashcardsList.length})</span>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {flashcardsList.map((fc) => (
-                              <div key={fc.id} className="p-3 bg-white rounded-2xl border border-[#d8c2b6] text-xs flex flex-col space-y-2 relative">
+                              <div key={fc.id} className="p-3 bg-white rounded-2xl border border-line text-xs flex flex-col space-y-2 relative">
                                 {fc.imageUrl && (
-                                  <div className="w-full h-28 rounded-xl overflow-hidden border border-[#d8c2b6]/60 relative">
+                                  <div className="w-full h-28 rounded-xl overflow-hidden border border-line/60 relative">
                                     <img src={fc.imageUrl} alt={fc.vietnameseName} className="w-full h-full object-cover" />
                                   </div>
                                 )}
                                 <div className="flex-1 space-y-1">
-                                  <span className="font-bold text-[#211a16] block">{fc.vietnameseName}</span>
+                                  <span className="font-bold text-ink block">{fc.vietnameseName}</span>
                                   <span className="text-[10px] text-emerald-800 font-bold block">Từ TA đúng: {fc.correctEnglishWord}</span>
                                 </div>
-                                <div className="flex justify-end space-x-1.5 pt-1.5 border-t border-[#d8c2b6]/40">
-                                  <button type="button" onClick={() => handleEditFlashcard(fc)} className="p-1.5 rounded-lg bg-gray-50 border border-[#d8c2b6] text-[#6d3807] hover:bg-[#fff1ea]"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <div className="flex justify-end space-x-1.5 pt-1.5 border-t border-line/40">
+                                  <button type="button" onClick={() => handleEditFlashcard(fc)} className="p-1.5 rounded-lg bg-gray-50 border border-line text-brand-600 hover:bg-brand-50"><Edit2 className="w-3.5 h-3.5" /></button>
                                   <button type="button" onClick={() => handleDeleteFlashcard(fc.id)} className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          <div className="p-3 bg-white rounded-xl border border-[#d8c2b6] space-y-2">
-                            <span className="font-bold text-[#6d3807] block text-[11px]">🔍 Tìm Kiếm Flashcard Đã Có Trong Database:</span>
+                          <div className="p-3 bg-white rounded-xl border border-line space-y-2">
+                            <span className="font-bold text-brand-600 block text-[11px]">🔍 Tìm Kiếm Flashcard Đã Có Trong Database:</span>
                             <input
                               type="text"
                               placeholder="Gõ từ tiếng Anh hoặc tiếng Việt để tìm..."
                               value={fcSearchQuery}
                               onChange={(e) => handleSearchFlashcards(e.target.value)}
-                              className="w-full px-3 py-1.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-lg text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                              className="w-full px-3 py-1.5 bg-surface-alt border border-line rounded-lg text-xs font-medium focus:outline-none focus:border-brand-600"
                             />
-                            {isSearchingFc && <p className="text-[10px] text-[#857469]">Đang tìm kiếm...</p>}
+                            {isSearchingFc && <p className="text-[10px] text-ink-subtle">Đang tìm kiếm...</p>}
                             {fcSearchResults.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 pt-1">
                                 {fcSearchResults.map((fc) => (
@@ -2171,7 +2171,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                     key={fc.id}
                                     type="button"
                                     onClick={() => handleSelectExistingFc(fc)}
-                                    className="px-2.5 py-1 bg-[#fff1ea] border border-[#ffb782] rounded-lg text-xs font-bold text-[#6d3807] hover:bg-[#6d3807] hover:text-white transition-all flex items-center space-x-1"
+                                    className="px-2.5 py-1 bg-brand-50 border border-brand-300 rounded-lg text-xs font-bold text-brand-600 hover:bg-brand-600 hover:text-white transition-all flex items-center space-x-1"
                                   >
                                     <span>+ {fc.vietnamese_name} ({fc.correct_english_word})</span>
                                   </button>
@@ -2180,20 +2180,20 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             )}
                           </div>
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2 text-xs">
-                            <span className="font-bold text-[#6d3807] block">Tạo Mới Flashcard:</span>
+                          <div className="pt-2 border-t border-line space-y-2 text-xs">
+                            <span className="font-bold text-brand-600 block">Tạo Mới Flashcard:</span>
                             {fcImageUrl && (
-                              <div className="w-24 h-24 rounded-xl border border-[#d8c2b6] overflow-hidden bg-black/5">
+                              <div className="w-24 h-24 rounded-xl border border-line overflow-hidden bg-black/5">
                                 <img src={fcImageUrl} alt="Flashcard preview" className="w-full h-full object-cover" />
                               </div>
                             )}
-                            <input type="text" placeholder="URL Ảnh minh họa..." value={fcImageUrl} onChange={(e) => setFcImageUrl(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                            <input type="text" placeholder="URL Ảnh minh họa..." value={fcImageUrl} onChange={(e) => setFcImageUrl(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             <div className="grid grid-cols-2 gap-2">
-                              <input type="text" placeholder="Nghĩa TV" value={fcVnName} onChange={(e) => setFcVnName(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="Từ TA đúng" value={fcEngWord} onChange={(e) => setFcEngWord(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                              <input type="text" placeholder="Nghĩa TV" value={fcVnName} onChange={(e) => setFcVnName(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="Từ TA đúng" value={fcEngWord} onChange={(e) => setFcEngWord(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
-                            <input type="text" placeholder="Các lựa chọn trắc nghiệm (phân cách bằng dấu phẩy)..." value={fcOptionsInput} onChange={(e) => setFcOptionsInput(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                            <button type="button" onClick={handleAddOrUpdateFlashcard} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                            <input type="text" placeholder="Các lựa chọn trắc nghiệm (phân cách bằng dấu phẩy)..." value={fcOptionsInput} onChange={(e) => setFcOptionsInput(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                            <button type="button" onClick={handleAddOrUpdateFlashcard} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                               {editingFcId ? "Cập Nhật Card" : "Lưu Flashcard Mới Vào Database & Thêm Vào Đề"}
                             </button>
                           </div>
@@ -2218,8 +2218,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             onClick={() => { setListeningCategory(c.id as ListeningQType); resetCategoryStates(); }}
                             className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               listeningCategory === c.id
-                                ? "bg-[#fff1ea] border-[#ffb782] text-[#6d3807]"
-                                : "bg-[#fff8f5] border-[#d8c2b6] text-[#52443a]"
+                                ? "bg-brand-50 border-brand-300 text-brand-600"
+                                : "bg-surface-alt border-line text-ink-muted"
                             }`}
                           >
                             {c.label}
@@ -2228,8 +2228,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       </div>
 
                       {listeningCategory === "LISTENING_MC" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Danh Sách Câu Hỏi Trắc Nghiệm Audio Con ({mcSubQuestions.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Danh Sách Câu Hỏi Trắc Nghiệm Audio Con ({mcSubQuestions.length})</span>
                           <div className="space-y-2">
                             {mcSubQuestions.map((sub, idx) => {
                               const isThisSubQ = subQAudioState.playingSubQId === sub.id;
@@ -2237,9 +2237,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               const isPlayingThis = isThisSubQ && subQAudioState.status === "PLAYING";
 
                               return (
-                                <div key={sub.id} className="p-3 bg-white rounded-xl border border-[#d8c2b6] text-xs flex justify-between items-center">
+                                <div key={sub.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                   <div>
-                                    <span className="font-bold text-[#211a16]">Câu {idx + 1}: {sub.subQuestionText}</span>
+                                    <span className="font-bold text-ink">Câu {idx + 1}: {sub.subQuestionText}</span>
                                     <div className="pt-1.5">
                                       <button
                                         type="button"
@@ -2247,21 +2247,21 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                           e.stopPropagation();
                                           handleToggleSubQAudioInline(sub);
                                         }}
-                                        className="text-[11px] text-[#6d3807] font-bold border border-[#d8c2b6] bg-[#fff1ea] hover:bg-[#ffb783] px-2.5 py-1 rounded-lg flex items-center space-x-1.5 transition-all shadow-2xs cursor-pointer"
+                                        className="text-[11px] text-brand-600 font-bold border border-line bg-brand-50 hover:bg-brand-300 px-2.5 py-1 rounded-lg flex items-center space-x-1.5 transition-all shadow-2xs cursor-pointer"
                                       >
                                         {isLoadingThis ? (
                                           <>
-                                            <Loader2 className="w-3.5 h-3.5 text-[#6d3807] animate-spin" />
+                                            <Loader2 className="w-3.5 h-3.5 text-brand-600 animate-spin" />
                                             <span>Đang nạp audio...</span>
                                           </>
                                         ) : isPlayingThis ? (
                                           <>
-                                            <Volume2 className="w-3.5 h-3.5 text-[#6d3807] animate-bounce" />
+                                            <Volume2 className="w-3.5 h-3.5 text-brand-600 animate-bounce" />
                                             <span>Đang phát bài nghe...</span>
                                           </>
                                         ) : (
                                           <>
-                                            <Volume2 className="w-3.5 h-3.5 text-[#6d3807]" />
+                                            <Volume2 className="w-3.5 h-3.5 text-brand-600" />
                                             <span>Nghe âm thanh</span>
                                           </>
                                         )}
@@ -2269,7 +2269,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                     </div>
                                   </div>
                                   <div className="flex space-x-2">
-                                    <button type="button" onClick={() => handleEditMcSubQ(sub)} className="text-[#6d3807]"><Edit2 className="w-3.5 h-3.5" /></button>
+                                    <button type="button" onClick={() => handleEditMcSubQ(sub)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
                                     <button type="button" onClick={() => handleDeleteMcSubQ(sub.id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
                                   </div>
                                 </div>
@@ -2277,38 +2277,38 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             })}
                           </div>
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2">
-                            <input type="text" placeholder="Câu hỏi trắc nghiệm con..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs" />
-                            <div className="p-2.5 rounded-xl bg-white border border-[#d8c2b6] space-y-2 text-xs">
-                              <span className="font-bold text-[#6d3807] block">Âm thanh cho câu hỏi con này (Tùy chọn)</span>
+                          <div className="pt-2 border-t border-line space-y-2">
+                            <input type="text" placeholder="Câu hỏi trắc nghiệm con..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
+                            <div className="p-2.5 rounded-xl bg-white border border-line space-y-2 text-xs">
+                              <span className="font-bold text-brand-600 block">Âm thanh cho câu hỏi con này (Tùy chọn)</span>
                               <div className="flex space-x-3">
                                 <label className="flex items-center space-x-1.5">
-                                  <input type="radio" checked={subQAudioSource === "NONE"} onChange={() => setSubQAudioSource("NONE")} className="accent-[#6d3807]" />
+                                  <input type="radio" checked={subQAudioSource === "NONE"} onChange={() => setSubQAudioSource("NONE")} className="accent-brand-600" />
                                   <span>Không dùng</span>
                                 </label>
                                 <label className="flex items-center space-x-1.5">
-                                  <input type="radio" checked={subQAudioSource === "TTS"} onChange={() => setSubQAudioSource("TTS")} className="accent-[#6d3807]" />
+                                  <input type="radio" checked={subQAudioSource === "TTS"} onChange={() => setSubQAudioSource("TTS")} className="accent-brand-600" />
                                   <span>Giọng đọc AI</span>
                                 </label>
                               </div>
                               {subQAudioSource === "TTS" && (
                                 <div className="space-y-1.5">
                                   <div className="flex items-center space-x-2">
-                                    <span className="text-[11px] font-bold text-[#52443a]">Chọn giọng đọc AI:</span>
-                                    <select value={subQAudioGender} onChange={(e: any) => setSubQAudioGender(e.target.value)} className="px-2 py-0.5 bg-white border border-[#d8c2b6] rounded text-xs text-[#6d3807] font-bold">
+                                    <span className="text-[11px] font-bold text-ink-muted">Chọn giọng đọc AI:</span>
+                                    <select value={subQAudioGender} onChange={(e: any) => setSubQAudioGender(e.target.value)} className="px-2 py-0.5 bg-white border border-line rounded text-xs text-brand-600 font-bold">
                                       <option value="Female">♀ Giọng Nữ</option>
                                       <option value="Male">♂ Giọng Nam</option>
                                     </select>
                                   </div>
                                   <div className="flex space-x-2">
-                                    <input type="text" placeholder="Văn bản AI đọc..." value={subQAudioText} onChange={(e) => setSubQAudioText(e.target.value)} className="flex-1 px-3 py-1.5 bg-gray-50 border border-[#d8c2b6] rounded-lg text-xs" />
+                                    <input type="text" placeholder="Văn bản AI đọc..." value={subQAudioText} onChange={(e) => setSubQAudioText(e.target.value)} className="flex-1 px-3 py-1.5 bg-gray-50 border border-line rounded-lg text-xs" />
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleToggleSubQAudioInline(null, subQAudioText || subQText, subQAudioGender);
                                       }}
-                                      className="px-2.5 py-1 bg-[#6d3807] text-white rounded-lg text-xs font-bold flex items-center space-x-1 shrink-0 cursor-pointer"
+                                      className="px-2.5 py-1 bg-brand-600 text-white rounded-lg text-xs font-bold flex items-center space-x-1 shrink-0 cursor-pointer"
                                     >
                                       {subQAudioState.playingSubQId === "temp_form_subq" && subQAudioState.status === "LOADING" ? (
                                         <>
@@ -2333,20 +2333,20 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                               {subQAudioSource === "UPLOAD" && (
                                 <div className="space-y-1">
-                                  <span className="text-[10px] text-[#52443a] block">Tải file âm thanh lên cho câu hỏi con:</span>
-                                  <input type="file" accept="audio/*" onChange={(e) => handleFileUpload(e, setSubQAudioUrl)} className="text-xs text-[#52443a]" />
+                                  <span className="text-[10px] text-ink-muted block">Tải file âm thanh lên cho câu hỏi con:</span>
+                                  <input type="file" accept="audio/*" onChange={(e) => handleFileUpload(e, setSubQAudioUrl)} className="text-xs text-ink-muted" />
                                 </div>
                               )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-2">
-                              <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                              <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
 
-                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                               {editingSubQId ? "Cập Nhật Câu Con" : "Thêm Câu Con"}
                             </button>
                           </div>
@@ -2355,19 +2355,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                       {listeningCategory === "LISTENING_FILL_IN" && (
                         <div className="space-y-4 font-sans">
-                          <div className="flex space-x-4 p-2 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs font-bold">
+                          <div className="flex space-x-4 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
                             <label className="flex items-center space-x-1.5 cursor-pointer">
-                              <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-[#6d3807]" />
+                              <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-brand-600" />
                               <span>Ngân hàng từ chung (Option Bank)</span>
                             </label>
                             <label className="flex items-center space-x-1.5 cursor-pointer">
-                              <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-[#6d3807]" />
+                              <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-brand-600" />
                               <span>Dropdown riêng từng ô (Inline Select)</span>
                             </label>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                            <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                               Soạn Đoạn Văn Chứa Đáp Án Trong Ngoặc Vuông <code>[đáp_án_đúng]</code>
                             </label>
                             <textarea
@@ -2375,34 +2375,34 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               value={parenthesesRawText}
                               onChange={(e) => setParenthesesRawText(e.target.value)}
                               placeholder="Ví dụ: Artificial Intelligence is [slowly] transforming..."
-                              className="w-full p-3.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#6d3807]"
+                              className="w-full p-3.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-brand-600"
                             />
                           </div>
 
                           {fillInSubtype === "OPTION_BANK" ? (
                             <div>
-                              <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                              <label className="block text-xs font-bold uppercase text-ink mb-1">
                                 Ngân Hàng Từ Dùng Chung
                               </label>
                               <input
                                 type="text"
                                 value={optionBankWords.join(", ")}
                                 onChange={(e) => setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
-                                className="w-full px-3 py-2 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium"
+                                className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs font-medium"
                               />
                             </div>
                           ) : (
-                            <div className="p-3.5 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6] space-y-3">
+                            <div className="p-3.5 rounded-2xl bg-surface-alt border border-line space-y-3">
                               {parseFillInGaps(parenthesesRawText).gaps.map((correctVal: string, idx: number) => (
-                                <div key={idx} className="p-3 bg-white rounded-xl border border-[#d8c2b6] space-y-2 text-xs">
+                                <div key={idx} className="p-3 bg-white rounded-xl border border-line space-y-2 text-xs">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-bold text-[#6d3807]">📍 Vị trí #{idx + 1}</span>
+                                    <span className="font-bold text-brand-600">📍 Vị trí #{idx + 1}</span>
                                     <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold text-[11px]">
                                       Đáp án: "{correctVal}"
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
-                                    <span className="px-3 py-2 bg-[#fff1ea] text-[#6d3807] font-bold text-xs border border-[#ffb782] rounded-xl shrink-0 select-none">
+                                    <span className="px-3 py-2 bg-brand-50 text-brand-600 font-bold text-xs border border-brand-300 rounded-xl shrink-0 select-none">
                                       ✓ {correctVal}
                                     </span>
                                     <input
@@ -2410,7 +2410,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                       placeholder="Từ gây nhiễu..."
                                       value={gapDistractorInputs[idx] || ""}
                                       onChange={(e) => setGapDistractorInputs({ ...gapDistractorInputs, [idx]: e.target.value })}
-                                      className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs focus:outline-none focus:border-[#6d3807]"
+                                      className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
                                     />
                                   </div>
                                 </div>
@@ -2421,17 +2421,17 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       )}
 
                       {listeningCategory === "LISTENING_ORDERING" && (
-                        <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs" />
+                        <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
                       )}
 
                       {listeningCategory === "LISTENING_MATCHING" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Cặp Nối Từ Listening</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Cặp Nối Từ Listening</span>
                           <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                           </div>
-                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                             Thêm Cặp Nối
                           </button>
                         </div>
@@ -2450,19 +2450,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           { id: "WRITING_SHORT_ANSWER", label: "Trả Lời Câu Hỏi Ngắn" },
                           { id: "WRITING_SENTENCE_REWRITE", label: "Viết Lại Câu" },
                         ].map((c) => (
-                          <button key={c.id} type="button" onClick={() => { setWritingCategory(c.id as WritingQType); resetCategoryStates(); }} className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${writingCategory === c.id ? "bg-[#fff1ea] border-[#ffb782] text-[#6d3807]" : "bg-[#fff8f5] border-[#d8c2b6] text-[#52443a]"}`}>
+                          <button key={c.id} type="button" onClick={() => { setWritingCategory(c.id as WritingQType); resetCategoryStates(); }} className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${writingCategory === c.id ? "bg-brand-50 border-brand-300 text-brand-600" : "bg-surface-alt border-line text-ink-muted"}`}>
                             {c.label}
                           </button>
                         ))}
                       </div>
 
                       {writingCategory === "WRITING_ESSAY" && (
-                        <textarea rows={3} value={essayPromptText} onChange={(e) => setEssayPromptText(e.target.value)} className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs" />
+                        <textarea rows={3} value={essayPromptText} onChange={(e) => setEssayPromptText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
                       )}
 
                       {writingCategory === "WRITING_FREE_TYPING_BLANKS" && (
                         <div>
-                          <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                          <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                             Soạn Đoạn Văn Chứa Đáp Án Trong Ngoặc Vuông <code>[đáp_án_đúng]</code>
                           </label>
                           <textarea
@@ -2470,44 +2470,44 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             value={parenthesesRawText}
                             onChange={(e) => setParenthesesRawText(e.target.value)}
                             placeholder="Ví dụ: To achieve success in IELTS, one must practice [consistently] every day."
-                            className="w-full p-3.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#6d3807]"
+                            className="w-full p-3.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-brand-600"
                           />
                         </div>
                       )}
 
                       {writingCategory === "WRITING_FLASHCARD_SET" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Tập Hợp Flashcards Tự Gõ Từ ({flashcardsList.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Tập Hợp Flashcards Tự Gõ Từ ({flashcardsList.length})</span>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {flashcardsList.map((fc) => (
-                              <div key={fc.id} className="p-3 bg-white rounded-2xl border border-[#d8c2b6] text-xs flex flex-col space-y-2 relative">
+                              <div key={fc.id} className="p-3 bg-white rounded-2xl border border-line text-xs flex flex-col space-y-2 relative">
                                 {fc.imageUrl && (
-                                  <div className="w-full h-28 rounded-xl overflow-hidden border border-[#d8c2b6]/60 relative">
+                                  <div className="w-full h-28 rounded-xl overflow-hidden border border-line/60 relative">
                                     <img src={fc.imageUrl} alt={fc.vietnameseName} className="w-full h-full object-cover" />
                                   </div>
                                 )}
                                 <div className="flex-1 space-y-1">
-                                  <span className="font-bold text-[#211a16] block">{fc.vietnameseName}</span>
+                                  <span className="font-bold text-ink block">{fc.vietnameseName}</span>
                                   <span className="text-[10px] text-emerald-800 font-bold block">Từ khóa: {fc.correctEnglishWord}</span>
                                 </div>
-                                <div className="flex justify-end space-x-1.5 pt-1.5 border-t border-[#d8c2b6]/40">
-                                  <button type="button" onClick={() => handleEditFlashcard(fc)} className="p-1.5 rounded-lg bg-gray-50 border border-[#d8c2b6] text-[#6d3807] hover:bg-[#fff1ea]"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <div className="flex justify-end space-x-1.5 pt-1.5 border-t border-line/40">
+                                  <button type="button" onClick={() => handleEditFlashcard(fc)} className="p-1.5 rounded-lg bg-gray-50 border border-line text-brand-600 hover:bg-brand-50"><Edit2 className="w-3.5 h-3.5" /></button>
                                   <button type="button" onClick={() => handleDeleteFlashcard(fc.id)} className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          <div className="p-3 bg-white rounded-xl border border-[#d8c2b6] space-y-2">
-                            <span className="font-bold text-[#6d3807] block text-[11px]">🔍 Tìm Kiếm Flashcard Đã Có Trong Database:</span>
+                          <div className="p-3 bg-white rounded-xl border border-line space-y-2">
+                            <span className="font-bold text-brand-600 block text-[11px]">🔍 Tìm Kiếm Flashcard Đã Có Trong Database:</span>
                             <input
                               type="text"
                               placeholder="Gõ từ tiếng Anh hoặc tiếng Việt để tìm..."
                               value={fcSearchQuery}
                               onChange={(e) => handleSearchFlashcards(e.target.value)}
-                              className="w-full px-3 py-1.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-lg text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                              className="w-full px-3 py-1.5 bg-surface-alt border border-line rounded-lg text-xs font-medium focus:outline-none focus:border-brand-600"
                             />
-                            {isSearchingFc && <p className="text-[10px] text-[#857469]">Đang tìm kiếm...</p>}
+                            {isSearchingFc && <p className="text-[10px] text-ink-subtle">Đang tìm kiếm...</p>}
                             {fcSearchResults.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 pt-1">
                                 {fcSearchResults.map((fc) => (
@@ -2515,7 +2515,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                     key={fc.id}
                                     type="button"
                                     onClick={() => handleSelectExistingFc(fc)}
-                                    className="px-2.5 py-1 bg-[#fff1ea] border border-[#ffb782] rounded-lg text-xs font-bold text-[#6d3807] hover:bg-[#6d3807] hover:text-white transition-all flex items-center space-x-1 cursor-pointer"
+                                    className="px-2.5 py-1 bg-brand-50 border border-brand-300 rounded-lg text-xs font-bold text-brand-600 hover:bg-brand-600 hover:text-white transition-all flex items-center space-x-1 cursor-pointer"
                                   >
                                     <span>+ {fc.vietnamese_name} ({fc.correct_english_word})</span>
                                   </button>
@@ -2524,19 +2524,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             )}
                           </div>
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2 text-xs">
-                            <span className="font-bold text-[#6d3807] block">Xem Trước Ảnh Minh Họa Đang Biên Soạn:</span>
+                          <div className="pt-2 border-t border-line space-y-2 text-xs">
+                            <span className="font-bold text-brand-600 block">Xem Trước Ảnh Minh Họa Đang Biên Soạn:</span>
                             {fcImageUrl && (
-                              <div className="w-24 h-24 rounded-xl border border-[#d8c2b6] overflow-hidden bg-black/5">
+                              <div className="w-24 h-24 rounded-xl border border-line overflow-hidden bg-black/5">
                                 <img src={fcImageUrl} alt="Flashcard preview" className="w-full h-full object-cover" />
                               </div>
                             )}
-                            <input type="text" placeholder="URL Ảnh minh họa..." value={fcImageUrl} onChange={(e) => setFcImageUrl(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                            <input type="text" placeholder="URL Ảnh minh họa..." value={fcImageUrl} onChange={(e) => setFcImageUrl(e.target.value)} className="w-full px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             <div className="grid grid-cols-2 gap-2">
-                              <input type="text" placeholder="Nghĩa TV" value={fcVnName} onChange={(e) => setFcVnName(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
-                              <input type="text" placeholder="Từ TA đúng để gõ" value={fcEngWord} onChange={(e) => setFcEngWord(e.target.value)} className="px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                              <input type="text" placeholder="Nghĩa TV" value={fcVnName} onChange={(e) => setFcVnName(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="Từ TA đúng để gõ" value={fcEngWord} onChange={(e) => setFcEngWord(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
-                            <button type="button" onClick={handleAddOrUpdateFlashcard} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                            <button type="button" onClick={handleAddOrUpdateFlashcard} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                               Thêm Card
                             </button>
                           </div>
@@ -2544,30 +2544,30 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       )}
 
                       {writingCategory === "WRITING_SHORT_ANSWER" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <span className="text-xs font-bold text-[#6d3807] block">Danh Sách Câu Hỏi Tự Luận Ngắn ({shortAnswersList.length})</span>
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Danh Sách Câu Hỏi Tự Luận Ngắn ({shortAnswersList.length})</span>
                           <div className="space-y-2">
                             {shortAnswersList.map((sa, idx) => (
-                              <div key={sa.id} className="p-3 bg-white rounded-xl border border-[#d8c2b6] text-xs flex justify-between items-center">
+                              <div key={sa.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                 <div>
-                                  <span className="font-bold text-[#211a16]">Q{idx + 1}: {sa.questionText}</span>
-                                  <span className="text-[10px] text-[#857469] block">Giới hạn: {sa.maxWords} từ</span>
+                                  <span className="font-bold text-ink">Q{idx + 1}: {sa.questionText}</span>
+                                  <span className="text-[10px] text-ink-subtle block">Giới hạn: {sa.maxWords} từ</span>
                                 </div>
                                 <div className="flex space-x-2">
-                                  <button type="button" onClick={() => handleEditShortAnswer(sa)} className="text-[#6d3807]"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button type="button" onClick={() => handleEditShortAnswer(sa)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
                                   <button type="button" onClick={() => handleDeleteShortAnswer(sa.id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2">
-                            <input type="text" placeholder="Câu hỏi tự luận ngắn..." value={saQuestionText} onChange={(e) => setSaQuestionText(e.target.value)} className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs" />
+                          <div className="pt-2 border-t border-line space-y-2">
+                            <input type="text" placeholder="Câu hỏi tự luận ngắn..." value={saQuestionText} onChange={(e) => setSaQuestionText(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
                             <div>
-                              <label className="block text-[11px] font-bold text-[#211a16] mb-1">Giới hạn tối đa số từ:</label>
-                              <input type="number" value={saMaxWords} onChange={(e) => setSaMaxWords(Number(e.target.value))} className="w-24 px-3 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs" />
+                              <label className="block text-[11px] font-bold text-ink mb-1">Giới hạn tối đa số từ:</label>
+                              <input type="number" value={saMaxWords} onChange={(e) => setSaMaxWords(Number(e.target.value))} className="w-24 px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
-                            <button type="button" onClick={handleAddOrUpdateShortAnswer} className="w-full py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+                            <button type="button" onClick={handleAddOrUpdateShortAnswer} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                               {editingSaId ? "Cập Nhật Câu Hỏi Tự Luận" : "Thêm Câu Hỏi Tự Luận"}
                             </button>
                           </div>
@@ -2575,12 +2575,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       )}
 
                       {writingCategory === "WRITING_SENTENCE_REWRITE" && (
-                        <div className="space-y-4 p-4 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6]">
-                          <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-2">
-                            <span className="text-xs font-bold text-[#6d3807]">
+                        <div className="space-y-4 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <div className="flex justify-between items-center border-b border-line/40 pb-2">
+                            <span className="text-xs font-bold text-brand-600">
                               Danh Sách Câu Hỏi Viết Lại ({rewriteSubQuestions.length})
                             </span>
-                            <span className="text-[10px] text-[#857469]">
+                            <span className="text-[10px] text-ink-subtle">
                               Đặt từ gợi ý trong ngoặc: <code>[Unless] ...</code>
                             </span>
                           </div>
@@ -2590,10 +2590,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               {rewriteSubQuestions.map((sr, idx) => {
                                 const { cue } = parseSentenceRewriteCue(sr.correctAnswer);
                                 return (
-                                  <div key={sr.id} className="p-3 bg-white rounded-xl border border-[#d8c2b6] text-xs flex justify-between items-center">
+                                  <div key={sr.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                     <div className="space-y-1">
-                                      <span className="font-bold text-[#6d3807]">Câu {idx + 1}: {sr.originalSentence}</span>
-                                      <p className="text-[11px] text-[#52443a]">
+                                      <span className="font-bold text-brand-600">Câu {idx + 1}: {sr.originalSentence}</span>
+                                      <p className="text-[11px] text-ink-muted">
                                         ➔ {sr.correctAnswer} {cue && <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px] ml-2">Gợi ý: "{cue}"</span>}
                                       </p>
                                     </div>
@@ -2601,7 +2601,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                       <button
                                         type="button"
                                         onClick={() => handleEditSentenceRewrite(sr)}
-                                        className="p-1.5 rounded-lg bg-gray-50 border border-[#d8c2b6] text-[#6d3807] hover:bg-[#fff1ea] cursor-pointer"
+                                        className="p-1.5 rounded-lg bg-gray-50 border border-line text-brand-600 hover:bg-brand-50 cursor-pointer"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
@@ -2619,8 +2619,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             </div>
                           )}
 
-                          <div className="pt-2 border-t border-[#d8c2b6] space-y-2">
-                            <span className="text-[11px] font-bold text-[#6d3807] block">
+                          <div className="pt-2 border-t border-line space-y-2">
+                            <span className="text-[11px] font-bold text-brand-600 block">
                               {editingSrId ? "Chỉnh Sửa Câu Viết Lại Con:" : "Thêm Câu Viết Lại Con Mới:"}
                             </span>
                             <input
@@ -2628,20 +2628,20 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               placeholder="Câu gốc..."
                               value={srOriginalSentence}
                               onChange={(e) => setSrOriginalSentence(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs focus:outline-none focus:border-[#6d3807]"
+                              className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
                             />
                             <input
                               type="text"
                               placeholder="Câu viết lại có [từ gợi ý]..."
                               value={srCorrectAnswer}
                               onChange={(e) => setSrCorrectAnswer(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-xl text-xs focus:outline-none focus:border-[#6d3807]"
+                              className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
                             />
                             <button
                               type="button"
                               onClick={handleAddOrUpdateSentenceRewrite}
                               disabled={!srOriginalSentence.trim() || !srCorrectAnswer.trim()}
-                              className="w-full py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                              className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
                               {editingSrId ? "Cập Nhật Câu Viết Lại Này" : "+ Thêm Câu Viết Lại Này"}
                             </button>
@@ -2655,11 +2655,11 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                   {skillType === "Speaking" && (
                     <div className="space-y-4">
                       {speakingCategory === "SPEAKING_TOPIC_PROMPT" && (
-                        <textarea rows={3} value={speakingCuePrompt} onChange={(e) => setSpeakingCuePrompt(e.target.value)} className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs" />
+                        <textarea rows={3} value={speakingCuePrompt} onChange={(e) => setSpeakingCuePrompt(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
                       )}
 
                       {speakingCategory === "SPEAKING_READ_ALOUD" && (
-                        <textarea rows={3} value={readAloudPassage} onChange={(e) => setReadAloudPassage(e.target.value)} className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium" />
+                        <textarea rows={3} value={readAloudPassage} onChange={(e) => setReadAloudPassage(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium" />
                       )}
                     </div>
                   )}
@@ -2667,9 +2667,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={handleAddOrUpdateQuestion}
-                      className="flex-1 py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline cursor-pointer"
+                      className="flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline cursor-pointer"
                     >
-                      <Plus className="w-4 h-4 text-[#ffb782]" />
+                      <Plus className="w-4 h-4 text-accent-400" />
                       <span>
                         {editingQuestionNumber
                           ? `Cập Nhật Câu Hỏi Số ${editingQuestionNumber}`
@@ -2687,7 +2687,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           setStimulusText("");
                           setStimulusAudioUrl("");
                         }}
-                        className="px-4 py-3.5 bg-gray-100 hover:bg-rose-50 border border-gray-300 hover:border-rose-300 text-[#52443a] hover:text-rose-600 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer"
+                        className="px-4 py-3.5 bg-gray-100 hover:bg-rose-50 border border-gray-300 hover:border-rose-300 text-ink-muted hover:text-rose-600 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer"
                       >
                         <XCircle className="w-4 h-4" />
                         <span>Hủy Sửa Câu {editingQuestionNumber}</span>
@@ -2699,14 +2699,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
             </div>
 
             {/* Right Question List Preview Pane */}
-            <div className="lg:col-span-4 bg-[#ffffff] p-6 rounded-3xl border border-[#d8c2b6] shadow-sm flex flex-col font-sans text-xs h-full min-h-[500px]">
-              <h2 className="text-base font-bold text-[#6d3807] flex items-center justify-between border-b border-[#d8c2b6]/40 pb-3 mb-4 shrink-0">
+            <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-line shadow-sm flex flex-col font-sans text-xs h-full min-h-[500px]">
+              <h2 className="text-base font-bold text-brand-600 flex items-center justify-between border-b border-line/40 pb-3 mb-4 shrink-0">
                 <span>Danh Sách Câu Hỏi Đã Tạo ({questionsList.length})</span>
               </h2>
 
               {questionsList.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-[#d8c2b6] rounded-2xl bg-[#fff8f5] min-h-[300px]">
-                  <p className="text-xs text-[#52443a]">Chưa có câu hỏi nào. Biên soạn ở bên trái để thêm mới.</p>
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-line rounded-2xl bg-surface-alt min-h-[300px]">
+                  <p className="text-xs text-ink-muted">Chưa có câu hỏi nào. Biên soạn ở bên trái để thêm mới.</p>
                 </div>
               ) : (
                 <div className="space-y-3 flex-1 overflow-y-auto pr-1 max-h-[calc(100vh-200px)]">
@@ -2722,30 +2722,30 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                         onDragEnd={handleDragEnd}
                         className={`p-4 rounded-2xl border transition-all duration-150 space-y-2.5 group cursor-grab active:cursor-grabbing ${
                           isEditingThis
-                            ? "border-[#6d3807] bg-[#fff1ea] ring-2 ring-[#ffb782] shadow-md"
+                            ? "border-brand-600 bg-brand-50 ring-2 ring-brand-300 shadow-md"
                             : dragOverIndex === idx
-                            ? "border-[#6d3807] bg-[#fff1ea] ring-2 ring-[#ffb782]"
+                            ? "border-brand-600 bg-brand-50 ring-2 ring-brand-300"
                             : draggedIndex === idx
-                            ? "opacity-40 border-dashed border-[#6d3807] bg-gray-50"
-                            : "border-[#d8c2b6] bg-[#fff8f5] hover:border-[#6d3807]"
+                            ? "opacity-40 border-dashed border-brand-600 bg-gray-50"
+                            : "border-line bg-surface-alt hover:border-brand-600"
                         }`}
                       >
                         <div className="flex justify-between items-center text-xs">
                           <div className="flex items-center space-x-1.5">
-                            <GripVertical className="w-4 h-4 text-[#857469] group-hover:text-[#6d3807] shrink-0" />
-                            <span className="font-bold text-[#6d3807]">Câu {idx + 1} ({q.skill})</span>
+                            <GripVertical className="w-4 h-4 text-ink-subtle group-hover:text-brand-600 shrink-0" />
+                            <span className="font-bold text-brand-600">Câu {idx + 1} ({q.skill})</span>
                           </div>
 
                           <div className="flex items-center space-x-1">
-                            <button type="button" onClick={() => handleEditMainQuestion(q)} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${isEditingThis ? "bg-[#6d3807] text-white border-[#6d3807]" : "bg-white border-[#d8c2b6] text-[#6d3807] hover:bg-[#fff1ea]"}`} title="Chỉnh sửa câu hỏi này"><Edit2 className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => handleMoveQuestionUp(idx)} disabled={idx === 0} className="p-1.5 rounded-lg bg-white border border-[#d8c2b6] text-[#6d3807] disabled:opacity-30 cursor-pointer"><ArrowUp className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => handleMoveQuestionDown(idx)} disabled={idx === questionsList.length - 1} className="p-1.5 rounded-lg bg-white border border-[#d8c2b6] text-[#6d3807] disabled:opacity-30 cursor-pointer"><ArrowDown className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => handleEditMainQuestion(q)} className={`p-1.5 rounded-lg border transition-all cursor-pointer ${isEditingThis ? "bg-brand-600 text-white border-brand-600" : "bg-white border-line text-brand-600 hover:bg-brand-50"}`} title="Chỉnh sửa câu hỏi này"><Edit2 className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => handleMoveQuestionUp(idx)} disabled={idx === 0} className="p-1.5 rounded-lg bg-white border border-line text-brand-600 disabled:opacity-30 cursor-pointer"><ArrowUp className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => handleMoveQuestionDown(idx)} disabled={idx === questionsList.length - 1} className="p-1.5 rounded-lg bg-white border border-line text-brand-600 disabled:opacity-30 cursor-pointer"><ArrowDown className="w-3.5 h-3.5" /></button>
                             <button type="button" onClick={() => handleDeleteQuestion(idx)} className="p-1.5 rounded-lg bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </div>
 
-                        <span className="px-2 py-0.5 rounded-full bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-[10px] font-bold inline-block">{q.category}</span>
-                        <p className="text-xs text-[#211a16] font-bold">{q.questionTitle}</p>
+                        <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-300 text-[10px] font-bold inline-block">{q.category}</span>
+                        <p className="text-xs text-ink font-bold">{q.questionTitle}</p>
                       </div>
                     );
                   })}
@@ -2757,36 +2757,36 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
           {/* Audio Synthesizing & Playback Modal Popup */}
           {showAudioPopup && (
             <div
-              className="fixed inset-0 bg-[#211a16]/60 backdrop-blur-sm flex items-center justify-center z-[100] transition-opacity p-4"
+              className="fixed inset-0 bg-ink/60 backdrop-blur-sm flex items-center justify-center z-[100] transition-opacity p-4"
               onClick={handleCloseAudioPopup}
             >
               <div
-                className="w-full max-w-md bg-white rounded-3xl border border-[#d8c2b6] shadow-xl p-6 relative overflow-hidden flex flex-col space-y-4"
+                className="w-full max-w-md bg-white rounded-3xl border border-line shadow-xl p-6 relative overflow-hidden flex flex-col space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex justify-between items-center pb-2 border-b border-[#d8c2b6]/30">
-                  <h3 className="font-headline font-bold text-sm text-[#6d3807] flex items-center space-x-1.5">
-                    <Volume2 className="w-4 h-4 text-[#8a4f1e]" />
+                <div className="flex justify-between items-center pb-2 border-b border-line/30">
+                  <h3 className="font-headline font-bold text-sm text-brand-600 flex items-center space-x-1.5">
+                    <Volume2 className="w-4 h-4 text-brand-700" />
                     <span>Nghe Thử Giọng Đọc AI</span>
                   </h3>
                   <button
                     type="button"
                     onClick={handleCloseAudioPopup}
-                    className="p-1.5 rounded-full hover:bg-[#fff8f5] text-[#857469] hover:text-[#6d3807] transition-all"
+                    className="p-1.5 rounded-full hover:bg-surface-alt text-ink-subtle hover:text-brand-600 transition-all"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                 </div>
 
-                <div className="text-xs text-[#52443a] leading-relaxed bg-[#fff8f5] p-3 rounded-xl border border-[#d8c2b6]/30 max-h-24 overflow-y-auto">
-                  <span className="font-bold block text-[10px] text-[#857469] mb-0.5">VĂN BẢN ĐỌC:</span>
+                <div className="text-xs text-ink-muted leading-relaxed bg-surface-alt p-3 rounded-xl border border-line/30 max-h-24 overflow-y-auto">
+                  <span className="font-bold block text-[10px] text-ink-subtle mb-0.5">VĂN BẢN ĐỌC:</span>
                   "{audioPopupText}"
                 </div>
 
                 {isAudioLoading ? (
                   <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                    <Loader2 className="w-8 h-8 text-[#8a4f1e] animate-spin" />
-                    <span className="text-[11px] text-[#857469] font-medium animate-pulse">Đang kết nối Gemini và tổng hợp giọng nói...</span>
+                    <Loader2 className="w-8 h-8 text-brand-700 animate-spin" />
+                    <span className="text-[11px] text-ink-subtle font-medium animate-pulse">Đang kết nối Gemini và tổng hợp giọng nói...</span>
                   </div>
                 ) : (
                   <div className="py-2 space-y-2">
@@ -2796,7 +2796,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       controls
                       className="w-full focus:outline-none custom-audio-player"
                     />
-                    <p className="text-[10px] text-[#857469] text-center italic">
+                    <p className="text-[10px] text-ink-subtle text-center italic">
                       * Click ra ngoài vùng xám hoặc bấm nút đóng để tắt popup
                     </p>
                   </div>
@@ -2808,12 +2808,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
           {/* Gemini TTS Failure Dialog */}
           {ttsErrorModal?.show && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white p-6 rounded-3xl max-w-md text-center shadow-xl border border-[#d8c2b6] space-y-4">
+              <div className="bg-white p-6 rounded-3xl max-w-md text-center shadow-xl border border-line space-y-4">
                 <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
                   <Volume2 className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-[#6d3807]">⚠️ Không Thể Kết Nối AI Giọng Nói Gemini</h3>
-                <p className="text-xs text-[#52443a] leading-relaxed">
+                <h3 className="text-base font-bold text-brand-600">⚠️ Không Thể Kết Nối AI Giọng Nói Gemini</h3>
+                <p className="text-xs text-ink-muted leading-relaxed">
                   Hệ thống không thể kết nối tới dịch vụ Gemini TTS lúc này. Bạn muốn thử kết nối lại hay chuyển sang sử dụng giọng đọc mặc định?
                 </p>
                 <div className="pt-2 flex flex-col gap-2">
@@ -2824,7 +2824,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       setTtsErrorModal(null);
                       handlePlayPreviewAudio(currentModal.audioUrl, currentModal.fallbackText, currentModal.gender, false);
                     }}
-                    className="w-full py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                   >
                     🔄 Thử Kết Nối Lại Gemini
                   </button>
@@ -2835,14 +2835,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       setTtsErrorModal(null);
                       handlePlayPreviewAudio(currentModal.audioUrl, currentModal.fallbackText, currentModal.gender, true);
                     }}
-                    className="w-full py-2.5 bg-[#fff1ea] hover:bg-[#ffb782] text-[#6d3807] rounded-xl text-xs font-bold border border-[#d8c2b6] transition-all cursor-pointer"
+                    className="w-full py-2.5 bg-brand-50 hover:bg-brand-300 text-brand-600 rounded-xl text-xs font-bold border border-line transition-all cursor-pointer"
                   >
                     🗣️ Sử Dụng Âm Thanh Mặc Định (Fallback)
                   </button>
                   <button
                     type="button"
                     onClick={() => setTtsErrorModal(null)}
-                    className="text-xs text-[#857469] hover:underline pt-1 cursor-pointer"
+                    className="text-xs text-ink-subtle hover:underline pt-1 cursor-pointer"
                   >
                     Hủy bỏ
                   </button>
