@@ -64,6 +64,7 @@ beforeEach(async () => {
 });
 
 describe("GET /api/exams/[id]/content — đề + câu hỏi + flashcard", () => {
+  // TASK-032: học sinh không còn dùng route này (403, xem prod-hardening.test.ts) → kiểm bằng ADMIN.
   const get = async (id: string) => {
     const { GET } = await import("@/app/api/exams/[id]/content/route");
     return GET(req(`/api/exams/${id}/content`), ctx({ id }));
@@ -71,12 +72,12 @@ describe("GET /api/exams/[id]/content — đề + câu hỏi + flashcard", () =>
 
   it("chưa đăng nhập → 401; không có đề → 404", async () => {
     expect((await get("e1")).status).toBe(401);
-    await loginAs("STUDENT", "s1");
+    await loginAs("ADMIN", "a1");
     expect((await get("eX")).status).toBe(404);
   });
 
   it("câu hỏi theo đúng thứ tự question_ids, bỏ qua id không tồn tại", async () => {
-    await loginAs("STUDENT", "s1");
+    await loginAs("ADMIN", "a1");
     const json = await (await get("e1")).json();
     expect(json.success).toBe(true);
     expect(json.exam).toMatchObject({ id: "e1", title: "Đề Một", duration_minutes: 60 });
@@ -85,14 +86,14 @@ describe("GET /api/exams/[id]/content — đề + câu hỏi + flashcard", () =>
   });
 
   it("không có question_ids → questions rỗng (không trả toàn bộ ngân hàng câu hỏi)", async () => {
-    await loginAs("STUDENT", "s1");
+    await loginAs("ADMIN", "a1");
     const json = await (await get("e2")).json();
     expect(json.questions).toEqual([]);
     expect(json.flashcards).toEqual([]);
   });
 
   it("flashcards: chỉ các thẻ được câu hỏi FLASHCARD tham chiếu", async () => {
-    await loginAs("STUDENT", "s1");
+    await loginAs("ADMIN", "a1");
     const json = await (await get("e1")).json();
     expect(json.flashcards.map((f: any) => f.id).sort()).toEqual(["f1", "f2"]);
   });
