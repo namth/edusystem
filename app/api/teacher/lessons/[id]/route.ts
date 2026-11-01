@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { canUseSubject } from "@/lib/subjects";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -76,6 +77,7 @@ export async function GET(
       description: lessonRow.description,
       skills: Array.isArray(lessonRow.skills) ? lessonRow.skills : [],
       question_ids: questionIds,
+      subject_id: lessonRow.subject_id || "english",
       created_by: lessonRow.created_by,
       created_at: lessonRow.created_at,
       updated_at: lessonRow.updated_at,
@@ -114,11 +116,23 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, question_ids } = body;
+    const { title, description, question_ids, subject_id } = body;
 
     const sets: string[] = [];
     const params: any[] = [];
     let pIdx = 1;
+
+    if (subject_id !== undefined) {
+      if (typeof subject_id !== "string" || !subject_id.trim()) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      const cleanSubjectId = subject_id.trim();
+      if (!(await canUseSubject(authUser, cleanSubjectId))) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      sets.push(`subject_id = $${pIdx++}`);
+      params.push(cleanSubjectId);
+    }
 
     if (title !== undefined) {
       const cleanTitle = typeof title === "string" ? title.trim() : "";
@@ -149,7 +163,7 @@ export async function PUT(
       const skills: string[] = [];
 
       if (cleanQIds.length > 0) {
-        const qRes = await queryPg("SELECT id, skill, created_by FROM questions WHERE id = ANY($1)", [cleanQIds]);
+        const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
         const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
 
         for (const qid of cleanQIds) {
@@ -183,7 +197,7 @@ export async function PUT(
 
     params.push(id);
     const updateRes = await queryPg(
-      `UPDATE lessons SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING id, title, description, skills, question_ids, created_by, created_at, updated_at;`,
+      `UPDATE lessons SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING *;`,
       params
     );
 
@@ -196,6 +210,7 @@ export async function PUT(
       question_ids: Array.isArray(updated.question_ids)
         ? updated.question_ids
         : (typeof updated.question_ids === "string" ? JSON.parse(updated.question_ids) : []),
+      subject_id: updated.subject_id || "english",
       created_by: updated.created_by,
       created_at: updated.created_at,
       updated_at: updated.updated_at,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery, syncCourseExam, getExamCourseMapping } from "@/lib/neo4j";
+import { canUseSubject } from "@/lib/subjects";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -127,10 +128,22 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id } = body;
+    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id, subject_id } = body;
     const sets: string[] = [];
     const params: any[] = [];
     let pIdx = 1;
+
+    if (subject_id !== undefined) {
+      if (typeof subject_id !== "string" || !subject_id.trim()) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      const cleanSubjectId = subject_id.trim();
+      if (!(await canUseSubject(authUser, cleanSubjectId))) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      sets.push(`subject_id = $${pIdx++}`);
+      params.push(cleanSubjectId);
+    }
 
     let cleanTitle: string | null = null;
     if (title !== undefined) {
@@ -179,7 +192,7 @@ export async function PUT(
       }
 
       const cleanQIds: string[] = question_ids.map((q) => q.trim());
-      const qRes = await queryPg("SELECT id, skill, created_by FROM questions WHERE id = ANY($1)", [cleanQIds]);
+      const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
       const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
 
       for (const qid of cleanQIds) {
@@ -262,6 +275,7 @@ export async function PUT(
         ? updatedExamRow.question_ids
         : (typeof updatedExamRow.question_ids === "string" ? JSON.parse(updatedExamRow.question_ids) : []),
       skills: Array.isArray(updatedExamRow.skills) ? updatedExamRow.skills : [],
+      subject_id: updatedExamRow.subject_id || "english",
     };
 
     return NextResponse.json({ success: true, exam }, { status: 200 });
