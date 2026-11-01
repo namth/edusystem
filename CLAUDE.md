@@ -1,6 +1,6 @@
 @AGENTS.md
 
-Hệ thống học tiếng Anh & thi thử IELTS có chấm AI (Next.js + PostgreSQL/Supabase + Neo4j + Redis).
+KitoKit — cổng bài học & đề thi đa môn, tiếng Anh có chấm AI (Next.js + PostgreSQL/Supabase + Neo4j + Redis). E2E: `npm run e2e`.
 
 ## Mô hình phân vai Claude ↔ Antigravity
 
