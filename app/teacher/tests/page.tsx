@@ -962,7 +962,7 @@ export default function TeacherTestManagerPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
           <div>
             <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
-              Quản Lý Bài Học &amp; Đề Thi Theo Cây Lộ Trình
+              Quản Lý Lộ Trình & Khóa Học
             </h1>
             <p className="text-sm text-[#52443a] mt-1">
               Giao diện đồng bộ: <b>Icon chỉnh sửa đặt cạnh icon xóa</b> và <b>Thanh điều hướng sắp xếp tối ưu</b>.

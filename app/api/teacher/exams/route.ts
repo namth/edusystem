@@ -19,19 +19,49 @@ export async function GET(req?: Request) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    let sql = `SELECT * FROM exams ORDER BY created_at DESC;`;
-    let params: any[] = [];
+    const conditions: string[] = [];
+    const params: any[] = [];
 
     if (authUser.role === "TEACHER") {
-      sql = `SELECT * FROM exams WHERE created_by = $1 OR created_by IS NULL ORDER BY created_at DESC;`;
-      params = [authUser.userId];
+      conditions.push(`(e.created_by = $${params.length + 1} OR e.created_by IS NULL)`);
+      params.push(authUser.userId);
     }
+
+    let q: string | null = null;
+    if (req?.url) {
+      try {
+        q = new URL(req.url).searchParams.get("q");
+      } catch {
+        q = null;
+      }
+    }
+
+    if (q && q.trim()) {
+      conditions.push(`e.title ILIKE $${params.length + 1}`);
+      params.push(`%${q.trim()}%`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const sql = `
+      SELECT
+        e.*,
+        COALESCE(jsonb_array_length(CASE WHEN jsonb_typeof(e.question_ids) = 'array' THEN e.question_ids ELSE '[]'::jsonb END), 0) AS question_count,
+        (SELECT COUNT(*)::int FROM curriculum_items ci WHERE ci.exam_id = e.id) AS usage_count
+      FROM exams e
+      ${whereClause}
+      ORDER BY e.created_at DESC;
+    `;
 
     const result = await queryPg(sql, params);
     const exams = result.rows.map((row: any) => ({
       id: row.id,
       title: row.title,
       description: row.description || "",
+      duration_minutes: row.duration_minutes ?? 60,
+      skills: Array.isArray(row.skills) ? row.skills : [],
+      question_count: Number(row.question_count || 0),
+      usage_count: Number(row.usage_count || 0),
       scoring_standard_id: row.scoring_standard_id || null,
       created_by: row.created_by,
       created_at: row.created_at,

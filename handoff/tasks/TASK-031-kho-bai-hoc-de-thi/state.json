@@ -1,13 +1,33 @@
 {
   "id": "TASK-031",
   "title": "Gom Kho Bài Học & Đề Thi (2 tab) + kho đề; đổi menu Quản Lý Lộ Trình & Khóa Học",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "cde1fc73-ce94-4f2c-b10c-f4e162cf993a",
   "history": [
     {
       "at": "2026-11-01T14:33:47",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T14:33:54",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T14:34:24",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T14:49:23",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T14:53:39",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -15,5 +35,6 @@
     "tests/exam-library.test.ts",
     "tests/lesson-library-ui.test.ts",
     "tests/exams-api.test.ts"
-  ]
+  ],
+  "via": "agy"
 }

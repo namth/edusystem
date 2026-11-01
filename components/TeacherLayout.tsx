@@ -36,9 +36,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
   const navItems = [
     { href: "/teacher/classes", label: "Quản Lý Lớp Học", icon: BookOpen },
-    { href: "/teacher/tests", label: "Quản Lý Đề Thi", icon: Layers },
-    { href: "/teacher/tests/create", label: "Soạn & Tạo Đề Thi", icon: PlusCircle },
-    { href: "/teacher/lessons", label: "Kho Bài Học", icon: BookMarked },
+    { href: "/teacher/tests", label: "Quản Lý Lộ Trình & Khóa Học", icon: Layers },
+    { href: "/teacher/library", label: "Kho Bài Học & Đề Thi", icon: BookMarked },
     { href: "/teacher/flashcards", label: "Quản Lý Flashcards", icon: Bookmark },
     { href: "/teacher/students/create", label: "Tạo Acc Học Sinh", icon: UserPlus },
     { href: "/teacher/slots", label: "Mua Slot Tài Khoản", icon: CreditCard },
@@ -69,7 +68,14 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
           <ul className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/teacher/classes" && item.href !== "/teacher/tests" && pathname.startsWith(item.href));
+              const isActive =
+                item.href === "/teacher/library"
+                  ? pathname.startsWith("/teacher/library") ||
+                    pathname.startsWith("/teacher/lessons") ||
+                    pathname.startsWith("/teacher/tests/create")
+                  : item.href === "/teacher/tests"
+                  ? pathname === "/teacher/tests"
+                  : pathname === item.href || (item.href !== "/teacher/classes" && pathname.startsWith(item.href));
               return (
                 <li key={item.href}>
                   <Link

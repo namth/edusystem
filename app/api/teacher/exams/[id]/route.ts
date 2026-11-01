@@ -270,3 +270,59 @@ export async function PUT(
     return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật đề thi." }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  props: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireRole(["ADMIN", "TEACHER"]);
+  if (auth.error) return auth.error;
+  const authUser = auth.user;
+
+  const { id } = await props.params;
+
+  try {
+    const eRes = await queryPg("SELECT id, created_by FROM exams WHERE id = $1", [id]);
+    if (eRes.rows.length === 0) {
+      return NextResponse.json({ success: false, error: "Đề thi không tồn tại." }, { status: 404 });
+    }
+
+    const examRow = eRes.rows[0];
+    if (authUser.role === "TEACHER" && examRow.created_by !== authUser.userId) {
+      return NextResponse.json({ success: false, error: "Bạn không có quyền xóa đề thi này." }, { status: 403 });
+    }
+
+    const usageRes = await queryPg(
+      `SELECT
+        (SELECT COUNT(*)::int FROM curriculum_items WHERE exam_id = $1) AS curriculum,
+        (SELECT COUNT(*)::int FROM class_assignments WHERE exam_id = $1) AS assignments,
+        (SELECT COUNT(*)::int FROM submissions WHERE exam_id = $1) AS submissions;`,
+      [id]
+    );
+
+    const uRow = usageRes.rows[0] || {};
+    const usages = {
+      curriculum: Number(uRow.curriculum || 0),
+      assignments: Number(uRow.assignments || 0),
+      submissions: Number(uRow.submissions || 0),
+    };
+
+    if (usages.curriculum > 0 || usages.assignments > 0 || usages.submissions > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Đề đang được dùng: ${usages.curriculum} mục lộ trình, ${usages.assignments} lớp giao, ${usages.submissions} bài nộp — gỡ khỏi lộ trình trước khi xoá`,
+          usages,
+        },
+        { status: 409 }
+      );
+    }
+
+    await queryPg("DELETE FROM exams WHERE id = $1;", [id]);
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (err: any) {
+    console.error("API /api/teacher/exams/[id] DELETE Error:", err);
+    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa đề thi." }, { status: 500 });
+  }
+}

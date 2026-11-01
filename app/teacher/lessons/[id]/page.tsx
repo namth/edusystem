@@ -291,7 +291,7 @@ export default function TeacherLessonDetailPage() {
         {/* Navigation Bar */}
         <div className="flex items-center justify-between">
           <Link
-            href="/teacher/lessons"
+            href="/teacher/library?tab=lessons"
             className="inline-flex items-center space-x-2 text-xs font-bold text-[#6d3807] hover:text-[#8a4f1e] bg-[#fff1ea] hover:bg-[#ffdcc5] px-4 py-2 rounded-xl transition-all border border-[#d8c2b6]"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -336,7 +336,7 @@ export default function TeacherLessonDetailPage() {
               </p>
             </div>
             <Link
-              href="/teacher/lessons"
+              href="/teacher/library?tab=lessons"
               className="inline-flex items-center px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
             >
               Quay lại Kho bài học
@@ -357,7 +357,7 @@ export default function TeacherLessonDetailPage() {
               </p>
             </div>
             <Link
-              href="/teacher/lessons"
+              href="/teacher/library?tab=lessons"
               className="inline-flex items-center px-4 py-2 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
             >
               Về Kho bài học
