@@ -1,0 +1,19 @@
+{
+  "id": "TASK-031",
+  "title": "Gom Kho Bài Học & Đề Thi (2 tab) + kho đề; đổi menu Quản Lý Lộ Trình & Khóa Học",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-01T14:33:47",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-031-kho-bai-hoc-de-thi/verify.sh",
+    "tests/exam-library.test.ts",
+    "tests/lesson-library-ui.test.ts",
+    "tests/exams-api.test.ts"
+  ]
+}

@@ -1,0 +1,4 @@
+09f444aa9cb1214c90f3d0c4d67977dccb1059ed3ef4eb875ee898717f737513  handoff/tasks/TASK-031-kho-bai-hoc-de-thi/verify.sh
+35b0c6cdb8451dc8aa2fa650f8a6f0ddcc556cd01c176052786f9bdcdc629902  tests/exam-library.test.ts
+1a7b7088ec10bb7a70aacb927a7ed339c10c9270d2d30a46a12be7301a6b9521  tests/lesson-library-ui.test.ts
+fd0e42c5fd5e38b9456496f354bcc9908a9623806962e4bf7b0c8544ac2f6ccd  tests/exams-api.test.ts

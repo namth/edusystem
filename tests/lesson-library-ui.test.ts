@@ -4,7 +4,8 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 
 const read = (p: string) => fs.readFileSync(p, "utf8");
-const LIST = "app/teacher/lessons/page.tsx";
+// TASK-031: danh sách kho bài học chuyển vào panel của trang /teacher/library
+const LIST = "components/teacher/LessonLibraryPanel.tsx";
 const EDIT = "app/teacher/lessons/[id]/page.tsx";
 const CURRICULUM = "app/teacher/tests/page.tsx";
 const LAYOUT = "components/TeacherLayout.tsx";
