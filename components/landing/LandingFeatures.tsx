@@ -17,27 +17,17 @@ const FEATURES = [
   { Motion: ProgressNotifyMotion, title: "Thông báo & tiến bộ", desc: "Có điểm là báo ngay. Học sinh, thầy cô thấy rõ tiến bộ qua từng bài." },
 ];
 
-// Xen kẽ tông xanh / cam; rê chuột: thẻ nổi lên, viền và bóng theo tông
-const TONES = {
-  brand: {
-    stage: "bg-gradient-to-br from-brand-100 via-brand-50 to-white",
-    bar: "from-brand-600 to-brand-400",
-    num: "text-brand-600",
-    hover: "hover:border-brand-300 hover:shadow-brand-600/15",
-  },
-  accent: {
-    stage: "bg-gradient-to-br from-accent-100 via-accent-50 to-white",
-    bar: "from-accent-500 to-accent-300",
-    num: "text-accent-500",
-    hover: "hover:border-accent-300 hover:shadow-accent-500/15",
-  },
+// Thẻ tông xanh; rê chuột: thẻ nổi lên, viền và bóng xanh
+const TONE = {
+  stage: "bg-gradient-to-br from-brand-100 via-brand-50 to-white",
+  bar: "from-brand-600 to-brand-400",
+  num: "text-brand-600",
+  hover: "hover:border-brand-300 hover:shadow-brand-600/15",
 };
 
 export default function LandingFeatures() {
   return (
-    <section id="tinh-nang" className="relative py-16 md:py-24 bg-surface overflow-hidden">
-      <div className="absolute -top-24 right-0 w-96 h-96 rounded-full bg-accent-200/40 blur-3xl" aria-hidden />
-      <div className="absolute bottom-0 -left-24 w-96 h-96 rounded-full bg-brand-200/40 blur-3xl" aria-hidden />
+    <section id="tinh-nang" className="relative py-16 md:py-24 bg-cream overflow-hidden">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-12">
           <SectionTag index="01" label="Tính năng nổi bật" />
@@ -50,7 +40,7 @@ export default function LandingFeatures() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map(({ Motion, title, desc }, i) => {
-            const t = TONES[i % 2 === 0 ? "brand" : "accent"];
+            const t = TONE;
             return (
               <article
                 key={title}

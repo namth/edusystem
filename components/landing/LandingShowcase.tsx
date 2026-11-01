@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import SectionTag from "@/components/landing/SectionTag";
 
@@ -7,7 +8,7 @@ const delay = (s: number): CSSProperties => ({ animationDelay: `${s}s` });
 // Giao diện thu nhỏ: học sinh nộp bài → điểm từng phần → AI nhận xét bài viết
 function StudentMock() {
   return (
-    <div aria-hidden className="relative rounded-2xl bg-white border border-line shadow-sm p-4 space-y-3 max-w-sm w-full">
+    <div aria-hidden className="relative rounded-2xl bg-white border border-accent-200 shadow-lg shadow-accent-500/10 p-4 space-y-3 max-w-sm w-full">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-subtle">Kết quả bài thi</span>
         <span className="kk-pop rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5" style={delay(0.3)}>Đã chấm xong</span>
@@ -61,26 +62,27 @@ export default function LandingShowcase() {
   return (
     <section className="py-16 md:py-24 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Học sinh */}
-        <div id="hoc-sinh" className="relative isolate overflow-hidden scroll-mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-[2rem] bg-gradient-to-br from-brand-800 via-brand-700 to-brand-500 p-6 sm:p-10 shadow-xl shadow-brand-700/20">
-          <div className="absolute -right-24 -bottom-24 -z-10 w-80 h-80 rounded-full bg-accent-500/30 blur-3xl" aria-hidden />
-          <div className="space-y-6">
-            <SectionTag index="02" label="Dành cho học sinh" dark />
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Nộp bài là biết mình <span className="text-accent-300">đang ở đâu.</span>
+        {/* Học sinh — hình bên trái, chữ bên phải (so le với khối thầy cô) */}
+        <div id="hoc-sinh" className="scroll-mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-[2rem] bg-gradient-to-bl from-accent-100 via-accent-50 to-white border border-accent-200 p-6 sm:p-10 shadow-xl shadow-accent-500/10">
+          <div className="space-y-6 lg:order-2">
+            <SectionTag index="02" label="Dành cho học sinh" />
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink tracking-tight leading-tight">
+              Nộp bài là biết mình <span className="text-accent-500">đang ở đâu.</span>
             </h2>
             <div className="grid sm:grid-cols-3 gap-5">
-              <Point label="Trước đây" dark>Làm bài xong chờ cả tuần mới có điểm, không biết sai ở đâu.</Point>
-              <Point label="Với KitoKit" dark>Trắc nghiệm có điểm ngay; bài Viết, Nói được AI nhận xét theo tiêu chí.</Point>
-              <Point label="Kết quả" dark>Xem lại từng câu, nhận thông báo khi có điểm, thấy rõ tiến bộ.</Point>
+              <Point label="Trước đây">Làm bài xong chờ cả tuần mới có điểm, không biết sai ở đâu.</Point>
+              <Point label="Với KitoKit">Trắc nghiệm có điểm ngay; bài Viết, Nói được AI nhận xét theo tiêu chí.</Point>
+              <Point label="Kết quả">Xem lại từng câu, nhận thông báo khi có điểm, thấy rõ tiến bộ.</Point>
             </div>
+            <Link href="/register" className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-bold px-6 py-3 shadow-lg shadow-accent-500/25 transition-all">
+              Làm bài thử miễn phí <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <div className="flex justify-center lg:justify-end"><StudentMock /></div>
+          <div className="flex justify-center lg:justify-start lg:order-1"><StudentMock /></div>
         </div>
 
         {/* Thầy cô / trung tâm */}
-        <div id="giao-vien" className="relative isolate overflow-hidden scroll-mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-[2rem] bg-gradient-to-br from-accent-100 via-accent-50 to-white border border-accent-200 p-6 sm:p-10 shadow-xl shadow-accent-500/10">
-          <div className="absolute -left-24 -top-24 -z-10 w-80 h-80 rounded-full bg-accent-300/40 blur-3xl" aria-hidden />
+        <div id="giao-vien" className="scroll-mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-[2rem] bg-gradient-to-br from-accent-100 via-accent-50 to-white border border-accent-200 p-6 sm:p-10 shadow-xl shadow-accent-500/10">
           <div className="space-y-6">
             <SectionTag index="03" label="Dành cho thầy cô & trung tâm" />
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink tracking-tight leading-tight">

@@ -10,9 +10,8 @@ const ITEMS = [
 
 export default function LandingStats() {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-r from-accent-600 via-accent-500 to-accent-400 py-14">
+    <section className="relative isolate overflow-hidden bg-gradient-to-r from-brand-800 via-brand-700 to-brand-500 py-14">
       <div className="absolute inset-0 -z-10 kk-grid-dark" aria-hidden />
-      <div className="absolute -right-20 -top-24 -z-10 w-80 h-80 rounded-full bg-accent-300/50 blur-3xl" aria-hidden />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
         {ITEMS.map((it) => (
           <div key={it.label} className="text-white">
@@ -20,7 +19,7 @@ export default function LandingStats() {
               <CountUp to={it.to} suffix={it.suffix} />
             </div>
             <div className="mt-2 text-base font-bold">{it.label}</div>
-            <div className="mt-1 text-xs text-accent-50/90 leading-relaxed">{it.note}</div>
+            <div className="mt-1 text-xs text-brand-100 leading-relaxed">{it.note}</div>
           </div>
         ))}
       </div>

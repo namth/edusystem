@@ -4,7 +4,6 @@ import Image from "next/image";
 export default function LandingFooter() {
   return (
     <footer className="relative isolate overflow-hidden bg-gradient-to-br from-brand-900 via-brand-900 to-brand-800 py-14">
-      <div className="absolute -bottom-32 right-0 -z-10 w-96 h-96 rounded-full bg-accent-500/20 blur-3xl" aria-hidden />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Info */}

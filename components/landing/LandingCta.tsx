@@ -4,10 +4,9 @@ import { ArrowRight } from "lucide-react";
 
 export default function LandingCta() {
   return (
-    <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20 bg-surface">
-      <div className="relative isolate overflow-hidden max-w-7xl mx-auto rounded-[2rem] bg-gradient-to-br from-brand-700 via-brand-600 to-accent-500 px-6 sm:px-12 py-12 shadow-2xl shadow-brand-700/25">
-        <div className="absolute inset-0 -z-10 kk-grid-dark" aria-hidden />
-        <div className="absolute -top-20 left-1/3 -z-10 w-96 h-96 rounded-full bg-brand-400/40 blur-3xl" aria-hidden />
+    <section className="relative isolate overflow-hidden bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 py-16 md:py-20">
+      <div className="absolute inset-0 -z-10 kk-grid-dark" aria-hidden />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           <div className="md:col-span-8 text-center md:text-left">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">

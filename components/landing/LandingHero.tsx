@@ -20,10 +20,8 @@ export default function LandingHero({ stats }: LandingHeroProps) {
   const showStats = stats && stats.questions >= 100 && stats.exams >= 10;
   return (
     <section className="relative isolate overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-brand-600 pt-14 pb-20 md:pt-20 md:pb-28">
-      {/* Nền: lưới mờ + đốm sáng xanh/cam */}
+      {/* Nền: lưới mờ trên gradient xanh */}
       <div className="absolute inset-0 -z-10 kk-grid-dark [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" aria-hidden />
-      <div className="absolute -top-32 -left-24 -z-10 w-[28rem] h-[28rem] rounded-full bg-brand-400/40 blur-3xl" aria-hidden />
-      <div className="absolute -bottom-40 right-0 -z-10 w-[32rem] h-[32rem] rounded-full bg-accent-500/35 blur-3xl" aria-hidden />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -72,7 +70,8 @@ export default function LandingHero({ stats }: LandingHeroProps) {
           {/* Quỹ đạo tính năng quanh mascot */}
           <div className="lg:col-span-6 flex justify-center py-10">
             <div className="relative w-72 h-72 sm:w-96 sm:h-96" aria-hidden>
-              <div className="absolute inset-10 rounded-full bg-gradient-to-tr from-brand-400/50 via-accent-400/30 to-transparent blur-2xl" />
+              <div className="absolute inset-10 rounded-full bg-white/60 blur-3xl" />
+              <div className="absolute inset-20 rounded-full bg-white/40 blur-xl" />
               <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/25 kk-orbit">
                 {ORBIT.map(({ label, Icon, pos }) => (
                   <div key={label} className={`absolute ${pos}`}>

@@ -7,7 +7,6 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingFeatures from "@/components/landing/LandingFeatures";
 import LandingShowcase from "@/components/landing/LandingShowcase";
-import LandingPrinciples from "@/components/landing/LandingPrinciples";
 import LandingStats from "@/components/landing/LandingStats";
 import LandingCta from "@/components/landing/LandingCta";
 import LandingFaq from "@/components/landing/LandingFaq";
@@ -48,7 +47,6 @@ export default async function HomePage() {
         <LandingFeatures />
         <LandingStats />
         <LandingShowcase />
-        <LandingPrinciples />
         <LandingFaq />
         <LandingCta />
         <LandingContact />

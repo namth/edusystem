@@ -54,7 +54,7 @@ export default function LandingContact() {
   };
 
   return (
-    <section id="lien-he" className="py-16 md:py-24 bg-surface-alt">
+    <section id="lien-he" className="py-16 md:py-24 bg-cream">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-100 text-accent-600 text-xs font-bold mb-3">

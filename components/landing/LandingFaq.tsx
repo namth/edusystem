@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, HelpCircle } from "lucide-react";
+import Image from "next/image";
+import { Plus, MessageCircleQuestion, ArrowRight } from "lucide-react";
+import SectionTag from "@/components/landing/SectionTag";
 
 export default function LandingFaq() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
@@ -34,46 +36,85 @@ export default function LandingFaq() {
   ];
 
   return (
-    <section id="faq" className="py-16 md:py-24 bg-surface">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-100 text-brand-700 text-xs font-bold mb-3">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Giải đáp thắc mắc</span>
+    <section id="faq" className="py-16 md:py-24 bg-cream">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+        {/* Cột trái: tiêu đề + minh hoạ mascot hỏi đáp */}
+        <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-24 space-y-6">
+            <div>
+              <SectionTag index="04" label="Hỏi đáp" />
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-ink tracking-tight leading-tight">
+                Bạn hỏi,
+                <br />
+                <span className="text-brand-600">KitoKit trả lời.</span>
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-ink-muted max-w-md">
+                Những điều học sinh, phụ huynh và thầy cô hay thắc mắc khi bắt đầu dùng KitoKit.
+              </p>
+            </div>
+
+            <div aria-hidden className="relative mx-auto lg:mx-0 w-64 h-56 sm:w-72 sm:h-60">
+              <div className="absolute inset-6 rounded-full bg-gradient-to-br from-brand-100 to-white" />
+              <Image src="/brand/kitokit-mark-transparent.png" alt="" width={430} height={400} className="kk-float absolute inset-0 m-auto w-40 sm:w-44 h-auto" />
+              <span className="kk-pop absolute top-2 left-4 w-11 h-11 rounded-2xl rounded-bl-sm bg-brand-600 text-white font-display text-xl font-extrabold flex items-center justify-center shadow-lg shadow-brand-600/30">?</span>
+              <span className="kk-pop absolute top-8 right-2 w-9 h-9 rounded-2xl rounded-br-sm bg-accent-400 text-white font-display text-lg font-extrabold flex items-center justify-center shadow-lg shadow-accent-500/30" style={{ animationDelay: "0.8s" }}>?</span>
+              <span className="kk-pop absolute bottom-4 right-6 rounded-2xl rounded-tr-sm bg-white border border-line px-3 py-1.5 text-xs font-bold text-ink shadow-md" style={{ animationDelay: "1.6s" }}>Đã hiểu! ✓</span>
+            </div>
+
+            <div className="flex items-center gap-4 rounded-3xl bg-white border border-line p-5 shadow-xs max-w-md mx-auto lg:mx-0">
+              <span className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-400 text-white flex items-center justify-center">
+                <MessageCircleQuestion className="w-6 h-6" />
+              </span>
+              <div className="flex-1">
+                <div className="font-bold text-ink">Còn thắc mắc khác?</div>
+                <div className="text-xs text-ink-muted">Để lại lời nhắn, đội ngũ KitoKit sẽ liên hệ lại.</div>
+              </div>
+              <a href="#lien-he" aria-label="Đến form liên hệ" className="w-10 h-10 shrink-0 rounded-full bg-brand-50 hover:bg-brand-100 text-brand-600 flex items-center justify-center transition-colors">
+                <ArrowRight className="w-5 h-5" />
+              </a>
+            </div>
           </div>
-          <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink tracking-tight">
-            Câu Hỏi Thường Gặp
-          </h2>
-          <p className="mt-3 text-sm sm:text-base text-ink-muted">
-            Những thông tin cần biết để bắt đầu học tập và giảng dạy cùng KitoKit.
-          </p>
         </div>
 
-        <div className="space-y-3">
+        {/* Cột phải: danh sách câu hỏi */}
+        <div className="lg:col-span-7 space-y-3">
           {faqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
                 key={idx}
-                className="border border-line rounded-2xl bg-surface-alt overflow-hidden transition-colors"
+                className={`rounded-3xl border bg-white transition-all duration-300 ${
+                  isOpen ? "border-brand-300 shadow-lg shadow-brand-600/10" : "border-line hover:border-brand-200"
+                }`}
               >
                 <button
                   type="button"
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full flex items-center justify-between p-5 text-left font-bold text-ink hover:text-brand-600 transition-colors cursor-pointer"
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center gap-4 p-5 text-left cursor-pointer"
                 >
-                  <span className="text-sm sm:text-base pr-4">{faq.q}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-ink-subtle shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-180 text-brand-600" : ""
+                  <span
+                    className={`w-10 h-10 shrink-0 rounded-2xl font-mono text-sm font-bold flex items-center justify-center transition-colors ${
+                      isOpen ? "bg-gradient-to-br from-brand-600 to-brand-400 text-white" : "bg-brand-50 text-brand-600"
                     }`}
-                  />
+                  >
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <span className={`flex-1 text-sm sm:text-base font-bold transition-colors ${isOpen ? "text-brand-700" : "text-ink"}`}>{faq.q}</span>
+                  <span
+                    className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      isOpen ? "rotate-45 bg-accent-400 text-white" : "bg-surface-alt text-ink-muted"
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </span>
                 </button>
-                {isOpen && (
-                  <div className="px-5 pb-5 text-xs sm:text-sm text-ink-muted leading-relaxed border-t border-line/40 pt-3">
-                    {faq.a}
+                {/* Mở/đóng mượt bằng grid-template-rows */}
+                <div className={`grid transition-[grid-template-rows] duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                  <div className="overflow-hidden">
+                    <p className="px-5 pb-5 pl-[4.75rem] text-sm text-ink-muted leading-relaxed">{faq.a}</p>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

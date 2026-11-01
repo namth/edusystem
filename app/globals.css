@@ -31,6 +31,8 @@
   --color-surface-alt: #f6f8fc;
   --color-line: #e2e8f0;
   --color-line-soft: #eef2f7;
+  --color-cream: #fdf8f0;
+  --color-cream-200: #f5ead8;
 
   --font-sans: var(--font-lexend), system-ui, sans-serif;
   --font-display: var(--font-baloo), var(--font-lexend), system-ui, sans-serif;
