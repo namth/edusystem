@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard,
   FileQuestion,
@@ -114,9 +115,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
           {/* Trailing Profile Actions */}
           <div className="flex items-center gap-4">
-            <button className="text-[#52443a] hover:text-[#6d3807] p-2 rounded-full hover:bg-[#f9ebe4] relative">
-              <Bell className="w-5 h-5" />
-            </button>
+            <NotificationBell />
 
             {/* TopBar Interactive User Dropdown */}
             <div className="relative">
