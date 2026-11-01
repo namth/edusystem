@@ -23,13 +23,18 @@ export interface GradeExamOpenAnswerParams {
   exam_id?: string;
 }
 
+export interface GradeExamOpenAnswerResult {
+  score: number;
+  feedback: string | null;
+}
+
 export async function gradeExamOpenAnswer(
   params: GradeExamOpenAnswerParams
-): Promise<number> {
+): Promise<GradeExamOpenAnswerResult> {
   const { category, prompt, answer, section, rubric_id, exam_id } = params;
 
   if (!answer || answer.trim() === "") {
-    return section.min;
+    return { score: section.min, feedback: null };
   }
 
   let rubric: ScoringRubric | null = null;
@@ -83,11 +88,15 @@ export async function gradeExamOpenAnswer(
   };
 
   let rawScore: number = section.min;
+  let rawFeedback: string | null = null;
   if (category.startsWith("SPEAKING")) {
     const evalRes = await evaluateSpeakingWithAudio(answer, prompt, rubric);
     const scoreVal = evalRes?.overallScore ?? (evalRes as any)?.overallBand;
     if (typeof scoreVal === "number" && !isNaN(scoreVal)) {
       rawScore = scoreVal;
+    }
+    if (typeof evalRes?.feedback === "string" && evalRes.feedback.trim().length > 0) {
+      rawFeedback = evalRes.feedback.trim().slice(0, 2000);
     }
   } else {
     const evalRes = await evaluateWritingWithRubric(answer, prompt, rubric);
@@ -95,7 +104,13 @@ export async function gradeExamOpenAnswer(
     if (typeof scoreVal === "number" && !isNaN(scoreVal)) {
       rawScore = scoreVal;
     }
+    if (typeof evalRes?.feedback === "string" && evalRes.feedback.trim().length > 0) {
+      rawFeedback = evalRes.feedback.trim().slice(0, 2000);
+    }
   }
 
-  return roundToStep(rawScore, section.step, section.min, section.max);
+  return {
+    score: roundToStep(rawScore, section.step, section.min, section.max),
+    feedback: rawFeedback,
+  };
 }

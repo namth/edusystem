@@ -1,13 +1,33 @@
 {
   "id": "TASK-029",
   "title": "Sửa luồng chấm đề + màn kết quả báo điểm từng phần (DEC-021)",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "1e4bc06a-d9f7-4264-8f47-968aaafb1504",
   "history": [
     {
       "at": "2026-11-01T13:07:48",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T13:11:52",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T13:12:21",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T13:34:16",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T13:37:52",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
@@ -16,5 +36,6 @@
     "tests/attempt-summary.test.ts",
     "tests/client-bundle-safety.test.ts",
     "tests/notifications-lib.test.ts"
-  ]
+  ],
+  "via": "agy"
 }

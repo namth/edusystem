@@ -33,6 +33,13 @@ export async function GET(
       );
     }
 
+    if (auth.user.role === "STUDENT" && submission.status === "IN_PROGRESS") {
+      return NextResponse.json(
+        { success: false, error: "Bài thi đang trong quá trình làm, chưa thể xem kết quả." },
+        { status: 409 }
+      );
+    }
+
     let exam: any = null;
     let questions: any[] = [];
 

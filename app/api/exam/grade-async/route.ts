@@ -7,6 +7,7 @@ import {
 } from "@/lib/exam-scoring";
 import { gradeExamOpenAnswer } from "@/lib/exam-ai-grading";
 import { tallyAndScoreSections } from "@/lib/exam-attempts";
+import { notifyExamGraded, notifyNeedsReview } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   if (!hasValidInternalToken(req)) {
@@ -83,12 +84,13 @@ export async function POST(req: Request) {
 
       let attempts = 0;
       let lastErr: any = null;
-      let score = section.min;
+      let gradedScore: number | undefined = undefined;
+      let gradedFeedback: string | null = null;
 
       while (attempts < 3) {
         attempts++;
         try {
-          score = await gradeExamOpenAnswer({
+          const aiOut = await gradeExamOpenAnswer({
             category: q?.category || r.category,
             prompt,
             answer: studentAns,
@@ -100,6 +102,16 @@ export async function POST(req: Request) {
             rubric_id: rubricId,
             exam_id: sub.exam_id,
           });
+          if (typeof aiOut === "number") {
+            gradedScore = aiOut;
+            gradedFeedback = null;
+          } else {
+            gradedScore = aiOut.score;
+            gradedFeedback =
+              typeof aiOut.feedback === "string"
+                ? aiOut.feedback.slice(0, 2000)
+                : null;
+          }
           lastErr = null;
           break;
         } catch (err: any) {
@@ -111,16 +123,75 @@ export async function POST(req: Request) {
 
       if (lastErr) {
         console.error("AI grading failed after 3 attempts:", lastErr);
-        score = section.min;
         finalGradingError = lastErr.message || String(lastErr);
+        delete r.score;
+      } else if (gradedScore !== undefined) {
+        r.score = gradedScore;
+        r.feedback = gradedFeedback;
       }
-
-      r.score = score;
     }
   }
 
-  // Recalculate section_scores & aggregateTotal
-  const sectionScores = tallyAndScoreSections(snapshot, results, sub.section_scores);
+  // Recalculate section_scores
+  const existingSectionScores =
+    typeof sub.section_scores === "string"
+      ? JSON.parse(sub.section_scores)
+      : sub.section_scores;
+  const sectionScores = tallyAndScoreSections(snapshot, results, existingSectionScores);
+
+  if (finalGradingError) {
+    await queryPg(
+      `UPDATE submissions
+       SET status = 'NEEDS_REVIEW',
+           results = $1,
+           section_scores = $2,
+           total_score = NULL,
+           passed = NULL,
+           grading_attempts = $3,
+           last_grading_error = $4
+       WHERE id = $5`,
+      [
+        JSON.stringify(results),
+        JSON.stringify(sectionScores),
+        totalGradingAttempts,
+        finalGradingError,
+        submissionId,
+      ]
+    );
+
+    let teacherId: string | null = null;
+    if (sub.class_ref) {
+      const classRes = await queryPg(
+        "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
+        [sub.class_ref]
+      );
+      teacherId = classRes.rows[0]?.teacher_id || null;
+    }
+    if (!teacherId && sub.exam_id) {
+      const examRes = await queryPg(
+        "SELECT created_by FROM exams WHERE id = $1 LIMIT 1",
+        [sub.exam_id]
+      );
+      teacherId = examRes.rows[0]?.created_by || null;
+    }
+    if (teacherId) {
+      await queryPg(
+        "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
+        [teacherId]
+      );
+    }
+
+    await notifyNeedsReview(submissionId);
+
+    return NextResponse.json({
+      success: true,
+      submissionId,
+      status: "NEEDS_REVIEW",
+      total_score: null,
+      passed: null,
+    });
+  }
+
   const scoreMap: Record<string, number | null> = {};
   for (const [skill, entry] of Object.entries(sectionScores)) {
     scoreMap[skill] = entry.score;
@@ -148,6 +219,8 @@ export async function POST(req: Request) {
       submissionId,
     ]
   );
+
+  await notifyExamGraded(submissionId);
 
   return NextResponse.json({
     success: true,

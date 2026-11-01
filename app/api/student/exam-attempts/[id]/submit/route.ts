@@ -11,6 +11,7 @@ import {
   type FlashcardRow,
 } from "@/lib/grading";
 import { pushGradingEvent } from "@/lib/redis-queue";
+import { notifyNeedsReview } from "@/lib/notifications";
 import {
   tallyAndScoreSections,
   formatAttemptResponse,
@@ -197,9 +198,8 @@ export async function POST(
       [sub.class_ref]
     );
     teacherId = classRes.rows[0]?.teacher_id || null;
-  } else {
-    teacherId = exam.created_by || null;
   }
+  teacherId = teacherId || exam.created_by || null;
 
   let hasSlot = false;
   if (teacherId) {
@@ -214,15 +214,7 @@ export async function POST(
 
   const nextStatus = hasSlot ? "GRADING" : "NEEDS_REVIEW";
 
-  if (hasSlot) {
-    try {
-      await pushGradingEvent(id, sub.exam_id, studentId);
-    } catch (err) {
-      console.error("pushGradingEvent error:", err);
-    }
-  }
-
-  const updateRes = await queryPg(
+  let updateRes = await queryPg(
     `UPDATE submissions
      SET status = $1,
          submitted_at = NOW(),
@@ -243,6 +235,27 @@ export async function POST(
       id,
     ]
   );
+
+  if (hasSlot) {
+    try {
+      await pushGradingEvent(id, sub.exam_id, studentId);
+    } catch (err) {
+      console.error("pushGradingEvent error:", err);
+      updateRes = await queryPg(
+        `UPDATE submissions SET status = 'NEEDS_REVIEW' WHERE id = $1 RETURNING *;`,
+        [id]
+      );
+      if (teacherId) {
+        await queryPg(
+          "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
+          [teacherId]
+        );
+      }
+      await notifyNeedsReview(id);
+    }
+  } else {
+    await notifyNeedsReview(id);
+  }
 
   return NextResponse.json(
     {
