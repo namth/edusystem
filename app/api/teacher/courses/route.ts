@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery } from "@/lib/neo4j";
+import { canUseSubject } from "@/lib/subjects";
 
 export async function GET(req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -9,13 +10,30 @@ export async function GET(req?: Request) {
   const authUser = auth.user;
 
   try {
-    let sql = `SELECT * FROM courses ORDER BY created_at DESC;`;
-    let params: any[] = [];
+    let subjectId: string | null = null;
+    if (req?.url) {
+      try {
+        subjectId = new URL(req.url).searchParams.get("subject_id");
+      } catch {
+        subjectId = null;
+      }
+    }
+
+    const conditions: string[] = [];
+    const params: any[] = [];
 
     if (authUser.role === "TEACHER") {
-      sql = `SELECT * FROM courses WHERE created_by = $1 OR created_by IS NULL ORDER BY created_at DESC;`;
-      params = [authUser.userId];
+      conditions.push(`(created_by = $${params.length + 1} OR created_by IS NULL)`);
+      params.push(authUser.userId);
     }
+
+    if (subjectId && subjectId.trim()) {
+      conditions.push(`subject_id = $${params.length + 1}`);
+      params.push(subjectId.trim());
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const sql = `SELECT * FROM courses ${whereClause} ORDER BY created_at DESC;`;
 
     const result = await queryPg(sql, params);
     const courses = result.rows.map((row: any) => ({
@@ -23,6 +41,7 @@ export async function GET(req?: Request) {
       title: row.title,
       description: row.description || "",
       default_scoring_standard_id: row.default_scoring_standard_id || null,
+      subject_id: row.subject_id || "english",
       created_by: row.created_by,
       created_at: row.created_at,
     }));
@@ -41,7 +60,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { title, description, default_scoring_standard_id } = body;
+    const { title, description, default_scoring_standard_id, subject_id } = body;
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, error: "Vui lòng nhập tên Khóa học." }, { status: 400 });
@@ -59,18 +78,39 @@ export async function POST(req: Request) {
       }
     }
 
+    let cleanSubjectId = "english";
+    let hasExplicitSubjectId = false;
+    if (subject_id !== undefined && subject_id !== null) {
+      if (typeof subject_id !== "string" || !subject_id.trim()) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      cleanSubjectId = subject_id.trim();
+      hasExplicitSubjectId = true;
+      if (!(await canUseSubject(authUser, cleanSubjectId))) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+    }
+
     const cleanTitle = title.trim();
     const cleanDesc = (description || "").trim();
-    const newCourseId = `crs_${Date.now().toString().slice(-6)}`;
+    const newCourseId = `crs_${Date.now().toString().slice(-6)}_${Math.random().toString(36).slice(2, 6)}`;
 
     // 1. Insert into PostgreSQL
-    let insertSql = `INSERT INTO courses (id, title, description, created_by, created_at) VALUES ($1, $2, $3, $4, NOW());`;
-    let insertParams: any[] = [newCourseId, cleanTitle, cleanDesc, authUser.userId];
+    const cols = ["id", "title", "description", "created_by"];
+    const insertParams: any[] = [newCourseId, cleanTitle, cleanDesc, authUser.userId];
 
     if (cleanDefaultStandardId) {
-      insertSql = `INSERT INTO courses (id, title, description, default_scoring_standard_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, NOW());`;
-      insertParams = [newCourseId, cleanTitle, cleanDesc, cleanDefaultStandardId, authUser.userId];
+      cols.push("default_scoring_standard_id");
+      insertParams.push(cleanDefaultStandardId);
     }
+
+    if (hasExplicitSubjectId) {
+      cols.push("subject_id");
+      insertParams.push(cleanSubjectId);
+    }
+
+    const placeholders = cols.map((_, idx) => `$${idx + 1}`).join(", ");
+    const insertSql = `INSERT INTO courses (${cols.join(", ")}, created_at) VALUES (${placeholders}, NOW());`;
 
     await queryPg(insertSql, insertParams);
 
@@ -91,6 +131,7 @@ export async function POST(req: Request) {
         title: cleanTitle,
         description: cleanDesc,
         default_scoring_standard_id: cleanDefaultStandardId,
+        subject_id: cleanSubjectId,
         created_by: authUser.userId,
       },
       message: "Đã tạo Khóa học mới thành công!",
@@ -108,7 +149,7 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const { id, title, description, default_scoring_standard_id } = body;
+    const { id, title, description, default_scoring_standard_id, subject_id } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Missing course id" }, { status: 400 });
@@ -132,27 +173,43 @@ export async function PUT(req: Request) {
       }
     }
 
+    let cleanSubjectId: string | null = null;
+    if (subject_id !== undefined) {
+      if (typeof subject_id !== "string" || !subject_id.trim()) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      cleanSubjectId = subject_id.trim();
+      if (!(await canUseSubject(authUser, cleanSubjectId))) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+    }
+
     const cleanId = id.trim();
     const cleanTitle = title.trim();
     const cleanDesc = (description || "").trim();
 
     // Verify ownership before updating
-    let updateSql = `UPDATE courses SET title = $1, description = $2 WHERE id = $3 RETURNING id;`;
-    let updateParams: any[] = [cleanTitle, cleanDesc, cleanId];
+    const sets = ["title = $1", "description = $2"];
+    const updateParams: any[] = [cleanTitle, cleanDesc];
 
-    if (default_scoring_standard_id === undefined) {
-      if (authUser.role === "TEACHER") {
-        updateSql = `UPDATE courses SET title = $1, description = $2 WHERE id = $3 AND created_by = $4 RETURNING id;`;
-        updateParams = [cleanTitle, cleanDesc, cleanId, authUser.userId];
-      }
-    } else {
-      updateSql = `UPDATE courses SET title = $1, description = $2, default_scoring_standard_id = $3 WHERE id = $4 RETURNING id;`;
-      updateParams = [cleanTitle, cleanDesc, cleanDefaultStandardId, cleanId];
-      if (authUser.role === "TEACHER") {
-        updateSql = `UPDATE courses SET title = $1, description = $2, default_scoring_standard_id = $3 WHERE id = $4 AND created_by = $5 RETURNING id;`;
-        updateParams = [cleanTitle, cleanDesc, cleanDefaultStandardId, cleanId, authUser.userId];
-      }
+    if (default_scoring_standard_id !== undefined) {
+      sets.push(`default_scoring_standard_id = $${updateParams.length + 1}`);
+      updateParams.push(cleanDefaultStandardId);
     }
+
+    if (cleanSubjectId !== null) {
+      sets.push(`subject_id = $${updateParams.length + 1}`);
+      updateParams.push(cleanSubjectId);
+    }
+
+    updateParams.push(cleanId);
+    let whereSql = `id = $${updateParams.length}`;
+    if (authUser.role === "TEACHER") {
+      updateParams.push(authUser.userId);
+      whereSql += ` AND created_by = $${updateParams.length}`;
+    }
+
+    const updateSql = `UPDATE courses SET ${sets.join(", ")} WHERE ${whereSql} RETURNING id;`;
 
     const res = await queryPg(updateSql, updateParams);
     if (res.rowCount === 0) {

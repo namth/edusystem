@@ -67,8 +67,14 @@ interface CourseItem {
   title: string;
   description?: string;
   default_scoring_standard_id?: string | null;
+  subject_id?: string;
   level?: string;
   created_by?: string;
+}
+
+interface SubjectOption {
+  id: string;
+  name: string;
 }
 
 const SELECTED_COURSE_KEY = "teacher_tests_selected_course";
@@ -86,6 +92,7 @@ export default function TeacherTestManagerPage() {
   // Rỗng tới khi nạp xong khóa học của chính giáo viên (không mặc định một khóa cố định)
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([{ id: "english", name: "Tiếng Anh" }]);
   const [scoringStandards, setScoringStandards] = useState<any[]>([]);
   const [items, setItems] = useState<CurriculumItem[]>([]);
   const [availableExams, setAvailableExams] = useState<ExamOption[]>([]);
@@ -102,6 +109,7 @@ export default function TeacherTestManagerPage() {
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDesc, setCourseDesc] = useState("");
   const [courseDefaultStandardId, setCourseDefaultStandardId] = useState<string>("");
+  const [courseSubjectId, setCourseSubjectId] = useState<string>("english");
   const [isCourseSubmitting, setIsCourseSubmitting] = useState(false);
 
   // Flexible Cross-Level Drag State
@@ -245,10 +253,23 @@ export default function TeacherTestManagerPage() {
     }
   };
 
+  const fetchSubjects = async () => {
+    try {
+      const res = await fetch("/api/subjects?active=1");
+      const json = await res.json();
+      if (json?.success && Array.isArray(json.subjects) && json.subjects.length > 0) {
+        setSubjects(json.subjects);
+      }
+    } catch (err) {
+      console.error("Fetch subjects error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchCourses();
     fetchExams();
     fetchScoringStandards();
+    fetchSubjects();
   }, []);
 
   const handleCreateCourse = async (e: React.FormEvent) => {
@@ -263,6 +284,7 @@ export default function TeacherTestManagerPage() {
           title: courseTitle.trim(),
           description: courseDesc.trim(),
           default_scoring_standard_id: courseDefaultStandardId.trim() || null,
+          subject_id: courseSubjectId || "english",
         }),
       });
       const json = await res.json();
@@ -271,6 +293,7 @@ export default function TeacherTestManagerPage() {
         setCourseTitle("");
         setCourseDesc("");
         setCourseDefaultStandardId("");
+        setCourseSubjectId("english");
         await fetchCourses();
         if (json.course?.id) setSelectedCourseId(json.course.id);
       } else {
@@ -296,6 +319,7 @@ export default function TeacherTestManagerPage() {
           title: courseTitle.trim(),
           description: courseDesc.trim(),
           default_scoring_standard_id: courseDefaultStandardId.trim() || null,
+          subject_id: courseSubjectId || "english",
         }),
       });
       const json = await res.json();
@@ -1024,6 +1048,7 @@ export default function TeacherTestManagerPage() {
                     setCourseTitle("");
                     setCourseDesc("");
                     setCourseDefaultStandardId("");
+                    setCourseSubjectId("english");
                     setShowAddCourseModal(true);
                   }}
                   className="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-bold rounded-lg transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
@@ -1036,6 +1061,9 @@ export default function TeacherTestManagerPage() {
               <div className="flex flex-col space-y-1.5">
                 {courses.map((course) => {
                   const isSelected = selectedCourseId === course.id;
+                  const subjName =
+                    subjects.find((s) => s.id === (course.subject_id || "english"))?.name ||
+                    "Tiếng Anh";
                   return (
                     <div
                       key={course.id}
@@ -1050,7 +1078,18 @@ export default function TeacherTestManagerPage() {
                         className="flex items-center space-x-2 max-w-[70%] text-left flex-1 truncate cursor-pointer"
                       >
                         <GraduationCap className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{course.title}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="truncate block">{course.title}</span>
+                          <span
+                            className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold ${
+                              isSelected
+                                ? "bg-white/20 text-white"
+                                : "bg-brand-50 text-brand-600"
+                            }`}
+                          >
+                            {subjName}
+                          </span>
+                        </div>
                       </button>
 
                       <div className="flex items-center space-x-1 shrink-0">
@@ -1063,6 +1102,7 @@ export default function TeacherTestManagerPage() {
                             setCourseTitle(course.title);
                             setCourseDesc(course.description || "");
                             setCourseDefaultStandardId(course.default_scoring_standard_id || "");
+                            setCourseSubjectId(course.subject_id || "english");
                             setShowEditCourseModal(true);
                           }}
                           className={`p-1 rounded-lg transition-all cursor-pointer ${
@@ -1856,6 +1896,21 @@ export default function TeacherTestManagerPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Môn Học</label>
+                <select
+                  value={courseSubjectId}
+                  onChange={(e) => setCourseSubjectId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
+                >
+                  {subjects.map((subj) => (
+                    <option key={subj.id} value={subj.id}>
+                      {subj.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold uppercase text-ink mb-1">Chuẩn Chấm Mặc Định</label>
                 <select
                   value={courseDefaultStandardId}
@@ -1916,6 +1971,21 @@ export default function TeacherTestManagerPage() {
                   onChange={(e) => setCourseDesc(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-ink mb-1">Môn Học</label>
+                <select
+                  value={courseSubjectId}
+                  onChange={(e) => setCourseSubjectId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
+                >
+                  {subjects.map((subj) => (
+                    <option key={subj.id} value={subj.id}>
+                      {subj.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

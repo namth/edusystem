@@ -26,9 +26,15 @@ interface LessonItem {
   skills: string[];
   block_count: number;
   usage_count: number;
+  subject_id?: string;
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+interface SubjectOption {
+  id: string;
+  name: string;
 }
 
 interface UsageConflict {
@@ -39,6 +45,8 @@ interface UsageConflict {
 
 export default function LessonLibraryPanel() {
   const [lessons, setLessons] = useState<LessonItem[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -50,6 +58,17 @@ export default function LessonLibraryPanel() {
   // Deletion and conflict states
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [conflictUsages, setConflictUsages] = useState<UsageConflict[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/subjects")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.subjects)) {
+          setSubjects(json.subjects);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Debounce search input (~300ms)
   useEffect(() => {
@@ -70,8 +89,12 @@ export default function LessonLibraryPanel() {
       if (selectedSkill && selectedSkill !== "ALL") {
         params.append("skill", selectedSkill);
       }
+      const baseQs = params.toString() ? `?${params.toString()}` : "";
+      const subjQs = selectedSubjectId
+        ? `${baseQs ? "&" : "?"}subject_id=${encodeURIComponent(selectedSubjectId)}`
+        : "";
 
-      const queryString = params.toString() ? `?${params.toString()}` : "";
+      const queryString = `${baseQs}${subjQs}`;
       const res = await fetch(`/api/teacher/lessons${queryString}`);
       const json = await res.json().catch(() => null);
 
@@ -86,7 +109,7 @@ export default function LessonLibraryPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedQuery, selectedSkill]);
+  }, [debouncedQuery, selectedSkill, selectedSubjectId]);
 
   useEffect(() => {
     fetchLessons();
@@ -126,7 +149,7 @@ export default function LessonLibraryPanel() {
     }
   };
 
-  const isFiltered = debouncedQuery.trim().length > 0 || selectedSkill !== "ALL";
+  const isFiltered = debouncedQuery.trim().length > 0 || selectedSkill !== "ALL" || selectedSubjectId !== "";
 
   return (
     <div className="space-y-6">
@@ -175,28 +198,43 @@ export default function LessonLibraryPanel() {
           )}
         </div>
 
-        {/* Skill Filter Chips */}
-        <div className="flex items-center space-x-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[11px] font-bold text-ink-muted mr-1 flex items-center">
-            <Filter className="w-3 h-3 mr-1" /> Kỹ năng:
-          </span>
-          {(["ALL", "Reading", "Listening", "Writing"] as const).map((sk) => {
-            const active = selectedSkill === sk;
-            const label = sk === "ALL" ? "Tất cả" : sk;
-            return (
-              <button
-                key={sk}
-                onClick={() => setSelectedSkill(sk)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                  active
-                    ? "bg-brand-600 text-white shadow-2xs"
-                    : "bg-surface-alt text-ink-muted hover:bg-brand-100 border border-line"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+        {/* Subject & Skill Filter */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <select
+            value={selectedSubjectId}
+            onChange={(e) => setSelectedSubjectId(e.target.value)}
+            className="px-3 py-1.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink focus:outline-none focus:border-brand-600"
+          >
+            <option value="">Tất cả môn</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-[11px] font-bold text-ink-muted mr-1 flex items-center">
+              <Filter className="w-3 h-3 mr-1" /> Kỹ năng:
+            </span>
+            {(["ALL", "Reading", "Listening", "Writing"] as const).map((sk) => {
+              const active = selectedSkill === sk;
+              const label = sk === "ALL" ? "Tất cả" : sk;
+              return (
+                <button
+                  key={sk}
+                  onClick={() => setSelectedSkill(sk)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    active
+                      ? "bg-brand-600 text-white shadow-2xs"
+                      : "bg-surface-alt text-ink-muted hover:bg-brand-100 border border-line"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

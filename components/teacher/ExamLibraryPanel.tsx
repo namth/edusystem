@@ -28,8 +28,14 @@ interface ExamItem {
   duration_minutes: number;
   question_count: number;
   usage_count: number;
+  subject_id?: string;
   created_by: string;
   created_at: string;
+}
+
+interface SubjectOption {
+  id: string;
+  name: string;
 }
 
 interface ExamUsageCounts {
@@ -40,6 +46,8 @@ interface ExamUsageCounts {
 
 export default function ExamLibraryPanel() {
   const [exams, setExams] = useState<ExamItem[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -48,6 +56,17 @@ export default function ExamLibraryPanel() {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [conflictUsages, setConflictUsages] = useState<ExamUsageCounts | null>(null);
+
+  useEffect(() => {
+    fetch("/api/subjects")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.subjects)) {
+          setSubjects(json.subjects);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Debounce search input (~300ms)
   useEffect(() => {
@@ -62,7 +81,11 @@ export default function ExamLibraryPanel() {
     setErrorMessage(null);
     try {
       const q = debouncedQuery.trim();
-      const queryString = q ? `?q=${encodeURIComponent(q)}` : "";
+      const baseQs = q ? `?q=${encodeURIComponent(q)}` : "";
+      const subjQs = selectedSubjectId
+        ? `${baseQs ? "&" : "?"}subject_id=${encodeURIComponent(selectedSubjectId)}`
+        : "";
+      const queryString = `${baseQs}${subjQs}`;
       const res = await fetch(`/api/teacher/exams${queryString}`);
       const json = await res.json().catch(() => null);
 
@@ -77,7 +100,7 @@ export default function ExamLibraryPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedQuery]);
+  }, [debouncedQuery, selectedSubjectId]);
 
   useEffect(() => {
     fetchExams();
@@ -120,7 +143,7 @@ export default function ExamLibraryPanel() {
     }
   };
 
-  const isFiltered = debouncedQuery.trim().length > 0;
+  const isFiltered = debouncedQuery.trim().length > 0 || selectedSubjectId !== "";
 
   return (
     <div className="space-y-6">
@@ -176,6 +199,22 @@ export default function ExamLibraryPanel() {
               <X className="w-3.5 h-3.5" />
             </button>
           )}
+        </div>
+
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <span className="text-[11px] font-bold text-ink-muted shrink-0">Môn học:</span>
+          <select
+            value={selectedSubjectId}
+            onChange={(e) => setSelectedSubjectId(e.target.value)}
+            className="px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink focus:outline-none focus:border-brand-600"
+          >
+            <option value="">Tất cả môn</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

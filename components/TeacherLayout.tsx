@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Layers,
   Bookmark,
+  GraduationCap,
 } from "lucide-react";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     { href: "/teacher/classes", label: "Quản Lý Lớp Học", icon: BookOpen },
     { href: "/teacher/tests", label: "Quản Lý Lộ Trình & Khóa Học", icon: Layers },
     { href: "/teacher/library", label: "Kho Bài Học & Đề Thi", icon: BookMarked },
+    { href: "/teacher/subjects", label: "Môn Học", icon: GraduationCap },
     { href: "/teacher/flashcards", label: "Quản Lý Flashcards", icon: Bookmark },
     { href: "/teacher/students/create", label: "Tạo Acc Học Sinh", icon: UserPlus },
     { href: "/teacher/slots", label: "Mua Slot Tài Khoản", icon: CreditCard },
