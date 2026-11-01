@@ -104,11 +104,11 @@ function LoginFormContent() {
           <div className="hidden lg:flex flex-col space-y-8 pr-6">
             <div className="space-y-4">
               <h1 className="text-4xl font-extrabold text-brand-600 leading-tight tracking-tight">
-                Chất Lượng Chuẩn Mực <br />
-                <span className="text-ink-muted">Khảo Thí IELTS Trực Tuyến</span>
+                Học Vui – Thi Chắc <br />
+                <span className="text-ink-muted">Cổng Học & Thi Đa Môn KitoKit</span>
               </h1>
               <p className="text-sm text-ink-muted leading-relaxed max-w-md">
-                Truy cập cổng đề thi mô phỏng, theo dõi lộ trình nâng Band điểm và làm chủ các kỹ năng tiếng Anh theo tiêu chuẩn học thuật quốc tế.
+                Nền tảng học tập và luyện thi đa môn thông minh dành cho học sinh, phụ huynh và giáo viên với hệ thống bài tập phong phú cùng trợ lý AI chấm điểm chuẩn xác.
               </p>
             </div>
 
@@ -122,22 +122,20 @@ function LoginFormContent() {
               />
             </div>
 
-            {/* Social Proof */}
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  A
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  B
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shadow-xs">
-                  C
-                </div>
+            {/* Features Highlight */}
+            <div className="flex flex-col gap-2.5 text-xs text-ink-muted">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-500" />
+                <span>Tiếng Anh 4 kỹ năng tích hợp chấm AI tức thì</span>
               </div>
-              <p className="text-xs font-medium text-ink-muted">
-                Hơn <strong className="text-brand-600 font-bold">12.000+</strong> học viên tham gia thi thử trong kỳ này
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-400" />
+                <span>Kho bài học & đề thi đa môn bám sát chương trình</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-600" />
+                <span>Theo dõi tiến độ và nhận xét chi tiết sau mỗi bài làm</span>
+              </div>
             </div>
           </div>
 
