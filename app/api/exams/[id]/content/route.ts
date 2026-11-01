@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
-import {
-  sanitizeQuestionForStudent,
-  sanitizeFlashcardForStudent,
-} from "@/lib/grading";
 
 export async function GET(
   request: Request,
@@ -29,6 +25,18 @@ export async function GET(
     }
 
     const exam = examRes.rows[0];
+
+    const canView =
+      auth.user.role === "ADMIN" ||
+      (auth.user.role === "TEACHER" &&
+        (exam.created_by === auth.user.userId || exam.created_by == null));
+
+    if (!canView) {
+      return NextResponse.json(
+        { success: false, error: "Bạn không có quyền xem nội dung đề thi này." },
+        { status: 403 }
+      );
+    }
 
     let questionIds: string[] = [];
     if (Array.isArray(exam.question_ids)) {
@@ -92,11 +100,6 @@ export async function GET(
         );
         flashcards = fcRes.rows;
       }
-    }
-
-    if (auth.user.role === "STUDENT") {
-      questions = questions.map((q) => sanitizeQuestionForStudent(q));
-      flashcards = flashcards.map((fc) => sanitizeFlashcardForStudent(fc));
     }
 
     return NextResponse.json({

@@ -24,9 +24,52 @@ export async function GET(
       );
     }
 
+    const exam = result.rows[0];
+
+    if (auth.user.role === "STUDENT") {
+      let questionIds: unknown[] = [];
+      if (Array.isArray(exam.question_ids)) {
+        questionIds = exam.question_ids;
+      } else if (typeof exam.question_ids === "string") {
+        try {
+          const parsed = JSON.parse(exam.question_ids);
+          if (Array.isArray(parsed)) {
+            questionIds = parsed;
+          }
+        } catch {
+          questionIds = [];
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        exam: {
+          id: exam.id,
+          title: exam.title,
+          description: exam.description ?? null,
+          duration_minutes: exam.duration_minutes,
+          skills: exam.skills,
+          passing_score: exam.passing_score ?? null,
+          question_count: questionIds.length,
+        },
+      });
+    }
+
+    const canView =
+      auth.user.role === "ADMIN" ||
+      (auth.user.role === "TEACHER" &&
+        (exam.created_by === auth.user.userId || exam.created_by == null));
+
+    if (!canView) {
+      return NextResponse.json(
+        { success: false, error: "Bạn không có quyền xem đề thi này." },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      exam: result.rows[0],
+      exam,
     });
   } catch (err: any) {
     console.error(`GET /api/exams/${id} error:`, err);
