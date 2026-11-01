@@ -133,10 +133,8 @@ export default function TeacherTestManagerPage() {
   const autoScrollRef = useRef<{ rafId: number | null; x: number; y: number }>({ rafId: null, x: 0, y: 0 });
 
   // Expanded Units State
-  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({
-    curr_unit_01: true,
-    curr_unit_02: true,
-  });
+  // Units not in this map are shown expanded (see isExpanded below)
+  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({});
 
   // Modal State (Add or Edit)
   const [showModal, setShowModal] = useState(false);
@@ -345,7 +343,7 @@ export default function TeacherTestManagerPage() {
   }, [selectedCourseId]);
 
   const toggleUnitExpand = (unitId: string) => {
-    setExpandedUnits((prev) => ({ ...prev, [unitId]: !prev[unitId] }));
+    setExpandedUnits((prev) => ({ ...prev, [unitId]: prev[unitId] === false }));
   };
 
   // Filter exams that are not assigned to any curriculum item in the current course
