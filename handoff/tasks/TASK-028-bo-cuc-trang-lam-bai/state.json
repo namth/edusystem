@@ -1,0 +1,19 @@
+{
+  "id": "TASK-028",
+  "title": "Bố cục trang làm bài tự chọn theo nội dung (thẻ tập trung / chia đôi / thanh nghe)",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-01T12:01:28",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-028-bo-cuc-trang-lam-bai/verify.sh",
+    "tests/exam-layout.test.ts",
+    "tests/stimulus-html.test.ts",
+    "tests/exam-runner-ui.test.ts"
+  ]
+}

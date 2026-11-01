@@ -1,0 +1,4 @@
+bc95123ef6821e380b453c77097149afe091f559659e72d226b44490a3b0ef0a  handoff/tasks/TASK-028-bo-cuc-trang-lam-bai/verify.sh
+9ad01d3256ac8f143e15f11a14d804ae55e0daf89bf407761fd675e642631513  tests/exam-layout.test.ts
+f8f4a96d87bb279e0f08fa13e21cd337219630d4ab7101e9de5a29e3af6e9378  tests/stimulus-html.test.ts
+5b2ba391dc79aa30d423b7424b644eaee9a5e40d4e57c1b12d69ad205e8af858  tests/exam-runner-ui.test.ts
