@@ -50,8 +50,8 @@ export default function ChangePasswordPage() {
 
     setLoading(true);
     try {
-      const ok = await updatePasswordAndProfile(newPassword, fullName, phone, targetBand);
-      if (ok) {
+      const result = await updatePasswordAndProfile(newPassword, fullName, phone, targetBand);
+      if (result.success) {
         if (user?.role === "TEACHER") {
           router.push("/teacher/classes");
         } else if (user?.role === "ADMIN") {
@@ -60,7 +60,7 @@ export default function ChangePasswordPage() {
           router.push("/student/dashboard");
         }
       } else {
-        setErrorMsg("Không thể cập nhật thông tin. Vui lòng kiểm tra lại kết nối!");
+        setErrorMsg(result.error || "Không thể cập nhật thông tin. Vui lòng kiểm tra lại kết nối!");
       }
     } catch (err: any) {
       console.error(err);

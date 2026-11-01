@@ -23,7 +23,7 @@ interface AuthContextType {
   login: (identifier: string, password?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   register: (name: string, email: string, password?: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  updatePasswordAndProfile: (newPass: string, name?: string, phone?: string, targetBand?: string) => Promise<boolean>;
+  updatePasswordAndProfile: (newPass: string, name?: string, phone?: string, targetBand?: string) => Promise<{ success: boolean; error?: string }>;
   resetPasswordForEmail: (email: string) => Promise<boolean>;
 }
 
@@ -117,22 +117,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Đổi mật khẩu lần đầu (bắt buộc) rồi lưu hồ sơ — gọi API thật, chỉ cập nhật state khi server đã lưu
   const updatePasswordAndProfile = async (
     newPass: string,
     name?: string,
     phone?: string,
     targetBand?: string
-  ): Promise<boolean> => {
-    if (user) {
-      setUser({
-        ...user,
-        name: name || user.name,
-        phone: phone || user.phone,
-        targetBand: targetBand || user.targetBand,
-        mustChangePassword: false,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const passRes = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPass }),
       });
+      const passJson = await passRes.json().catch(() => ({}));
+      if (!passRes.ok || !passJson.success) {
+        return { success: false, error: passJson.error || "Không đổi được mật khẩu." };
+      }
+
+      const profileRes = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, target_band: targetBand }),
+      });
+      const profileJson = await profileRes.json().catch(() => ({}));
+
+      if (user) {
+        setUser({
+          ...user,
+          ...(profileRes.ok && profileJson.success
+            ? { name: name || user.name, phone: phone || user.phone, targetBand: targetBand || user.targetBand }
+            : {}),
+          mustChangePassword: false,
+        });
+      }
+      if (!profileRes.ok || !profileJson.success) {
+        return { success: true, error: "Đã đổi mật khẩu nhưng chưa lưu được hồ sơ: " + (profileJson.error || "") };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: "Lỗi kết nối: " + (err?.message || "") };
     }
-    return true;
   };
 
   const resetPasswordForEmail = async (email: string): Promise<boolean> => {

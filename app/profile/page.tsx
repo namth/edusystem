@@ -31,6 +31,7 @@ export default function UserProfilePage() {
   );
 
   // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -111,6 +112,11 @@ export default function UserProfilePage() {
     setPassSuccessMsg(null);
     setPassErrorMsg(null);
 
+    if (!currentPassword) {
+      setPassErrorMsg("Vui lòng nhập mật khẩu hiện tại.");
+      return;
+    }
+
     if (!newPassword) {
       setPassErrorMsg("Vui lòng nhập mật khẩu mới.");
       return;
@@ -128,6 +134,7 @@ export default function UserProfilePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          currentPassword,
           newPassword: newPassword.trim(),
         }),
       });
@@ -137,6 +144,7 @@ export default function UserProfilePage() {
         setPassErrorMsg(data.error || "Đổi mật khẩu thất bại.");
       } else {
         setPassSuccessMsg(data.message || "Đổi mật khẩu thành công!");
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => setPassSuccessMsg(null), 4000);
@@ -323,6 +331,23 @@ export default function UserProfilePage() {
               )}
 
               <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                    Mật Khẩu Hiện Tại (*)
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu đang dùng..."
+                      className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
                     Mật Khẩu Mới (*)

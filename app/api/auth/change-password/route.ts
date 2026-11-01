@@ -1,29 +1,25 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
-import { getAuthenticatedUserFromCookie, hashPassword } from "@/lib/auth";
+import { getAuthenticatedUserFromCookie, hashPassword, comparePassword } from "@/lib/auth";
 import { validatePasswordStrength } from "@/lib/password-validator";
 
+// Đổi mật khẩu của chính người đang đăng nhập (bất biến 1, 3: danh tính chỉ lấy từ token).
+// - Lần đầu (must_change_password = TRUE): phiên đăng nhập bằng mật khẩu tạm là đủ.
+// - Tự đổi về sau: bắt buộc nhập đúng mật khẩu hiện tại.
 export async function POST(req: Request) {
   try {
     const authenticatedUser = await getAuthenticatedUserFromCookie();
-
-    const body = await req.json();
-    const { userId: bodyUserId, newPassword } = body;
-
-    let targetUserId: string | null = authenticatedUser?.userId || null;
-
-    if (!targetUserId && bodyUserId) {
-      targetUserId = bodyUserId.trim();
-    }
-
-    if (!targetUserId) {
+    if (!authenticatedUser?.userId) {
       return NextResponse.json(
-        { success: false, error: "Không tìm thấy thông tin phiên đăng nhập." },
+        { success: false, error: "Bạn cần đăng nhập để đổi mật khẩu." },
         { status: 401 }
       );
     }
 
-    // Enforce OWASP Password Strength Policy
+    const body = await req.json().catch(() => ({}));
+    const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
+    const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
+
     const validation = validatePasswordStrength(newPassword);
     if (!validation.isValid) {
       return NextResponse.json(
@@ -32,30 +28,45 @@ export async function POST(req: Request) {
       );
     }
 
-    const cleanPass = newPassword.trim();
-    const hashedPassword = hashPassword(cleanPass);
-
-    // Update password hash & clear must_change_password flag in PostgreSQL
-    const result = await queryPg(
-      `UPDATE users SET password = $1, must_change_password = FALSE WHERE id = $2 RETURNING id;`,
-      [hashedPassword, targetUserId]
+    const userRes = await queryPg(
+      `SELECT id, password, must_change_password FROM users WHERE id = $1 LIMIT 1;`,
+      [authenticatedUser.userId]
     );
-
-    if (result.rows.length === 0) {
+    const userRow = userRes.rows[0];
+    if (!userRow) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy tài khoản để cập nhật mật khẩu." },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Đổi mật khẩu thành công! Tài khoản của bạn đã được bảo vệ bằng mã hóa scrypt.",
-    });
+    if (userRow.must_change_password !== true) {
+      if (!currentPassword || !comparePassword(currentPassword.trim(), userRow.password || "")) {
+        return NextResponse.json(
+          { success: false, error: "Mật khẩu hiện tại không đúng." },
+          { status: 403 }
+        );
+      }
+    }
+
+    const cleanPass = newPassword.trim();
+    if (comparePassword(cleanPass, userRow.password || "")) {
+      return NextResponse.json(
+        { success: false, error: "Mật khẩu mới phải khác mật khẩu hiện tại." },
+        { status: 400 }
+      );
+    }
+
+    await queryPg(
+      `UPDATE users SET password = $1, must_change_password = FALSE WHERE id = $2;`,
+      [hashPassword(cleanPass), userRow.id]
+    );
+
+    return NextResponse.json({ success: true, message: "Đổi mật khẩu thành công." });
   } catch (err: any) {
     console.error("API /api/auth/change-password Exception:", err);
     return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi đổi mật khẩu." },
+      { success: false, error: "Lỗi hệ thống khi đổi mật khẩu." },
       { status: 500 }
     );
   }
