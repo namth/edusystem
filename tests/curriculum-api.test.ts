@@ -278,6 +278,20 @@ describe("Trang lộ trình không tải lại cả cây sau thao tác", () => {
     expect(calls.length).toBeLessThanOrEqual(1);
   });
 
+  it("không mặc định khóa cố định crs_01; nhớ khóa đang chọn", () => {
+    const s = src();
+    expect(s).not.toContain("crs_01");
+    expect(s).toMatch(/localStorage\.setItem\(SELECTED_COURSE_KEY/);
+  });
+
+  it("kéo bài tập chưa có lộ trình vào cây: chỉ nhận khi thả trong vùng cây, dời về đúng khe bằng computeDrop", () => {
+    const s = src();
+    expect(s).toContain("data-curriculum-tree");
+    expect(s).toMatch(/onPointerDown=\{\(e\) => handleStartExamDrag\(e, ex\)\}/);
+    expect(s).toMatch(/computeDrop\(withNew, newItem\.id, parentId, gapIndex\)/);
+    expect(s).toMatch(/lg:sticky/);
+  });
+
   it("gửi đúng tên trường snake_case khớp API (course_id, parent_id, exam_id)", () => {
     const s = src();
     expect(s).toMatch(/course_id:/);
