@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       userId: userRow.id,
       email: userRow.email,
       role: userRow.role || "STUDENT",
+      ...(userRow.must_change_password === true ? { mcp: true } : {}),
     });
 
     return NextResponse.json({

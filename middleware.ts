@@ -7,10 +7,17 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("auth_token")?.value;
 
   let userRole: string | null = null;
+  let mustChangePassword = false;
   if (token) {
     // Cryptographically verify HS256 signature using Edge-compatible Web Crypto API
     const payload = await verifyJwtToken(token);
     userRole = payload?.role || null;
+    mustChangePassword = payload?.mcp === true;
+  }
+
+  // Còn mật khẩu tạm → bắt buộc đổi trước khi vào khu vực đã đăng nhập
+  if (userRole && mustChangePassword && !pathname.startsWith("/student/landing")) {
+    return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
   // Guard Admin Routes

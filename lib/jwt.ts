@@ -2,6 +2,8 @@ export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
+  // Còn dùng mật khẩu tạm: middleware chỉ cho vào /change-password
+  mcp?: boolean;
   exp?: number;
 }
 
@@ -119,6 +121,7 @@ export async function verifyJwtToken(token: string): Promise<TokenPayload | null
       userId: payloadJson.userId,
       email: payloadJson.email,
       role: payloadJson.role,
+      ...(payloadJson.mcp === true ? { mcp: true } : {}),
       exp: payloadJson.exp,
     };
   } catch (err) {

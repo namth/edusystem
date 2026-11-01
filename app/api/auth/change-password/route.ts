@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
-import { getAuthenticatedUserFromCookie, hashPassword, comparePassword } from "@/lib/auth";
+import { getAuthenticatedUserFromCookie, hashPassword, comparePassword, setAuthCookie } from "@/lib/auth";
 import { validatePasswordStrength } from "@/lib/password-validator";
 
 // Đổi mật khẩu của chính người đang đăng nhập (bất biến 1, 3: danh tính chỉ lấy từ token).
@@ -61,6 +61,13 @@ export async function POST(req: Request) {
       `UPDATE users SET password = $1, must_change_password = FALSE WHERE id = $2;`,
       [hashPassword(cleanPass), userRow.id]
     );
+
+    // Cấp lại cookie không còn cờ mcp để middleware mở các trang
+    await setAuthCookie({
+      userId: authenticatedUser.userId,
+      email: authenticatedUser.email,
+      role: authenticatedUser.role,
+    });
 
     return NextResponse.json({ success: true, message: "Đổi mật khẩu thành công." });
   } catch (err: any) {

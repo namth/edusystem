@@ -90,3 +90,28 @@ describe("Trang đổi mật khẩu lần đầu gọi API thật", () => {
     expect(fs.readFileSync("app/profile/page.tsx", "utf8")).toMatch(/currentPassword,\s*\n\s*newPassword/);
   });
 });
+
+describe("Middleware chặn vượt qua bước đổi mật khẩu", () => {
+  const nreq = (path: string, token?: string) => {
+    const { NextRequest } = require("next/server");
+    return new NextRequest(`http://localhost${path}`, { headers: token ? { cookie: `auth_token=${token}` } : {} });
+  };
+
+  it("token còn mật khẩu tạm (mcp) → mọi trang /teacher, /student, /admin chuyển về /change-password", async () => {
+    const { middleware } = await import("@/middleware");
+    await login("gv@x.vn", "TamThoi@123");
+    const tmp = h.token!;
+    for (const p of ["/teacher/classes", "/student/dashboard", "/admin/requests"]) {
+      const res = await middleware(nreq(p, tmp));
+      expect(res.headers.get("location"), p).toMatch(/\/change-password$/);
+    }
+  });
+
+  it("đổi xong được cấp cookie mới không còn mcp → vào /teacher bình thường", async () => {
+    const { middleware } = await import("@/middleware");
+    await login("gv@x.vn", "TamThoi@123");
+    expect((await change({ newPassword: "MoiCuaToi@456" })).status).toBe(200);
+    const res = await middleware(nreq("/teacher/classes", h.token));
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
