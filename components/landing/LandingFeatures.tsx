@@ -17,33 +17,57 @@ const FEATURES = [
   { Motion: ProgressNotifyMotion, title: "Thông báo & tiến bộ", desc: "Có điểm là báo ngay. Học sinh, thầy cô thấy rõ tiến bộ qua từng bài." },
 ];
 
+// Xen kẽ tông xanh / cam; rê chuột: thẻ nổi lên, viền và bóng theo tông
+const TONES = {
+  brand: {
+    stage: "bg-gradient-to-br from-brand-100 via-brand-50 to-white",
+    bar: "from-brand-600 to-brand-400",
+    num: "text-brand-600",
+    hover: "hover:border-brand-300 hover:shadow-brand-600/15",
+  },
+  accent: {
+    stage: "bg-gradient-to-br from-accent-100 via-accent-50 to-white",
+    bar: "from-accent-500 to-accent-300",
+    num: "text-accent-500",
+    hover: "hover:border-accent-300 hover:shadow-accent-500/15",
+  },
+};
+
 export default function LandingFeatures() {
   return (
-    <section id="tinh-nang" className="py-16 md:py-24 bg-surface">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="tinh-nang" className="relative py-16 md:py-24 bg-surface overflow-hidden">
+      <div className="absolute -top-24 right-0 w-96 h-96 rounded-full bg-accent-200/40 blur-3xl" aria-hidden />
+      <div className="absolute bottom-0 -left-24 w-96 h-96 rounded-full bg-brand-200/40 blur-3xl" aria-hidden />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-12">
           <SectionTag index="01" label="Tính năng nổi bật" />
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-ink tracking-tight leading-tight">
             Học có AI kèm.
             <br />
-            <span className="text-brand-600">Dạy có trợ lý soạn.</span>
+            <span className="text-brand-600">Dạy có <span className="text-accent-500">trợ lý soạn.</span></span>
           </h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map(({ Motion, title, desc }, i) => (
-            <article
-              key={title}
-              className="group rounded-3xl border border-line bg-white p-3 shadow-xs hover:shadow-md hover:-translate-y-1 hover:border-brand-200 transition-all duration-300"
-            >
-              <Motion />
-              <div className="px-3 pt-5 pb-3">
-                <div className="text-xs font-mono font-bold text-accent-500">{String(i + 1).padStart(2, "0")}</div>
-                <h3 className="mt-1 font-display text-xl font-bold text-ink group-hover:text-brand-600 transition-colors">{title}</h3>
-                <p className="mt-1.5 text-sm text-ink-muted leading-relaxed">{desc}</p>
-              </div>
-            </article>
-          ))}
+          {FEATURES.map(({ Motion, title, desc }, i) => {
+            const t = TONES[i % 2 === 0 ? "brand" : "accent"];
+            return (
+              <article
+                key={title}
+                className={`group relative overflow-hidden rounded-3xl border border-line bg-white shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${t.hover}`}
+              >
+                <div className={`h-1.5 bg-gradient-to-r ${t.bar}`} />
+                <div className={`p-3 ${t.stage}`}>
+                  <Motion />
+                </div>
+                <div className="px-6 pt-4 pb-6">
+                  <div className={`text-xs font-mono font-bold ${t.num}`}>{String(i + 1).padStart(2, "0")}</div>
+                  <h3 className="mt-1 font-display text-xl font-bold text-ink">{title}</h3>
+                  <p className="mt-1.5 text-sm text-ink-muted leading-relaxed">{desc}</p>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

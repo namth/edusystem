@@ -5,10 +5,11 @@ import { getLandingStats } from "@/lib/landing-stats";
 
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
-import LandingMarquee from "@/components/landing/LandingMarquee";
 import LandingFeatures from "@/components/landing/LandingFeatures";
 import LandingShowcase from "@/components/landing/LandingShowcase";
 import LandingPrinciples from "@/components/landing/LandingPrinciples";
+import LandingStats from "@/components/landing/LandingStats";
+import LandingCta from "@/components/landing/LandingCta";
 import LandingFaq from "@/components/landing/LandingFaq";
 import LandingContact from "@/components/landing/LandingContact";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -44,11 +45,12 @@ export default async function HomePage() {
       <LandingHeader />
       <main className="flex-1">
         <LandingHero stats={stats} />
-        <LandingMarquee />
         <LandingFeatures />
+        <LandingStats />
         <LandingShowcase />
         <LandingPrinciples />
         <LandingFaq />
+        <LandingCta />
         <LandingContact />
       </main>
       <LandingFooter />

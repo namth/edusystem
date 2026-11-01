@@ -6,7 +6,7 @@ const delay = (s: number): CSSProperties => ({ animationDelay: `${s}s` });
 
 function Stage({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div aria-hidden className={`relative h-44 overflow-hidden rounded-2xl border border-line-soft bg-surface-alt kk-grid-bg flex items-center justify-center ${className}`}>
+    <div aria-hidden className={`relative h-44 overflow-hidden rounded-2xl border border-white/80 bg-white/55 kk-grid-bg flex items-center justify-center ${className}`}>
       {children}
     </div>
   );

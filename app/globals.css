@@ -14,11 +14,14 @@
   --color-brand-800: #0a2a7a;
   --color-brand-900: #071c52;
 
-  --color-accent-100: #fff3cc;
-  --color-accent-300: #ffd666;
-  --color-accent-400: #ffb800;
-  --color-accent-500: #ff8a00;
-  --color-accent-600: #ff5a1f;
+  --color-accent-50: #fff7f0;
+  --color-accent-100: #ffeddc;
+  --color-accent-200: #ffd2ad;
+  --color-accent-300: #ffab70;
+  --color-accent-400: #ff7a1a;
+  --color-accent-500: #f25c05;
+  --color-accent-600: #c94a00;
+  --color-accent-700: #9a3a00;
 
   --color-ink: #0f172a;
   --color-ink-muted: #475569;
@@ -268,4 +271,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   [class*="kk-"] { animation: none !important; }
+}
+.kk-grid-dark {
+  background-image: linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
