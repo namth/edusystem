@@ -48,6 +48,8 @@ export interface LessonPlayerProps {
   results?: GradeResult[] | null;
   disabled?: boolean;
   allowSpeaking?: boolean;
+  hideStimulus?: boolean;
+  startNumber?: number;
 }
 
 export default function LessonPlayer({
@@ -58,6 +60,8 @@ export default function LessonPlayer({
   results,
   disabled = false,
   allowSpeaking = false,
+  hideStimulus = false,
+  startNumber = 1,
 }: LessonPlayerProps) {
   const isReadonly = Boolean(results || disabled);
 
@@ -124,10 +128,10 @@ export default function LessonPlayer({
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ede0d9] pb-4 mb-5">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#6d3807] text-sm font-bold text-white shadow-2xs">
-                  {qIndex + 1}
+                  {startNumber + qIndex}
                 </span>
                 <span className="font-headline font-bold text-[#211a16] text-base md:text-lg">
-                  Khối {qIndex + 1}
+                  Câu {startNumber + qIndex}
                 </span>
                 {q.skill && (
                   <span
@@ -188,7 +192,7 @@ export default function LessonPlayer({
             )}
 
             {/* Stimulus text (Ngữ cảnh văn bản) */}
-            {q.stimulus_text && (
+            {!hideStimulus && q.stimulus_text && (
               <div
                 className="mb-4 rounded-xl border border-[#d8c2b6] bg-[#fff8f5] p-4 text-sm leading-relaxed text-[#211a16] [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-lg [&_p]:my-1"
                 dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(q.stimulus_text) }}
@@ -196,7 +200,7 @@ export default function LessonPlayer({
             )}
 
             {/* Stimulus audio (Ngữ cảnh âm thanh) */}
-            {q.stimulus_audio_url && (
+            {!hideStimulus && q.stimulus_audio_url && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#d8c2b6] bg-[#fff8f5] p-3">
                 <Volume2 className="h-5 w-5 text-[#6d3807] shrink-0" />
                 <audio
