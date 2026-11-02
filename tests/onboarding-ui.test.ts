@@ -119,6 +119,26 @@ describe("Khung phỏng vấn components/onboarding", () => {
   });
 });
 
+describe("Pháo giấy & kiểm tra email khi gõ", () => {
+  it("Confetti dùng canvas-confetti, bắn từ hai góc dưới, tôn trọng giảm chuyển động", () => {
+    const s = read(path.join(DIR, "Confetti.tsx"));
+    expect(s).toMatch(/import\("canvas-confetti"\)/);
+    expect(s).toMatch(/disableForReducedMotion:\s*true/);
+    expect(s).toMatch(/origin:\s*\{\s*x:\s*0,\s*y:\s*1\s*\}/);
+    expect(s).toMatch(/origin:\s*\{\s*x:\s*1,\s*y:\s*1\s*\}/);
+  });
+
+  it("màn email của học sinh và giáo viên kiểm tra trùng ngay khi gõ", () => {
+    for (const p of ["app/register/page.tsx", "app/register/teacher/page.tsx"]) {
+      const s = read(p);
+      expect(s, p).toMatch(/useEmailAvailability\(draft\.email/);
+      expect(s, p).toMatch(/EmailAvailabilityHint/);
+      expect(s, p).toMatch(/emailCheck\.status === "taken"/);
+    }
+    expect(read(path.join(DIR, "useEmailAvailability.tsx"))).toContain("/api/auth/email-available");
+  });
+});
+
 describe("Trang /register và /register/teacher", () => {
   it("học sinh: dùng lib/onboarding, gọi đủ API, xưng 'bạn', có câu hỏi email và email tạm", () => {
     const s = read("app/register/page.tsx");

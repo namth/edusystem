@@ -28,6 +28,7 @@ import {
 } from "@/lib/onboarding";
 import InterviewShell from "@/components/onboarding/InterviewShell";
 import StepActions from "@/components/onboarding/StepActions";
+import { useEmailAvailability, EmailAvailabilityHint } from "@/components/onboarding/useEmailAvailability";
 import ChoiceChips from "@/components/onboarding/ChoiceChips";
 import Mascot, { type MascotMood } from "@/components/onboarding/Mascot";
 import Confetti from "@/components/onboarding/Confetti";
@@ -157,6 +158,7 @@ export default function StudentRegisterPage() {
   const [copied, setCopied] = useState(false);
 
   const step: StudentStep = draft.step || "intro";
+  const emailCheck = useEmailAvailability(draft.email, step === "email");
   // Gọi bằng tên riêng (từ cuối của họ tên) cho thân thiện: "Nguyễn Văn An" → "An"
   const displayName = draft.name.trim().split(/\s+/).pop() || "bạn";
 
@@ -401,6 +403,11 @@ export default function StudentRegisterPage() {
   const handleEmailNext = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = draft.email.trim().toLowerCase();
+    if (emailCheck.status === "taken") {
+      setMood("oops");
+      setErrorMsg(emailCheck.message || "Email này đã được dùng để đăng ký.");
+      return;
+    }
     if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
       setMood("oops");
       setErrorMsg("Bạn nhập địa chỉ email hợp lệ nhé.");
@@ -952,6 +959,7 @@ export default function StudentRegisterPage() {
             placeholder="ten.ban@gmail.com"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
+          <EmailAvailabilityHint status={emailCheck.status} message={emailCheck.message} />
           <StepActions>
             <button
               type="submit"

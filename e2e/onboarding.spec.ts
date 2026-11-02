@@ -129,7 +129,13 @@ test.describe("Đăng ký giáo viên dùng thử", () => {
     await page.getByRole("button", { name: "Facebook" }).click();
     await page.getByLabel("Số điện thoại", { exact: true }).fill("0912345678");
     await page.getByLabel("Số điện thoại", { exact: true }).press("Enter");
+    // email đã có người dùng → cảnh báo ngay khi gõ, không cho sang bước mật khẩu
+    await page.getByLabel("Email", { exact: true }).fill("teacher@e2e.test");
+    await expect(page.getByText(/đã được dùng để đăng ký/).first()).toBeVisible({ timeout: 10_000 });
+    await page.getByLabel("Email", { exact: true }).press("Enter");
+    await expect(page.getByLabel("Mật khẩu", { exact: true })).toHaveCount(0);
     await page.getByLabel("Email", { exact: true }).fill(`co.hoa.${uniq()}@e2e.test`);
+    await expect(page.getByText("Email này dùng được")).toBeVisible({ timeout: 10_000 });
     await page.getByLabel("Email", { exact: true }).press("Enter");
     await page.getByLabel("Mật khẩu", { exact: true }).fill("matkhau123");
     await page.getByLabel("Mật khẩu", { exact: true }).press("Enter");
