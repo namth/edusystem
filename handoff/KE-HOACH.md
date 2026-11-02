@@ -95,6 +95,7 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 
 ### FEAT-013 Tối ưu phân hệ quản trị (`docs/features/quan-tri-he-thong.md`, DEC-030…035) — SPEC_DRAFT 02/11
 - ✅ Giao diện: bỏ dấu "+" ở nhãn nút, icon trên nền xanh đổi sang trắng (khoá `tests/design-rules.test.ts`). Đổi tên menu "Khách hàng tiềm năng" thành "Liên hệ từ website"
-- TASK-038 ghi nhận token AI · TASK-039 slot = học sinh · TASK-040 gộp tiêu chí vào Chuẩn chấm (3 task chạy song song được)
-- TASK-041 đơn hàng server + VietQR (sau TASK-039) · TASK-042 giao diện đơn hàng (sau TASK-041) · TASK-043 tổng quan & menu (sau TASK-038, TASK-041)
+- ✅ 03/11 đã merge TASK-038 ghi nhận token AI · TASK-039 slot = học sinh · TASK-040 gộp tiêu chí vào Chuẩn chấm · TASK-041 đơn hàng server + VietQR (965 test xanh, chưa deploy)
+- Deploy: chạy tay `docs/db-migration-015-student-slots.sql` một lần (trả lại slot đã bị trừ khi chấm AI); migration 014, 016 chạy cùng `ensureSchema`
+- Còn lại: TASK-042 giao diện đơn hàng · TASK-043 tổng quan & menu (chạy song song được)
 
