@@ -21,12 +21,12 @@ function StudentMock() {
         <div key={r.k} className="space-y-1">
           <div className="flex justify-between text-xs font-semibold"><span className="text-ink-muted">{r.k}</span><span className="text-ink">{r.v}</span></div>
           <div className="h-2 rounded-full bg-line-soft overflow-hidden">
-            <div className="kk-fill h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400" style={{ maxWidth: r.w, ...delay(i * 0.3) }} />
+            <div className="kk-fill h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-400" style={{ maxWidth: r.w, ...delay(i * 0.3) }} />
           </div>
         </div>
       ))}
-      <div className="kk-slide rounded-xl bg-brand-50 border border-brand-100 p-3 text-xs text-ink leading-relaxed" style={delay(1)}>
-        <span className="font-bold text-brand-700">AI nhận xét:</span> Bố cục rõ ràng. Nên dùng thêm từ nối để các ý liền mạch hơn.
+      <div className="kk-slide rounded-xl bg-accent-50 border border-accent-100 p-3 text-xs text-ink leading-relaxed" style={delay(1)}>
+        <span className="font-bold text-accent-700">AI nhận xét:</span> Bố cục rõ ràng. Nên dùng thêm từ nối để các ý liền mạch hơn.
       </div>
     </div>
   );
