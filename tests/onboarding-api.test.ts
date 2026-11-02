@@ -365,6 +365,31 @@ describe("GET /api/auth/username-available", () => {
   });
 });
 
+describe("GET /api/auth/email-available (báo trùng ngay khi gõ)", () => {
+  const check = async (e: string, ip = "9.9.9.9") =>
+    (await import("@/app/api/auth/email-available/route")).GET(
+      new Request(`http://localhost/api/auth/email-available?e=${encodeURIComponent(e)}`, { headers: { "x-forwarded-for": ip } })
+    );
+
+  it("còn trống / đã dùng (không phân biệt hoa thường) / sai định dạng / đuôi email tạm", async () => {
+    await h.pg.db.query(`INSERT INTO users (id, name, email) VALUES ('x1','X','co.lan@gmail.com')`);
+    expect(await (await check("moi.tinh@gmail.com")).json()).toMatchObject({ success: true, available: true });
+    const taken = await (await check("Co.Lan@Gmail.com")).json();
+    expect(taken.available).toBe(false);
+    expect(taken.error).toMatch(/đã được dùng/);
+    for (const bad of ["co.lan", "abc@", "lan@kito.io.vn"]) {
+      const j = await (await check(bad)).json();
+      expect(j.available, bad).toBe(false);
+      expect(typeof j.error).toBe("string");
+    }
+  });
+
+  it("quá 30 lần/phút/IP → 429", async () => {
+    for (let i = 0; i < 30; i++) await check(`a${i}@x.vn`, "3.3.3.3");
+    expect((await check("b@x.vn", "3.3.3.3")).status).toBe(429);
+  });
+});
+
 describe("POST /api/auth/register/teacher — giáo viên dùng thử", () => {
   it("tạo TEACHER TRIAL, slot_limit 9, hồ sơ khảo sát, cookie, thông báo cho mọi admin", async () => {
     await h.pg.db.query(`INSERT INTO users (id, name, email, role) VALUES ('ad1','Admin 1','ad1@x.vn','ADMIN'), ('ad2','Admin 2','ad2@x.vn','ADMIN'), ('s9','S','s9@x.vn','STUDENT')`);
