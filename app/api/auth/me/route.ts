@@ -22,12 +22,14 @@ export async function GET() {
       id: row.id,
       name: row.name,
       email: row.email,
-      username: row.id,
+      username: row.username || row.id,
       role: row.role || "STUDENT",
       phone: row.phone || "",
       targetBand: row.target_band || "IELTS 6.5",
       assignedClasses: row.role === "TEACHER" ? ["cls_101", "cls_102"] : ["cls_101"],
       mustChangePassword: row.must_change_password === true,
+      teacherStatus: row.teacher_status ?? null,
+      emailIsPlaceholder: Boolean(row.email_is_placeholder),
     };
 
     return NextResponse.json({ success: true, user });
