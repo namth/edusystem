@@ -36,10 +36,13 @@ export async function POST(req: Request) {
     recordRateLimitHit(rateKey, FORGOT_WINDOW_MS);
 
     // Query user profile directly from PostgreSQL
-    const result = await queryPg(`SELECT id, email, name FROM users WHERE LOWER(email) = $1 LIMIT 1;`, [cleanEmail]);
+    const result = await queryPg(
+      `SELECT id, email, name, email_is_placeholder FROM users WHERE LOWER(email) = $1 LIMIT 1;`,
+      [cleanEmail]
+    );
 
-    if (result.rows.length === 0) {
-      // Security: Even if email is not found, return generic success message to prevent account enumeration
+    if (result.rows.length === 0 || result.rows[0].email_is_placeholder === true) {
+      // Security: Even if email is not found or is placeholder, return generic success message to prevent account enumeration
       return NextResponse.json({
         success: true,
         message: `Nếu địa chỉ "${cleanEmail}" tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn.`,

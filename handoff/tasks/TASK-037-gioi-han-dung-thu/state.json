@@ -1,0 +1,17 @@
+{
+  "id": "TASK-037",
+  "title": "Giới hạn giáo viên dùng thử, banner dùng thử và admin xác minh giáo viên",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-02T12:21:45",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-037-gioi-han-dung-thu/verify.sh",
+    "tests/teacher-trial.test.ts"
+  ]
+}

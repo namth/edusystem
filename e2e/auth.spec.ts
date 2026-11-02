@@ -11,12 +11,12 @@ test.describe("Xác thực", () => {
 
   test("học sinh đăng nhập qua form → vào dashboard; sai mật khẩu báo lỗi", async ({ page }) => {
     await page.goto("/login");
-    await page.getByPlaceholder("student.name@edu.vn").fill(ACC.student);
-    await page.getByPlaceholder("••••••••").fill("Sai@12345");
-    await page.getByPlaceholder("••••••••").press("Enter");
+    await page.getByPlaceholder("Email hoặc tên đăng nhập").fill(ACC.student);
+    await page.getByPlaceholder("Mật khẩu").fill("Sai@12345");
+    await page.getByPlaceholder("Mật khẩu").press("Enter");
     await expect(page.getByText(/không chính xác/i)).toBeVisible();
-    await page.getByPlaceholder("••••••••").fill(E2E_PASSWORD);
-    await page.getByPlaceholder("••••••••").press("Enter");
+    await page.getByPlaceholder("Mật khẩu").fill(E2E_PASSWORD);
+    await page.getByPlaceholder("Mật khẩu").press("Enter");
     await expect(page).toHaveURL(/\/student\/dashboard/);
   });
 
