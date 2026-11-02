@@ -1,5 +1,5 @@
 import Portkey from "portkey-ai";
-import { queryPg } from "@/lib/db-pg";
+import { recordAiUsage } from "@/lib/ai-usage";
 
 export interface PortkeyGradingParams {
   systemPrompt?: string;
@@ -52,43 +52,23 @@ export async function callPortkeyGrading({
   const choice = response.choices[0];
   const rawContent = choice?.message?.content;
   const content = typeof rawContent === "string" ? rawContent : "Evaluation completed via Portkey Gateway.";
-  const usage = response.usage || { prompt_tokens: 850, completion_tokens: 320, total_tokens: 1170 };
 
-  const promptTokens = usage.prompt_tokens || 850;
-  const completionTokens = usage.completion_tokens || 320;
-  const totalTokens = usage.total_tokens || promptTokens + completionTokens;
+  const promptTokens = response.usage?.prompt_tokens ?? 0;
+  const completionTokens = response.usage?.completion_tokens ?? 0;
+  const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+  const usedModel = (response as any).model || model;
 
-  // Cost estimation: ~$0.002 per 1,000 tokens
-  const costUsd = Number(((totalTokens / 1000) * 0.002).toFixed(6));
-
-  // Save actual log record into PostgreSQL Database (ai_usage_logs table)
-  const logId = `log_${Date.now().toString().slice(-6)}`;
-
-  try {
-    // Ensure table exists
-    await queryPg(`
-      CREATE TABLE IF NOT EXISTS ai_usage_logs (
-        id VARCHAR(50) PRIMARY KEY,
-        teacher_id VARCHAR(50),
-        student_id VARCHAR(50),
-        submission_id VARCHAR(50),
-        model VARCHAR(100),
-        prompt_tokens INT DEFAULT 0,
-        completion_tokens INT DEFAULT 0,
-        total_tokens INT DEFAULT 0,
-        cost_usd NUMERIC(10, 6) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    await queryPg(
-      `INSERT INTO ai_usage_logs (id, teacher_id, student_id, submission_id, model, prompt_tokens, completion_tokens, total_tokens, cost_usd, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW());`,
-      [logId, teacherId, studentId ?? null, submissionId, model, promptTokens, completionTokens, totalTokens, costUsd]
-    );
-  } catch (dbErr) {
-    console.warn("Save ai_usage_logs warning:", dbErr);
-  }
+  await recordAiUsage({
+    provider: "portkey",
+    model: usedModel,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    teacherId,
+    studentId,
+    submissionId,
+    purpose: "OTHER",
+  });
 
   return {
     content,
@@ -96,8 +76,7 @@ export async function callPortkeyGrading({
       promptTokens,
       completionTokens,
       totalTokens,
-      costUsd,
     },
-    logId,
+    logId: "",
   };
 }

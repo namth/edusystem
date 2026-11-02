@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { parseExamRawTextWithAI } from "@/lib/ai-engine";
+import { withAiUsageContext } from "@/lib/ai-usage";
 
 // Bóc tách đề từ văn bản thô bằng AI — chạy ở server để không lộ khoá AI ra trình duyệt
 export async function POST(req: Request) {
@@ -13,7 +14,10 @@ export async function POST(req: Request) {
     if (!rawContent) {
       return NextResponse.json({ success: false, error: "Vui lòng dán nội dung đề thi." }, { status: 400 });
     }
-    const data = await parseExamRawTextWithAI(rawContent);
+    const data = await withAiUsageContext(
+      { purpose: "EXAM_IMPORT", teacherId: auth.user.userId },
+      () => parseExamRawTextWithAI(rawContent)
+    );
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     console.error("POST /api/admin/parse-exam-text error:", err);
