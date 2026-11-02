@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-600/20 border border-brand-700">
-            <KeyRound className="w-9 h-9 text-accent-400" />
+            <KeyRound className="w-9 h-9 text-white" />
           </div>
         </div>
         <h2 className="mt-4 text-center text-2xl font-extrabold text-ink tracking-tight">
@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
                       <span>Đang gửi email...</span>
                     </>
                   ) : (

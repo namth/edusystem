@@ -47,3 +47,32 @@ describe("Đăng xuất bỏ hẳn phiên cũ", () => {
     }
   });
 });
+
+describe("Nút & icon trên nền xanh", () => {
+  const UI = FILES.filter((f) => !f.includes(`${path.sep}landing${path.sep}`));
+
+  it("nhãn nút không bắt đầu bằng dấu \"+ \" (icon đã thể hiện hành động thêm)", () => {
+    const bad: string[] = [];
+    for (const f of UI) {
+      fs.readFileSync(f, "utf8").split("\n").forEach((l, i) => {
+        if (/(<span>|["'`{>])\+ [A-ZĐÀ-Ỹ]/.test(l)) bad.push(`${f}:${i + 1}: ${l.trim().slice(0, 100)}`);
+      });
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("icon nằm trong khối nền xanh đậm (bg-brand-500…900) dùng màu trắng, không dùng cam", () => {
+    const bad: string[] = [];
+    for (const f of UI) {
+      const lines = fs.readFileSync(f, "utf8").split("\n");
+      lines.forEach((l, i) => {
+        if (!/<[A-Z]\w*\s[^>]*className="[^"]*text-accent-\d+/.test(l)) return;
+        const ctx = lines.slice(Math.max(0, i - 12), i).join("\n");
+        const bgs = [...ctx.matchAll(/(?<![\w:-])bg-(brand-\d+|accent-\d+|white|surface[\w-]*)/g)];
+        const last = bgs.at(-1)?.[1];
+        if (last && /^brand-[5-9]00$/.test(last)) bad.push(`${f}:${i + 1}: ${l.trim().slice(0, 100)}`);
+      });
+    }
+    expect(bad).toEqual([]);
+  });
+});

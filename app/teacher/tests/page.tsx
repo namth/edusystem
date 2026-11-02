@@ -1004,7 +1004,7 @@ export default function TeacherTestManagerPage() {
               href="/teacher/tests/create"
               className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
             >
-              <PlusCircle className="w-4 h-4 text-accent-400" />
+              <PlusCircle className="w-4 h-4 text-white" />
               <span>Soạn Bộ Đề Mới</span>
             </Link>
           </div>
@@ -1093,7 +1093,7 @@ export default function TeacherTestManagerPage() {
                       </button>
 
                       <div className="flex items-center space-x-1 shrink-0">
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-accent-400 shrink-0 mr-1" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white shrink-0 mr-1" />}
                         <button
                           title="Sửa khóa học"
                           onClick={(e) => {

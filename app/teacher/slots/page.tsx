@@ -201,7 +201,7 @@ export default function TeacherSlotsPage() {
               ) : (
                 <>
                   <span>Gửi Yêu Cầu Phê Duyệt Hạn Mức Slots</span>
-                  <ArrowRight className="w-4 h-4 text-accent-400" />
+                  <ArrowRight className="w-4 h-4 text-white" />
                 </>
               )}
             </button>

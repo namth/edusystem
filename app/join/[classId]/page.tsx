@@ -358,12 +358,12 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
                           <span>Đang đăng ký ghi danh...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-accent-400" />
+                          <CheckCircle2 className="w-4 h-4 text-white" />
                           <span>XÁC NHẬN THAM GIA LỚP HỌC</span>
                         </>
                       )}
@@ -499,12 +499,12 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
                             <span>Đang tạo tài khoản & vào lớp...</span>
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-4 h-4 text-accent-400" />
+                            <UserCheck className="w-4 h-4 text-white" />
                             <span>ĐĂNG KÝ & THAM GIA LỚP HỌC</span>
                           </>
                         )}
@@ -561,12 +561,12 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
                             <span>Đang đăng nhập & ghi danh...</span>
                           </>
                         ) : (
                           <>
-                            <LogIn className="w-4 h-4 text-accent-400" />
+                            <LogIn className="w-4 h-4 text-white" />
                             <span>ĐĂNG NHẬP & THAM GIA LỚP HỌC</span>
                           </>
                         )}

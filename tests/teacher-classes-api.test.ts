@@ -34,6 +34,7 @@ beforeEach(async () => {
   h.pg = await createFakePg(["db-migration-004-enrollments-assignments.sql"]);
   await h.pg.db.exec(`
     ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;   -- DEC-031: ghi danh kiểm slot học sinh
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
     CREATE TABLE class_unlocks (class_id VARCHAR(50), curriculum_item_id VARCHAR(50), student_id VARCHAR(50), unlocked_by VARCHAR(50));
     INSERT INTO users (id,name,email,role,password) VALUES ('t1','GV1','t1@x.vn','TEACHER','x'), ('t2','GV2','t2@x.vn','TEACHER','x'),

@@ -1,0 +1,4 @@
+4cfa8aafa52337c20db401a1c55305d9c04bd87f8a1d8fbffedc4fba50440784  handoff/tasks/TASK-040-gop-tieu-chi-chuan-cham/verify.sh
+ae56bfb3c4316d9425af85d7419b9a9e23b0f07943c1a41f0c7315818cd816c4  tests/scoring-rubrics-merge.test.ts
+b7cc55aa50c87d0141cda4ec36539e173ce2f4a08f03c40590ba702bd88273b9  tests/scoring-standards-api.test.ts
+75fbec6388a1902c1f2b2062e66d09df9207d2730b3a5ee67855616e203c6df1  tests/design-rules.test.ts

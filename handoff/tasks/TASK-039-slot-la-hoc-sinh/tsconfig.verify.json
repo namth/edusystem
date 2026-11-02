@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../**/*.ts",
+    "../../../**/*.tsx"
+  ],
+  "exclude": [
+    "../../../node_modules",
+    "../../../.next",
+    "../../../tests/ai-usage.test.ts",
+    "../../../tests/scoring-rubrics-merge.test.ts"
+  ]
+}

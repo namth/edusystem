@@ -35,5 +35,6 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 - `docs/features/ai-exam-ingestion.md` — FEAT-009 AI Import DOCX/PDF/ảnh → đề thi.
 - `docs/features/lesson-library.md` — FEAT-010 Kho bài học & học theo lộ trình lớp (TASK-007 → TASK-013).
 - `docs/features/dang-ky-phong-van.md` — FEAT-012 Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử & xác minh (TASK-035 → TASK-037).
+- `docs/features/quan-tri-he-thong.md` — FEAT-013 Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh (TASK-038 → TASK-042).
 - `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
 - `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

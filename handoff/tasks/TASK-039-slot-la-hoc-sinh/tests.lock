@@ -1,0 +1,7 @@
+cd97cb24adf62446f5768440cff635f7bca270978dcf3e190907700e0178f6cc  handoff/tasks/TASK-039-slot-la-hoc-sinh/verify.sh
+723f49ee9e16ba5d12723eed749401706520a69522fbec365243006b1c795cc1  tests/student-slots.test.ts
+c54ace0697b2c9932971200a696a5db82e7d89c3fccffe4c0ba3cfd3bafebcf7  tests/exam-attempts-api.test.ts
+15d532c0bf92bbca35ab4a297be8e3d072aed28ca3f6ee09ce8ee826c99b0ec9  tests/student-lessons-api.test.ts
+251243ecba349c51eb975337d788b8c9f1a946739b6904939794bc9dff0807e4  tests/notifications-api.test.ts
+2781674c03d54319a991749da131c584918250d712c0755b789fd6f2fc4b2168  tests/teacher-classes-api.test.ts
+36c1697cd1ee6a74398470081c4cc84001c97785b1cc0321d78023c6208f771f  tests/student-api.test.ts

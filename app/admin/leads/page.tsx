@@ -120,7 +120,7 @@ export default function AdminLeadsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-ink">Khách Hàng Tiềm Năng</h1>
+            <h1 className="text-2xl font-bold text-ink">Liên Hệ Từ Website</h1>
             <p className="text-sm text-ink-muted mt-1">
               Danh sách liên hệ từ form landing page KitoKit
             </p>
@@ -198,7 +198,7 @@ export default function AdminLeadsPage() {
         ) : filteredLeads.length === 0 ? (
           <div className="bg-surface rounded-2xl border border-line p-12 text-center text-ink-muted">
             <Users className="w-10 h-10 text-ink-subtle mx-auto mb-3" />
-            <p className="text-sm font-bold text-ink">Chưa có khách hàng tiềm năng nào</p>
+            <p className="text-sm font-bold text-ink">Chưa có liên hệ nào từ website</p>
             <p className="text-xs text-ink-subtle mt-1">
               {searchQuery || statusFilter !== "ALL"
                 ? "Không tìm thấy kết quả phù hợp với bộ lọc hiện tại."

@@ -389,7 +389,7 @@ export default function TeacherGradingPage() {
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 text-accent-400" />
+                      <Save className="w-4 h-4 text-white" />
                       <span>Lưu Phê Duyệt &amp; Cập Nhật Điểm Giáo Viên</span>
                     </>
                   )}

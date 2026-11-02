@@ -401,8 +401,8 @@ export default function TeacherClassDetailPage() {
               onClick={() => setShowCreateStudentModal(true)}
               className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
             >
-              <UserPlus className="w-4 h-4 text-accent-400" />
-              <span>+ Thêm Học Viên</span>
+              <UserPlus className="w-4 h-4 text-white" />
+              <span>Thêm Học Viên</span>
             </button>
           </div>
         </div>
@@ -521,15 +521,15 @@ export default function TeacherClassDetailPage() {
                 onClick={() => setShowAssignModal(true)}
                 className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all flex items-center space-x-1.5 font-headline cursor-pointer"
               >
-                <PlusCircle className="w-4 h-4 text-accent-400" />
-                <span>+ Giao Bài Thi Mới</span>
+                <PlusCircle className="w-4 h-4 text-white" />
+                <span>Giao Bài Thi Mới</span>
               </button>
             </div>
 
             {assignedExams.length === 0 ? (
               <div className="p-12 text-center bg-surface-alt rounded-2xl border border-line space-y-3">
                 <FileText className="w-12 h-12 text-brand-600 mx-auto opacity-40" />
-                <p className="text-xs text-ink-muted">Lớp học này chưa được giao bài thi nào. Nhấp nút <strong>"+ Giao Bài Thi Mới"</strong> ở trên để giao bài vào CSDL.</p>
+                <p className="text-xs text-ink-muted">Lớp học này chưa được giao bài thi nào. Nhấp nút <strong>"Giao Bài Thi Mới"</strong> ở trên để giao bài vào CSDL.</p>
               </div>
             ) : (
               /* Matrix Table */
@@ -652,8 +652,8 @@ export default function TeacherClassDetailPage() {
                 onClick={() => setShowCreateStudentModal(true)}
                 className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all flex items-center space-x-1.5 cursor-pointer font-headline"
               >
-                <UserPlus className="w-4 h-4 text-accent-400" />
-                <span>+ Thêm Học Viên</span>
+                <UserPlus className="w-4 h-4 text-white" />
+                <span>Thêm Học Viên</span>
               </button>
             </div>
 
@@ -673,7 +673,7 @@ export default function TeacherClassDetailPage() {
                   {students.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-xs text-ink-subtle">
-                        Chưa có học sinh nào trong lớp. Nhấp "+ Thêm Học Viên" để thêm hoặc ghi danh học sinh.
+                        Chưa có học sinh nào trong lớp. Nhấp "Thêm Học Viên" để thêm hoặc ghi danh học sinh.
                       </td>
                     </tr>
                   ) : (
@@ -788,7 +788,7 @@ export default function TeacherClassDetailPage() {
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Xác Nhận Giao Bài Vào DB</span>
                   </button>
                 </div>
@@ -862,7 +862,7 @@ export default function TeacherClassDetailPage() {
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Thêm / Ghi Danh Học Sinh</span>
                   </button>
                 </div>
@@ -915,7 +915,7 @@ export default function TeacherClassDetailPage() {
                   href={`/teacher/tests/create?editId=${previewExam.id}`}
                   className="px-5 py-2.5 bg-brand-600 text-white hover:bg-brand-700 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer font-headline"
                 >
-                  <Edit3 className="w-4 h-4 text-accent-400" />
+                  <Edit3 className="w-4 h-4 text-white" />
                   <span>Mở Trình Sửa Đề Thi trong Exam Builder &rarr;</span>
                 </Link>
               </div>
@@ -1031,7 +1031,7 @@ export default function TeacherClassDetailPage() {
                       disabled={isSavingReview}
                       className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                     >
-                      {isSavingReview ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-accent-400" />}
+                      {isSavingReview ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
                       <span>Phê Duyệt &amp; Lưu Điểm</span>
                     </button>
                   </div>

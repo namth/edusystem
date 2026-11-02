@@ -265,12 +265,12 @@ export default function ChangePasswordPage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
                       <span>Đang lưu thông tin...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-accent-400" />
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                       <span>HOÀN TẤT & TRUY CẬP HỆ THỐNG</span>
                     </>
                   )}

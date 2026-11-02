@@ -364,7 +364,7 @@ export default function UserProfilePage() {
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
-                    <Save className="w-4 h-4 text-accent-400" />
+                    <Save className="w-4 h-4 text-white" />
                   )}
                   <span>Lưu Cập Nhật Hồ Sơ</span>
                 </button>

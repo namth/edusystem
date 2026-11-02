@@ -114,7 +114,9 @@ describe("Giáo viên chấm tay xong → học sinh nhận thông báo", () => 
     const submit = (await import("@/app/api/student/exam-attempts/[id]/submit/route")).POST;
     const a = (await (await start(req("POST", "/x", {}), { params: Promise.resolve({ examId: "eFree" }) })).json()).attempt;
     await submit(req("POST", "/x", { answers: { w1: "Essay" } }), { params: Promise.resolve({ id: a.id }) });
-    expect((await rows(`SELECT status FROM submissions WHERE id=$1`, [a.id]))[0].status).toBe("NEEDS_REVIEW");
+    // DEC-031: chấm AI không phụ thuộc slot → bài vào GRADING; giả lập AI lỗi để GV chấm tay
+    expect((await rows(`SELECT status FROM submissions WHERE id=$1`, [a.id]))[0].status).toBe("GRADING");
+    await h.pg.db.query(`UPDATE submissions SET status='NEEDS_REVIEW' WHERE id=$1`, [a.id]);
 
     await loginAs("TEACHER", "t2");
     const override = (await import("@/app/api/exam/grade-override/route")).PUT;

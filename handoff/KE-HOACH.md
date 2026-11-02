@@ -92,3 +92,9 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - Gỡ hẳn `lib/supabase.ts` (client trình duyệt) khi không còn trang nào dùng
 - `api/exam/*` còn dùng `supabase-server` → chuyển sang `queryPg`
 - Tài khoản học sinh trên server còn mật khẩu plaintext (4 tài khoản) → đặt lại mật khẩu
+
+### FEAT-013 Tối ưu phân hệ quản trị (`docs/features/quan-tri-he-thong.md`, DEC-030…035) — SPEC_DRAFT 02/11
+- ✅ Giao diện: bỏ dấu "+" ở nhãn nút, icon trên nền xanh đổi sang trắng (khoá `tests/design-rules.test.ts`). Đổi tên menu "Khách hàng tiềm năng" thành "Liên hệ từ website"
+- TASK-038 ghi nhận token AI · TASK-039 slot = học sinh · TASK-040 gộp tiêu chí vào Chuẩn chấm (3 task chạy song song được)
+- TASK-041 đơn hàng & VietQR (sau TASK-039) · TASK-042 tổng quan & menu (sau TASK-038, TASK-041)
+

@@ -323,8 +323,8 @@ export default function AdminRubricsPage() {
             onClick={openCreateModal}
             className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4 text-accent-400" />
-            <span>+ Tạo Bộ Tiêu Chuẩn Mới</span>
+            <PlusCircle className="w-4 h-4 text-white" />
+            <span>Tạo Bộ Tiêu Chuẩn Mới</span>
           </button>
         </div>
 
@@ -654,7 +654,7 @@ export default function AdminRubricsPage() {
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 font-headline cursor-pointer"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Lưu Bộ Rubric</span>
                   </button>
                 </div>
