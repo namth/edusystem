@@ -4,6 +4,7 @@ import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass, syncTeacherManagesClass } from "@/lib/neo4j";
 import { requireRole } from "@/lib/api-auth";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { assertStudentSlotAvailable } from "@/lib/student-slots";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -39,6 +40,26 @@ export async function POST(req: Request) {
       const trial = await assertTrialAllows(auth.user.userId, "students");
       if (!trial.ok) {
         return trialLimitResponse("students", trial.error);
+      }
+
+      const classRows = await queryPg(
+        `SELECT id, teacher_id FROM classes WHERE id = ANY($1);`,
+        [classIds]
+      );
+      const teacherIds = new Set<string>();
+      for (const row of classRows.rows) {
+        if (row.teacher_id) {
+          teacherIds.add(row.teacher_id);
+        }
+      }
+      for (const tId of teacherIds) {
+        const slotCheck = await assertStudentSlotAvailable(tId);
+        if (!slotCheck.ok) {
+          return NextResponse.json(
+            { success: false, error: slotCheck.error },
+            { status: 409 }
+          );
+        }
       }
     }
 

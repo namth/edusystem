@@ -31,8 +31,7 @@ export default function TeacherSlotsPage() {
   const [loading, setLoading] = useState(true);
 
   // Stats
-  const [totalLimit, setTotalLimit] = useState(250);
-  const [usedSlots, setUsedSlots] = useState(218);
+  const [usage, setUsage] = useState<{ used: number; limit: number }>({ used: 0, limit: 0 });
 
   const fetchRequests = async () => {
     try {
@@ -40,6 +39,9 @@ export default function TeacherSlotsPage() {
       const res = await fetch("/api/teacher/slot-requests");
       if (res.ok) {
         const data = await res.json();
+        if (data.usage) {
+          setUsage(data.usage);
+        }
         const rows: SlotRequest[] = (data.slot_requests || []).map((row: any) => ({
           id: row.id,
           requested_slots: Number(row.requested_slots),
@@ -50,12 +52,6 @@ export default function TeacherSlotsPage() {
             : "Hôm nay",
         }));
         setRequests(rows);
-
-        const approvedSlots = rows
-          .filter((r) => r.status === "APPROVED")
-          .reduce((sum, r) => sum + r.requested_slots, 0);
-
-        setTotalLimit(250 + approvedSlots);
       }
     } catch (e) {
       console.error("Failed to fetch slot requests:", e);
@@ -113,8 +109,21 @@ export default function TeacherSlotsPage() {
             Quản Lý &amp; Mở Rộng Hạn Mức Sĩ Số Slots
           </h1>
           <p className="text-sm text-ink-muted mt-1">
-            Gửi yêu cầu nâng hạn mức sĩ số slots tài khoản học viên để mở rộng quy mô lớp học.
+            Đang dùng {usage.used} / {usage.limit} slot học sinh. Quy tắc: 1 slot = 1 học sinh (học sinh học nhiều lớp của thầy cô chỉ tính 1).
           </p>
+        </div>
+
+        {/* Banner giải thích */}
+        <div className="p-4 rounded-2xl bg-brand-50 border border-brand-200 text-brand-900 flex items-start space-x-3">
+          <HelpCircle className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed">
+            <span className="font-bold text-sm text-brand-700">
+              Đang dùng {usage.used} / {usage.limit} slot học sinh
+            </span>
+            <p className="mt-0.5 text-ink-subtle">
+              1 slot = 1 học sinh (học sinh học nhiều lớp của thầy cô chỉ tính 1 slot). Chấm bài tự luận AI không trừ slot.
+            </p>
+          </div>
         </div>
 
         {successMsg && (
@@ -138,7 +147,7 @@ export default function TeacherSlotsPage() {
               Tổng Hạn Mức Slots Được Cấp
             </p>
             <p className="text-3xl font-bold text-brand-600">
-              {totalLimit.toLocaleString("vi-VN")} Slots
+              {usage.limit.toLocaleString("vi-VN")} Slots
             </p>
           </div>
           <div className="bg-white p-6 rounded-3xl border border-line shadow-sm text-center">
@@ -146,7 +155,7 @@ export default function TeacherSlotsPage() {
               Sĩ Số Đã Sử Dụng
             </p>
             <p className="text-3xl font-bold text-brand-600">
-              {usedSlots.toLocaleString("vi-VN")} Slots
+              {usage.used.toLocaleString("vi-VN")} Slots
             </p>
           </div>
           <div className="bg-white p-6 rounded-3xl border border-line shadow-sm text-center">
@@ -154,7 +163,7 @@ export default function TeacherSlotsPage() {
               Số Slot Còn Trống
             </p>
             <p className="text-3xl font-bold text-brand-800">
-              {(totalLimit - usedSlots).toLocaleString("vi-VN")} Slots
+              {(usage.limit - usage.used).toLocaleString("vi-VN")} Slots
             </p>
           </div>
         </div>
