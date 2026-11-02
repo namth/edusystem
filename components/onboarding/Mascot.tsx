@@ -12,6 +12,15 @@ const MOOD_CLASS_MAP: Record<MascotMood, string> = {
   celebrate: "mascot-celebrate",
 };
 
+// Mỗi cảm xúc một biểu cảm (public/brand/mascot/); đứng yên dùng mascot gốc
+const MOOD_IMAGE_MAP: Record<MascotMood, string> = {
+  idle: "/brand/kitokit-mark-transparent.png",
+  think: "/brand/mascot/kito-chu-tam-doc-sach.png",
+  happy: "/brand/mascot/kito-khen-ngon-cai.png",
+  oops: "/brand/mascot/kito-thac-mac.png",
+  celebrate: "/brand/mascot/kito-an-mung-chien-thang.png",
+};
+
 interface MascotProps {
   mood?: MascotMood;
   size?: "sm" | "md" | "lg";
@@ -35,7 +44,8 @@ export default function Mascot({ mood = "idle", size = "md", className = "" }: M
         aria-hidden="true"
       />
       <img
-        src="/brand/kitokit-mark-transparent.png"
+        key={mood}
+        src={MOOD_IMAGE_MAP[mood] || MOOD_IMAGE_MAP.idle}
         alt="Mascot Kito"
         className={`relative z-10 w-full h-full object-contain drop-shadow-md ${moodClass}`}
       />
