@@ -1,17 +1,38 @@
 {
   "id": "TASK-037",
   "title": "Giới hạn giáo viên dùng thử, banner dùng thử và admin xác minh giáo viên",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "76edab5c-ef8d-4f82-8a35-334305daff5e",
   "history": [
     {
       "at": "2026-11-02T12:21:45",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T14:21:00",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T14:21:29",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-02T15:02:25",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-02T15:16:05",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
     "handoff/tasks/TASK-037-gioi-han-dung-thu/verify.sh",
     "tests/teacher-trial.test.ts"
-  ]
+  ],
+  "via": "agy"
 }

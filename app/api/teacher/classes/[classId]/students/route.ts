@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
+import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function POST(
   req: Request,
@@ -87,6 +88,18 @@ export async function POST(
     );
 
     if (enrRes.rows.length === 0) {
+      if (user.role !== "ADMIN") {
+        const existingWithTeacher = await queryPg(
+          "SELECT 1 FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.teacher_id = $1 AND e.student_id = $2 LIMIT 1",
+          [cls.teacher_id, existing.id]
+        );
+        const adding = existingWithTeacher.rows.length > 0 ? 0 : 1;
+        const trial = await assertTrialAllows(cls.teacher_id, "students", adding);
+        if (!trial.ok) {
+          return trialLimitResponse("students", trial.error);
+        }
+      }
+
       // Kiểm tra lớp đầy
       const countRes = await queryPg(
         "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
@@ -129,7 +142,14 @@ export async function POST(
     );
   }
 
-  // Chưa có tài khoản: kiểm tra lớp đầy
+  // Chưa có tài khoản: kiểm tra giới hạn dùng thử trước khi kiểm tra lớp đầy
+  if (user.role !== "ADMIN") {
+    const trial = await assertTrialAllows(cls.teacher_id, "students", 1);
+    if (!trial.ok) {
+      return trialLimitResponse("students", trial.error);
+    }
+  }
+
   const countRes = await queryPg(
     "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
     [classId]

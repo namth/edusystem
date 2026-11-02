@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { canUseSubject } from "@/lib/subjects";
+import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -108,6 +109,12 @@ export async function POST(req: Request) {
     }
 
     const description = body.description !== undefined && body.description !== null ? String(body.description) : null;
+
+    const trial = await assertTrialAllows(authUser.userId, "contents");
+    if (!trial.ok) {
+      return trialLimitResponse("contents", trial.error);
+    }
+
     const id = "lsn_" + crypto.randomUUID();
 
     let insertSql = `INSERT INTO lessons (id, title, description, skills, question_ids, created_by, created_at, updated_at)

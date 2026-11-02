@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
+import { assertTrialAllows } from "@/lib/teacher-trial";
 
 export type EnrollByCodeResult =
   | { ok: true; class: any; alreadyEnrolled: boolean }
@@ -47,6 +48,23 @@ export async function enrollStudentByCode(
       class: targetClass,
       alreadyEnrolled: true,
     };
+  }
+
+  // Kiểm tra giới hạn học sinh của giáo viên dùng thử
+  if (targetClass.teacher_id) {
+    const existingWithTeacher = await queryPg(
+      `SELECT 1 FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.teacher_id = $1 AND e.student_id = $2 LIMIT 1;`,
+      [targetClass.teacher_id, studentId]
+    );
+    const adding = existingWithTeacher.rows.length > 0 ? 0 : 1;
+    const trial = await assertTrialAllows(targetClass.teacher_id, "students", adding);
+    if (!trial.ok) {
+      return {
+        ok: false,
+        status: 409,
+        error: trial.error,
+      };
+    }
   }
 
   // Kiểm tra sĩ số lớp
