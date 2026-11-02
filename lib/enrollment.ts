@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import { assertTrialAllows } from "@/lib/teacher-trial";
+import { assertStudentSlotAvailable } from "@/lib/student-slots";
 
 export type EnrollByCodeResult =
   | { ok: true; class: any; alreadyEnrolled: boolean }
@@ -63,6 +64,15 @@ export async function enrollStudentByCode(
         ok: false,
         status: 409,
         error: trial.error,
+      };
+    }
+
+    const slotCheck = await assertStudentSlotAvailable(targetClass.teacher_id, studentId);
+    if (!slotCheck.ok) {
+      return {
+        ok: false,
+        status: 409,
+        error: slotCheck.error,
       };
     }
   }

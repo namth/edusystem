@@ -54,7 +54,7 @@ export async function POST(req: Request) {
        RETURNING id`,
       [submissionId, "Worker chấm AI thất bại sau nhiều lần thử"]
     );
-    if (moved.rows.length > 0) await refundSlotAndNotify(sub);
+    if (moved.rows.length > 0) await notifyNeedsReview(sub.id);
     return NextResponse.json({ success: true, submissionId, status: "NEEDS_REVIEW", gaveUp: true });
   }
 
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
           ]
         );
 
-        await refundSlotAndNotify(sub);
+        await notifyNeedsReview(sub.id);
 
         return NextResponse.json({
           success: true,
@@ -248,30 +248,4 @@ export async function POST(req: Request) {
       });
     }
   );
-}
-
-// Hoàn slot đã trừ lúc nộp (GV lớp, không thì người tạo đề) và báo giáo viên chấm tay
-async function refundSlotAndNotify(sub: any) {
-  let teacherId: string | null = null;
-  if (sub.class_ref) {
-    const classRes = await queryPg(
-      "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
-      [sub.class_ref]
-    );
-    teacherId = classRes.rows[0]?.teacher_id || null;
-  }
-  if (!teacherId && sub.exam_id) {
-    const examRes = await queryPg(
-      "SELECT created_by FROM exams WHERE id = $1 LIMIT 1",
-      [sub.exam_id]
-    );
-    teacherId = examRes.rows[0]?.created_by || null;
-  }
-  if (teacherId) {
-    await queryPg(
-      "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
-      [teacherId]
-    );
-  }
-  await notifyNeedsReview(sub.id);
 }

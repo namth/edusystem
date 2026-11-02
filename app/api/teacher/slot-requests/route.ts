@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { isTrialTeacher, trialLimitResponse } from "@/lib/teacher-trial";
+import { getStudentSlotUsage } from "@/lib/student-slots";
 
 export async function GET(req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -22,8 +23,11 @@ export async function GET(req?: Request) {
     total_cost: Number(row.total_cost),
   }));
 
+  const usage = await getStudentSlotUsage(auth.user.userId);
+
   return NextResponse.json({
     success: true,
+    usage,
     slot_requests,
   });
 }

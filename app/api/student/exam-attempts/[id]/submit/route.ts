@@ -190,44 +190,19 @@ export async function POST(
     );
   }
 
-  // Có mục AI: xác định giáo viên để trừ slot
-  let teacherId: string | null = null;
-  if (sub.class_ref) {
-    const classRes = await queryPg(
-      "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
-      [sub.class_ref]
-    );
-    teacherId = classRes.rows[0]?.teacher_id || null;
-  }
-  teacherId = teacherId || exam.created_by || null;
-
-  let hasSlot = false;
-  if (teacherId) {
-    const slotRes = await queryPg(
-      "UPDATE users SET slot_limit = slot_limit - 1 WHERE id = $1 AND slot_limit > 0 RETURNING slot_limit",
-      [teacherId]
-    );
-    if (slotRes.rows.length > 0) {
-      hasSlot = true;
-    }
-  }
-
-  const nextStatus = hasSlot ? "GRADING" : "NEEDS_REVIEW";
-
   let updateRes = await queryPg(
     `UPDATE submissions
-     SET status = $1,
+     SET status = 'GRADING',
          submitted_at = NOW(),
-         answers = $2,
-         results = $3,
-         section_scores = $4,
+         answers = $1,
+         results = $2,
+         section_scores = $3,
          total_score = NULL,
          passed = NULL,
-         is_late = $5
-     WHERE id = $6
+         is_late = $4
+     WHERE id = $5
      RETURNING *;`,
     [
-      nextStatus,
       JSON.stringify(answers),
       JSON.stringify(results),
       JSON.stringify(sectionScores),
@@ -236,24 +211,14 @@ export async function POST(
     ]
   );
 
-  if (hasSlot) {
-    try {
-      await pushGradingEvent(id, sub.exam_id, studentId);
-    } catch (err) {
-      console.error("pushGradingEvent error:", err);
-      updateRes = await queryPg(
-        `UPDATE submissions SET status = 'NEEDS_REVIEW' WHERE id = $1 RETURNING *;`,
-        [id]
-      );
-      if (teacherId) {
-        await queryPg(
-          "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
-          [teacherId]
-        );
-      }
-      await notifyNeedsReview(id);
-    }
-  } else {
+  try {
+    await pushGradingEvent(id, sub.exam_id, studentId);
+  } catch (err) {
+    console.error("pushGradingEvent error:", err);
+    updateRes = await queryPg(
+      `UPDATE submissions SET status = 'NEEDS_REVIEW' WHERE id = $1 RETURNING *;`,
+      [id]
+    );
     await notifyNeedsReview(id);
   }
 

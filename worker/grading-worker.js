@@ -104,7 +104,7 @@ async function processMessage(redis, streamName, messageId, fields) {
     console.error(
       `❌ [Grading Worker] Message ${messageId} exceeded MAX_DELIVERIES (${MAX_DELIVERIES}); XACK to prevent infinite loop.`
     );
-    // Bài thi: báo server chuyển sang giáo viên chấm tay (hoàn slot) để không kẹt "đang chấm"
+    // Bài thi: báo server chuyển sang giáo viên chấm tay để không kẹt "đang chấm"
     if (eventType === "GRADING_REQUESTED" && payload.submissionId) {
       try {
         await fetch(`${APP_URL}/api/exam/grade-async`, {

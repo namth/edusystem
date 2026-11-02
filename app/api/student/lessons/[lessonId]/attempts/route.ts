@@ -122,7 +122,7 @@ export async function POST(
   const summary = summarizeResults(results);
   const { objective_earned, objective_max, ai_max, has_ai } = summary;
 
-  let status: "GRADED" | "GRADING" | "AI_SKIPPED" = "GRADED";
+  let status: "GRADED" | "GRADING" = "GRADED";
   let ai_earned: number | null = 0;
   let score_percent: number | null = null;
   let graded_at: Date | null = new Date();
@@ -134,24 +134,11 @@ export async function POST(
     score_percent = computeScorePercent(objective_earned, objective_max, 0, 0);
     graded_at = new Date();
   } else {
-    const teacherId = access.klass.teacher_id;
-    const slotRes = await queryPg(
-      "UPDATE users SET slot_limit = slot_limit - 1 WHERE id = $1 AND slot_limit > 0 RETURNING slot_limit",
-      [teacherId]
-    );
-
-    if (slotRes.rows.length > 0) {
-      status = "GRADING";
-      ai_earned = null;
-      score_percent = null;
-      graded_at = null;
-      shouldPushEvent = true;
-    } else {
-      status = "AI_SKIPPED";
-      ai_earned = 0;
-      score_percent = computeScorePercent(objective_earned, objective_max, 0, ai_max);
-      graded_at = new Date();
-    }
+    status = "GRADING";
+    ai_earned = null;
+    score_percent = null;
+    graded_at = null;
+    shouldPushEvent = true;
   }
 
   const attemptId = "att_" + crypto.randomUUID();

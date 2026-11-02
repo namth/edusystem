@@ -5,6 +5,7 @@ import { queryPg } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { assertStudentSlotAvailable } from "@/lib/student-slots";
 
 export async function POST(
   req: Request,
@@ -100,6 +101,16 @@ export async function POST(
         }
       }
 
+      if (cls.teacher_id) {
+        const slotCheck = await assertStudentSlotAvailable(cls.teacher_id, existing.id);
+        if (!slotCheck.ok) {
+          return NextResponse.json(
+            { success: false, error: slotCheck.error },
+            { status: 409 }
+          );
+        }
+      }
+
       // Kiểm tra lớp đầy
       const countRes = await queryPg(
         "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
@@ -147,6 +158,16 @@ export async function POST(
     const trial = await assertTrialAllows(cls.teacher_id, "students", 1);
     if (!trial.ok) {
       return trialLimitResponse("students", trial.error);
+    }
+  }
+
+  if (cls.teacher_id) {
+    const slotCheck = await assertStudentSlotAvailable(cls.teacher_id);
+    if (!slotCheck.ok) {
+      return NextResponse.json(
+        { success: false, error: slotCheck.error },
+        { status: 409 }
+      );
     }
   }
 
