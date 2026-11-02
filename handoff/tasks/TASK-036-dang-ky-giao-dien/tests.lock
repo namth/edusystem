@@ -1,5 +1,5 @@
 d2223fcb654cc97b1aaade6c696d25358f09636384ed5f921844b9fdf46a1ef1  handoff/tasks/TASK-036-dang-ky-giao-dien/verify.sh
 4b883c3e3bb16d6a6ccb4d74d586e421961c1c035949c4ad49f0f797ce7ecaca  tests/onboarding-ui.test.ts
-2e70063f6482c190b81e192601d833fe85d6006bd4c780ffce40174401310382  e2e/onboarding.spec.ts
+c56a4f125c89ae8efb2d7534074f5f8a47f417da41fbbff08136046ad5647a98  e2e/onboarding.spec.ts
 4b875a0d2e12d02297fb0e7e4e2e784b141f0103dd49763dfed92ba23041cb6b  e2e/auth.spec.ts
 003dc054bbe4e237a1dcbbfcfea804c1b3d41b11c0211bf00a426e4ddb4f88d6  e2e/seed.ts

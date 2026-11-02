@@ -11,8 +11,8 @@ test.describe("Đăng ký học sinh kiểu phỏng vấn", () => {
     await page.goto("/register");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
 
-    await page.getByLabel("Tên của bạn").fill("Bé Na E2E");
-    await page.getByLabel("Tên của bạn").press("Enter");
+    await page.getByLabel("Tên của bạn", { exact: true }).fill("Bé Na E2E");
+    await page.getByLabel("Tên của bạn", { exact: true }).press("Enter");
     // từ câu 2 mascot gọi theo tên
     await expect(page.getByText(/Na/).first()).toBeVisible();
     await page.getByRole("button", { name: "Lớp 3", exact: true }).click();
@@ -22,12 +22,12 @@ test.describe("Đăng ký học sinh kiểu phỏng vấn", () => {
     await page.getByRole("button", { name: /Cambridge/ }).click();
 
     await page.getByRole("button", { name: "Có mã lớp" }).click();
-    await page.getByLabel("Mã lớp").fill("E2E3A");
+    await page.getByLabel("Mã lớp", { exact: true }).fill("E2E3A");
     await expect(page.getByText("Lớp 3A E2E")).toBeVisible();
     await next(page);
 
     await page.getByRole("button", { name: "Không có", exact: true }).click();
-    const u = page.getByLabel("Tên đăng nhập");
+    const u = page.getByLabel("Tên đăng nhập", { exact: true });
     await expect(u).not.toHaveValue(""); // có gợi ý điền sẵn
     await expect(page.getByText(/@kito\.io\.vn/)).toBeVisible();
     await u.fill(username);
@@ -37,11 +37,11 @@ test.describe("Đăng ký học sinh kiểu phỏng vấn", () => {
 
     // quay lại một bước rồi đi tiếp: giá trị còn nguyên
     await page.getByRole("button", { name: "Quay lại" }).click();
-    await expect(page.getByLabel("Tên đăng nhập")).toHaveValue(username);
-    await page.getByLabel("Tên đăng nhập").press("Enter");
+    await expect(page.getByLabel("Tên đăng nhập", { exact: true })).toHaveValue(username);
+    await page.getByLabel("Tên đăng nhập", { exact: true }).press("Enter");
 
-    await page.getByLabel("Mật khẩu").fill("matkhau1");
-    await page.getByLabel("Mật khẩu").press("Enter");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("matkhau1");
+    await page.getByLabel("Mật khẩu", { exact: true }).press("Enter");
 
     await expect(page.getByText(/Chào mừng/)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(username).first()).toBeVisible();
@@ -65,33 +65,33 @@ test.describe("Đăng ký học sinh kiểu phỏng vấn", () => {
   test("tên đăng nhập đã có người dùng → báo trùng và bấm gợi ý để dùng", async ({ page }) => {
     await page.goto("/register");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
-    await page.getByLabel("Tên của bạn").fill("Học Sinh Trùng");
-    await page.getByLabel("Tên của bạn").press("Enter");
+    await page.getByLabel("Tên của bạn", { exact: true }).fill("Học Sinh Trùng");
+    await page.getByLabel("Tên của bạn", { exact: true }).press("Enter");
     await page.getByRole("button", { name: "Lớp 5", exact: true }).click();
     await page.getByRole("button", { name: "Tiếng Anh" }).click();
     await next(page);
     await page.getByRole("button", { name: "Chưa rõ" }).click();
     await page.getByRole("button", { name: "Chưa có, bỏ qua" }).click();
     await page.getByRole("button", { name: "Không có", exact: true }).click();
-    await page.getByLabel("Tên đăng nhập").fill("admin");
+    await page.getByLabel("Tên đăng nhập", { exact: true }).fill("admin");
     await expect(page.getByText(/đặt trước|tên khác/i)).toBeVisible();
   });
 
   test("có email: đăng ký xong vào trang học sinh", async ({ page }) => {
     await page.goto("/register");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
-    await page.getByLabel("Tên của bạn").fill("Trần Có Mail");
-    await page.getByLabel("Tên của bạn").press("Enter");
+    await page.getByLabel("Tên của bạn", { exact: true }).fill("Trần Có Mail");
+    await page.getByLabel("Tên của bạn", { exact: true }).press("Enter");
     await page.getByRole("button", { name: "Lớp 10", exact: true }).click();
     await page.getByRole("button", { name: "Tiếng Anh" }).click();
     await next(page);
     await page.getByRole("button", { name: "IELTS", exact: true }).click();
     await page.getByRole("button", { name: "Chưa có, bỏ qua" }).click();
     await page.getByRole("button", { name: "Có", exact: true }).click();
-    await page.getByLabel("Email").fill(`co.mail.${uniq()}@e2e.test`);
-    await page.getByLabel("Email").press("Enter");
-    await page.getByLabel("Mật khẩu").fill("matkhau1");
-    await page.getByLabel("Mật khẩu").press("Enter");
+    await page.getByLabel("Email", { exact: true }).fill(`co.mail.${uniq()}@e2e.test`);
+    await page.getByLabel("Email", { exact: true }).press("Enter");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("matkhau1");
+    await page.getByLabel("Mật khẩu", { exact: true }).press("Enter");
     await expect(page.getByText(/Chào mừng/)).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Vào học thôi" }).click();
     await expect(page).toHaveURL(/\/student\/dashboard/);
@@ -102,14 +102,14 @@ test.describe("Đăng ký giáo viên dùng thử", () => {
   test("đi trọn khảo sát → vào /teacher/classes", async ({ page }) => {
     await page.goto("/register/teacher");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
-    await page.getByLabel("Họ tên").fill("Cô Hoa E2E");
-    await page.getByLabel("Họ tên").press("Enter");
+    await page.getByLabel("Họ tên", { exact: true }).fill("Cô Hoa E2E");
+    await page.getByLabel("Họ tên", { exact: true }).press("Enter");
     await page.getByRole("button", { name: "Tiếng Anh" }).click();
     await next(page);
     await page.getByRole("button", { name: "Tiểu học" }).click();
     await next(page);
     await page.getByRole("button", { name: "Trung tâm", exact: true }).click();
-    const wp = page.getByLabel("Tên trường hoặc trung tâm");
+    const wp = page.getByLabel("Tên trường hoặc trung tâm", { exact: true });
     if (await wp.isVisible().catch(() => false)) {
       await wp.fill("Trung tâm E2E");
       await next(page);
@@ -118,12 +118,12 @@ test.describe("Đăng ký giáo viên dùng thử", () => {
     await page.getByRole("button", { name: "AI chấm Writing/Speaking" }).click();
     await next(page);
     await page.getByRole("button", { name: "Facebook" }).click();
-    await page.getByLabel("Số điện thoại").fill("0912345678");
-    await page.getByLabel("Số điện thoại").press("Enter");
-    await page.getByLabel("Email").fill(`co.hoa.${uniq()}@e2e.test`);
-    await page.getByLabel("Email").press("Enter");
-    await page.getByLabel("Mật khẩu").fill("matkhau123");
-    await page.getByLabel("Mật khẩu").press("Enter");
+    await page.getByLabel("Số điện thoại", { exact: true }).fill("0912345678");
+    await page.getByLabel("Số điện thoại", { exact: true }).press("Enter");
+    await page.getByLabel("Email", { exact: true }).fill(`co.hoa.${uniq()}@e2e.test`);
+    await page.getByLabel("Email", { exact: true }).press("Enter");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("matkhau123");
+    await page.getByLabel("Mật khẩu", { exact: true }).press("Enter");
     await expect(page.getByText(/dùng thử/i).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/1 lớp/).first()).toBeVisible();
     await page.getByRole("button", { name: "Vào không gian dạy học" }).click();
