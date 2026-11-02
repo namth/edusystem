@@ -70,8 +70,8 @@ export default function LandingHero({ stats }: LandingHeroProps) {
           {/* Quỹ đạo tính năng quanh mascot */}
           <div className="lg:col-span-6 flex justify-center py-10">
             <div className="relative w-72 h-72 sm:w-96 sm:h-96" aria-hidden>
-              <div className="absolute inset-10 rounded-full bg-white/60 blur-3xl" />
-              <div className="absolute inset-20 rounded-full bg-white/40 blur-xl" />
+              <div className="absolute inset-10 rounded-full bg-brand-400/45 blur-3xl" />
+              <div className="absolute inset-20 rounded-full bg-brand-300/30 blur-xl" />
               <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/25 kk-orbit">
                 {ORBIT.map(({ label, Icon, pos }) => (
                   <div key={label} className={`absolute ${pos}`}>

@@ -130,7 +130,7 @@ export function RoadmapMotion() {
         </div>
         <div className="relative mx-3">
           <div className="absolute top-1/2 inset-x-0 h-1 -translate-y-1/2 rounded-full bg-line" />
-          <div className="kk-fill absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r from-brand-500 to-accent-400" />
+          <div className="kk-fill absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full bg-brand-500" />
           <div className="kk-travel absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-accent-400 ring-4 ring-accent-100" />
           <div className="relative flex justify-between">
             {nodes.map((n, i) => (

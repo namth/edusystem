@@ -53,11 +53,10 @@ export default function LandingFaq() {
               </p>
             </div>
 
-            <div aria-hidden className="relative mx-auto lg:mx-0 w-64 h-56 sm:w-72 sm:h-60">
+            <div aria-hidden className="relative mx-auto lg:mx-0 w-64 h-64 sm:w-72 sm:h-72">
               <div className="absolute inset-6 rounded-full bg-gradient-to-br from-brand-100 to-white" />
-              <Image src="/brand/kitokit-mark-transparent.png" alt="" width={430} height={400} className="kk-float absolute inset-0 m-auto w-40 sm:w-44 h-auto" />
+              <Image src="/brand/mascot/kito-thac-mac.png" alt="" width={355} height={460} className="kk-float absolute inset-0 m-auto h-56 sm:h-64 w-auto" />
               <span className="kk-pop absolute top-2 left-4 w-11 h-11 rounded-2xl rounded-bl-sm bg-brand-600 text-white font-display text-xl font-extrabold flex items-center justify-center shadow-lg shadow-brand-600/30">?</span>
-              <span className="kk-pop absolute top-8 right-2 w-9 h-9 rounded-2xl rounded-br-sm bg-accent-400 text-white font-display text-lg font-extrabold flex items-center justify-center shadow-lg shadow-accent-500/30" style={{ animationDelay: "0.8s" }}>?</span>
               <span className="kk-pop absolute bottom-4 right-6 rounded-2xl rounded-tr-sm bg-white border border-line px-3 py-1.5 text-xs font-bold text-ink shadow-md" style={{ animationDelay: "1.6s" }}>Đã hiểu! ✓</span>
             </div>
 
