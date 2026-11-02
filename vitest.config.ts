@@ -8,8 +8,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    // PGlite khởi tạo Postgres WASM mỗi test; chạy song song cả bộ có thể > 5s
-    testTimeout: 20000,
-    hookTimeout: 30000,
+    // PGlite khởi tạo Postgres WASM mỗi test; máy bận (nhiều phiên/agent chạy cùng lúc) có thể > 20s
+    testTimeout: 60000,
+    hookTimeout: 90000,
+    // Giới hạn số worker để bộ test không tranh CPU khi chạy song song với build / agent khác
+    maxWorkers: 4,
   },
 });
