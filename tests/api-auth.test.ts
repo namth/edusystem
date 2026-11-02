@@ -1,4 +1,5 @@
 // TASK-001 — Bắt buộc xác thực & phân quyền cho toàn bộ API route.
+// TASK-032: gỡ admin/test-db, admin/test-supabase; thêm teacher/courses (chỉ ADMIN/TEACHER).
 // File này do trưởng phòng viết và bị khoá (tests.lock).
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -112,9 +113,11 @@ const CASES: Case[] = [
   { name: "admin/delete-user POST", load: () => import("@/app/api/admin/delete-user/route"), method: "POST", url: "/api/admin/delete-user", body: { userId: "usr_x" }, allowed: ["ADMIN"] },
   { name: "admin/teachers/[id] GET", load: () => import("@/app/api/admin/teachers/[id]/route"), method: "GET", url: "/api/admin/teachers/usr_teacher_9", ctx: idCtx, allowed: ["ADMIN"] },
   { name: "admin/teachers/[id] PUT", load: () => import("@/app/api/admin/teachers/[id]/route"), method: "PUT", url: "/api/admin/teachers/usr_teacher_9", body: { name: "B" }, ctx: idCtx, allowed: ["ADMIN"] },
-  { name: "admin/test-db GET", load: () => import("@/app/api/admin/test-db/route"), method: "GET", url: "/api/admin/test-db", allowed: ["ADMIN"] },
   { name: "admin/test-portkey POST", load: () => import("@/app/api/admin/test-portkey/route"), method: "POST", url: "/api/admin/test-portkey", body: {}, allowed: ["ADMIN"] },
-  { name: "admin/test-supabase GET", load: () => import("@/app/api/admin/test-supabase/route"), method: "GET", url: "/api/admin/test-supabase", allowed: ["ADMIN"] },
+  { name: "teacher/courses GET", load: () => import("@/app/api/teacher/courses/route"), method: "GET", url: "/api/teacher/courses", allowed: ["ADMIN", "TEACHER"] },
+  { name: "teacher/courses POST", load: () => import("@/app/api/teacher/courses/route"), method: "POST", url: "/api/teacher/courses", body: { title: "K" }, allowed: ["ADMIN", "TEACHER"] },
+  { name: "teacher/courses PUT", load: () => import("@/app/api/teacher/courses/route"), method: "PUT", url: "/api/teacher/courses", body: { id: "crs_x", title: "K" }, allowed: ["ADMIN", "TEACHER"] },
+  { name: "teacher/courses DELETE", load: () => import("@/app/api/teacher/courses/route"), method: "DELETE", url: "/api/teacher/courses?id=crs_x", allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/grade-async POST", load: () => import("@/app/api/exam/grade-async/route"), method: "POST", url: "/api/exam/grade-async", body: { submissionId: "sub_1" }, allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/grade-override PUT", load: () => import("@/app/api/exam/grade-override/route"), method: "PUT", url: "/api/exam/grade-override", body: { submissionId: "sub_1", finalScore: 7 }, allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/rubrics GET", load: () => import("@/app/api/exam/rubrics/route"), method: "GET", url: "/api/exam/rubrics", allowed: ["ADMIN", "TEACHER"] },

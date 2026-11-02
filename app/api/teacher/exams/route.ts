@@ -5,6 +5,7 @@ import { getAuthenticatedUserFromCookie } from "@/lib/auth";
 import { requireRole } from "@/lib/api-auth";
 import { syncCourseExam } from "@/lib/neo4j";
 import { pushRedisStreamEvent } from "@/lib/redis-queue";
+import { canUseSubject } from "@/lib/subjects";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -28,17 +29,26 @@ export async function GET(req?: Request) {
     }
 
     let q: string | null = null;
+    let subjectId: string | null = null;
     if (req?.url) {
       try {
-        q = new URL(req.url).searchParams.get("q");
+        const sp = new URL(req.url).searchParams;
+        q = sp.get("q");
+        subjectId = sp.get("subject_id");
       } catch {
         q = null;
+        subjectId = null;
       }
     }
 
     if (q && q.trim()) {
       conditions.push(`e.title ILIKE $${params.length + 1}`);
       params.push(`%${q.trim()}%`);
+    }
+
+    if (subjectId && subjectId.trim()) {
+      conditions.push(`e.subject_id = $${params.length + 1}`);
+      params.push(subjectId.trim());
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -63,6 +73,7 @@ export async function GET(req?: Request) {
       question_count: Number(row.question_count || 0),
       usage_count: Number(row.usage_count || 0),
       scoring_standard_id: row.scoring_standard_id || null,
+      subject_id: row.subject_id || "english",
       created_by: row.created_by,
       created_at: row.created_at,
     }));
@@ -85,7 +96,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id } = body;
+    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id, subject_id } = body;
 
     const cleanTitle = typeof title === "string" ? title.trim() : "";
     if (!cleanTitle || cleanTitle.length > 255) {
@@ -105,7 +116,7 @@ export async function POST(req: Request) {
     }
 
     const cleanQIds: string[] = question_ids.map((q) => q.trim());
-    const qRes = await queryPg("SELECT id, skill, created_by FROM questions WHERE id = ANY($1)", [cleanQIds]);
+    const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
     const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
 
     for (const qid of cleanQIds) {
@@ -163,13 +174,24 @@ export async function POST(req: Request) {
       }
     }
 
+    let cleanSubjectId = "english";
+    let hasExplicitSubjectId = false;
+    if (subject_id !== undefined && subject_id !== null) {
+      if (typeof subject_id !== "string" || !subject_id.trim()) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+      cleanSubjectId = subject_id.trim();
+      hasExplicitSubjectId = true;
+      if (!(await canUseSubject(authUser, cleanSubjectId))) {
+        return NextResponse.json({ success: false, error: "Môn học không hợp lệ" }, { status: 400 });
+      }
+    }
+
     const examId = "exam_" + crypto.randomUUID();
     const cleanDesc = description !== undefined && description !== null ? String(description) : null;
 
-    let insertSql = `INSERT INTO exams (id, title, description, duration_minutes, skills, question_ids, created_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-       RETURNING *;`;
-    let insertParams: any[] = [
+    const cols = ["id", "title", "description", "duration_minutes", "skills", "question_ids", "created_by"];
+    const insertParams: any[] = [
       examId,
       cleanTitle,
       cleanDesc,
@@ -180,20 +202,17 @@ export async function POST(req: Request) {
     ];
 
     if (cleanScoringStandardId) {
-      insertSql = `INSERT INTO exams (id, title, description, duration_minutes, skills, question_ids, scoring_standard_id, created_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-       RETURNING *;`;
-      insertParams = [
-        examId,
-        cleanTitle,
-        cleanDesc,
-        finalDuration,
-        skills,
-        JSON.stringify(cleanQIds),
-        cleanScoringStandardId,
-        authUser.userId,
-      ];
+      cols.push("scoring_standard_id");
+      insertParams.push(cleanScoringStandardId);
     }
+
+    if (hasExplicitSubjectId) {
+      cols.push("subject_id");
+      insertParams.push(cleanSubjectId);
+    }
+
+    const placeholders = cols.map((_, idx) => `$${idx + 1}`).join(", ");
+    const insertSql = `INSERT INTO exams (${cols.join(", ")}, created_at) VALUES (${placeholders}, NOW()) RETURNING *;`;
 
     const insertRes = await queryPg(insertSql, insertParams);
 
@@ -205,6 +224,7 @@ export async function POST(req: Request) {
         : (typeof examRow.question_ids === "string" ? JSON.parse(examRow.question_ids) : []),
       skills: Array.isArray(examRow.skills) ? examRow.skills : [],
       scoring_standard_id: examRow.scoring_standard_id ?? null,
+      subject_id: examRow.subject_id || cleanSubjectId,
     };
 
     if (cleanCourseId && courseTitle) {

@@ -1,67 +1,59 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: #fff8f5;
-    --on-background: #211a16;
-    
-    --primary: #6d3807;
-    --primary-container: #8a4f1e;
-    --on-primary: #ffffff;
-    --on-primary-container: #ffceac;
-    --primary-fixed: #ffdcc5;
-    --primary-fixed-dim: #ffb782;
-    
-    --secondary: #785840;
-    --secondary-container: #fdd1b4;
-    --on-secondary: #ffffff;
-    --on-secondary-container: #795841;
-    
-    --tertiary: #004d5e;
-    --tertiary-container: #00677c;
-    --on-tertiary: #ffffff;
-    --on-tertiary-container: #98e3fb;
-    
-    --surface: #fff8f5;
-    --surface-bright: #fff8f5;
-    --surface-dim: #e5d8d0;
-    --surface-container-lowest: #ffffff;
-    --surface-container-low: #fff1e9;
-    --surface-container: #f9ebe4;
-    --surface-container-high: #f3e6de;
-    --surface-container-highest: #ede0d9;
-    
-    --on-surface: #211a16;
-    --on-surface-variant: #52443a;
-    --outline: #857469;
-    --outline-variant: #d8c2b6;
-    
-    --error: #ba1a1a;
-    --error-container: #ffdad6;
-    --on-error-container: #93000a;
-  }
+/* Token màu thương hiệu KitoKit (lấy từ logo). Dùng qua class: bg-brand-600, text-ink, border-line…
+   Bật dark mode sau này: định nghĩa lại các biến dưới đây trong một bộ chọn tối. */
+@theme {
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dce7ff;
+  --color-brand-200: #b9cffe;
+  --color-brand-300: #8fb0fb;
+  --color-brand-400: #4f82f2;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1453e0;
+  --color-brand-700: #0e3fb0;
+  --color-brand-800: #0a2a7a;
+  --color-brand-900: #071c52;
+
+  --color-accent-50: #fff7f0;
+  --color-accent-100: #ffeddc;
+  --color-accent-200: #ffd2ad;
+  --color-accent-300: #ffab70;
+  --color-accent-400: #ff7a1a;
+  --color-accent-500: #f25c05;
+  --color-accent-600: #c94a00;
+  --color-accent-700: #9a3a00;
+
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #94a3b8;
+
+  --color-surface: #ffffff;
+  --color-surface-alt: #f6f8fc;
+  --color-line: #e2e8f0;
+  --color-line-soft: #eef2f7;
+  --color-cream: #fdf8f0;
+  --color-cream-200: #f5ead8;
+
+  --font-sans: var(--font-lexend), system-ui, sans-serif;
+  --font-display: var(--font-baloo), var(--font-lexend), system-ui, sans-serif;
 }
 
-*, ::before, ::after {
-  font-family: var(--font-lexend), system-ui, sans-serif !important;
+body {
+  font-family: var(--font-lexend), system-ui, sans-serif;
 }
 
-body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
-  font-family: var(--font-lexend), system-ui, sans-serif !important;
-}
-
-.font-sans, .font-headline, .font-body, .font-mono, [class*="font-mono"] {
-  font-family: var(--font-lexend), system-ui, sans-serif !important;
+.font-display {
+  font-family: var(--font-display);
 }
 
 .academic-grid {
-  background-image: radial-gradient(#d8c2b6 0.5px, transparent 0.5px);
+  background-image: radial-gradient(var(--color-line) 0.5px, transparent 0.5px);
   background-size: 24px 24px;
 }
 
 /* Clean Academic Reading Passage Styles */
 .rich-stimulus-content {
-  color: #211a16;
+  color: var(--color-ink);
   font-size: 1rem;
   line-height: 1.75;
 }
@@ -73,13 +65,13 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
   margin-bottom: 1rem;
   line-height: 1.75;
   font-size: 1rem;
-  color: #211a16;
+  color: var(--color-ink);
 }
 .rich-stimulus-content p:last-child {
   margin-bottom: 0;
 }
 .rich-stimulus-content h1, .rich-stimulus-content h2, .rich-stimulus-content h3, .rich-stimulus-content h4 {
-  color: #6d3807;
+  color: var(--color-brand-600);
   font-weight: 700;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
@@ -107,29 +99,29 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
-  border: 1px solid #d8c2b6;
+  border: 1px solid var(--color-line);
   border-radius: 12px;
   overflow: hidden;
 }
 .rich-stimulus-content th, .rich-stimulus-content td {
-  border: 1px solid #d8c2b6;
+  border: 1px solid var(--color-line);
   padding: 10px 14px;
   font-size: 0.9375rem;
 }
 .rich-stimulus-content th {
-  background-color: #fff1ea;
+  background-color: var(--color-brand-50);
   font-weight: 700;
-  color: #6d3807;
+  color: var(--color-brand-600);
 }
 .rich-stimulus-content td {
   background-color: #ffffff;
 }
 .rich-stimulus-content blockquote {
-  border-left: 4px solid #6d3807;
+  border-left: 4px solid var(--color-brand-600);
   padding: 8px 14px;
   font-style: italic;
-  color: #52443a;
-  background-color: #fff8f5;
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface-alt);
   border-radius: 0 12px 12px 0;
   margin-bottom: 1rem;
 }
@@ -137,22 +129,22 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
   max-width: 100%;
   height: auto;
   border-radius: 12px;
-  border: 1px solid #d8c2b6;
+  border: 1px solid var(--color-line);
   margin: 0.75rem 0;
 }
 .rich-stimulus-content iframe {
   width: 100%;
   aspect-ratio: 16/9;
   border-radius: 12px;
-  border: 1px solid #d8c2b6;
+  border: 1px solid var(--color-line);
   margin: 0.75rem 0;
 }
 
 /* Quill Rich Editor Custom Theme Styling */
 .rich-editor-wrapper .ql-toolbar.ql-snow {
   border: none;
-  border-bottom: 1px solid #d8c2b6;
-  background-color: #fff1ea;
+  border-bottom: 1px solid var(--color-line);
+  background-color: var(--color-brand-50);
   border-radius: 1rem 1rem 0 0;
   padding: 8px 12px;
   flex-wrap: wrap;
@@ -169,7 +161,7 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
   padding: 16px 20px;
 }
 .rich-editor-wrapper .ql-editor.ql-blank::before {
-  color: #857469;
+  color: var(--color-ink-subtle);
   font-style: italic;
   left: 20px;
 }
@@ -201,12 +193,12 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
   z-index: 10 !important;
 }
 .qlbt-col-tool .qlbt-col-tool-cell {
-  background-color: #fff1ea !important;
-  border: 1px solid #d8c2b6 !important;
+  background-color: var(--color-brand-50) !important;
+  border: 1px solid var(--color-line) !important;
   border-radius: 3px 3px 0 0 !important;
 }
 .qlbt-col-tool .qlbt-col-tool-cell-holder:hover {
-  background-color: #6d3807 !important;
+  background-color: var(--color-brand-600) !important;
 }
 
 /* Table styles inside Quill editor — force visible borders */
@@ -215,7 +207,7 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
 .rich-editor-wrapper .ql-editor table.ql-table {
   width: 100% !important;
   border-collapse: collapse !important;
-  border: 2px solid #d8c2b6 !important;
+  border: 2px solid var(--color-line) !important;
   margin: 0.75rem 0 !important;
   table-layout: fixed !important;
 }
@@ -223,17 +215,66 @@ body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
 .rich-editor-wrapper .ql-editor td,
 .rich-editor-wrapper .ql-editor tr > td,
 .rich-editor-wrapper .ql-editor tr > th {
-  border: 1.5px solid #d8c2b6 !important;
+  border: 1.5px solid var(--color-line) !important;
   padding: 8px 12px !important;
   font-size: 0.8125rem;
   min-width: 40px;
 }
 .rich-editor-wrapper .ql-editor th,
 .rich-editor-wrapper .ql-editor thead td {
-  background-color: #fff1ea !important;
+  background-color: var(--color-brand-50) !important;
   font-weight: 700 !important;
-  color: #6d3807 !important;
+  color: var(--color-brand-600) !important;
 }
 .rich-editor-wrapper .ql-editor td {
   background-color: #ffffff;
+}
+
+/* ── Landing KitoKit: chuyển động cho icon động (tiền tố kk-) ───────────────── */
+@keyframes kk-scan { 0% { transform: translateY(-120%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(520%); opacity: 0; } }
+@keyframes kk-ring { 0%, 10% { stroke-dashoffset: 100; } 55%, 90% { stroke-dashoffset: 15; } 100% { stroke-dashoffset: 100; } }
+@keyframes kk-pop { 0%, 8% { transform: scale(0.6); opacity: 0; } 18%, 82% { transform: scale(1); opacity: 1; } 92%, 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes kk-type { 0%, 5% { width: 0; } 45%, 85% { width: var(--kk-w, 100%); } 100% { width: 0; } }
+@keyframes kk-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes kk-dash { to { stroke-dashoffset: -24; } }
+@keyframes kk-fill { 0%, 5% { width: 0; } 70%, 90% { width: 100%; } 100% { width: 0; } }
+@keyframes kk-travel { 0%, 5% { left: 0%; } 70%, 90% { left: 100%; } 100% { left: 0%; } }
+@keyframes kk-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes kk-drop { 0%, 10% { transform: translate(-18px, -26px) rotate(-6deg); opacity: 0; } 35% { opacity: 1; } 55%, 85% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(0, 0); opacity: 0; } }
+@keyframes kk-ping { 0% { transform: scale(0.8); opacity: 0.7; } 80%, 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes kk-swing { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(14deg); } 80% { transform: rotate(-12deg); } 90% { transform: rotate(6deg); } }
+@keyframes kk-bar { 0%, 5% { transform: scaleY(0.15); } 50%, 85% { transform: scaleY(1); } 100% { transform: scaleY(0.15); } }
+@keyframes kk-slide { 0%, 20% { transform: translateX(24px); opacity: 0; } 32%, 85% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(0); opacity: 0; } }
+@keyframes kk-orbit { to { transform: rotate(360deg); } }
+@keyframes kk-orbit-rev { to { transform: rotate(-360deg); } }
+@keyframes kk-marquee { to { transform: translateX(-50%); } }
+
+.kk-scan { animation: kk-scan 3.2s ease-in-out infinite; }
+.kk-ring { stroke-dasharray: 100; animation: kk-ring 4s ease-in-out infinite; }
+.kk-pop { animation: kk-pop 4s ease-out infinite both; }
+.kk-type { animation: kk-type 4s steps(18, end) infinite; overflow: hidden; white-space: nowrap; }
+.kk-blink { animation: kk-blink 1s step-end infinite; }
+.kk-dash { stroke-dasharray: 4 8; animation: kk-dash 0.9s linear infinite; }
+.kk-fill { animation: kk-fill 4.5s ease-in-out infinite; }
+.kk-travel { animation: kk-travel 4.5s ease-in-out infinite; }
+.kk-float { animation: kk-float 3.6s ease-in-out infinite; }
+.kk-drop { animation: kk-drop 4.5s ease-in-out infinite; }
+.kk-ping { animation: kk-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.kk-swing { animation: kk-swing 3s ease-in-out infinite; transform-origin: 50% 10%; }
+.kk-bar { animation: kk-bar 3.6s ease-in-out infinite; transform-origin: bottom; }
+.kk-slide { animation: kk-slide 4s ease-out infinite both; }
+.kk-orbit { animation: kk-orbit 36s linear infinite; }
+.kk-orbit-rev { animation: kk-orbit-rev 36s linear infinite; }
+.kk-marquee { animation: kk-marquee 40s linear infinite; }
+.kk-grid-bg {
+  background-image: linear-gradient(var(--color-line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--color-line-soft) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="kk-"] { animation: none !important; }
+}
+.kk-grid-dark {
+  background-image: linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
 }

@@ -113,24 +113,24 @@ export default function StudentDashboardPage() {
     <StudentLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Stitch Welcome & Daily Streak Widget */}
-        <div className="bg-[#ffffff] rounded-2xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-[#d8c2b6]/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-line/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#6d3807] mb-1">
+            <h1 className="font-headline text-2xl md:text-3xl font-bold text-brand-600 mb-1">
               Welcome back, {user?.name || "bạn"}!
             </h1>
-            <p className="font-body text-sm text-[#52443a]">
+            <p className="font-body text-sm text-ink-muted">
               Chào mừng bạn đến với hệ thống học tiếng Anh và luyện thi trực tuyến.
             </p>
           </div>
 
           {/* Daily Streak Widget */}
-          <div className="flex items-center gap-4 bg-[#fff1ea] px-5 py-3 rounded-xl border border-[#ffb783]">
-            <div className="bg-[#FFD426]/30 p-2.5 rounded-full flex items-center justify-center text-[#6d3807]">
-              <Flame className="w-6 h-6 fill-[#6d3807]" />
+          <div className="flex items-center gap-4 bg-brand-50 px-5 py-3 rounded-xl border border-brand-300">
+            <div className="bg-accent-400/30 p-2.5 rounded-full flex items-center justify-center text-brand-600">
+              <Flame className="w-6 h-6 fill-brand-600" />
             </div>
             <div>
-              <div className="font-mono text-xs text-[#52443a] font-medium">Daily Streak</div>
-              <div className="font-headline text-xl text-[#6d3807] font-bold">14 Days</div>
+              <div className="font-mono text-xs text-ink-muted font-medium">Daily Streak</div>
+              <div className="font-headline text-xl text-brand-600 font-bold">14 Days</div>
             </div>
           </div>
         </div>
@@ -152,19 +152,19 @@ export default function StudentDashboardPage() {
         )}
 
         {joinMsg && (
-          <div className="p-4 rounded-xl bg-[#fff1ea] border border-[#ffb783] text-[#6d3807] flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-[#6d3807]" />
+          <div className="p-4 rounded-xl bg-brand-50 border border-brand-300 text-brand-600 flex items-center space-x-2">
+            <CheckCircle2 className="w-5 h-5 text-brand-600" />
             <span className="font-semibold text-sm">{joinMsg}</span>
           </div>
         )}
 
         {/* Join Class Box */}
-        <div className="bg-[#ffffff] p-6 rounded-2xl border border-[#d8c2b6]/40 shadow-sm max-w-2xl">
-          <h2 className="text-base font-bold font-headline text-[#6d3807] mb-2 flex items-center space-x-2">
-            <PlusCircle className="w-5 h-5 text-[#004d5e]" />
+        <div className="bg-white p-6 rounded-2xl border border-line/40 shadow-sm max-w-2xl">
+          <h2 className="text-base font-bold font-headline text-brand-600 mb-2 flex items-center space-x-2">
+            <PlusCircle className="w-5 h-5 text-brand-800" />
             <span>Tham Gia Lớp Học Mới Bằng Mã (Class Code)</span>
           </h2>
-          <p className="text-xs text-[#52443a] mb-4">
+          <p className="text-xs text-ink-muted mb-4">
             Nhập mã lớp do Giáo viên cung cấp để tham gia lớp học.
           </p>
 
@@ -175,11 +175,11 @@ export default function StudentDashboardPage() {
               placeholder="Nhập Mã Lớp..."
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              className="flex-1 px-4 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm font-mono focus:outline-none focus:border-[#6d3807] uppercase"
+              className="flex-1 px-4 py-2.5 bg-surface-alt border border-line rounded-xl text-sm font-mono focus:outline-none focus:border-brand-600 uppercase"
             />
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all font-headline shrink-0"
+              className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all font-headline shrink-0"
             >
               Tham Gia Lớp
             </button>
@@ -192,17 +192,17 @@ export default function StudentDashboardPage() {
           <div className="lg:col-span-8 space-y-6">
             <div id="classes">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="font-headline text-xl text-[#211a16] font-bold">Lớp Học Của Tôi ({classes.length})</h2>
+                <h2 className="font-headline text-xl text-ink font-bold">Lớp Học Của Tôi ({classes.length})</h2>
               </div>
               {loading ? (
-                <div className="flex items-center space-x-2 p-6 bg-white rounded-xl border border-[#d8c2b6]">
-                  <Loader2 className="w-5 h-5 text-[#6d3807] animate-spin" />
-                  <p className="text-xs text-[#857469] font-mono">Đang tải danh sách lớp học...</p>
+                <div className="flex items-center space-x-2 p-6 bg-white rounded-xl border border-line">
+                  <Loader2 className="w-5 h-5 text-brand-600 animate-spin" />
+                  <p className="text-xs text-ink-subtle font-mono">Đang tải danh sách lớp học...</p>
                 </div>
               ) : classes.length === 0 ? (
-                <div className="p-8 text-center bg-white rounded-xl border border-[#d8c2b6] space-y-2">
-                  <p className="text-sm font-bold text-[#211a16]">Bạn chưa tham gia lớp học nào.</p>
-                  <p className="text-xs text-[#52443a]">Hãy nhập mã lớp do giáo viên cung cấp ở trên để tham gia lớp học.</p>
+                <div className="p-8 text-center bg-white rounded-xl border border-line space-y-2">
+                  <p className="text-sm font-bold text-ink">Bạn chưa tham gia lớp học nào.</p>
+                  <p className="text-xs text-ink-muted">Hãy nhập mã lớp do giáo viên cung cấp ở trên để tham gia lớp học.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -210,15 +210,15 @@ export default function StudentDashboardPage() {
                     <Link
                       key={cls.id}
                       href={`/student/class/${cls.id}`}
-                      className="bg-[#ffffff] border border-[#d8c2b6] rounded-xl p-5 hover:shadow-md transition-all block"
+                      className="bg-white border border-line rounded-xl p-5 hover:shadow-md transition-all block"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-headline font-bold text-base text-[#211a16]">{cls.name}</h3>
-                        <span className="bg-[#fff1ea] text-[#6d3807] font-mono text-xs font-bold px-2 py-0.5 rounded border border-[#ffb783]">
+                        <h3 className="font-headline font-bold text-base text-ink">{cls.name}</h3>
+                        <span className="bg-brand-50 text-brand-600 font-mono text-xs font-bold px-2 py-0.5 rounded border border-brand-300">
                           {cls.code}
                         </span>
                       </div>
-                      <div className="text-[11px] font-mono text-[#004d5e] font-bold flex items-center justify-between pt-2 border-t border-[#ede0d9]">
+                      <div className="text-[11px] font-mono text-brand-800 font-bold flex items-center justify-between pt-2 border-t border-line-soft">
                         <span>Lịch: {cls.schedule}</span>
                         <span>Vào Lớp &rarr;</span>
                       </div>
@@ -232,9 +232,9 @@ export default function StudentDashboardPage() {
           {/* Right Side Column */}
           <div className="lg:col-span-4 space-y-6">
             {/* Recent Submissions & AI Results Widget */}
-            <div className="bg-[#ffffff] border border-[#d8c2b6] rounded-2xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-[#d8c2b6]/50 pb-2">
-                <h2 className="font-headline text-sm font-bold text-[#211a16] flex items-center gap-2">
+            <div className="bg-white border border-line rounded-2xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-line/50 pb-2">
+                <h2 className="font-headline text-sm font-bold text-ink flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   <span>Bài Thi Đã Nộp ({recentSubmissions.length})</span>
                 </h2>
@@ -242,13 +242,13 @@ export default function StudentDashboardPage() {
 
               {loading ? (
                 <div className="flex items-center space-x-2 py-4">
-                  <Loader2 className="w-4 h-4 text-[#6d3807] animate-spin" />
-                  <p className="text-xs text-[#857469] font-mono">Đang tải bài thi đã nộp...</p>
+                  <Loader2 className="w-4 h-4 text-brand-600 animate-spin" />
+                  <p className="text-xs text-ink-subtle font-mono">Đang tải bài thi đã nộp...</p>
                 </div>
               ) : recentSubmissions.length === 0 ? (
-                <div className="p-4 text-center bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-1">
-                  <p className="text-xs font-medium text-[#52443a]">Bạn chưa thực hiện bài thi nào gần đây.</p>
-                  <p className="text-[11px] text-[#857469]">Hãy vào lớp học để làm bài thi được giao.</p>
+                <div className="p-4 text-center bg-surface-alt rounded-xl border border-line space-y-1">
+                  <p className="text-xs font-medium text-ink-muted">Bạn chưa thực hiện bài thi nào gần đây.</p>
+                  <p className="text-[11px] text-ink-subtle">Hãy vào lớp học để làm bài thi được giao.</p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -278,19 +278,19 @@ export default function StudentDashboardPage() {
                         : "Đang Chấm";
 
                     return (
-                      <div key={sub.id} className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2">
+                      <div key={sub.id} className="p-3 bg-surface-alt rounded-xl border border-line space-y-2">
                         <div className="flex justify-between items-start">
-                          <span className="font-bold text-xs text-[#211a16]">Mã bài: {sub.id}</span>
+                          <span className="font-bold text-xs text-ink">Mã bài: {sub.id}</span>
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
                             {statusBadgeLabel}
                           </span>
                         </div>
-                        <div className="text-xs text-[#6d3807] font-bold">
+                        <div className="text-xs text-brand-600 font-bold">
                           Kết quả: <span className="text-emerald-700">{scoreDisplay}</span>
                         </div>
                         <Link
                           href={`/student/exam/review/${sub.id}`}
-                          className="w-full py-1.5 bg-white hover:bg-[#fff1ea] border border-[#d8c2b6] text-[#6d3807] rounded-lg text-xs font-bold block text-center transition-all shadow-2xs"
+                          className="w-full py-1.5 bg-white hover:bg-brand-50 border border-line text-brand-600 rounded-lg text-xs font-bold block text-center transition-all shadow-2xs"
                         >
                           Xem Chi Tiết Bài Làm &amp; Đáp Án &rarr;
                         </Link>
@@ -302,26 +302,26 @@ export default function StudentDashboardPage() {
             </div>
 
             {/* Upcoming Classes */}
-            <div className="bg-[#ffffff] border border-[#d8c2b6] rounded-xl p-5">
-              <h2 className="font-headline text-base font-bold text-[#211a16] mb-4 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#785841]" />
+            <div className="bg-white border border-line rounded-xl p-5">
+              <h2 className="font-headline text-base font-bold text-ink mb-4 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-ink-muted" />
                 <span>Lịch Học Sắp Tới</span>
               </h2>
               {classes.length === 0 ? (
-                <div className="p-4 text-center bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/30">
-                  <p className="text-xs text-[#52443a]">Chưa có lịch học sắp tới.</p>
-                  <p className="text-[11px] text-[#857469] mt-1">Lịch học sẽ hiển thị khi bạn tham gia lớp.</p>
+                <div className="p-4 text-center bg-surface-alt rounded-xl border border-line/30">
+                  <p className="text-xs text-ink-muted">Chưa có lịch học sắp tới.</p>
+                  <p className="text-[11px] text-ink-subtle mt-1">Lịch học sẽ hiển thị khi bạn tham gia lớp.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {classes.map((cls) => (
-                    <div key={cls.id} className="flex gap-3 items-start p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/30">
-                      <div className="flex flex-col items-center justify-center bg-[#fdd1b4] text-[#785841] rounded-lg p-2 min-w-[50px]">
-                        <Calendar className="w-5 h-5 text-[#785841]" />
+                    <div key={cls.id} className="flex gap-3 items-start p-3 bg-surface-alt rounded-xl border border-line/30">
+                      <div className="flex flex-col items-center justify-center bg-accent-100 text-ink-muted rounded-lg p-2 min-w-[50px]">
+                        <Calendar className="w-5 h-5 text-ink-muted" />
                       </div>
                       <div>
-                        <h4 className="font-headline text-xs font-bold text-[#211a16]">{cls.name}</h4>
-                        <p className="font-mono text-[11px] text-[#52443a]">{cls.schedule}</p>
+                        <h4 className="font-headline text-xs font-bold text-ink">{cls.name}</h4>
+                        <p className="font-mono text-[11px] text-ink-muted">{cls.schedule}</p>
                       </div>
                     </div>
                   ))}

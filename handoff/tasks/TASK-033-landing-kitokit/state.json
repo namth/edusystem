@@ -1,0 +1,38 @@
+{
+  "id": "TASK-033",
+  "title": "Landing KitoKit mới ở /, form liên hệ lưu khách hàng tiềm năng, làm mới nội dung trang đăng nhập",
+  "status": "accepted",
+  "conversation_id": "2037eca8-9f7c-416a-91be-8cc74ddb05bb",
+  "history": [
+    {
+      "at": "2026-11-01T19:31:21",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T19:38:44",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T19:39:02",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T20:24:36",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T20:31:28",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-033-landing-kitokit/verify.sh",
+    "tests/landing.test.ts"
+  ],
+  "via": "agy"
+}

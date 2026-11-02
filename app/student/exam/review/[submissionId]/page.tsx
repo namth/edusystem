@@ -106,18 +106,18 @@ export default function ExamSubmissionReviewPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5]">
-        <Loader2 className="w-8 h-8 text-[#6d3807] animate-spin mb-2" />
-        <p className="font-mono text-xs text-[#52443a]">Đang nạp chi tiết bài nộp {submissionId}...</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt">
+        <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-2" />
+        <p className="font-mono text-xs text-ink-muted">Đang nạp chi tiết bài nộp {submissionId}...</p>
       </div>
     );
   }
 
   if (errorStatus === 403) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Bạn không có quyền xem bài nộp này.</p>
-        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
+        <p className="text-sm text-ink-muted">Bạn không có quyền xem bài nộp này.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
           Quay lại Dashboard
         </Link>
       </div>
@@ -126,9 +126,9 @@ export default function ExamSubmissionReviewPage() {
 
   if (errorStatus === 404 || (!submission && !errorMsg)) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Không tìm thấy bài nộp.</p>
-        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
+        <p className="text-sm text-ink-muted">Không tìm thấy bài nộp.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
           Quay lại Dashboard
         </Link>
       </div>
@@ -137,7 +137,7 @@ export default function ExamSubmissionReviewPage() {
 
   if (errorMsg) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
         <p className="text-sm text-rose-700 font-bold">{errorMsg}</p>
         <button
           type="button"
@@ -146,7 +146,7 @@ export default function ExamSubmissionReviewPage() {
             setErrorMsg(null);
             setRetryCount((c) => c + 1);
           }}
-          className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold hover:bg-[#8a4f1e] cursor-pointer"
+          className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 cursor-pointer"
         >
           Thử lại
         </button>
@@ -194,21 +194,21 @@ export default function ExamSubmissionReviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#211a16] font-sans pb-16">
+    <div className="min-h-screen bg-surface-alt text-ink font-sans pb-16">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#fff8f5]/95 backdrop-blur-sm border-b border-[#d8c2b6] flex justify-between items-center px-6 h-16 shadow-2xs">
+      <header className="sticky top-0 z-50 bg-surface-alt/95 backdrop-blur-sm border-b border-line flex justify-between items-center px-6 h-16 shadow-2xs">
         <div className="flex items-center gap-3">
           <Link
             href="/student/dashboard"
-            className="p-2 text-[#52443a] hover:text-[#6d3807] transition-all rounded-lg hover:bg-white"
+            className="p-2 text-ink-muted hover:text-brand-600 transition-all rounded-lg hover:bg-white"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="font-headline text-base font-bold text-[#211a16]">
+            <h1 className="font-headline text-base font-bold text-ink">
               {exam?.title || "Xem Chi Tiết Bài Thi"}
             </h1>
-            <p className="text-[11px] text-[#857469]">Mã bài nộp: {submissionId}</p>
+            <p className="text-[11px] text-ink-subtle">Mã bài nộp: {submissionId}</p>
           </div>
         </div>
 
@@ -265,47 +265,47 @@ export default function ExamSubmissionReviewPage() {
 
         {/* Banner nhận xét của giáo viên */}
         {teacherFeedback && (
-          <div className="p-5 bg-gradient-to-r from-emerald-50 to-[#fff8f5] rounded-3xl border-2 border-emerald-300 shadow-xs space-y-1">
+          <div className="p-5 bg-gradient-to-r from-emerald-50 to-surface-alt rounded-3xl border-2 border-emerald-300 shadow-xs space-y-1">
             <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs uppercase tracking-wide">
               <UserCheck className="w-4 h-4 text-emerald-700" />
               <span>Nhận xét từ giáo viên:</span>
             </div>
-            <p className="text-xs text-[#211a16] leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200 whitespace-pre-wrap">
+            <p className="text-xs text-ink leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200 whitespace-pre-wrap">
               {teacherFeedback}
             </p>
           </div>
         )}
 
         {/* Tổng kết điểm */}
-        <div className="p-6 bg-white rounded-3xl border border-[#d8c2b6] shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-[#ede0d9] pb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#fff1ea] text-[#6d3807] rounded-full border border-[#d8c2b6] text-xs font-bold">
-              <Award className="w-4 h-4 text-[#6d3807]" />
+        <div className="p-6 bg-white rounded-3xl border border-line shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-line-soft pb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-full border border-line text-xs font-bold">
+              <Award className="w-4 h-4 text-brand-600" />
               <span>Bảng Tổng Hợp Kết Quả</span>
             </div>
-            <span className="text-xs text-[#857469] font-mono">
+            <span className="text-xs text-ink-subtle font-mono">
               Tổng số câu hỏi: {questions.length}
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#ede0d9] text-center space-y-1">
-              <span className="text-xs font-bold text-[#857469] uppercase tracking-wider block">
+            <div className="p-4 bg-surface-alt rounded-2xl border border-line-soft text-center space-y-1">
+              <span className="text-xs font-bold text-ink-subtle uppercase tracking-wider block">
                 Tổng điểm
               </span>
               {summary.state === "FINAL" ? (
-                <div className="text-3xl font-extrabold text-[#6d3807]">
+                <div className="text-3xl font-extrabold text-brand-600">
                   {summary.total !== null ? summary.total : "—"}
                 </div>
               ) : (
-                <div className="text-base font-extrabold text-[#6d3807] pt-1">
+                <div className="text-base font-extrabold text-brand-600 pt-1">
                   Chờ phần {pendingLabel}
                 </div>
               )}
             </div>
 
-            <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#ede0d9] text-center space-y-1">
-              <span className="text-xs font-bold text-[#857469] uppercase tracking-wider block">
+            <div className="p-4 bg-surface-alt rounded-2xl border border-line-soft text-center space-y-1">
+              <span className="text-xs font-bold text-ink-subtle uppercase tracking-wider block">
                 Kết quả xếp loại
               </span>
               <div className="text-2xl font-extrabold">
@@ -318,7 +318,7 @@ export default function ExamSubmissionReviewPage() {
                     <span className="text-gray-500">—</span>
                   )
                 ) : (
-                  <span className="text-sm font-semibold text-[#857469]">Chờ chấm xong</span>
+                  <span className="text-sm font-semibold text-ink-subtle">Chờ chấm xong</span>
                 )}
               </div>
             </div>
@@ -327,19 +327,19 @@ export default function ExamSubmissionReviewPage() {
           {/* Các phần đã chấm */}
           {summary.graded.length > 0 && (
             <div className="space-y-3 pt-2">
-              <span className="text-xs font-bold text-[#52443a] uppercase tracking-wider block">
+              <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
                 {summary.state === "FINAL" ? "Điểm từng phần:" : "Đã chấm:"}
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {summary.graded.map((g) => (
                   <div
                     key={g.skill}
-                    className="p-3.5 rounded-xl border border-[#ede0d9] bg-[#fffdfc] text-center space-y-1"
+                    className="p-3.5 rounded-xl border border-line-soft bg-surface-alt text-center space-y-1"
                   >
-                    <div className="text-xs font-bold text-[#52443a]">{g.skill}</div>
-                    <div className="text-xl font-bold text-[#6d3807]">{g.score}</div>
+                    <div className="text-xs font-bold text-ink-muted">{g.skill}</div>
+                    <div className="text-xl font-bold text-brand-600">{g.score}</div>
                     {g.max !== undefined && g.earned !== undefined && (
-                      <div className="text-[11px] text-[#857469]">
+                      <div className="text-[11px] text-ink-subtle">
                         {g.earned}/{g.max} câu
                       </div>
                     )}
@@ -352,17 +352,17 @@ export default function ExamSubmissionReviewPage() {
           {/* Các phần đang chờ chấm */}
           {summary.pending.length > 0 && (
             <div className="space-y-3 pt-2">
-              <span className="text-xs font-bold text-[#52443a] uppercase tracking-wider block">
+              <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
                 {summary.state === "WAITING_TEACHER" ? "Chờ giáo viên chấm:" : "AI đang chấm:"}
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {summary.pending.map((skill) => (
                   <div
                     key={skill}
-                    className="p-3.5 rounded-xl border border-dashed border-[#d8c2b6] bg-[#fff8f5] text-center space-y-1"
+                    className="p-3.5 rounded-xl border border-dashed border-line bg-surface-alt text-center space-y-1"
                   >
-                    <div className="text-xs font-bold text-[#52443a]">{skill}</div>
-                    <div className="text-xs font-semibold text-[#857469]">
+                    <div className="text-xs font-bold text-ink-muted">{skill}</div>
+                    <div className="text-xs font-semibold text-ink-subtle">
                       {summary.state === "WAITING_TEACHER"
                         ? "Giáo viên sẽ chấm"
                         : "AI đang chấm…"}
@@ -376,7 +376,7 @@ export default function ExamSubmissionReviewPage() {
 
         {/* Danh sách câu hỏi hiển thị qua LessonPlayer ở chế độ kết quả + nhận xét AI */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[#6d3807] font-bold text-sm uppercase tracking-wide">
+          <div className="flex items-center gap-2 text-brand-600 font-bold text-sm uppercase tracking-wide">
             <BookOpen className="w-4 h-4" />
             <span>Chi tiết từng câu hỏi &amp; bài làm:</span>
           </div>
@@ -415,7 +415,7 @@ export default function ExamSubmissionReviewPage() {
                         )}
                       </div>
                       {aiFeedback && (
-                        <p className="text-xs text-[#211a16] leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
+                        <p className="text-xs text-ink leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
                           {aiFeedback}
                         </p>
                       )}

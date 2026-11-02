@@ -205,25 +205,25 @@ export default function AdminAccountsPage() {
     >
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-              <Users className="w-4 h-4 text-[#004d5e]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+              <Users className="w-4 h-4 text-brand-800" />
               <span>Super Admin &bull; Global User Directory</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Quản Lý Tài Khoản Systems &amp; Phân Lớp
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Danh sách tài khoản sắp xếp theo thời gian mới nhất, hỗ trợ xem lớp học và lọc trực tiếp danh sách thành viên trong lớp.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
-            <UserPlus className="w-4 h-4 text-[#ffb782]" />
+            <UserPlus className="w-4 h-4 text-accent-400" />
             <span>+ Thêm Tài Khoản Mới</span>
           </button>
         </div>
@@ -251,16 +251,16 @@ export default function AdminAccountsPage() {
         )}
 
         {/* Role Filter Tabs & Active Filter Badge */}
-        <div className="bg-white p-4 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-wrap items-center gap-3">
-          <div className="flex bg-[#fff8f5] p-1 rounded-xl border border-[#d8c2b6]">
+        <div className="bg-white p-4 rounded-2xl border border-line shadow-sm flex flex-wrap items-center gap-3">
+          <div className="flex bg-surface-alt p-1 rounded-xl border border-line">
             {(["ALL", "ADMIN", "TEACHER", "STUDENT"] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   roleFilter === r
-                    ? "bg-[#6d3807] text-white shadow-sm"
-                    : "text-[#52443a] hover:text-[#6d3807]"
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-ink-muted hover:text-brand-600"
                 }`}
               >
                 {r === "ALL" ? "Tất Cả" : r}
@@ -269,8 +269,8 @@ export default function AdminAccountsPage() {
           </div>
 
           {activeClassFilter && (
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#fff1ea] border border-[#ffb782] text-xs text-[#6d3807] font-bold">
-              <BookOpen className="w-3.5 h-3.5 text-[#6d3807]" />
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-300 text-xs text-brand-600 font-bold">
+              <BookOpen className="w-3.5 h-3.5 text-brand-600" />
               <span>Đang lọc theo lớp: <strong>{activeClassName}</strong></span>
               <button onClick={clearClassFilter} className="ml-1 hover:text-rose-600">
                 <X className="w-3.5 h-3.5" />
@@ -281,24 +281,24 @@ export default function AdminAccountsPage() {
 
         {/* Accounts Table */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
             <span>Đang nạp danh sách tài khoản từ database...</span>
           </div>
         ) : filteredAccounts.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <p className="text-xs text-[#52443a]">Không tìm thấy tài khoản nào phù hợp với bộ lọc hiện tại.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <p className="text-xs text-ink-muted">Không tìm thấy tài khoản nào phù hợp với bộ lọc hiện tại.</p>
             {activeClassFilter && (
-              <button onClick={clearClassFilter} className="px-3 py-1.5 bg-[#6d3807] text-white rounded-xl text-xs font-medium">
+              <button onClick={clearClassFilter} className="px-3 py-1.5 bg-brand-600 text-white rounded-xl text-xs font-medium">
                 Xóa bộ lọc lớp học
               </button>
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-[#d8c2b6] shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-[#fff8f5] border-b border-[#d8c2b6] text-xs font-bold text-[#52443a]">
+                <tr className="bg-surface-alt border-b border-line text-xs font-bold text-ink-muted">
                   <th className="p-4">Thành Viên (Họ &amp; Tên)</th>
                   <th className="p-4">Email Đăng Nhập</th>
                   <th className="p-4">Vai Trò</th>
@@ -307,43 +307,43 @@ export default function AdminAccountsPage() {
                   <th className="p-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#d8c2b6]/30 text-xs">
+              <tbody className="divide-y divide-line/30 text-xs">
                 {filteredAccounts.map((acc) => (
-                  <tr key={acc.id} className="hover:bg-[#fff8f5] transition-colors">
-                    <td className="p-4 font-bold text-[#211a16]">{acc.name}</td>
-                    <td className="p-4 text-[#52443a]">{acc.email}</td>
+                  <tr key={acc.id} className="hover:bg-surface-alt transition-colors">
+                    <td className="p-4 font-bold text-ink">{acc.name}</td>
+                    <td className="p-4 text-ink-muted">{acc.email}</td>
                     <td className="p-4">
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           acc.role === "ADMIN"
                             ? "bg-purple-100 text-purple-800"
                             : acc.role === "TEACHER"
-                            ? "bg-[#fff1ea] text-[#6d3807] border border-[#ffb782]"
+                            ? "bg-brand-50 text-brand-600 border border-brand-300"
                             : "bg-emerald-100 text-emerald-800"
                         }`}
                       >
                         {acc.role}
                       </span>
                     </td>
-                    <td className="p-4 text-[#857469]">{acc.created_at}</td>
-                    <td className="p-4 text-[#52443a]">
+                    <td className="p-4 text-ink-subtle">{acc.created_at}</td>
+                    <td className="p-4 text-ink-muted">
                       {acc.role === "ADMIN" ? (
-                        <span className="text-[#857469] italic">Toàn bộ hệ thống</span>
+                        <span className="text-ink-subtle italic">Toàn bộ hệ thống</span>
                       ) : acc.classes_names && acc.classes_names.length > 0 ? (
-                        <span className="font-medium text-[#6d3807]">
+                        <span className="font-medium text-brand-600">
                           {acc.classes_names.join(", ")}
                         </span>
                       ) : (
-                        <span className="text-[#857469] italic">Chưa gán lớp</span>
+                        <span className="text-ink-subtle italic">Chưa gán lớp</span>
                       )}
                     </td>
                     <td className="p-4 text-right">
                       {acc.role !== "ADMIN" && (
                         <button
                           onClick={() => setViewingClassesUser(acc)}
-                          className="px-3 py-1.5 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-medium hover:bg-[#f9ebe4] inline-flex items-center space-x-1 transition-all"
+                          className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 inline-flex items-center space-x-1 transition-all"
                         >
-                          <BookOpen className="w-3.5 h-3.5 text-[#6d3807]" />
+                          <BookOpen className="w-3.5 h-3.5 text-brand-600" />
                           <span>Xem Lớp Học</span>
                         </button>
                       )}
@@ -358,20 +358,20 @@ export default function AdminAccountsPage() {
         {/* Modal: Create Account */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                  <UserPlus className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-brand-600" />
                   <span>Khởi Tạo Tài Khoản Hệ Thống Mới</span>
                 </h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <button onClick={() => setShowCreateModal(false)} className="text-ink-subtle hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateAccount} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Họ &amp; Tên (*)
                   </label>
                   <input
@@ -380,12 +380,12 @@ export default function AdminAccountsPage() {
                     placeholder="Ví dụ: Phạm Mỹ Duyên"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Email Đăng Nhập (*)
                   </label>
                   <input
@@ -394,12 +394,12 @@ export default function AdminAccountsPage() {
                     placeholder="user@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Khởi Tạo (*)
                   </label>
                   <input
@@ -408,18 +408,18 @@ export default function AdminAccountsPage() {
                     placeholder="Nhập mật khẩu..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Vai Trò Hệ Thống (Role)
                   </label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   >
                     <option value="STUDENT">STUDENT (Học Viên)</option>
                     <option value="TEACHER">TEACHER (Giáo Viên)</option>
@@ -431,16 +431,16 @@ export default function AdminAccountsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5]"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Khởi Tạo Tài Khoản</span>
                   </button>
                 </div>
@@ -452,24 +452,24 @@ export default function AdminAccountsPage() {
         {/* Modal: View User Classes & Direct Interactive Filter */}
         {viewingClassesUser && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                    <BookOpen className="w-5 h-5 text-[#6d3807]" />
+                  <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                    <BookOpen className="w-5 h-5 text-brand-600" />
                     <span>Danh Sách Lớp Học Của {viewingClassesUser.name}</span>
                   </h2>
-                  <p className="text-xs text-[#52443a] mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     {viewingClassesUser.role === "TEACHER" ? "Lớp đang quản lý" : "Lớp đang tham gia học"}
                   </p>
                 </div>
-                <button onClick={() => setViewingClassesUser(null)} className="text-[#857469] hover:text-[#211a16]">
+                <button onClick={() => setViewingClassesUser(null)} className="text-ink-subtle hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs text-[#52443a]">
+                <p className="text-xs text-ink-muted">
                   Bấm vào tên lớp dưới đây để <strong>lọc trực tiếp</strong> danh sách toàn bộ Thầy cô &amp; Học sinh trong lớp đó:
                 </p>
 
@@ -483,15 +483,15 @@ export default function AdminAccountsPage() {
                         <button
                           key={cId}
                           onClick={() => handleFilterByClass(cId)}
-                          className="w-full text-left p-3.5 rounded-xl border border-[#d8c2b6] bg-[#fff8f5] hover:bg-[#fff1ea] hover:border-[#ffb782] transition-all flex items-center justify-between group"
+                          className="w-full text-left p-3.5 rounded-xl border border-line bg-surface-alt hover:bg-brand-50 hover:border-brand-300 transition-all flex items-center justify-between group"
                         >
                           <div>
-                            <span className="font-bold text-sm text-[#211a16] group-hover:text-[#6d3807] block">
+                            <span className="font-bold text-sm text-ink group-hover:text-brand-600 block">
                               {cName}
                             </span>
-                            <span className="text-xs text-[#857469]">Mã Lớp: {matchedClass?.code || cId}</span>
+                            <span className="text-xs text-ink-subtle">Mã Lớp: {matchedClass?.code || cId}</span>
                           </div>
-                          <span className="text-xs font-bold text-[#6d3807] group-hover:underline flex items-center">
+                          <span className="text-xs font-bold text-brand-600 group-hover:underline flex items-center">
                             Lọc Lớp Này &rarr;
                           </span>
                         </button>
@@ -499,8 +499,8 @@ export default function AdminAccountsPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-6 text-center border-2 border-dashed border-[#d8c2b6] rounded-2xl bg-[#fff8f5]">
-                    <p className="text-xs text-[#52443a]">Tài khoản này hiện chưa tham gia hoặc chưa quản lý lớp học nào.</p>
+                  <div className="p-6 text-center border-2 border-dashed border-line rounded-2xl bg-surface-alt">
+                    <p className="text-xs text-ink-muted">Tài khoản này hiện chưa tham gia hoặc chưa quản lý lớp học nào.</p>
                   </div>
                 )}
               </div>
@@ -508,7 +508,7 @@ export default function AdminAccountsPage() {
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setViewingClassesUser(null)}
-                  className="px-5 py-2.5 bg-[#6d3807] text-white rounded-xl text-xs font-medium"
+                  className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-medium"
                 >
                   Đóng
                 </button>

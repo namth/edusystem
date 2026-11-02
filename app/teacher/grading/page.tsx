@@ -167,19 +167,19 @@ export default function TeacherGradingPage() {
     <TeacherLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="border-b border-[#d8c2b6]/40 pb-6">
-          <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
+        <div className="border-b border-line/40 pb-6">
+          <h1 className="font-headline text-3xl font-bold text-ink tracking-tight">
             Human-in-the-Loop AI Grading &amp; Override Portal
           </h1>
-          <p className="text-sm text-[#52443a] mt-1">
+          <p className="text-sm text-ink-muted mt-1">
             Xem xét chi tiết các bài thi tự luận Writing &amp; Speaking được AI chấm. Giáo viên có quyền điều chỉnh điểm từng kỹ năng và gửi phản hồi tới học sinh.
           </p>
         </div>
 
         {/* Filter Bar */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-[#52443a] uppercase mr-2 flex items-center space-x-1">
-            <Filter className="w-3.5 h-3.5 text-[#6d3807]" />
+          <span className="text-xs font-bold text-ink-muted uppercase mr-2 flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-brand-600" />
             <span>Trạng thái:</span>
           </span>
           {[
@@ -194,8 +194,8 @@ export default function TeacherGradingPage() {
               onClick={() => setStatusFilter(tab.value)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === tab.value
-                  ? "bg-[#6d3807] text-white shadow-sm"
-                  : "bg-white text-[#52443a] border border-[#d8c2b6] hover:bg-[#fff8f5]"
+                  ? "bg-brand-600 text-white shadow-sm"
+                  : "bg-white text-ink-muted border border-line hover:bg-surface-alt"
               }`}
             >
               {tab.label}
@@ -219,18 +219,18 @@ export default function TeacherGradingPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: Submissions List */}
-          <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-4">
-            <h2 className="text-base font-bold font-headline text-[#6d3807]">
+          <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-line shadow-sm space-y-4">
+            <h2 className="text-base font-bold font-headline text-brand-600">
               Danh Sách Bài Nộp ({submissions.length})
             </h2>
 
             {loading ? (
-              <div className="flex items-center space-x-2 text-xs text-[#52443a]">
-                <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+              <div className="flex items-center space-x-2 text-xs text-ink-muted">
+                <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
                 <span>Đang tải danh sách bài nộp...</span>
               </div>
             ) : submissions.length === 0 ? (
-              <p className="text-xs text-[#52443a]">Chưa có bài thi nào phù hợp với bộ lọc.</p>
+              <p className="text-xs text-ink-muted">Chưa có bài thi nào phù hợp với bộ lọc.</p>
             ) : (
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
                 {submissions.map((sub) => (
@@ -239,12 +239,12 @@ export default function TeacherGradingPage() {
                     onClick={() => selectSubmission(sub)}
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
                       selectedSub?.id === sub.id
-                        ? "border-2 border-[#8a4f1e] bg-[#ffdbcc]/30 shadow-sm"
-                        : "border-[#d8c2b6] bg-white hover:bg-[#fff8f5]"
+                        ? "border-2 border-brand-700 bg-accent-100/30 shadow-sm"
+                        : "border-line bg-white hover:bg-surface-alt"
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <div className="text-xs font-bold text-[#211a16] font-headline line-clamp-1">
+                      <div className="text-xs font-bold text-ink font-headline line-clamp-1">
                         {sub.exam_title || `Đề thi #${sub.exam_id}`}
                       </div>
                       <span
@@ -268,11 +268,11 @@ export default function TeacherGradingPage() {
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-[#52443a] mb-1">
-                      Học sinh: <strong className="text-[#211a16]">{sub.student_name || sub.student_id}</strong>
+                    <div className="text-[11px] text-ink-muted mb-1">
+                      Học sinh: <strong className="text-ink">{sub.student_name || sub.student_id}</strong>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] text-[#857469]">
+                    <div className="flex justify-between items-center text-[10px] text-ink-subtle">
                       <span>Mã: {sub.id}</span>
                       <span>
                         {sub.total_score !== null
@@ -287,11 +287,11 @@ export default function TeacherGradingPage() {
           </div>
 
           {/* Right: Submission Details & Override Panel */}
-          <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-6">
+          <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-line shadow-sm space-y-6">
             {!selectedSub ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-[#d8c2b6] rounded-xl bg-[#fff8f5]">
-                <Sparkles className="w-10 h-10 text-[#d8c2b6] mb-2" />
-                <p className="text-xs text-[#52443a]">
+              <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-line rounded-xl bg-surface-alt">
+                <Sparkles className="w-10 h-10 text-line mb-2" />
+                <p className="text-xs text-ink-muted">
                   Chọn một bài thi ở danh sách bên trái để mở bảng chấm và điều chỉnh điểm.
                 </p>
               </div>
@@ -299,23 +299,23 @@ export default function TeacherGradingPage() {
               <form onSubmit={handleGradingSubmit} className="space-y-6">
                 <div>
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold font-headline text-[#211a16]">
+                    <h2 className="text-lg font-bold font-headline text-ink">
                       {selectedSub.exam_title || `Đề thi #${selectedSub.exam_id}`}
                     </h2>
-                    <span className="text-xs font-mono font-bold text-[#6d3807] bg-[#fff1ea] px-3 py-1 rounded-full border border-[#d8c2b6]">
+                    <span className="text-xs font-mono font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-line">
                       ID: {selectedSub.id}
                     </span>
                   </div>
-                  <p className="text-xs text-[#52443a] mt-1">
-                    Học sinh: <strong className="text-[#211a16]">{selectedSub.student_name || selectedSub.student_id}</strong> &bull; Trạng thái: {selectedSub.status}
+                  <p className="text-xs text-ink-muted mt-1">
+                    Học sinh: <strong className="text-ink">{selectedSub.student_name || selectedSub.student_id}</strong> &bull; Trạng thái: {selectedSub.status}
                     {selectedSub.total_score !== null && ` &bull; Tổng điểm: ${selectedSub.total_score}`}
                   </p>
                 </div>
 
                 {/* Section Scores Display & Edit */}
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase text-[#6d3807] border-b border-[#d8c2b6] pb-2 flex items-center space-x-2">
-                    <Award className="w-4 h-4 text-[#6d3807]" />
+                  <h3 className="text-xs font-bold uppercase text-brand-600 border-b border-line pb-2 flex items-center space-x-2">
+                    <Award className="w-4 h-4 text-brand-600" />
                     <span>Điểm Từng Kỹ Năng (Section Scores &amp; Teacher Override):</span>
                   </h3>
 
@@ -330,11 +330,11 @@ export default function TeacherGradingPage() {
                       return (
                         <div
                           key={skill}
-                          className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2"
+                          className="p-4 bg-surface-alt rounded-xl border border-line space-y-2"
                         >
-                          <div className="flex justify-between items-center text-xs font-bold text-[#211a16]">
+                          <div className="flex justify-between items-center text-xs font-bold text-ink">
                             <span>{skill}</span>
-                            <span className="text-[#6d3807] text-[11px]">
+                            <span className="text-brand-600 text-[11px]">
                               {currentScore !== undefined
                                 ? `Hiện tại: ${currentScore}`
                                 : "Chưa chấm"}
@@ -343,7 +343,7 @@ export default function TeacherGradingPage() {
                           </div>
 
                           <div>
-                            <label className="block text-[11px] text-[#52443a] mb-1">
+                            <label className="block text-[11px] text-ink-muted mb-1">
                               Điểm giáo viên chấm:
                             </label>
                             <input
@@ -354,7 +354,7 @@ export default function TeacherGradingPage() {
                               value={skillScores[skill] || ""}
                               onChange={(e) => handleScoreChange(skill, e.target.value)}
                               placeholder={`Nhập điểm ${skill}...`}
-                              className="w-full px-3 py-2 bg-white border border-[#d8c2b6] rounded-lg text-xs focus:outline-none focus:border-[#6d3807]"
+                              className="w-full px-3 py-2 bg-white border border-line rounded-lg text-xs focus:outline-none focus:border-brand-600"
                             />
                           </div>
                         </div>
@@ -365,14 +365,14 @@ export default function TeacherGradingPage() {
 
                 {/* Feedback textarea */}
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold uppercase text-[#211a16]">
+                  <label className="block text-xs font-bold uppercase text-ink">
                     Nhận xét của Giáo viên (Feedback gửi học sinh):
                   </label>
                   <textarea
                     rows={3}
                     value={teacherFeedback}
                     onChange={(e) => setTeacherFeedback(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs leading-relaxed focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs leading-relaxed focus:outline-none focus:border-brand-600"
                     placeholder="Nhập nhận xét chuyên môn, hướng dẫn cải thiện cho bài thi..."
                   />
                 </div>
@@ -380,7 +380,7 @@ export default function TeacherGradingPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -389,7 +389,7 @@ export default function TeacherGradingPage() {
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 text-[#ffb782]" />
+                      <Save className="w-4 h-4 text-accent-400" />
                       <span>Lưu Phê Duyệt &amp; Cập Nhật Điểm Giáo Viên</span>
                     </>
                   )}

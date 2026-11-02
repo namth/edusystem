@@ -248,7 +248,7 @@ function StudentLessonContent() {
             </p>
             <Link
               href="/student/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#6d3807] px-4 py-2 text-sm font-bold text-white hover:bg-[#8a4f1e] transition-all"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
               Về Dashboard
@@ -264,8 +264,8 @@ function StudentLessonContent() {
     return (
       <StudentLayout>
         <div className="max-w-4xl mx-auto py-20 px-4 text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-[#6d3807] mx-auto mb-4" />
-          <p className="text-sm font-semibold text-[#52443a]">
+          <Loader2 className="w-10 h-10 animate-spin text-brand-600 mx-auto mb-4" />
+          <p className="text-sm font-semibold text-ink-muted">
             Đang tải nội dung bài học…
           </p>
         </div>
@@ -303,7 +303,7 @@ function StudentLessonContent() {
               {errorStatus === 403 && (
                 <Link
                   href={`/student/class/${classId}`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#6d3807] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#8a4f1e] transition-all shadow-xs"
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 transition-all shadow-xs"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Về lộ trình lớp
@@ -313,7 +313,7 @@ function StudentLessonContent() {
                 <button
                   type="button"
                   onClick={loadData}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#6d3807] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#8a4f1e] transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 transition-all shadow-xs cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Thử lại
@@ -333,7 +333,7 @@ function StudentLessonContent() {
         <div className="flex items-center justify-between">
           <Link
             href={`/student/class/${classId}`}
-            className="inline-flex items-center gap-2 text-sm font-bold text-[#6d3807] hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-bold text-brand-600 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
             Về lộ trình lớp
@@ -343,7 +343,7 @@ function StudentLessonContent() {
             <button
               type="button"
               onClick={handleRetry}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#6d3807] bg-white px-3.5 py-1.5 text-xs font-bold text-[#6d3807] hover:bg-[#fff1ea] transition-all shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-brand-600 bg-white px-3.5 py-1.5 text-xs font-bold text-brand-600 hover:bg-brand-50 transition-all shadow-2xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Làm lại bài học
@@ -352,18 +352,18 @@ function StudentLessonContent() {
         </div>
 
         {/* Thanh tiêu đề bài học */}
-        <div className="rounded-2xl border border-[#d8c2b6] bg-white p-6 md:p-8 shadow-xs">
+        <div className="rounded-2xl border border-line bg-white p-6 md:p-8 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8a4f1e]">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-700">
                 <BookOpen className="w-4 h-4" />
                 <span>Bài học</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-[#211a16] font-headline">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-ink font-headline">
                 {lesson?.title || "Bài học"}
               </h1>
               {lesson?.description && (
-                <p className="text-sm text-[#52443a] max-w-2xl leading-relaxed">
+                <p className="text-sm text-ink-muted max-w-2xl leading-relaxed">
                   {lesson.description}
                 </p>
               )}
@@ -373,11 +373,11 @@ function StudentLessonContent() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
               {!currentAttempt ? (
                 <>
-                  <div className="rounded-xl border border-[#ede0d9] bg-[#fff8f5] px-4 py-2 text-center">
-                    <span className="block text-xs font-bold text-[#52443a]">
+                  <div className="rounded-xl border border-line-soft bg-surface-alt px-4 py-2 text-center">
+                    <span className="block text-xs font-bold text-ink-muted">
                       Tiến độ
                     </span>
-                    <span className="font-extrabold text-sm text-[#6d3807]">
+                    <span className="font-extrabold text-sm text-brand-600">
                       Đã trả lời {answeredCount}/{totalQuestions}
                     </span>
                   </div>
@@ -386,7 +386,7 @@ function StudentLessonContent() {
                     type="button"
                     disabled={submitting}
                     onClick={handleSubmit}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#6d3807] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#8a4f1e] disabled:opacity-50 transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
                   >
                     {submitting ? (
                       <>
@@ -406,7 +406,7 @@ function StudentLessonContent() {
                   <button
                     type="button"
                     onClick={handleRetry}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#6d3807] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#8a4f1e] transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 transition-all shadow-xs cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Làm lại
@@ -418,7 +418,7 @@ function StudentLessonContent() {
 
           {/* Banner kết quả khi đang xem một lần làm bài */}
           {currentAttempt && (
-            <div className="mt-6 pt-6 border-t border-[#ede0d9]">
+            <div className="mt-6 pt-6 border-t border-line-soft">
               <div
                 className={`rounded-2xl border p-5 ${
                   currentAttempt.status === "GRADING"
@@ -442,14 +442,14 @@ function StudentLessonContent() {
                         </>
                       ) : (
                         <>
-                          <Award className="w-4 h-4 text-[#6d3807]" />
-                          <span className="text-[#211a16] font-headline">
+                          <Award className="w-4 h-4 text-brand-600" />
+                          <span className="text-ink font-headline">
                             Kết quả lần làm bài
                           </span>
                         </>
                       )}
                     </div>
-                    <p className="text-xs text-[#52443a]">
+                    <p className="text-xs text-ink-muted">
                       Nộp lúc:{" "}
                       {new Date(currentAttempt.created_at).toLocaleString("vi-VN")}
                     </p>
@@ -467,7 +467,7 @@ function StudentLessonContent() {
                         Đang đợi AI phản hồi…
                       </span>
                     ) : (
-                      <span className="font-extrabold text-3xl text-[#6d3807] font-headline">
+                      <span className="font-extrabold text-3xl text-brand-600 font-headline">
                         {currentAttempt.score_percent != null
                           ? `${currentAttempt.score_percent}%`
                           : "—"}
@@ -492,15 +492,15 @@ function StudentLessonContent() {
 
         {/* Lịch sử các lần làm bài */}
         {attempts.length > 0 && (
-          <div className="rounded-2xl border border-[#d8c2b6] bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#ede0d9] pb-3">
-              <History className="w-4 h-4 text-[#6d3807]" />
-              <h3 className="font-headline font-bold text-base text-[#211a16]">
+          <div className="rounded-2xl border border-line bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-line-soft pb-3">
+              <History className="w-4 h-4 text-brand-600" />
+              <h3 className="font-headline font-bold text-base text-ink">
                 Lịch sử các lần làm bài ({attempts.length})
               </h3>
             </div>
 
-            <div className="divide-y divide-[#ede0d9]">
+            <div className="divide-y divide-line-soft">
               {attempts.map((att, idx) => {
                 const isSelected = currentAttempt?.id === att.id;
                 const formattedTime = new Date(att.created_at).toLocaleString("vi-VN");
@@ -512,20 +512,20 @@ function StudentLessonContent() {
                     onClick={() => handleViewAttempt(att)}
                     className={`w-full flex items-center justify-between p-3.5 text-left rounded-xl transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-[#fff1ea] font-bold text-[#6d3807]"
-                        : "hover:bg-[#fff8f5]"
+                        ? "bg-brand-50 font-bold text-brand-600"
+                        : "hover:bg-surface-alt"
                     }`}
                   >
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#6d3807]">
+                        <span className="text-xs font-bold text-brand-600">
                           Lần #{attempts.length - idx}
                         </span>
-                        <span className="text-xs text-[#52443a]">
+                        <span className="text-xs text-ink-muted">
                           {formattedTime}
                         </span>
                       </div>
-                      <div className="text-xs font-medium text-[#52443a]">
+                      <div className="text-xs font-medium text-ink-muted">
                         Trạng thái:{" "}
                         {att.status === "GRADING" ? (
                           <span className="text-amber-700 font-bold">
@@ -544,14 +544,14 @@ function StudentLessonContent() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="font-headline font-extrabold text-base text-[#6d3807]">
+                      <span className="font-headline font-extrabold text-base text-brand-600">
                         {att.score_percent != null
                           ? `${att.score_percent}%`
                           : att.status === "GRADING"
                           ? "Đang chấm..."
                           : "—"}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-[#d8c2b6]" />
+                      <ChevronRight className="w-4 h-4 text-line" />
                     </div>
                   </button>
                 );
@@ -568,8 +568,8 @@ export default function StudentLessonPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#fff8f5]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#6d3807]" />
+        <div className="min-h-screen flex items-center justify-center bg-surface-alt">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
         </div>
       }
     >

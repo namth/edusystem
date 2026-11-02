@@ -380,23 +380,23 @@ export default function AiExamIngestionStudio({
   const targetUnit = availableUnits.find((u) => u.id === selectedUnitId);
 
   return (
-    <div className="w-full space-y-6 font-sans text-[#211a16]">
+    <div className="w-full space-y-6 font-sans text-ink">
       {/* Header Info */}
-      <div className="bg-white border border-[#d8c2b6] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-line rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-[#004d5e] uppercase tracking-wider mb-1">
-            <Sparkles className="w-4 h-4 text-[#004d5e]" />
+          <div className="flex items-center gap-2 text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">
+            <Sparkles className="w-4 h-4 text-brand-800" />
             <span>Upload đề thi / bài tập • Tự động bóc tách AI</span>
           </div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#211a16] tracking-tight">
+          <h2 className="text-xl md:text-2xl font-bold text-ink tracking-tight">
             Upload Đề Thi / Bài Tập &amp; Bóc Tách Tự Động
           </h2>
-          <p className="text-xs md:text-sm text-[#52443a] mt-1">
+          <p className="text-xs md:text-sm text-ink-muted mt-1">
             Hỗ trợ file Word (.docx), PDF số hóa, hoặc ảnh chụp tài liệu/bản scan đề thi. Tự động bóc tách các nhóm câu hỏi chung ngữ cảnh và trích xuất đáp án trực tiếp từ tệp.
           </p>
         </div>
         <div className="shrink-0 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#fff1ea] text-[#6d3807] border border-[#ffb782]">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-brand-50 text-brand-600 border border-brand-300">
             <Layers className="w-3.5 h-3.5" />
             <span>Dual-Engine Vision OCR</span>
           </span>
@@ -427,7 +427,7 @@ export default function AiExamIngestionStudio({
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-[#ffb782] hover:border-[#6d3807] bg-[#fff8f5]/60 hover:bg-[#fff8f5] transition-all rounded-3xl p-12 text-center cursor-pointer flex flex-col items-center justify-center gap-4 group"
+          className="border-2 border-dashed border-brand-300 hover:border-brand-600 bg-surface-alt/60 hover:bg-surface-alt transition-all rounded-3xl p-12 text-center cursor-pointer flex flex-col items-center justify-center gap-4 group"
         >
           <input
             ref={fileInputRef}
@@ -436,20 +436,20 @@ export default function AiExamIngestionStudio({
             onChange={handleFileChange}
             className="hidden"
           />
-          <div className="w-16 h-16 rounded-2xl bg-[#fff1ea] border border-[#ffb782] flex items-center justify-center text-[#6d3807] group-hover:scale-110 transition-transform shadow-xs">
-            <UploadCloud className="w-8 h-8 text-[#6d3807]" />
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 border border-brand-300 flex items-center justify-center text-brand-600 group-hover:scale-110 transition-transform shadow-xs">
+            <UploadCloud className="w-8 h-8 text-brand-600" />
           </div>
           <div className="max-w-md space-y-1">
-            <h3 className="text-base md:text-lg font-bold text-[#211a16]">
+            <h3 className="text-base md:text-lg font-bold text-ink">
               Kéo thả tệp đề thi hoặc Click để chọn tệp từ máy tính
             </h3>
-            <p className="text-xs text-[#52443a]">
+            <p className="text-xs text-ink-muted">
               Hỗ trợ tài liệu Microsoft Word (.docx), tài liệu .pdf (văn bản &amp; bản scan ảnh), hoặc ảnh chụp bài thi (.png, .jpg, .jpeg). Dung lượng tối đa 15MB.
             </p>
           </div>
           <button
             type="button"
-            className="mt-2 px-6 py-2.5 rounded-xl bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold transition shadow-xs flex items-center gap-2 pointer-events-none"
+            className="mt-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-2 pointer-events-none"
           >
             <FileText className="w-4 h-4" />
             <span>Chọn Tệp Đề Thi Để Bóc Tách Ngay</span>
@@ -461,52 +461,52 @@ export default function AiExamIngestionStudio({
       {/* STATE 2: LOADING / AI OCR INGESTION PROGRESS STATE                        */}
       {/* ========================================================================= */}
       {studioState === "loading" && (
-        <div className="bg-white border border-[#d8c2b6] rounded-2xl p-8 shadow-xs text-center space-y-6">
+        <div className="bg-white border border-line rounded-2xl p-8 shadow-xs text-center space-y-6">
           <div className="flex justify-center">
             <div className="relative w-20 h-20 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-[#ffb782]/40 animate-pulse"></div>
-              <div className="w-16 h-16 rounded-full border-4 border-t-[#6d3807] border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
-              <Sparkles className="w-6 h-6 text-[#6d3807] absolute" />
+              <div className="absolute inset-0 rounded-full border-4 border-brand-300/40 animate-pulse"></div>
+              <div className="w-16 h-16 rounded-full border-4 border-t-brand-600 border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+              <Sparkles className="w-6 h-6 text-brand-600 absolute" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-[#211a16]">
+            <h3 className="text-lg font-bold text-ink">
               Đang bóc tách dữ liệu từ tệp: {currentFile?.name}
             </h3>
-            <p className="text-xs text-[#52443a]">
+            <p className="text-xs text-ink-muted">
               Mô hình AI đang gom nhóm câu hỏi chung ngữ cảnh, trích xuất bài đọc và đọc bảng đáp án...
             </p>
           </div>
 
           {/* Stepper progress */}
           <div className="max-w-md mx-auto space-y-2">
-            <div className="flex justify-between text-xs font-bold text-[#6d3807]">
+            <div className="flex justify-between text-xs font-bold text-brand-600">
               <span>Tiến trình hoàn thành:</span>
               <span>{loadingPercent}%</span>
             </div>
-            <div className="w-full bg-[#f8f7f6] rounded-full h-2.5 border border-[#d8c2b6] overflow-hidden">
+            <div className="w-full bg-surface-alt rounded-full h-2.5 border border-line overflow-hidden">
               <div
-                className="bg-[#6d3807] h-2.5 rounded-full transition-all duration-500"
+                className="bg-brand-600 h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${loadingPercent}%` }}
               ></div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto text-xs text-left">
-            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 1 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-[#f8f7f6] border-[#d8c2b6] text-[#52443a]"}`}>
+            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 1 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-surface-alt border-line text-ink-muted"}`}>
               <span>{loadingStep >= 1 ? "✓" : "1"}</span>
               <span>1. Tải Lên Tệp</span>
             </div>
-            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 2 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-[#f8f7f6] border-[#d8c2b6] text-[#52443a]"}`}>
+            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 2 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-surface-alt border-line text-ink-muted"}`}>
               <span>{loadingStep >= 2 ? "✓" : "2"}</span>
               <span>2. Trích Xuất Chữ</span>
             </div>
-            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 3 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-[#f8f7f6] border-[#d8c2b6] text-[#52443a]"}`}>
+            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 3 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-surface-alt border-line text-ink-muted"}`}>
               <span>{loadingStep >= 3 ? "✓" : "3"}</span>
               <span>3. Gom Nhóm Ngữ Cảnh</span>
             </div>
-            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 4 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-[#f8f7f6] border-[#d8c2b6] text-[#52443a]"}`}>
+            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${loadingStep >= 4 ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold" : "bg-surface-alt border-line text-ink-muted"}`}>
               <span>{loadingStep >= 4 ? "✓" : "4"}</span>
               <span>4. Bảng Duyệt</span>
             </div>
@@ -522,13 +522,13 @@ export default function AiExamIngestionStudio({
           <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-7 h-7" />
           </div>
-          <h3 className="text-xl font-bold text-[#ba1a1a]">Không thể bóc tách tài liệu</h3>
-          <p className="text-sm text-[#52443a] leading-relaxed">
+          <h3 className="text-xl font-bold text-red-700">Không thể bóc tách tài liệu</h3>
+          <p className="text-sm text-ink-muted leading-relaxed">
             {errorMessage || "Tệp tải lên không hợp lệ, bị khóa mật khẩu hoặc vượt quá giới hạn 15MB cho phép."}
           </p>
           <button
             onClick={() => setStudioState("empty")}
-            className="px-5 py-2.5 rounded-xl bg-[#6d3807] text-white text-xs font-bold hover:bg-[#8a4f1e] transition cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition cursor-pointer"
           >
             Thử Lại Với Tệp Khác
           </button>
@@ -541,22 +541,22 @@ export default function AiExamIngestionStudio({
       {studioState === "success" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Statistics Bar */}
-          <div className="bg-white border border-[#d8c2b6] rounded-2xl p-4 md:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white border border-line rounded-2xl p-4 md:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="font-bold text-sm text-[#211a16]">Kết quả bóc tách:</span>
+                <span className="font-bold text-sm text-ink">Kết quả bóc tách:</span>
               </div>
               <span className="font-mono text-xs font-bold bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">
                 {questions.length} Nhóm Câu Hỏi ({totalSubQuestionsCount} Câu Hỏi Con)
               </span>
               {passagesCount > 0 && (
-                <span className="text-xs font-medium bg-[#fff1ea] text-[#6d3807] px-3 py-1 rounded-full border border-[#ffb782]">
+                <span className="text-xs font-medium bg-brand-50 text-brand-600 px-3 py-1 rounded-full border border-brand-300">
                   {passagesCount} Bài Đọc Kèm Theo
                 </span>
               )}
-              <span className="text-xs text-[#52443a]">
-                Tệp: <strong className="text-[#211a16]">{currentFile?.name}</strong>
+              <span className="text-xs text-ink-muted">
+                Tệp: <strong className="text-ink">{currentFile?.name}</strong>
               </span>
             </div>
 
@@ -564,14 +564,14 @@ export default function AiExamIngestionStudio({
               <button
                 type="button"
                 onClick={() => setStudioState("empty")}
-                className="px-3 py-1.5 bg-[#f8f7f6] hover:bg-[#ede0d9] border border-[#d8c2b6] rounded-xl text-xs font-semibold text-[#52443a] transition cursor-pointer"
+                className="px-3 py-1.5 bg-surface-alt hover:bg-line-soft border border-line rounded-xl text-xs font-semibold text-ink-muted transition cursor-pointer"
               >
                 Upload Tệp Khác
               </button>
               <button
                 type="button"
                 onClick={handleAddManualGroup}
-                className="px-3 py-1.5 bg-[#fff1ea] hover:bg-[#ffdcc5] border border-[#ffb782] rounded-xl text-xs font-bold text-[#6d3807] transition cursor-pointer flex items-center gap-1"
+                className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 border border-brand-300 rounded-xl text-xs font-bold text-brand-600 transition cursor-pointer flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Thêm Nhóm Câu Hỏi</span>
@@ -580,27 +580,27 @@ export default function AiExamIngestionStudio({
           </div>
 
           {/* Exam Title & Duration Inputs */}
-          <div className="bg-white border border-[#d8c2b6] rounded-2xl p-6 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white border border-line rounded-2xl p-6 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+              <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                 Tên Bộ Đề Thi:
               </label>
               <input
                 type="text"
                 value={examTitle}
                 onChange={(e) => setExamTitle(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-[#d8c2b6] bg-[#f8f7f6] text-sm font-semibold focus:outline-none focus:border-[#6d3807]"
+                className="w-full p-2.5 rounded-xl border border-line bg-surface-alt text-sm font-semibold focus:outline-none focus:border-brand-600"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+              <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                 Thời Gian Làm Bài (Phút):
               </label>
               <input
                 type="number"
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(Number(e.target.value) || 60)}
-                className="w-full p-2.5 rounded-xl border border-[#d8c2b6] bg-[#f8f7f6] text-sm font-semibold focus:outline-none focus:border-[#6d3807]"
+                className="w-full p-2.5 rounded-xl border border-line bg-surface-alt text-sm font-semibold focus:outline-none focus:border-brand-600"
               />
             </div>
           </div>
@@ -610,18 +610,18 @@ export default function AiExamIngestionStudio({
             {questions.map((group, gIdx) => (
               <div
                 key={group.tempId || gIdx}
-                className="bg-white border-2 border-[#d8c2b6] hover:border-[#6d3807] transition rounded-2xl p-5 shadow-xs space-y-4"
+                className="bg-white border-2 border-line hover:border-brand-600 transition rounded-2xl p-5 shadow-xs space-y-4"
               >
                 {/* Group Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#d8c2b6]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="px-3 py-1 rounded-lg bg-[#6d3807] text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <span className="px-3 py-1 rounded-lg bg-brand-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       Nhóm {gIdx + 1}
                     </span>
-                    <span className="text-xs uppercase font-bold text-[#004d5e] bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
+                    <span className="text-xs uppercase font-bold text-brand-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
                       {group.category === "READING_FILL_IN" ? "Điền Ô Trống (Cloze)" : "Trắc Nghiệm (MC)"}
                     </span>
-                    <span className="text-xs font-semibold text-[#52443a]">({group.skill || "Reading"})</span>
+                    <span className="text-xs font-semibold text-ink-muted">({group.skill || "Reading"})</span>
                     <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
                       {group.sub_questions.length} câu hỏi con
                     </span>
@@ -631,7 +631,7 @@ export default function AiExamIngestionStudio({
                     <button
                       type="button"
                       onClick={() => handleOpenEditModal(gIdx)}
-                      className="px-3 py-1.5 bg-[#fff1ea] hover:bg-[#ffdcc5] text-[#6d3807] border border-[#ffb782] rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-300 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Sửa nhóm &amp; câu hỏi</span>
@@ -648,28 +648,28 @@ export default function AiExamIngestionStudio({
                 </div>
 
                 {/* Shared Instructions / Prompt */}
-                <div className="bg-[#fff8f5] border border-[#ffb782]/40 rounded-xl p-3.5">
-                  <div className="text-[11px] font-bold text-[#6d3807] uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-[#6d3807]" />
+                <div className="bg-surface-alt border border-brand-300/40 rounded-xl p-3.5">
+                  <div className="text-[11px] font-bold text-brand-600 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-brand-600" />
                     <span>Chỉ dẫn / Ngữ cảnh chung:</span>
                   </div>
-                  <p className="text-sm font-semibold text-[#211a16] leading-relaxed">
+                  <p className="text-sm font-semibold text-ink leading-relaxed">
                     {group.prompt}
                   </p>
                 </div>
 
                 {/* Stimulus Reading Passage Accordion (if group has reading passage) */}
                 {group.stimulus_text && (
-                  <div className="bg-[#fcfaf9] border border-[#d8c2b6] rounded-xl overflow-hidden">
+                  <div className="bg-surface-alt border border-line rounded-xl overflow-hidden">
                     <div
-                      className="p-3 bg-[#f8f7f6] flex items-center justify-between cursor-pointer hover:bg-[#ede0d9]/60 transition"
+                      className="p-3 bg-surface-alt flex items-center justify-between cursor-pointer hover:bg-line-soft/60 transition"
                       onClick={() => handleTogglePassage(`pass_${gIdx}`)}
                     >
                       <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-[#6d3807]" />
-                        <span className="text-xs font-bold text-[#6d3807]">Đoạn Văn Đọc Hiểu / Ngữ Cảnh:</span>
+                        <BookOpen className="w-4 h-4 text-brand-600" />
+                        <span className="text-xs font-bold text-brand-600">Đoạn Văn Đọc Hiểu / Ngữ Cảnh:</span>
                       </div>
-                      <button className="text-xs text-[#6d3807] flex items-center gap-1 font-semibold">
+                      <button className="text-xs text-brand-600 flex items-center gap-1 font-semibold">
                         <span>{expandedPassages[`pass_${gIdx}`] ? "Thu gọn" : "Xem đoạn văn"}</span>
                         {expandedPassages[`pass_${gIdx}`] ? (
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -679,7 +679,7 @@ export default function AiExamIngestionStudio({
                       </button>
                     </div>
                     {expandedPassages[`pass_${gIdx}`] && (
-                      <div className="p-4 text-xs text-[#211a16] leading-relaxed max-h-56 overflow-y-auto border-t border-[#d8c2b6] bg-white whitespace-pre-line font-serif">
+                      <div className="p-4 text-xs text-ink leading-relaxed max-h-56 overflow-y-auto border-t border-line bg-white whitespace-pre-line font-serif">
                         {group.stimulus_text}
                       </div>
                     )}
@@ -688,7 +688,7 @@ export default function AiExamIngestionStudio({
 
                 {/* Sub-questions List */}
                 <div className="space-y-3 pt-2">
-                  <div className="text-xs font-bold text-[#52443a] uppercase tracking-wider">
+                  <div className="text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Các câu hỏi con trong nhóm:
                   </div>
 
@@ -696,10 +696,10 @@ export default function AiExamIngestionStudio({
                     {group.sub_questions.map((sub, sIdx) => (
                       <div
                         key={sub.id || sIdx}
-                        className="bg-[#f8f7f6] border border-[#d8c2b6] rounded-xl p-3.5 space-y-2.5"
+                        className="bg-surface-alt border border-line rounded-xl p-3.5 space-y-2.5"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-xs text-[#6d3807]">
+                          <span className="font-bold text-xs text-brand-600">
                             {sub.text || `Câu ${sub.number || sIdx + 1}`}
                           </span>
                           <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
@@ -719,12 +719,12 @@ export default function AiExamIngestionStudio({
                                 className={`p-2 rounded-lg border text-left flex items-center gap-1.5 transition cursor-pointer ${
                                   isCorrect
                                     ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-2xs"
-                                    : "border-[#d8c2b6] bg-white text-[#52443a] hover:border-[#6d3807]"
+                                    : "border-line bg-white text-ink-muted hover:border-brand-600"
                                 }`}
                               >
                                 <span
                                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                    isCorrect ? "bg-emerald-600 text-white" : "bg-[#ede0d9] text-[#52443a]"
+                                    isCorrect ? "bg-emerald-600 text-white" : "bg-line-soft text-ink-muted"
                                   }`}
                                 >
                                   {opt.key}
@@ -744,21 +744,21 @@ export default function AiExamIngestionStudio({
           </div>
 
           {/* Bottom Bar: Automatic Destination Indicator & Confirm Save Button */}
-          <div className="bg-white border-2 border-[#6d3807]/30 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="bg-white border-2 border-brand-600/30 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 border border-brand-300 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide text-[#6d3807]">
+                  <span className="text-xs font-bold uppercase tracking-wide text-brand-600">
                     Điểm Đến Tự Động:
                   </span>
-                  <span className="text-xs font-bold bg-[#fff1ea] text-[#6d3807] px-2.5 py-0.5 rounded-full border border-[#ffb782]">
+                  <span className="text-xs font-bold bg-brand-50 text-brand-600 px-2.5 py-0.5 rounded-full border border-brand-300">
                     {destinationType === "curriculum" ? "Lộ trình khóa học" : "Kho Đề Thi Độc Lập"}
                   </span>
                 </div>
-                <p className="text-xs text-[#52443a] mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   {destinationType === "curriculum"
                     ? `Đề thi sẽ được thêm vào khóa học: "${targetCourse?.name || targetCourse?.title || "Khóa học hiện tại"}" (${targetUnit?.title || "Unit 1"}).`
                     : "Đề thi sẽ được lưu vào Kho Đề Thi (`exams`) để sử dụng cho mọi lớp học."}
@@ -770,7 +770,7 @@ export default function AiExamIngestionStudio({
               <button
                 type="button"
                 onClick={() => setStudioState("empty")}
-                className="w-full md:w-auto px-5 py-3 rounded-xl border border-[#d8c2b6] text-xs font-bold text-[#52443a] hover:bg-[#ede0d9] transition cursor-pointer"
+                className="w-full md:w-auto px-5 py-3 rounded-xl border border-line text-xs font-bold text-ink-muted hover:bg-line-soft transition cursor-pointer"
               >
                 Hủy bỏ
               </button>
@@ -778,7 +778,7 @@ export default function AiExamIngestionStudio({
                 type="button"
                 onClick={handleConfirmImport}
                 disabled={isImporting}
-                className="w-full md:w-auto px-7 py-3 rounded-xl bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold transition shadow-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full md:w-auto px-7 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isImporting ? (
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -797,18 +797,18 @@ export default function AiExamIngestionStudio({
       {/* ========================================================================= */}
       {editingGroupIndex !== null && editGroupModalData && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border-2 border-[#ffb782] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-3xl border-2 border-brand-300 max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 bg-[#fff8f5] border-b border-[#ffb782] flex items-center justify-between">
+            <div className="p-5 bg-surface-alt border-b border-brand-300 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#6d3807] text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
                   {editingGroupIndex + 1}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#211a16]">
+                  <h3 className="text-base font-bold text-ink">
                     Chỉnh Sửa Nhóm Câu Hỏi {editingGroupIndex + 1}
                   </h3>
-                  <span className="text-xs text-[#52443a]">
+                  <span className="text-xs text-ink-muted">
                     Chỉnh sửa chỉ dẫn chung, đoạn văn đọc hiểu và các câu hỏi con
                   </span>
                 </div>
@@ -816,7 +816,7 @@ export default function AiExamIngestionStudio({
               <button
                 type="button"
                 onClick={handleCloseEditModal}
-                className="w-8 h-8 rounded-full bg-white hover:bg-[#ede0d9] border border-[#d8c2b6] flex items-center justify-center text-[#52443a] transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-white hover:bg-line-soft border border-line flex items-center justify-center text-ink-muted transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -827,7 +827,7 @@ export default function AiExamIngestionStudio({
               {/* Category & Group Prompt */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase text-[#6d3807]">
+                  <label className="text-xs font-bold uppercase text-brand-600">
                     Chỉ Dẫn Chung / Tiêu Đề Nhóm:
                   </label>
                   <select
@@ -835,7 +835,7 @@ export default function AiExamIngestionStudio({
                     onChange={(e) =>
                       setEditGroupModalData({ ...editGroupModalData, category: e.target.value })
                     }
-                    className="p-1.5 rounded-lg border border-[#d8c2b6] text-xs font-bold text-[#004d5e] bg-sky-50 focus:outline-none"
+                    className="p-1.5 rounded-lg border border-line text-xs font-bold text-brand-800 bg-sky-50 focus:outline-none"
                   >
                     <option value="READING_MC">Trắc nghiệm (READING_MC)</option>
                     <option value="READING_FILL_IN">Điền ô trống (READING_FILL_IN)</option>
@@ -848,7 +848,7 @@ export default function AiExamIngestionStudio({
                   onChange={(e) =>
                     setEditGroupModalData({ ...editGroupModalData, prompt: e.target.value })
                   }
-                  className="w-full p-3 rounded-xl border border-[#d8c2b6] bg-[#f8f7f6] text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                  className="w-full p-3 rounded-xl border border-line bg-surface-alt text-xs font-medium focus:outline-none focus:border-brand-600"
                   placeholder="Nhập câu chỉ dẫn chung của nhóm (ví dụ: Mark the letter A, B, C, or D...)"
                 />
               </div>
@@ -856,7 +856,7 @@ export default function AiExamIngestionStudio({
               {/* Shared Context / Stimulus Text */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase text-[#6d3807] flex items-center gap-1.5">
+                  <label className="text-xs font-bold uppercase text-brand-600 flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Đoạn Văn Đọc Hiểu / Ngữ Cảnh Chung (Tùy chọn):</span>
                   </label>
@@ -869,7 +869,7 @@ export default function AiExamIngestionStudio({
                           stimulus_text: "Đoạn văn đọc hiểu mới...",
                         })
                       }
-                      className="text-xs font-bold text-[#6d3807] hover:underline cursor-pointer"
+                      className="text-xs font-bold text-brand-600 hover:underline cursor-pointer"
                     >
                       + Thêm đoạn văn
                     </button>
@@ -885,16 +885,16 @@ export default function AiExamIngestionStudio({
                         stimulus_text: e.target.value,
                       })
                     }
-                    className="w-full p-3 rounded-xl border border-[#d8c2b6] bg-white text-xs font-medium focus:outline-none focus:border-[#6d3807] font-serif leading-relaxed"
+                    className="w-full p-3 rounded-xl border border-line bg-white text-xs font-medium focus:outline-none focus:border-brand-600 font-serif leading-relaxed"
                     placeholder="Dán hoặc nhập nội dung đoạn văn bài đọc tại đây..."
                   />
                 )}
               </div>
 
               {/* Sub-questions Manager */}
-              <div className="space-y-3 pt-3 border-t border-[#d8c2b6]">
+              <div className="space-y-3 pt-3 border-t border-line">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase text-[#6d3807]">
+                  <label className="text-xs font-bold uppercase text-brand-600">
                     Danh Sách Câu Hỏi Con ({editGroupModalData.sub_questions.length} câu):
                   </label>
                   <button
@@ -918,7 +918,7 @@ export default function AiExamIngestionStudio({
                         sub_questions: [...nextSubs, newSub],
                       });
                     }}
-                    className="px-2.5 py-1 bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] rounded-lg text-xs font-bold hover:bg-[#ffdcc5] transition cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1 bg-brand-50 text-brand-600 border border-brand-300 rounded-lg text-xs font-bold hover:bg-brand-100 transition cursor-pointer flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Thêm câu hỏi con</span>
@@ -929,11 +929,11 @@ export default function AiExamIngestionStudio({
                   {editGroupModalData.sub_questions.map((sub, sIdx) => (
                     <div
                       key={sub.id || sIdx}
-                      className="p-3.5 bg-[#f8f7f6] border border-[#d8c2b6] rounded-xl space-y-2.5"
+                      className="p-3.5 bg-surface-alt border border-line rounded-xl space-y-2.5"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1">
-                          <span className="w-6 h-6 rounded-md bg-[#6d3807] text-white flex items-center justify-center font-bold text-[10px]">
+                          <span className="w-6 h-6 rounded-md bg-brand-600 text-white flex items-center justify-center font-bold text-[10px]">
                             {sIdx + 1}
                           </span>
                           <input
@@ -944,14 +944,14 @@ export default function AiExamIngestionStudio({
                               nextSubs[sIdx] = { ...nextSubs[sIdx], text: e.target.value };
                               setEditGroupModalData({ ...editGroupModalData, sub_questions: nextSubs });
                             }}
-                            className="p-1 rounded-lg border border-[#d8c2b6] bg-white text-xs font-bold text-[#211a16] flex-1 max-w-xs focus:outline-none"
+                            className="p-1 rounded-lg border border-line bg-white text-xs font-bold text-ink flex-1 max-w-xs focus:outline-none"
                             placeholder="Tiêu đề câu hỏi..."
                           />
                         </div>
 
                         {/* Correct Answer Selector */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-bold text-[#52443a]">Đáp án:</span>
+                          <span className="text-[11px] font-bold text-ink-muted">Đáp án:</span>
                           {(["A", "B", "C", "D"] as const).map((key) => (
                             <button
                               type="button"
@@ -964,7 +964,7 @@ export default function AiExamIngestionStudio({
                               className={`w-6 h-6 rounded-md text-[11px] font-bold transition cursor-pointer ${
                                 sub.correct_answer === key
                                   ? "bg-emerald-600 text-white shadow-2xs"
-                                  : "bg-white text-[#52443a] border border-[#d8c2b6] hover:bg-[#ede0d9]"
+                                  : "bg-white text-ink-muted border border-line hover:bg-line-soft"
                               }`}
                             >
                               {key}
@@ -988,7 +988,7 @@ export default function AiExamIngestionStudio({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         {sub.options.map((opt, oIdx) => (
                           <div key={opt.key} className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-[#ede0d9] text-[#6d3807] font-bold text-[10px] flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 rounded-full bg-line-soft text-brand-600 font-bold text-[10px] flex items-center justify-center shrink-0">
                               {opt.key}
                             </span>
                             <input
@@ -1001,7 +1001,7 @@ export default function AiExamIngestionStudio({
                                 nextSubs[sIdx] = { ...nextSubs[sIdx], options: nextOpts };
                                 setEditGroupModalData({ ...editGroupModalData, sub_questions: nextSubs });
                               }}
-                              className="p-1.5 rounded-lg border border-[#d8c2b6] bg-white text-xs text-[#211a16] flex-1 focus:outline-none"
+                              className="p-1.5 rounded-lg border border-line bg-white text-xs text-ink flex-1 focus:outline-none"
                               placeholder={`Lựa chọn ${opt.key}...`}
                             />
                           </div>
@@ -1014,18 +1014,18 @@ export default function AiExamIngestionStudio({
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-[#fff8f5] border-t border-[#ffb782] flex items-center justify-end gap-3">
+            <div className="p-4 bg-surface-alt border-t border-brand-300 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={handleCloseEditModal}
-                className="px-4 py-2 rounded-xl border border-[#d8c2b6] text-xs font-bold text-[#52443a] hover:bg-[#ede0d9] transition cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-line text-xs font-bold text-ink-muted hover:bg-line-soft transition cursor-pointer"
               >
                 Hủy Bỏ
               </button>
               <button
                 type="button"
                 onClick={handleSaveModalData}
-                className="px-5 py-2 rounded-xl bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
                 <span>Lưu Thay Đổi Nhóm</span>

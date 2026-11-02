@@ -1,7 +1,7 @@
-# CONTEXT — English Learning & AI Mock Test System
+# CONTEXT — KitoKit: cổng bài học & đề thi đa môn
 
 ## 1. Tổng quan
-Hệ thống học tiếng Anh và thi thử IELTS 4 kỹ năng, chấm Writing/Speaking bằng AI.
+KitoKit — cổng bài học & đề thi đa môn (DEC-023). Tiếng Anh đầy đủ 4 kỹ năng, chấm Writing/Speaking bằng AI; môn khác chỉ câu trắc nghiệm, chấm tự động. Thương hiệu & token màu: DEC-022.
 Stack: Next.js 16 (App Router) + React 19, PostgreSQL (`lib/db-pg.ts`) và Supabase client (`lib/supabase*.ts`),
 Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-worker.js` (chấm bất đồng bộ), Portkey/OpenAI, Gemini TTS.
 
@@ -14,7 +14,7 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 
 ## 3. Bất biến (không được phá)
 1. **Xác thực:** phiên đăng nhập là JWT HS256 trong cookie httpOnly `auth_token` (`lib/jwt.ts`, `lib/auth.ts`). Không lưu token ở `localStorage`, không đọc vai trò từ body/query.
-2. **Mọi API route trong `app/api/` phải kiểm tra phiên trước khi chạm DB/AI/queue**, trừ các route công khai có chủ đích: `app/api/auth/*` và `app/api/classes/lookup/[ref]` (xem trước lớp qua link mời, chỉ trả trường công khai). Không có phiên → `401`; sai vai trò → `403`. Thân lỗi: `{ success: false, error: string }`.
+2. **Mọi API route trong `app/api/` phải kiểm tra phiên trước khi chạm DB/AI/queue**, trừ các route công khai có chủ đích: `app/api/auth/*` (có giới hạn số lần thử), `app/api/classes/lookup/[ref]` (xem trước lớp qua link mời, chỉ trả trường công khai) và `app/api/leads` (form liên hệ landing, giới hạn theo IP). Không có phiên → `401`; sai vai trò → `403`. Thân lỗi: `{ success: false, error: string }`.
 3. Danh tính người dùng lấy từ token (`userId`, `role`), **không bao giờ** từ `student_id`/`userId` client gửi lên khi người gọi là `STUDENT`.
 4. `TEACHER` chỉ thao tác trên khoá học/đề do mình tạo (`created_by`); `ADMIN` thao tác mọi thứ.
 5. Gọi nội bộ máy–máy (worker → API) xác thực bằng header `x-internal-token` khớp biến môi trường `INTERNAL_API_TOKEN` (không rỗng).

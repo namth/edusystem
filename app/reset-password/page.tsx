@@ -74,23 +74,23 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf5f0] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-[#6d3807] selection:text-white">
+    <div className="min-h-screen bg-surface-alt flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-brand-600 selection:text-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-[#6d3807] rounded-2xl flex items-center justify-center shadow-lg border border-[#85460c]">
-            <KeyRound className="w-9 h-9 text-[#ffb782]" />
+          <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center shadow-lg border border-brand-700">
+            <KeyRound className="w-9 h-9 text-accent-400" />
           </div>
         </div>
-        <h2 className="mt-4 text-center text-2xl font-extrabold text-[#211a16] tracking-tight">
+        <h2 className="mt-4 text-center text-2xl font-extrabold text-ink tracking-tight">
           ĐẶT LẠI MẬT KHẨU MỚI
         </h2>
-        <p className="mt-1 text-center text-xs font-semibold text-[#857469]">
-          Tài khoản: <strong className="text-[#6d3807]">{email || "Hệ thống khảo thí EduTest Pro"}</strong>
+        <p className="mt-1 text-center text-xs font-semibold text-ink-subtle">
+          Tài khoản: <strong className="text-brand-600">{email || "Hệ thống KitoKit"}</strong>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl border border-[#d8c2b6] sm:rounded-2xl sm:px-10 space-y-5">
+        <div className="bg-white py-8 px-6 shadow-xl border border-line sm:rounded-2xl sm:px-10 space-y-5">
           {errorMsg && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-start space-x-2 animate-shake">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -104,10 +104,10 @@ function ResetPasswordForm() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <span>{successMsg}</span>
               </div>
-              <p className="text-[11px] text-[#857469] text-center">Đang chuyển hướng về trang Đăng nhập...</p>
+              <p className="text-[11px] text-ink-subtle text-center">Đang chuyển hướng về trang Đăng nhập...</p>
               <Link
                 href="/login"
-                className="w-full py-3 px-4 bg-[#6d3807] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2"
+                className="w-full py-3 px-4 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Chuyển tới trang Đăng nhập ngay</span>
@@ -116,23 +116,23 @@ function ResetPasswordForm() {
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                   Mật Khẩu Mới (*)
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Tối thiểu 8 ký tự (viết hoa, viết thường, số)"
-                    className="w-full pl-9 pr-9 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                    className="w-full pl-9 pr-9 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#857469] hover:text-[#211a16]"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink"
                   >
                     {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -141,8 +141,8 @@ function ResetPasswordForm() {
 
               {/* Password Strength Indicator */}
               {newPassword && (
-                <div className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/60 space-y-1.5 text-[11px]">
-                  <div className="flex justify-between font-bold text-[#52443a]">
+                <div className="p-3 bg-surface-alt rounded-xl border border-line/60 space-y-1.5 text-[11px]">
+                  <div className="flex justify-between font-bold text-ink-muted">
                     <span>Độ mạnh mật khẩu:</span>
                     <span className={validation.isValid ? "text-emerald-700 font-extrabold" : "text-amber-700 font-extrabold"}>
                       {validation.score <= 2 ? "Yếu" : validation.score === 3 ? "Trung bình" : "Rất mạnh ✓"}
@@ -154,7 +154,7 @@ function ResetPasswordForm() {
                     <span className={`h-1.5 rounded-full ${validation.hasLowercase ? "bg-emerald-500" : "bg-gray-200"}`} />
                     <span className={`h-1.5 rounded-full ${validation.hasNumber ? "bg-emerald-500" : "bg-gray-200"}`} />
                   </div>
-                  <div className="text-[10px] text-[#857469] space-y-0.5 pt-1">
+                  <div className="text-[10px] text-ink-subtle space-y-0.5 pt-1">
                     <p className={validation.hasMinLength ? "text-emerald-700" : ""}>✓ Tối thiểu 8 ký tự</p>
                     <p className={validation.hasUppercase ? "text-emerald-700" : ""}>✓ Ít nhất 1 chữ cái viết hoa (A-Z)</p>
                     <p className={validation.hasLowercase ? "text-emerald-700" : ""}>✓ Ít nhất 1 chữ cái viết thường (a-z)</p>
@@ -164,18 +164,18 @@ function ResetPasswordForm() {
               )}
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                   Xác Nhận Mật Khẩu Mới (*)
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#857469]" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Nhập lại mật khẩu mới"
-                    className="w-full pl-9 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                    className="w-full pl-9 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                 </div>
               </div>
@@ -183,16 +183,16 @@ function ResetPasswordForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-[#6d3807] hover:bg-[#85460c] text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50 mt-2"
+                className="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50 mt-2"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-[#ffb782]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
                     <span>Đang cập nhật mật khẩu...</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4 text-[#ffb782]" />
+                    <ShieldCheck className="w-4 h-4 text-accent-400" />
                     <span>CẬP NHẬT MẬT KHẨU MỚI</span>
                   </>
                 )}
@@ -200,8 +200,8 @@ function ResetPasswordForm() {
             </form>
           )}
 
-          <div className="border-t border-[#d8c2b6]/40 pt-3 text-center">
-            <Link href="/login" className="text-xs font-bold text-[#6d3807] hover:underline flex items-center justify-center space-x-1">
+          <div className="border-t border-line/40 pt-3 text-center">
+            <Link href="/login" className="text-xs font-bold text-brand-600 hover:underline flex items-center justify-center space-x-1">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Quay về trang Đăng nhập</span>
             </Link>
@@ -214,7 +214,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-xs text-[#52443a]">Đang nạp trang...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-xs text-ink-muted">Đang nạp trang...</div>}>
       <ResetPasswordForm />
     </Suspense>
   );

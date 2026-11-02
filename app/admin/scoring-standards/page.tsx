@@ -411,27 +411,27 @@ export default function AdminScoringStandardsPage() {
       searchPlaceholder="Tìm kiếm chuẩn chấm theo tên, khung (IELTS, TOEIC...), kỹ năng..."
       searchValue={searchQuery}
     >
-      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
+      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#6d3807] uppercase tracking-wider font-bold mb-1">
-              <Scale className="w-4 h-4 text-[#6d3807]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-600 uppercase tracking-wider font-bold mb-1">
+              <Scale className="w-4 h-4 text-brand-600" />
               <span>Scoring Standards &bull; Multi-Framework</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight font-headline">
+            <h1 className="text-3xl font-bold text-ink tracking-tight font-headline">
               Quản Lý Chuẩn Chấm Điểm
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Định nghĩa cấu trúc phần thi theo kỹ năng (thang điểm, quy đổi tuyến tính hoặc bảng tra, rubric AI) và quy tắc tính điểm tổng (DEC-014, DEC-015).
             </p>
           </div>
 
           <button
             onClick={openCreateModal}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4 text-[#ffb782]" />
+            <PlusCircle className="w-4 h-4 text-accent-400" />
             <span>+ Tạo Chuẩn Chấm Mới</span>
           </button>
         </div>
@@ -452,8 +452,8 @@ export default function AdminScoringStandardsPage() {
         )}
 
         {/* Framework Tabs Filter */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-[#d8c2b6]/40 scrollbar-thin">
-          <span className="text-xs font-bold text-[#6d3807] uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-line/40 scrollbar-thin">
+          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
             <Layers className="w-4 h-4" /> Khung:
           </span>
           {dynamicFrameworkTabs.map((fw) => (
@@ -462,8 +462,8 @@ export default function AdminScoringStandardsPage() {
               onClick={() => setSelectedFramework(fw)}
               className={`px-4 py-2 rounded-xl text-xs font-bold font-headline transition-all cursor-pointer whitespace-nowrap ${
                 selectedFramework === fw
-                  ? "bg-[#6d3807] text-white shadow-xs"
-                  : "bg-white text-[#52443a] hover:bg-[#fff8f5] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-xs"
+                  : "bg-white text-ink-muted hover:bg-surface-alt border border-line"
               }`}
             >
               {fw === "ALL" ? "🌐 Tất Cả Chuẩn" : fw}
@@ -473,8 +473,8 @@ export default function AdminScoringStandardsPage() {
 
         {/* List Content */}
         {loading ? (
-          <div className="flex items-center justify-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
+          <div className="flex items-center justify-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
             <span>Đang tải danh sách chuẩn chấm điểm...</span>
           </div>
         ) : loadError ? (
@@ -483,28 +483,28 @@ export default function AdminScoringStandardsPage() {
             <p className="text-sm font-bold text-rose-700">{loadError}</p>
             <button
               onClick={fetchStandards}
-              className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold hover:bg-[#8a4f1e] transition-all cursor-pointer"
+              className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all cursor-pointer"
             >
               Thử lại
             </button>
           </div>
         ) : filteredStandards.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <Scale className="w-12 h-12 text-[#6d3807] mx-auto opacity-40" />
-            <p className="text-sm text-[#52443a]">Không tìm thấy chuẩn chấm điểm nào phù hợp.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <Scale className="w-12 h-12 text-brand-600 mx-auto opacity-40" />
+            <p className="text-sm text-ink-muted">Không tìm thấy chuẩn chấm điểm nào phù hợp.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredStandards.map((std) => (
               <div
                 key={std.id}
-                className="bg-white p-6 rounded-3xl border-2 border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-all"
+                className="bg-white p-6 rounded-3xl border-2 border-line shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-all"
               >
                 <div className="space-y-4">
                   {/* Card Header */}
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#6d3807] text-white font-mono text-[11px] font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-600 text-white font-mono text-[11px] font-bold">
                         {std.framework || "OTHER"}
                       </span>
                       {std.is_system && (
@@ -514,7 +514,7 @@ export default function AdminScoringStandardsPage() {
                       )}
                     </div>
 
-                    <span className="px-2.5 py-1 bg-[#fff1ea] text-[#6d3807] text-[11px] font-bold rounded-lg border border-[#ffb783] font-mono">
+                    <span className="px-2.5 py-1 bg-brand-50 text-brand-600 text-[11px] font-bold rounded-lg border border-brand-300 font-mono">
                       {std.aggregation?.method || "AVERAGE"} (bước: {std.aggregation?.round_step ?? 0.25})
                       {std.aggregation?.pass_score !== undefined && (
                         <span className="ml-1 text-emerald-700">| Đạt: {std.aggregation.pass_score}</span>
@@ -524,36 +524,36 @@ export default function AdminScoringStandardsPage() {
 
                   {/* Title & Description */}
                   <div>
-                    <h3 className="text-xl font-bold font-headline text-[#211a16]">{std.name}</h3>
+                    <h3 className="text-xl font-bold font-headline text-ink">{std.name}</h3>
                     {std.description && (
-                      <p className="text-xs text-[#52443a] mt-1 leading-relaxed">{std.description}</p>
+                      <p className="text-xs text-ink-muted mt-1 leading-relaxed">{std.description}</p>
                     )}
                   </div>
 
                   {/* Sections List */}
-                  <div className="space-y-2 pt-3 border-t border-[#d8c2b6]/40">
-                    <span className="text-[11px] font-bold text-[#6d3807] uppercase tracking-wider block font-mono">
+                  <div className="space-y-2 pt-3 border-t border-line/40">
+                    <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider block font-mono">
                       Cấu trúc phần thi ({std.sections?.length || 0} phần):
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {std.sections?.map((sec, idx) => (
                         <div
                           key={idx}
-                          className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs space-y-1.5"
+                          className="p-3 bg-surface-alt rounded-xl border border-line text-xs space-y-1.5"
                         >
-                          <div className="flex justify-between items-center font-bold text-[#211a16]">
-                            <span className="text-sm font-headline text-[#6d3807]">{sec.skill}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-white border border-[#d8c2b6] text-[10px] font-mono text-[#52443a]">
+                          <div className="flex justify-between items-center font-bold text-ink">
+                            <span className="text-sm font-headline text-brand-600">{sec.skill}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-white border border-line text-[10px] font-mono text-ink-muted">
                               {sec.conversion}
                             </span>
                           </div>
 
-                          <div className="text-[11px] text-[#52443a]">
+                          <div className="text-[11px] text-ink-muted">
                             Thang: <strong className="font-mono">{sec.min} – {sec.max}</strong> (step {sec.step})
                           </div>
 
                           {sec.conversion === "TABLE" && sec.table && (
-                            <div className="text-[10px] text-[#857469]">
+                            <div className="text-[10px] text-ink-subtle">
                               Tra bảng ({sec.table_question_count || 40} câu, {sec.table.length} mốc)
                             </div>
                           )}
@@ -570,10 +570,10 @@ export default function AdminScoringStandardsPage() {
                 </div>
 
                 {/* Card Actions */}
-                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-[#d8c2b6]/30">
+                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-line/30">
                   <button
                     onClick={() => openEditModal(std)}
-                    className="px-3.5 py-2 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-bold hover:bg-[#fff1ea] flex items-center space-x-1.5 transition-all font-headline cursor-pointer"
+                    className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-bold hover:bg-brand-50 flex items-center space-x-1.5 transition-all font-headline cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Chỉnh Sửa</span>
@@ -597,10 +597,10 @@ export default function AdminScoringStandardsPage() {
         {/* Create / Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full shadow-2xl border border-[#d8c2b6] space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2 font-headline">
-                  <Scale className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full shadow-2xl border border-line space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2 font-headline">
+                  <Scale className="w-5 h-5 text-brand-600" />
                   <span>
                     {editingStandard
                       ? `Chỉnh Sửa Chuẩn Chấm: ${editingStandard.name}`
@@ -609,7 +609,7 @@ export default function AdminScoringStandardsPage() {
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-[#857469] hover:text-[#211a16] cursor-pointer"
+                  className="text-ink-subtle hover:text-ink cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -626,7 +626,7 @@ export default function AdminScoringStandardsPage() {
                 {/* General Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Tên Chuẩn Chấm (*)
                     </label>
                     <input
@@ -635,12 +635,12 @@ export default function AdminScoringStandardsPage() {
                       placeholder="Ví dụ: IELTS Academic, TOEIC 2 Kỹ Năng..."
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Khung Tiêu Chuẩn (Framework)
                     </label>
                     <input
@@ -649,7 +649,7 @@ export default function AdminScoringStandardsPage() {
                       placeholder="IELTS, TOEIC, HSK, INTERNAL..."
                       value={framework}
                       onChange={(e) => setFramework(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                     <datalist id="framework-options">
                       {PRESET_FRAMEWORKS.map((fw) => (
@@ -660,7 +660,7 @@ export default function AdminScoringStandardsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#52443a] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink-muted mb-1">
                     Mô Tả Chuẩn Chấm
                   </label>
                   <input
@@ -668,25 +668,25 @@ export default function AdminScoringStandardsPage() {
                     placeholder="Mô tả thang điểm, cách quy đổi và mục đích sử dụng..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 {/* Sections Editor */}
-                <div className="space-y-3 pt-2 border-t border-[#d8c2b6]/40">
+                <div className="space-y-3 pt-2 border-t border-line/40">
                   <div className="flex justify-between items-center">
                     <div>
-                      <label className="block text-xs font-bold uppercase text-[#6d3807]">
+                      <label className="block text-xs font-bold uppercase text-brand-600">
                         Danh Sách Phần Thi Theo Kỹ Năng ({sections.length})
                       </label>
-                      <span className="text-[10px] text-[#857469]">
+                      <span className="text-[10px] text-ink-subtle">
                         Mỗi kỹ năng chỉ xuất hiện 1 lần. Chọn thang điểm và cách quy đổi (LINEAR hoặc TABLE).
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={handleAddSection}
-                      className="px-3 py-1.5 bg-[#fff1ea] text-[#6d3807] border border-[#ffb783] rounded-lg text-xs font-bold hover:bg-[#ffdcc5] transition-all cursor-pointer"
+                      className="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-300 rounded-lg text-xs font-bold hover:bg-brand-100 transition-all cursor-pointer"
                     >
                       + Thêm Phần Thi
                     </button>
@@ -696,15 +696,15 @@ export default function AdminScoringStandardsPage() {
                     {sections.map((sec, secIdx) => (
                       <div
                         key={secIdx}
-                        className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-3"
+                        className="p-4 bg-surface-alt rounded-2xl border border-line space-y-3"
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold font-mono text-[#6d3807]">#{secIdx + 1}</span>
+                            <span className="text-xs font-bold font-mono text-brand-600">#{secIdx + 1}</span>
                             <select
                               value={sec.skill}
                               onChange={(e) => handleSectionChange(secIdx, "skill", e.target.value)}
-                              className="p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             >
                               {SKILLS.map((s) => (
                                 <option key={s} value={s}>
@@ -716,7 +716,7 @@ export default function AdminScoringStandardsPage() {
                             <select
                               value={sec.conversion}
                               onChange={(e) => handleSectionChange(secIdx, "conversion", e.target.value)}
-                              className="p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             >
                               <option value="LINEAR">LINEAR (Tuyến tính)</option>
                               <option value="TABLE">TABLE (Bảng tra điểm)</option>
@@ -736,33 +736,33 @@ export default function AdminScoringStandardsPage() {
                         {/* Min / Max / Step */}
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="block text-[10px] font-bold text-[#6d3807]">Min</label>
+                            <label className="block text-[10px] font-bold text-brand-600">Min</label>
                             <input
                               type="number"
                               step="any"
                               value={sec.min}
                               onChange={(e) => handleSectionChange(secIdx, "min", Number(e.target.value))}
-                              className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-[#6d3807]">Max</label>
+                            <label className="block text-[10px] font-bold text-brand-600">Max</label>
                             <input
                               type="number"
                               step="any"
                               value={sec.max}
                               onChange={(e) => handleSectionChange(secIdx, "max", Number(e.target.value))}
-                              className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-[#6d3807]">Bước điểm (Step)</label>
+                            <label className="block text-[10px] font-bold text-brand-600">Bước điểm (Step)</label>
                             <input
                               type="number"
                               step="any"
                               value={sec.step}
                               onChange={(e) => handleSectionChange(secIdx, "step", Number(e.target.value))}
-                              className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             />
                           </div>
                         </div>
@@ -770,13 +770,13 @@ export default function AdminScoringStandardsPage() {
                         {/* Writing / Speaking rubric selector */}
                         {(sec.skill === "Writing" || sec.skill === "Speaking") && (
                           <div>
-                            <label className="block text-[10px] font-bold text-[#6d3807] mb-1">
+                            <label className="block text-[10px] font-bold text-brand-600 mb-1">
                               Tiêu Chí AI Rubric (rubric_id cho {sec.skill})
                             </label>
                             <select
                               value={sec.rubric_id || ""}
                               onChange={(e) => handleSectionChange(secIdx, "rubric_id", e.target.value)}
-                              className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             >
                               <option value="">(Mặc định hệ thống / Không chọn)</option>
                               {rubrics.map((r) => (
@@ -790,10 +790,10 @@ export default function AdminScoringStandardsPage() {
 
                         {/* TABLE Conversion: table_question_count + rows */}
                         {sec.conversion === "TABLE" && (
-                          <div className="p-3 bg-white rounded-xl border border-[#d8c2b6] space-y-2">
+                          <div className="p-3 bg-white rounded-xl border border-line space-y-2">
                             <div className="flex justify-between items-center">
                               <div className="flex items-center space-x-2">
-                                <label className="text-[10px] font-bold text-[#6d3807]">
+                                <label className="text-[10px] font-bold text-brand-600">
                                   Số câu chuẩn bảng tra:
                                 </label>
                                 <input
@@ -803,14 +803,14 @@ export default function AdminScoringStandardsPage() {
                                   onChange={(e) =>
                                     handleSectionChange(secIdx, "table_question_count", Number(e.target.value))
                                   }
-                                  className="w-20 p-1 border border-[#d8c2b6] rounded text-xs font-bold text-center"
+                                  className="w-20 p-1 border border-line rounded text-xs font-bold text-center"
                                 />
                               </div>
 
                               <button
                                 type="button"
                                 onClick={() => handleAddTableRow(secIdx)}
-                                className="px-2 py-1 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded text-[11px] font-bold hover:bg-[#fff1ea] cursor-pointer"
+                                className="px-2 py-1 bg-surface-alt text-brand-600 border border-line rounded text-[11px] font-bold hover:bg-brand-50 cursor-pointer"
                               >
                                 + Thêm Mốc Điểm
                               </button>
@@ -819,8 +819,8 @@ export default function AdminScoringStandardsPage() {
                             <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                               {(sec.table || []).map((row, rIdx) => (
                                 <div key={rIdx} className="flex items-center space-x-2 text-xs">
-                                  <span className="text-[10px] text-[#857469] w-6 text-right">#{rIdx + 1}</span>
-                                  <span className="text-[10px] font-bold text-[#52443a]">Từ số câu đúng:</span>
+                                  <span className="text-[10px] text-ink-subtle w-6 text-right">#{rIdx + 1}</span>
+                                  <span className="text-[10px] font-bold text-ink-muted">Từ số câu đúng:</span>
                                   <input
                                     type="number"
                                     min="0"
@@ -828,10 +828,10 @@ export default function AdminScoringStandardsPage() {
                                     onChange={(e) =>
                                       handleTableRowChange(secIdx, rIdx, "min_correct", Number(e.target.value))
                                     }
-                                    className="w-16 p-1 border border-[#d8c2b6] rounded text-center text-xs font-bold"
+                                    className="w-16 p-1 border border-line rounded text-center text-xs font-bold"
                                     placeholder="min_correct"
                                   />
-                                  <span className="text-[10px] font-bold text-[#52443a]">→ Điểm:</span>
+                                  <span className="text-[10px] font-bold text-ink-muted">→ Điểm:</span>
                                   <input
                                     type="number"
                                     step="any"
@@ -839,7 +839,7 @@ export default function AdminScoringStandardsPage() {
                                     onChange={(e) =>
                                       handleTableRowChange(secIdx, rIdx, "score", Number(e.target.value))
                                     }
-                                    className="w-20 p-1 border border-[#d8c2b6] rounded text-center text-xs font-bold"
+                                    className="w-20 p-1 border border-line rounded text-center text-xs font-bold"
                                   />
                                   <button
                                     type="button"
@@ -860,21 +860,21 @@ export default function AdminScoringStandardsPage() {
                 </div>
 
                 {/* Aggregation Config */}
-                <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-4">
+                <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-4">
                   <div className="flex items-center space-x-2">
-                    <BookOpen className="w-4 h-4 text-[#6d3807]" />
-                    <h4 className="text-xs font-bold uppercase text-[#6d3807]">
+                    <BookOpen className="w-4 h-4 text-brand-600" />
+                    <h4 className="text-xs font-bold uppercase text-brand-600">
                       Quy Tắc Tính Điểm Tổng (Aggregation)
                     </h4>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6d3807] mb-1">Phương pháp</label>
+                      <label className="block text-[11px] font-bold text-brand-600 mb-1">Phương pháp</label>
                       <select
                         value={aggMethod}
                         onChange={(e) => setAggMethod(e.target.value as any)}
-                        className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                        className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                       >
                         <option value="AVERAGE">AVERAGE (Trung bình cộng)</option>
                         <option value="SUM">SUM (Tổng các phần)</option>
@@ -883,18 +883,18 @@ export default function AdminScoringStandardsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6d3807] mb-1">Làm tròn (round_step)</label>
+                      <label className="block text-[11px] font-bold text-brand-600 mb-1">Làm tròn (round_step)</label>
                       <input
                         type="number"
                         step="any"
                         value={aggRoundStep}
                         onChange={(e) => setAggRoundStep(Number(e.target.value))}
-                        className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                        className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6d3807] mb-1">
+                      <label className="block text-[11px] font-bold text-brand-600 mb-1">
                         Điểm đạt (pass_score - tùy chọn)
                       </label>
                       <input
@@ -903,21 +903,21 @@ export default function AdminScoringStandardsPage() {
                         placeholder="Để trống nếu không xét"
                         value={aggPassScore}
                         onChange={(e) => setAggPassScore(e.target.value)}
-                        className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                        className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                       />
                     </div>
                   </div>
 
                   {/* WEIGHTED Weights inputs */}
                   {aggMethod === "WEIGHTED" && (
-                    <div className="pt-2 border-t border-[#d8c2b6]/40 space-y-2">
-                      <span className="text-[11px] font-bold text-[#6d3807] block">
+                    <div className="pt-2 border-t border-line/40 space-y-2">
+                      <span className="text-[11px] font-bold text-brand-600 block">
                         Trọng số theo kỹ năng (weights):
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {sections.map((sec) => (
                           <div key={sec.skill} className="flex items-center space-x-1">
-                            <span className="text-xs font-bold text-[#52443a] w-20">{sec.skill}:</span>
+                            <span className="text-xs font-bold text-ink-muted w-20">{sec.skill}:</span>
                             <input
                               type="number"
                               step="any"
@@ -926,7 +926,7 @@ export default function AdminScoringStandardsPage() {
                               onChange={(e) =>
                                 setAggWeights({ ...aggWeights, [sec.skill]: Number(e.target.value) })
                               }
-                              className="w-16 p-1 bg-white border border-[#d8c2b6] rounded text-xs font-bold text-center"
+                              className="w-16 p-1 bg-white border border-line rounded text-xs font-bold text-center"
                             />
                           </div>
                         ))}
@@ -935,14 +935,14 @@ export default function AdminScoringStandardsPage() {
                   )}
 
                   {/* Section Min scores */}
-                  <div className="pt-2 border-t border-[#d8c2b6]/40 space-y-2">
-                    <span className="text-[11px] font-bold text-[#6d3807] block">
+                  <div className="pt-2 border-t border-line/40 space-y-2">
+                    <span className="text-[11px] font-bold text-brand-600 block">
                       Điểm sàn từng phần thi (section_min - tùy chọn):
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {sections.map((sec) => (
                         <div key={sec.skill} className="flex items-center space-x-1">
-                          <span className="text-xs font-bold text-[#52443a] w-20">{sec.skill}:</span>
+                          <span className="text-xs font-bold text-ink-muted w-20">{sec.skill}:</span>
                           <input
                             type="number"
                             step="any"
@@ -951,7 +951,7 @@ export default function AdminScoringStandardsPage() {
                             onChange={(e) =>
                               setAggSectionMin({ ...aggSectionMin, [sec.skill]: e.target.value })
                             }
-                            className="w-16 p-1 bg-white border border-[#d8c2b6] rounded text-xs font-bold text-center"
+                            className="w-16 p-1 bg-white border border-line rounded text-xs font-bold text-center"
                           />
                         </div>
                       ))}
@@ -964,19 +964,19 @@ export default function AdminScoringStandardsPage() {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5] cursor-pointer"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 font-headline cursor-pointer"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 font-headline cursor-pointer"
                   >
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
                     ) : (
-                      <Save className="w-4 h-4 text-[#ffb782]" />
+                      <Save className="w-4 h-4 text-accent-400" />
                     )}
                     <span>{editingStandard ? "Cập Nhật Chuẩn Chấm" : "Lưu Chuẩn Chấm Mới"}</span>
                   </button>

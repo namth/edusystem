@@ -56,18 +56,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="bg-[#fff8f5] min-h-screen flex flex-col academic-grid font-sans text-[#211a16] selection:bg-[#6d3807] selection:text-white">
+    <div className="bg-surface-alt min-h-screen flex flex-col academic-grid font-sans text-ink selection:bg-brand-600 selection:text-white">
       {/* Top Header Navigation */}
-      <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-10 bg-white/80 backdrop-blur-md z-50 border-b border-[#d8c2b6]/30">
+      <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-10 bg-white/80 backdrop-blur-md z-50 border-b border-line/30">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-[#6d3807] rounded-xl flex items-center justify-center text-white shadow-xs">
-            <School className="w-5 h-5 text-[#ffb782]" />
-          </div>
-          <span className="text-xl font-bold text-[#6d3807] tracking-tight">
-            EduTest Pro
+          <img src="/brand/kitokit-mark.png" alt="" className="w-9 h-9 object-contain" />
+          <span className="text-xl font-bold text-brand-600 tracking-tight">
+            KitoKit
           </span>
         </div>
-        <Link href="/login" className="text-xs font-bold text-[#6d3807] hover:text-[#85460c] transition-colors">
+        <Link href="/login" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">
           Đã có tài khoản? Đăng nhập ngay &rarr;
         </Link>
       </header>
@@ -79,53 +77,51 @@ export default function RegisterPage() {
           {/* Left Visual / Branding Pane */}
           <div className="hidden lg:flex flex-col space-y-8 pr-6">
             <div className="space-y-4">
-              <h1 className="text-4xl font-extrabold text-[#6d3807] leading-tight tracking-tight">
+              <h1 className="text-4xl font-extrabold text-brand-600 leading-tight tracking-tight">
                 Khởi Đầu Hành Trình <br />
-                <span className="text-[#785840]">Bứt Phá Band Điểm IELTS</span>
+                <span className="text-ink-muted">Chinh Phục Tri Thức Cùng KitoKit</span>
               </h1>
-              <p className="text-sm text-[#52443a] leading-relaxed max-w-md">
-                Tạo hồ sơ học viên chuẩn hóa để truy cập ngân hàng đề thi IELTS mô phỏng, luyện tập 4 kỹ năng và nhận báo cáo phân tích học thuật tự động.
+              <p className="text-sm text-ink-muted leading-relaxed max-w-md">
+                Tạo tài khoản học viên để truy cập kho bài học & đề thi đa môn phong phú, luyện tập phản xạ và nhận đánh giá học thuật tự động bằng công nghệ AI.
               </p>
             </div>
 
             {/* Floating Visual Image Card */}
-            <div className="relative w-full aspect-square max-w-[380px] rounded-3xl overflow-hidden shadow-md border border-[#d8c2b6]/40 float-anim group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#6d3807]/15 to-transparent z-10 pointer-events-none" />
+            <div className="relative w-full aspect-square max-w-[380px] rounded-3xl overflow-hidden shadow-md border border-line/40 float-anim group">
+              <div className="absolute inset-0 bg-gradient-to-tr from-brand-600/15 to-transparent z-10 pointer-events-none" />
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK1LOHlfWUn4f96qQY5VZ6AFGdycltIZyQPAem2c4NoS1inlFPiWq1UzXqG-cfa7_g9PiXg8IQmAAPn2RpXwtokGME4IL_E3TuyvCFvZ_J4RM_fFKNfmhcvcxB9qf-1kSBdYYAwaZbK239WFhmtZaxR84ixeH8dJyOinjW0S4bSqqxGGOcLRPwloePCBCqMkcScjtiMkyfqefJ-5YJ5ndbh3vSFeccntNjkZv-HrrhwVN1Wir2d_3y"
-                alt="EduTest Pro Academic Portal"
-                className="w-full h-full object-cover transform scale-105 group-hover:scale-110 transition-transform duration-700"
+                src="/brand/kitokit-mark.png"
+                alt="KitoKit"
+                className="w-full h-full object-contain bg-white p-8 transform group-hover:scale-105 transition-transform duration-700"
               />
             </div>
 
-            {/* Social Proof */}
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-[#f9ebe4] flex items-center justify-center text-xs font-bold text-[#6d3807] shadow-xs">
-                  S
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-[#f9ebe4] flex items-center justify-center text-xs font-bold text-[#6d3807] shadow-xs">
-                  M
-                </div>
-                <div className="w-9 h-9 rounded-full border-2 border-white bg-[#f9ebe4] flex items-center justify-center text-xs font-bold text-[#6d3807] shadow-xs">
-                  T
-                </div>
+            {/* Features Highlight */}
+            <div className="flex flex-col gap-2.5 text-xs text-ink-muted">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-500" />
+                <span>Trải nghiệm làm bài thi thử miễn phí không giới hạn</span>
               </div>
-              <p className="text-xs font-medium text-[#52443a]">
-                Tham gia cộng đồng <strong className="text-[#6d3807] font-bold">12.000+</strong> học viên toàn quốc
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-400" />
+                <span>AI phân tích chi tiết điểm mạnh và điểm cần cải thiện</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-600" />
+                <span>Lớp học tương tác trực tiếp cùng thầy cô</span>
+              </div>
             </div>
           </div>
 
           {/* Right Form Pane */}
           <div className="w-full flex justify-center lg:justify-end">
-            <div className="w-full max-w-[440px] bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-[#d8c2b6]/40 space-y-6">
+            <div className="w-full max-w-[440px] bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-line/40 space-y-6">
               
               <div>
-                <h2 className="text-2xl font-extrabold text-[#211a16] tracking-tight">
+                <h2 className="text-2xl font-extrabold text-ink tracking-tight">
                   TẠO TÀI KHOẢN HỌC VIÊN
                 </h2>
-                <p className="text-xs text-[#857469] mt-1">
+                <p className="text-xs text-ink-subtle mt-1">
                   Điền thông tin để kích hoạt hồ sơ học thuật trên hệ thống.
                 </p>
               </div>
@@ -139,73 +135,73 @@ export default function RegisterPage() {
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                     Họ và Tên Đầy Đủ
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Ví dụ: Nguyễn Văn An"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                     Địa Chỉ Email
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="student.name@edu.vn"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                     Số Điện Thoại (Tùy chọn)
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0912 345 678"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                     Mật Khẩu
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Mật khẩu tối thiểu 6 ký tự"
-                      className="w-full pl-10 pr-10 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                      className="w-full pl-10 pr-10 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#857469] hover:text-[#211a16] cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -213,18 +209,18 @@ export default function RegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                     Xác Nhận Mật Khẩu
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                     />
                   </div>
                 </div>
@@ -232,26 +228,26 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 py-3.5 bg-[#6d3807] hover:bg-[#85460c] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="w-full mt-2 py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-[#ffb782]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
                       <span>Đang đăng ký...</span>
                     </>
                   ) : (
                     <>
-                      <UserCheck className="w-4 h-4 text-[#ffb782]" />
+                      <UserCheck className="w-4 h-4 text-accent-400" />
                       <span>HOÀN TẤT ĐĂNG KÝ HỌC VIÊN</span>
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="pt-4 border-t border-[#d8c2b6]/30 text-center">
-                <p className="text-xs text-[#857469] font-medium">
+              <div className="pt-4 border-t border-line/30 text-center">
+                <p className="text-xs text-ink-subtle font-medium">
                   Đã có tài khoản?{" "}
-                  <Link href="/login" className="font-bold text-[#6d3807] hover:underline">
+                  <Link href="/login" className="font-bold text-brand-600 hover:underline">
                     Đăng nhập ngay
                   </Link>
                 </p>
@@ -264,13 +260,13 @@ export default function RegisterPage() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-[#857469] border-t border-[#d8c2b6]/30">
+      <footer className="mt-auto py-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-ink-subtle border-t border-line/30">
         <div className="flex items-center gap-3">
-          <span>© 2026 EduTest Pro Academic</span>
-          <span className="w-1 h-1 bg-[#857469] rounded-full" />
+          <span>© 2026 KitoKit</span>
+          <span className="w-1 h-1 bg-ink-subtle rounded-full" />
           <span>Hệ Thống Đánh Giá & Khảo Thí</span>
         </div>
-        <div className="flex items-center gap-1.5 italic text-xs text-[#6d3807]">
+        <div className="flex items-center gap-1.5 italic text-xs text-brand-600">
           <ShieldCheck className="w-4 h-4" />
           <span>Môi Trường Khảo Thí An Toàn</span>
         </div>

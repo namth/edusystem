@@ -49,3 +49,7 @@ next-env.d.ts
 
 # Media bài học khi chạy local (production gắn thư mục ngoài qua docker-compose)
 /public/media/
+
+# Playwright
+/playwright-report/
+/test-results/

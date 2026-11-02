@@ -137,26 +137,26 @@ export default function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="text-[#52443a] hover:text-[#6d3807] p-2 rounded-full hover:bg-[#f9ebe4] relative transition-colors"
+        className="text-ink-muted hover:text-brand-600 p-2 rounded-full hover:bg-brand-100 relative transition-colors"
         aria-label="Thông báo"
         type="button"
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-[#ba1a1a] rounded-full shadow-sm animate-in zoom-in-75">
+          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-700 rounded-full shadow-sm animate-in zoom-in-75">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-[#d8c2b6] py-2 z-50 animate-in fade-in zoom-in-95 font-sans">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#d8c2b6]/30">
-            <h3 className="font-bold text-sm text-[#211a16]">Thông báo</h3>
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-line py-2 z-50 animate-in fade-in zoom-in-95 font-sans">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-line/30">
+            <h3 className="font-bold text-sm text-ink">Thông báo</h3>
             {unread > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-[#6d3807] hover:underline font-medium flex items-center gap-1"
+                className="text-xs text-brand-600 hover:underline font-medium flex items-center gap-1"
                 type="button"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
@@ -165,9 +165,9 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-[#d8c2b6]/20">
+          <div className="max-h-96 overflow-y-auto divide-y divide-line/20">
             {items.length === 0 ? (
-              <div className="py-8 text-center text-sm text-[#857469]">
+              <div className="py-8 text-center text-sm text-ink-subtle">
                 Chưa có thông báo
               </div>
             ) : (
@@ -179,30 +179,30 @@ export default function NotificationBell() {
                     onClick={() => handleItemClick(item)}
                     className={`px-4 py-3 cursor-pointer transition-colors ${
                       isUnread
-                        ? "bg-[#fff8f5] hover:bg-[#f9ebe4]"
-                        : "bg-white hover:bg-[#fff8f5]/60"
+                        ? "bg-surface-alt hover:bg-brand-100"
+                        : "bg-white hover:bg-surface-alt/60"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p
                         className={`text-xs ${
                           isUnread
-                            ? "font-bold text-[#211a16]"
-                            : "font-medium text-[#52443a]"
+                            ? "font-bold text-ink"
+                            : "font-medium text-ink-muted"
                         }`}
                       >
                         {item.title}
                       </p>
                       {isUnread && (
-                        <span className="w-2 h-2 rounded-full bg-[#6d3807] shrink-0 mt-1" />
+                        <span className="w-2 h-2 rounded-full bg-brand-600 shrink-0 mt-1" />
                       )}
                     </div>
                     {item.body && (
-                      <p className="text-[11px] text-[#52443a] mt-0.5 line-clamp-2">
+                      <p className="text-[11px] text-ink-muted mt-0.5 line-clamp-2">
                         {item.body}
                       </p>
                     )}
-                    <p className="text-[10px] text-[#857469] mt-1">
+                    <p className="text-[10px] text-ink-subtle mt-1">
                       {formatRelativeTime(item.created_at)}
                     </p>
                   </div>

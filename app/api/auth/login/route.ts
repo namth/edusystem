@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { comparePassword, setAuthCookie } from "@/lib/auth";
+import {
+  checkRateLimit,
+  recordRateLimitHit,
+  clearRateLimit,
+} from "@/lib/rate-limit";
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILURES = 10;
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +25,22 @@ export async function POST(req: Request) {
 
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
+    const rateKey = `login:${cleanId}`;
+
+    const rl = checkRateLimit(rateKey, LOGIN_MAX_FAILURES, LOGIN_WINDOW_MS);
+    if (!rl.allowed) {
+      const minutes = Math.max(1, Math.ceil(rl.retryAfterSeconds / 60));
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Bạn đã thử sai quá nhiều lần. Vui lòng thử lại sau ${minutes} phút.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rl.retryAfterSeconds) },
+        }
+      );
+    }
 
     // Generic error message to prevent Account Enumeration attacks
     const INVALID_CREDENTIALS_MSG = "Email hoặc mật khẩu không chính xác.";
@@ -28,6 +52,7 @@ export async function POST(req: Request) {
     );
 
     if (result.rows.length === 0) {
+      recordRateLimitHit(rateKey, LOGIN_WINDOW_MS);
       return NextResponse.json({ success: false, error: INVALID_CREDENTIALS_MSG }, { status: 401 });
     }
 
@@ -37,8 +62,11 @@ export async function POST(req: Request) {
     const isPasswordCorrect = comparePassword(cleanPass, storedHash);
 
     if (!isPasswordCorrect) {
+      recordRateLimitHit(rateKey, LOGIN_WINDOW_MS);
       return NextResponse.json({ success: false, error: INVALID_CREDENTIALS_MSG }, { status: 401 });
     }
+
+    clearRateLimit(rateKey);
 
     // Update last login timestamp
     try {

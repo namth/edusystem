@@ -155,12 +155,12 @@ export default function StudentAnalyticsPage() {
     <StudentLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="font-headline text-3xl font-bold text-ink tracking-tight">
               Test History &amp; Analytics
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Theo dõi tiến độ học tập, biểu đồ năng lực 4 kỹ năng và xem nhận xét chi tiết từ Giáo viên &amp; AI.
             </p>
           </div>
@@ -183,23 +183,23 @@ export default function StudentAnalyticsPage() {
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-[#d8c2b6] shadow-sm">
-            <Loader2 className="w-8 h-8 text-[#6d3807] animate-spin mb-2" />
-            <p className="font-mono text-xs text-[#52443a]">Đang lấy kết quả phân tích học tập từ database...</p>
+          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-line shadow-sm">
+            <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-2" />
+            <p className="font-mono text-xs text-ink-muted">Đang lấy kết quả phân tích học tập từ database...</p>
           </div>
         ) : submissions.length === 0 ? (
           /* Empty State */
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-4 shadow-sm">
-            <FileText className="w-12 h-12 text-[#6d3807] mx-auto opacity-40" />
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-4 shadow-sm">
+            <FileText className="w-12 h-12 text-brand-600 mx-auto opacity-40" />
             <div className="space-y-1">
-              <p className="text-base font-bold text-[#211a16]">Bạn chưa làm bài thi nào.</p>
-              <p className="text-xs text-[#52443a]">
+              <p className="text-base font-bold text-ink">Bạn chưa làm bài thi nào.</p>
+              <p className="text-xs text-ink-muted">
                 Hãy tham gia lớp học và hoàn thành bài thi để xem kết quả phân tích năng lực.
               </p>
             </div>
             <Link
               href="/student/dashboard"
-              className="inline-block px-6 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+              className="inline-block px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
             >
               Về trang chủ học sinh
             </Link>
@@ -208,59 +208,59 @@ export default function StudentAnalyticsPage() {
           /* Data State */
           <div className="grid grid-cols-12 gap-6">
             {/* Analytics Overview Card */}
-            <div className="col-span-12 lg:col-span-4 bg-[#ffffff] rounded-2xl border border-[#d8c2b6] p-6 flex flex-col shadow-sm">
-              <h3 className="font-headline text-lg font-bold text-[#211a16] mb-6">Overall Performance</h3>
+            <div className="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-line p-6 flex flex-col shadow-sm">
+              <h3 className="font-headline text-lg font-bold text-ink mb-6">Overall Performance</h3>
 
               <div className="flex-1 flex flex-col items-center justify-center relative min-h-[260px] py-4">
-                <div className="relative w-56 h-56 rounded-full border border-[#d8c2b6]/40 flex items-center justify-center">
-                  <div className="absolute w-40 h-40 rounded-full border border-[#d8c2b6]/30" />
-                  <div className="absolute w-24 h-24 rounded-full border border-[#d8c2b6]/20" />
-                  <div className="absolute w-full h-px bg-[#d8c2b6]/40" />
-                  <div className="absolute w-full h-px bg-[#d8c2b6]/40 rotate-90" />
+                <div className="relative w-56 h-56 rounded-full border border-line/40 flex items-center justify-center">
+                  <div className="absolute w-40 h-40 rounded-full border border-line/30" />
+                  <div className="absolute w-24 h-24 rounded-full border border-line/20" />
+                  <div className="absolute w-full h-px bg-line/40" />
+                  <div className="absolute w-full h-px bg-line/40 rotate-90" />
 
                   {/* SVG Polygon */}
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
                     <polygon
                       points={`50,${p1y} ${p2x},50 50,${p3y} ${p4x},50`}
-                      fill="#ffdcc5"
+                      fill="#dce7ff"
                       fillOpacity="0.5"
-                      stroke="#6d3807"
+                      stroke="#1453e0"
                       strokeWidth="2"
                     />
                   </svg>
 
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-brand-600">
                     Reading ({formatScore({ value: currentSkills.Reading.score, max: currentSkills.Reading.max })})
                   </span>
-                  <span className="absolute top-1/2 -right-8 -translate-y-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
+                  <span className="absolute top-1/2 -right-8 -translate-y-1/2 font-mono text-[11px] font-bold text-brand-600">
                     Listening ({formatScore({ value: currentSkills.Listening.score, max: currentSkills.Listening.max })})
                   </span>
-                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 font-mono text-[11px] font-bold text-brand-600">
                     Writing ({formatScore({ value: currentSkills.Writing.score, max: currentSkills.Writing.max })})
                   </span>
-                  <span className="absolute top-1/2 -left-8 -translate-y-1/2 font-mono text-[11px] font-bold text-[#6d3807]">
+                  <span className="absolute top-1/2 -left-8 -translate-y-1/2 font-mono text-[11px] font-bold text-brand-600">
                     Speaking ({formatScore({ value: currentSkills.Speaking.score, max: currentSkills.Speaking.max })})
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="bg-[#fff8f5] p-4 rounded-xl border border-[#d8c2b6] text-center">
-                  <p className="font-mono text-xs text-[#52443a] mb-1">Avg. Score</p>
-                  <p className="font-headline text-3xl font-bold text-[#6d3807]">
+                <div className="bg-surface-alt p-4 rounded-xl border border-line text-center">
+                  <p className="font-mono text-xs text-ink-muted mb-1">Avg. Score</p>
+                  <p className="font-headline text-3xl font-bold text-brand-600">
                     {avgScore != null ? `${avgScore}%` : "—"}
                   </p>
                 </div>
-                <div className="bg-[#fff8f5] p-4 rounded-xl border border-[#d8c2b6] text-center">
-                  <p className="font-mono text-xs text-[#52443a] mb-1">Tests Taken</p>
-                  <p className="font-headline text-3xl font-bold text-[#6d3807]">{submissions.length}</p>
+                <div className="bg-surface-alt p-4 rounded-xl border border-line text-center">
+                  <p className="font-mono text-xs text-ink-muted mb-1">Tests Taken</p>
+                  <p className="font-headline text-3xl font-bold text-brand-600">{submissions.length}</p>
                 </div>
               </div>
             </div>
 
             {/* Test List */}
             <div className="col-span-12 lg:col-span-8 space-y-4">
-              <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#d8c2b6] font-mono text-xs text-[#52443a]">
+              <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-line font-mono text-xs text-ink-muted">
                 <div className="col-span-5 font-bold">Test Name</div>
                 <div className="col-span-3">Date</div>
                 <div className="col-span-2 text-center">Score</div>
@@ -281,28 +281,28 @@ export default function StudentAnalyticsPage() {
                     : "—";
 
                 return (
-                  <div key={sub.id} className="bg-[#ffffff] rounded-2xl border border-[#d8c2b6] shadow-sm overflow-hidden transition-all">
+                  <div key={sub.id} className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden transition-all">
                     <div
                       onClick={() => toggleExpand(sub.id)}
-                      className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-[#fff1ea] transition-colors"
+                      className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer hover:bg-brand-50 transition-colors"
                     >
                       <div className="col-span-5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#ffb782] flex items-center justify-center text-[#6d3807]">
+                        <div className="w-10 h-10 rounded-xl bg-brand-300 flex items-center justify-center text-brand-600">
                           <FileText className="w-5 h-5" />
                         </div>
                         <div>
-                          <p className="font-headline text-sm font-bold text-[#211a16]">{sub.title}</p>
+                          <p className="font-headline text-sm font-bold text-ink">{sub.title}</p>
                         </div>
                       </div>
-                      <div className="col-span-3 font-mono text-xs text-[#52443a]">{sub.date}</div>
+                      <div className="col-span-3 font-mono text-xs text-ink-muted">{sub.date}</div>
                       <div className="col-span-2 text-center">
-                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#DCFCE7] text-emerald-800 font-mono text-xs font-bold">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 text-emerald-800 font-mono text-xs font-bold">
                           {scoreBadgeLabel}
                         </span>
                       </div>
                       <div className="col-span-2 text-right flex justify-end">
                         <ChevronDown
-                          className={`w-5 h-5 text-[#6d3807] transition-transform ${
+                          className={`w-5 h-5 text-brand-600 transition-transform ${
                             expandedTest === sub.id ? "rotate-180" : ""
                           }`}
                         />
@@ -310,30 +310,30 @@ export default function StudentAnalyticsPage() {
                     </div>
 
                     {expandedTest === sub.id && (
-                      <div className="border-t border-[#d8c2b6] bg-[#fff8f5] p-6 space-y-6">
+                      <div className="border-t border-line bg-surface-alt p-6 space-y-6">
                         {/* Skill Breakdown */}
                         <div className="grid grid-cols-4 gap-4">
-                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Listening</span>
-                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-line">
+                            <span className="font-mono text-[10px] uppercase text-ink-muted">Listening</span>
+                            <span className="font-headline text-xl font-bold text-ink">
                               {formatScore({ value: sub.skills.Listening.score, max: sub.skills.Listening.max })}
                             </span>
                           </div>
-                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Reading</span>
-                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-line">
+                            <span className="font-mono text-[10px] uppercase text-ink-muted">Reading</span>
+                            <span className="font-headline text-xl font-bold text-ink">
                               {formatScore({ value: sub.skills.Reading.score, max: sub.skills.Reading.max })}
                             </span>
                           </div>
-                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Writing</span>
-                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-line">
+                            <span className="font-mono text-[10px] uppercase text-ink-muted">Writing</span>
+                            <span className="font-headline text-xl font-bold text-ink">
                               {formatScore({ value: sub.skills.Writing.score, max: sub.skills.Writing.max })}
                             </span>
                           </div>
-                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-[#d8c2b6]">
-                            <span className="font-mono text-[10px] uppercase text-[#52443a]">Speaking</span>
-                            <span className="font-headline text-xl font-bold text-[#211a16]">
+                          <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-line">
+                            <span className="font-mono text-[10px] uppercase text-ink-muted">Speaking</span>
+                            <span className="font-headline text-xl font-bold text-ink">
                               {formatScore({ value: sub.skills.Speaking.score, max: sub.skills.Speaking.max })}
                             </span>
                           </div>
@@ -341,11 +341,11 @@ export default function StudentAnalyticsPage() {
 
                         {/* Feedback */}
                         <div className="space-y-3">
-                          <h4 className="font-headline text-xs font-bold text-[#6d3807] uppercase flex items-center space-x-2">
-                            <MessageSquare className="w-4 h-4 text-[#6d3807]" />
+                          <h4 className="font-headline text-xs font-bold text-brand-600 uppercase flex items-center space-x-2">
+                            <MessageSquare className="w-4 h-4 text-brand-600" />
                             <span>Nhận Xét Chi Tiết Từ Giáo Viên / AI</span>
                           </h4>
-                          <div className="p-4 rounded-xl bg-[#fff1ea] border border-[#ffb783] text-xs text-[#52443a] leading-relaxed">
+                          <div className="p-4 rounded-xl bg-brand-50 border border-brand-300 text-xs text-ink-muted leading-relaxed">
                             "{sub.feedback}"
                           </div>
                         </div>
