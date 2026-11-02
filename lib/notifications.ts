@@ -4,7 +4,15 @@ import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { submissionScore } from "@/lib/score-display";
 
-export type NotificationType = "EXAM_GRADED" | "EXAM_NEEDS_REVIEW" | "TEACHER_SIGNUP" | "TEACHER_VERIFIED";
+export type NotificationType =
+  | "EXAM_GRADED"
+  | "EXAM_NEEDS_REVIEW"
+  | "TEACHER_SIGNUP"
+  | "TEACHER_VERIFIED"
+  | "ORDER_CREATED"
+  | "ORDER_APPROVED"
+  | "ORDER_REJECTED"
+  | "ORDER_PAID_REPORTED";
 
 export interface NotificationItem {
   id: string;

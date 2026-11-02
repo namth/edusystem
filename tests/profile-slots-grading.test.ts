@@ -31,6 +31,10 @@ beforeEach(async () => {
       requested_slots INT NOT NULL, total_cost NUMERIC(12,2) NOT NULL, status VARCHAR(20) DEFAULT 'PENDING', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
   `);
+  // FEAT-013 (TASK-041): slot_requests mở rộng thành đơn hàng — chạy migration như DB thật
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-005-system-settings.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-016-slot-orders.sql", "utf8"));
+  await h.pg.db.exec(`UPDATE system_settings SET value = '{"unit_price_vnd":10000}'::jsonb WHERE key = 'slot_pricing'`);   // DEC-033: giá đọc từ cấu hình
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-009-scoring-standards.sql", "utf8"));
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,phone,password,target_band) VALUES
