@@ -138,7 +138,8 @@ export default function StudentRegisterPage() {
   const [copied, setCopied] = useState(false);
 
   const step: StudentStep = draft.step || "intro";
-  const displayName = draft.name.trim() || "bạn";
+  // Gọi bằng tên riêng (từ cuối của họ tên) cho thân thiện: "Nguyễn Văn An" → "An"
+  const displayName = draft.name.trim().split(/\s+/).pop() || "bạn";
 
   // Tải môn học hệ thống
   useEffect(() => {
