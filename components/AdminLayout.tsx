@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import {
   QrCode,
   Scale,
-  Award,
   UserCheck,
   Inbox,
   GraduationCap,
@@ -46,7 +45,6 @@ export default function AdminLayout({
     { href: "/admin/requests", label: "Phê Duyệt Thanh Toán", icon: QrCode },
     { href: "/admin/leads", label: "Liên Hệ Từ Website", icon: Inbox },
     { href: "/admin/scoring-standards", label: "Chuẩn Chấm Điểm", icon: Scale },
-    { href: "/admin/rubrics", label: "Quản Lý Tiêu Chí Chấm Điểm", icon: Award },
     { href: "/admin/teachers", label: "Quản Lý Giáo Viên", icon: UserCheck },
     { href: "/admin/students", label: "Quản Lý Học Sinh", icon: GraduationCap },
     { href: "/admin/accounts", label: "Quản Lý Tài Khoản", icon: Users },
