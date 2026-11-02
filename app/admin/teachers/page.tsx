@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { UserCheck, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  UserCheck,
+  UserPlus,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  Award,
+  X,
+  Save,
+  ArrowRight,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 
 interface TeacherUser {
   id: string;
@@ -12,10 +25,38 @@ interface TeacherUser {
   phone?: string;
   created_at: string;
   slot_limit?: number;
+  teacher_status?: "TRIAL" | "VERIFIED" | "REJECTED" | null;
 }
 
-export default function AdminTeachersPage() {
+function renderStatusBadge(status?: string | null) {
+  if (status === "TRIAL") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-300">
+        Dùng thử
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+        Từ chối
+      </span>
+    );
+  }
+  return (
+    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+      Đã xác minh
+    </span>
+  );
+}
+
+function AdminTeachersContent() {
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams?.get("status") === "TRIAL" ? "TRIAL" : "ALL";
+
+  const [activeTab, setActiveTab] = useState<"ALL" | "TRIAL">(initialStatus);
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
+  const [trialCount, setTrialCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +75,29 @@ export default function AdminTeachersPage() {
   const [qualification, setQualification] = useState("M.A TESOL (IELTS 8.5)");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchTeachers = async () => {
+  useEffect(() => {
+    const urlStatus = searchParams?.get("status");
+    if (urlStatus === "TRIAL") {
+      setActiveTab("TRIAL");
+    }
+  }, [searchParams]);
+
+  const fetchTeachers = async (tab: "ALL" | "TRIAL" = activeTab) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/users?role=TEACHER");
+      const endpoint =
+        tab === "TRIAL"
+          ? "/api/admin/users?role=TEACHER&teacherStatus=TRIAL"
+          : "/api/admin/users?role=TEACHER";
+
+      const [res, trialRes] = await Promise.all([
+        fetch(endpoint),
+        tab === "ALL"
+          ? Promise.resolve(null)
+          : fetch("/api/admin/users?role=TEACHER&teacherStatus=TRIAL"),
+      ]);
+
       const data = await res.json();
 
       if (!res.ok || !data.users) {
@@ -52,10 +111,20 @@ export default function AdminTeachersPage() {
         email: row.email,
         phone: row.phone || "0912345679",
         created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
-        slot_limit: row.slot_limit || 250,
+        slot_limit: row.slot_limit ?? 250,
+        teacher_status: row.teacher_status ?? "VERIFIED",
       }));
 
       setTeachers(formatted);
+
+      if (tab === "ALL") {
+        setTrialCount(formatted.filter((t) => t.teacher_status === "TRIAL").length);
+      } else if (trialRes && trialRes.ok) {
+        const trialJson = await trialRes.json();
+        setTrialCount(Array.isArray(trialJson.users) ? trialJson.users.length : formatted.length);
+      } else {
+        setTrialCount(formatted.length);
+      }
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Lỗi hệ thống khi tải danh sách giảng viên.");
@@ -65,8 +134,8 @@ export default function AdminTeachersPage() {
   };
 
   useEffect(() => {
-    fetchTeachers();
-  }, []);
+    fetchTeachers(activeTab);
+  }, [activeTab]);
 
   const filteredTeachers = useMemo(() => {
     if (!searchQuery.trim()) return teachers;
@@ -133,7 +202,7 @@ export default function AdminTeachersPage() {
       setEmail("");
       setPassword("");
       setPhone("");
-      fetchTeachers();
+      fetchTeachers(activeTab);
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (e: any) {
       console.error(e);
@@ -161,7 +230,7 @@ export default function AdminTeachersPage() {
       }
 
       setSuccessMsg(`Đã xóa thành công giảng viên "${teacherName}" khỏi hệ thống.`);
-      fetchTeachers();
+      fetchTeachers(activeTab);
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (e) {
       console.error(e);
@@ -189,7 +258,7 @@ export default function AdminTeachersPage() {
               Quản Lý Giáo Viên &amp; Hạn Mức Sĩ Số
             </h1>
             <p className="text-sm text-ink-muted mt-1">
-              Theo dõi hồ sơ giảng viên và điều chỉnh hạn mức slot sinh viên trong PostgreSQL Database.
+              Theo dõi hồ sơ giảng viên, xác minh giáo viên dùng thử và điều chỉnh hạn mức slot trong PostgreSQL Database.
             </p>
           </div>
 
@@ -202,6 +271,42 @@ export default function AdminTeachersPage() {
           >
             <UserPlus className="w-4 h-4 text-accent-400" />
             <span>+ Thêm Giáo Viên Mới</span>
+          </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ALL")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+              activeTab === "ALL"
+                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                : "bg-white text-ink-muted border-line hover:bg-surface-alt"
+            }`}
+          >
+            Tất cả giáo viên
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("TRIAL")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
+              activeTab === "TRIAL"
+                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                : "bg-white text-ink-muted border-line hover:bg-surface-alt"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Chờ xác minh</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "TRIAL"
+                  ? "bg-white/20 text-white"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {trialCount}
+            </span>
           </button>
         </div>
 
@@ -219,7 +324,7 @@ export default function AdminTeachersPage() {
               <span className="text-xs font-bold">{error}</span>
             </div>
             <button
-              onClick={fetchTeachers}
+              onClick={() => fetchTeachers(activeTab)}
               className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
             >
               Thử lại
@@ -235,7 +340,11 @@ export default function AdminTeachersPage() {
           </div>
         ) : filteredTeachers.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
-            <p className="text-xs text-ink-muted">Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm.</p>
+            <p className="text-xs text-ink-muted">
+              {activeTab === "TRIAL"
+                ? "Chưa có giáo viên nào chờ xác minh."
+                : "Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -246,10 +355,11 @@ export default function AdminTeachersPage() {
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center flex-wrap gap-2">
                       <span className="px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-600 text-xs font-bold border border-brand-300">
                         TEACHER
                       </span>
+                      {renderStatusBadge(t.teacher_status)}
                       <span className="text-xs text-ink-subtle">ID: {t.id}</span>
                     </div>
                     <span className="text-xs text-ink-subtle">Tạo ngày: {t.created_at}</span>
@@ -273,7 +383,7 @@ export default function AdminTeachersPage() {
                     href={`/admin/teachers/${t.id}`}
                     className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 flex items-center space-x-1 transition-all"
                   >
-                    <span>Xem Hồ Sơ &amp; Sửa Slot</span>
+                    <span>Xem Hồ Sơ &amp; Xác Minh</span>
                     <ArrowRight className="w-3.5 h-3.5 text-brand-600" />
                   </Link>
 
@@ -403,5 +513,13 @@ export default function AdminTeachersPage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+export default function AdminTeachersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-xs text-ink-muted">Đang tải...</div>}>
+      <AdminTeachersContent />
+    </Suspense>
   );
 }

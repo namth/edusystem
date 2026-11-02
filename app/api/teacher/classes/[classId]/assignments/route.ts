@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { isTrialClass } from "@/lib/teacher-trial";
 
 export async function POST(
   req: Request,
@@ -89,6 +90,10 @@ export async function POST(
       );
     }
     parsedMaxAttempts = max_attempts;
+  }
+
+  if (await isTrialClass(classId)) {
+    parsedMaxAttempts = 1;
   }
 
   const assignmentId = "asg_" + crypto.randomUUID();

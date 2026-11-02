@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
+import {
+  TEACHER_LEVELS,
+  WORKPLACE_TYPES,
+  STUDENT_COUNTS,
+  TEACHER_NEEDS,
+  SIGNUP_SOURCES,
+} from "@/lib/onboarding";
 import {
   UserCheck,
   Edit3,
@@ -16,7 +22,26 @@ import {
   Cpu,
   X,
   Zap,
+  ClipboardList,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
+
+interface TeacherProfileData {
+  answers: {
+    subjects?: string[];
+    levels?: string[];
+    workplace_type?: string;
+    workplace_name?: string;
+    student_count?: string;
+    needs?: string[];
+    source?: string;
+  };
+  reviewed_by?: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string | null;
+}
 
 interface TeacherDetail {
   id: string;
@@ -26,6 +51,8 @@ interface TeacherDetail {
   target_band?: string;
   created_at: string;
   slot_limit: number;
+  teacher_status?: "TRIAL" | "VERIFIED" | "REJECTED" | null;
+  profile?: TeacherProfileData | null;
 }
 
 interface ManagedClass {
@@ -49,12 +76,55 @@ interface AILogRecord {
   created_at: string;
 }
 
+function mapOptionLabel(
+  options: readonly { readonly code: string; readonly label: string }[],
+  code?: string
+): string {
+  if (!code) return "Chưa chọn";
+  const found = options.find((o) => o.code === code);
+  return found ? found.label : code;
+}
+
+function mapOptionLabels(
+  options: readonly { readonly code: string; readonly label: string }[],
+  codes?: string[]
+): string[] {
+  if (!Array.isArray(codes) || codes.length === 0) return [];
+  return codes.map((c) => {
+    const found = options.find((o) => o.code === c);
+    return found ? found.label : c;
+  });
+}
+
+function renderStatusBadge(status?: string | null) {
+  if (status === "TRIAL") {
+    return (
+      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-300">
+        Dùng thử
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+        Từ chối
+      </span>
+    );
+  }
+  return (
+    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+      Đã xác minh
+    </span>
+  );
+}
+
 export default function AdminTeacherDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const teacherId = (Array.isArray(rawId) ? rawId[0] : rawId) || "";
 
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
+  const [profile, setProfile] = useState<TeacherProfileData | null>(null);
   const [classes, setClasses] = useState<ManagedClass[]>([]);
   const [aiLogs, setAiLogs] = useState<AILogRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +132,10 @@ export default function AdminTeacherDetailPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTestingPortkey, setIsTestingPortkey] = useState(false);
+
+  // Verify states
+  const [reviewNote, setReviewNote] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Edit Modals
   const [showEditInfoModal, setShowEditInfoModal] = useState(false);
@@ -86,13 +160,17 @@ export default function AdminTeacherDetailPage() {
       if (!res.ok || !data.success || !data.teacher) {
         setNotFound(true);
         setTeacher(null);
+        setProfile(null);
         setClasses([]);
         setAiLogs([]);
         return;
       }
 
       const tObj: TeacherDetail = data.teacher;
+      const profObj: TeacherProfileData | null = data.profile ?? tObj.profile ?? null;
       setTeacher(tObj);
+      setProfile(profObj);
+      setReviewNote(profObj?.review_note || "");
       setName(tObj.name);
       setEmail(tObj.email);
       setPhone(tObj.phone || "");
@@ -112,6 +190,40 @@ export default function AdminTeacherDetailPage() {
   useEffect(() => {
     fetchTeacherData();
   }, [teacherId]);
+
+  const handleVerifyDecision = async (decision: "VERIFIED" | "REJECTED") => {
+    if (!teacherId) return;
+    setIsVerifying(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/admin/teachers/${teacherId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision,
+          note: reviewNote.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Không thể cập nhật trạng thái xác minh.");
+        return;
+      }
+      setSuccessMsg(
+        decision === "VERIFIED"
+          ? "Đã xác minh giáo viên thành công! Toàn bộ giới hạn dùng thử đã được mở."
+          : "Đã cập nhật trạng thái từ chối xác minh cho giáo viên."
+      );
+      await fetchTeacherData();
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e.message || "Lỗi kết nối khi xác minh giáo viên.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   // Compute 100% REAL totals from PostgreSQL ai_usage_logs
   const totalRealTokens = aiLogs.reduce((sum, log) => sum + log.total_tokens, 0);
@@ -134,7 +246,8 @@ export default function AdminTeacherDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teacherId: teacher.id,
-          userPrompt: "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
+          userPrompt:
+            "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
           submissionId: `test_sub_${Date.now().toString().slice(-4)}`,
         }),
       });
@@ -229,7 +342,7 @@ export default function AdminTeacherDetailPage() {
       <AdminLayout>
         <div className="flex items-center justify-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line max-w-4xl mx-auto my-8">
           <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
-          <span>Đang nạp thông tin giảng viên &amp; Portkey Logs từ PostgreSQL...</span>
+          <span>Đang nạp thông tin giảng viên &amp; khảo sát từ PostgreSQL...</span>
         </div>
       </AdminLayout>
     );
@@ -258,6 +371,13 @@ export default function AdminTeacherDetailPage() {
     );
   }
 
+  const answers = profile?.answers || {};
+  const levelLabels = mapOptionLabels(TEACHER_LEVELS, answers.levels);
+  const needLabels = mapOptionLabels(TEACHER_NEEDS, answers.needs);
+  const workplaceLabel = mapOptionLabel(WORKPLACE_TYPES, answers.workplace_type);
+  const studentCountLabel = mapOptionLabel(STUDENT_COUNTS, answers.student_count);
+  const sourceLabel = mapOptionLabel(SIGNUP_SOURCES, answers.source);
+
   return (
     <AdminLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
@@ -268,11 +388,12 @@ export default function AdminTeacherDetailPage() {
               <ArrowLeft className="w-4 h-4 mr-1 text-brand-600" />
               Quay lại Danh sách Giáo viên
             </Link>
-            <h1 className="text-3xl font-bold text-ink tracking-tight flex items-center space-x-3">
+            <h1 className="text-3xl font-bold text-ink tracking-tight flex flex-wrap items-center gap-3">
               <span>{teacher.name}</span>
               <span className="px-3 py-1 rounded-full bg-brand-50 text-brand-600 text-xs font-bold border border-brand-300">
                 TEACHER
               </span>
+              {renderStatusBadge(teacher.teacher_status)}
             </h1>
             <p className="text-sm text-ink-muted mt-1">
               Hồ sơ quản lý giảng viên chi tiết &bull; ID: <strong className="text-brand-800">{teacher.id}</strong>
@@ -308,7 +429,7 @@ export default function AdminTeacherDetailPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Basic Info & Slot Capacity */}
+          {/* Left Column: Basic Info, Verification & Slot Capacity */}
           <div className="space-y-6">
             {/* Basic Info Card */}
             <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
@@ -342,6 +463,104 @@ export default function AdminTeacherDetailPage() {
                 <p>
                   <span className="text-ink-subtle">Ngày tham gia:</span> <span className="block text-ink-muted">{teacher.created_at}</span>
                 </p>
+              </div>
+            </div>
+
+            {/* Khảo sát đăng ký & Xác minh */}
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-line/40 pb-3">
+                <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                  <ClipboardList className="w-5 h-5 text-brand-600" />
+                  <span>Khảo sát đăng ký</span>
+                </h2>
+                {renderStatusBadge(teacher.teacher_status)}
+              </div>
+
+              {profile && Object.keys(answers).length > 0 ? (
+                <div className="space-y-3 text-xs text-ink">
+                  <div>
+                    <span className="text-ink-subtle block">Môn giảng dạy:</span>
+                    <strong className="text-ink">
+                      {Array.isArray(answers.subjects) && answers.subjects.length > 0
+                        ? answers.subjects.join(", ")
+                        : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Cấp học giảng dạy:</span>
+                    <strong className="text-ink">
+                      {levelLabels.length > 0 ? levelLabels.join(", ") : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nơi công tác:</span>
+                    <strong className="text-ink">
+                      {workplaceLabel}
+                      {answers.workplace_name ? ` — ${answers.workplace_name}` : ""}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Quy mô học sinh:</span>
+                    <strong className="text-ink">{studentCountLabel}</strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nhu cầu sử dụng:</span>
+                    <strong className="text-ink">
+                      {needLabels.length > 0 ? needLabels.join(", ") : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nguồn biết đến KitoKit:</span>
+                    <strong className="text-ink">{sourceLabel}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-ink-muted italic">
+                  Giáo viên này chưa có dữ liệu khảo sát đăng ký.
+                </p>
+              )}
+
+              <div className="pt-3 border-t border-line/40 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-ink mb-1">
+                    Ghi chú xác minh (tối đa 500 ký tự)
+                  </label>
+                  <textarea
+                    rows={2}
+                    maxLength={500}
+                    value={reviewNote}
+                    onChange={(e) => setReviewNote(e.target.value)}
+                    placeholder="Nhập ghi chú xác minh hoặc lý do từ chối..."
+                    className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
+                  />
+                </div>
+
+                {profile?.reviewed_at && (
+                  <p className="text-[11px] text-ink-subtle">
+                    Lần duyệt gần nhất: {new Date(profile.reviewed_at).toLocaleString("vi-VN")}
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={isVerifying}
+                    onClick={() => handleVerifyDecision("VERIFIED")}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Xác minh</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isVerifying}
+                    onClick={() => handleVerifyDecision("REJECTED")}
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Từ chối</span>
+                  </button>
+                </div>
               </div>
             </div>
 

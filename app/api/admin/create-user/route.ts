@@ -3,6 +3,7 @@ import { queryPg } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass, syncTeacherManagesClass } from "@/lib/neo4j";
 import { requireRole } from "@/lib/api-auth";
+import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
         { success: false, error: "Mật khẩu khởi tạo tối thiểu phải từ 6 ký tự trở lên." },
         { status: 400 }
       );
+    }
+
+    if (Array.isArray(classIds) && classIds.length > 0) {
+      const trial = await assertTrialAllows(auth.user.userId, "students");
+      if (!trial.ok) {
+        return trialLimitResponse("students", trial.error);
+      }
     }
 
     const emailToUse = email.trim().toLowerCase();

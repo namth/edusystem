@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { syncTeacherManagesClass } from "@/lib/neo4j";
+import { assertTrialAllows, isTrialTeacher, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function GET(_req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -100,6 +101,14 @@ export async function POST(req: Request) {
         );
       }
       parsedMaxSlots = max_slots;
+    }
+
+    const trial = await assertTrialAllows(user.userId, "classes");
+    if (!trial.ok) {
+      return trialLimitResponse("classes", trial.error);
+    }
+    if (await isTrialTeacher(user.userId)) {
+      parsedMaxSlots = Math.min(parsedMaxSlots, 3);
     }
 
     const classId = "cls_" + crypto.randomUUID();

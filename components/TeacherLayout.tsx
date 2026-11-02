@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
+import TrialBanner from "@/components/teacher/TrialBanner";
 import {
   Users,
   PlusCircle,
@@ -174,7 +175,10 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
           </div>
         </header>
 
-        <main className="flex-1 p-6 md:p-8 bg-surface-alt">{children}</main>
+        <main className="flex-1 p-6 md:p-8 bg-surface-alt">
+          <TrialBanner />
+          {children}
+        </main>
       </div>
     </div>
   );
