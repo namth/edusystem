@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
+import RubricManager from "@/components/admin/RubricManager";
 import {
   Scale,
   PlusCircle,
@@ -70,6 +72,20 @@ const SKILLS: Array<"Reading" | "Listening" | "Writing" | "Speaking"> = [
 ];
 
 export default function AdminScoringStandardsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ScoringStandardsContent />
+    </Suspense>
+  );
+}
+
+function ScoringStandardsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab: "standards" | "rubrics" = searchParams.get("tab") === "rubrics" ? "rubrics" : "standards";
+  const switchTab = (next: "standards" | "rubrics") => {
+    router.replace(`/admin/scoring-standards?tab=${next}`);
+  };
   const [standards, setStandards] = useState<ScoringStandard[]>([]);
   const [rubrics, setRubrics] = useState<ScoringRubricOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -407,7 +423,7 @@ export default function AdminScoringStandardsPage() {
 
   return (
     <AdminLayout
-      onSearchChange={setSearchQuery}
+      onSearchChange={tab === "standards" ? setSearchQuery : undefined}
       searchPlaceholder="Tìm kiếm chuẩn chấm theo tên, khung (IELTS, TOEIC...), kỹ năng..."
       searchValue={searchQuery}
     >
@@ -420,21 +436,48 @@ export default function AdminScoringStandardsPage() {
               <span>Scoring Standards &bull; Multi-Framework</span>
             </div>
             <h1 className="text-3xl font-bold text-ink tracking-tight font-headline">
-              Quản Lý Chuẩn Chấm Điểm
+              Chuẩn chấm điểm
             </h1>
             <p className="text-sm text-ink-muted mt-1">
-              Định nghĩa cấu trúc phần thi theo kỹ năng (thang điểm, quy đổi tuyến tính hoặc bảng tra, rubric AI) và quy tắc tính điểm tổng (DEC-014, DEC-015).
+              Chuẩn chấm quy đổi điểm từng kỹ năng; bộ tiêu chí AI dùng cho Writing/Speaking và được nhiều chuẩn dùng chung.
             </p>
           </div>
 
-          <button
-            onClick={openCreateModal}
-            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4 text-white" />
-            <span>Tạo Chuẩn Chấm Mới</span>
-          </button>
+          {tab === "standards" && (
+            <button
+              onClick={openCreateModal}
+              className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4 text-white" />
+              <span>Tạo Chuẩn Chấm Mới</span>
+            </button>
+          )}
         </div>
+
+        {/* Tabs */}
+        <div className="flex items-center space-x-2 border-b border-line/40 pb-2">
+          {([
+            ["standards", "Chuẩn chấm"],
+            ["rubrics", "Bộ tiêu chí AI"],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => switchTab(key)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold font-headline transition-all cursor-pointer whitespace-nowrap ${
+                tab === key
+                  ? "bg-brand-600 text-white shadow-xs"
+                  : "bg-white text-ink-muted hover:bg-surface-alt border border-line"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "rubrics" ? (
+          <RubricManager initialRubricId={searchParams.get("rubric")} />
+        ) : (
+          <>
 
         {/* Feedback messages */}
         {successMsg && (
@@ -785,6 +828,16 @@ export default function AdminScoringStandardsPage() {
                                 </option>
                               ))}
                             </select>
+                            {sec.rubric_id && (
+                              <a
+                                href={`/admin/scoring-standards?tab=rubrics&rubric=${encodeURIComponent(sec.rubric_id)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block mt-1 text-[11px] font-bold text-brand-600 hover:underline"
+                              >
+                                Sửa tiêu chí này
+                              </a>
+                            )}
                           </div>
                         )}
 
@@ -984,6 +1037,8 @@ export default function AdminScoringStandardsPage() {
               </form>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </AdminLayout>
