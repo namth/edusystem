@@ -1,3 +1,5 @@
 e6c7e04f413cff45f094c7f03c18b6d876baf088f63ed458f9a189d9ba528f1d  handoff/tasks/TASK-041-don-hang-slot-api/verify.sh
 414b4a13fb3b59aecbcbdf6c1fb411a185481e84d00196d6fb44d2853d9cb540  tests/slot-orders-api.test.ts
 4399dcd26c4185891e4dc7dcb22b6ce9a7169d3d7c58d6a6ce709414302db129  tests/admin-api.test.ts
+7fbe342e4483901d931135bb3b2770329491c958c7b07b2952df9d32642dc2ea  tests/profile-slots-grading.test.ts
+417986e20f812558cf28022f85d47ad1bdd045de12831c05d610a093340760b3  tests/teacher-trial.test.ts

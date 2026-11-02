@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { queryPg, getPgPool } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { approveOrder, rejectOrder } from "@/lib/slot-orders";
 
 export async function PUT(
   req: Request,
@@ -10,7 +10,7 @@ export async function PUT(
   if (auth.error) return auth.error;
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     if (!body || (body.action !== "APPROVE" && body.action !== "REJECT")) {
       return NextResponse.json(
         { success: false, error: "Hành động không hợp lệ (chỉ APPROVE hoặc REJECT)." },
@@ -28,91 +28,22 @@ export async function PUT(
 
     const cleanId = id.trim();
 
-    const existingRes = await queryPg(
-      `SELECT * FROM slot_requests WHERE id = $1;`,
-      [cleanId]
-    );
+    const result =
+      body.action === "APPROVE"
+        ? await approveOrder(cleanId, auth.user.userId)
+        : await rejectOrder(cleanId, auth.user.userId, "Từ chối từ trang cũ");
 
-    if (existingRes.rows.length === 0) {
+    if (!result.ok) {
       return NextResponse.json(
-        { success: false, error: "Đơn yêu cầu không tồn tại." },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.status }
       );
     }
 
-    const currentReq = existingRes.rows[0];
-    if (currentReq.status !== "PENDING") {
-      return NextResponse.json(
-        { success: false, error: "Đơn yêu cầu đã được xử lý trước đó." },
-        { status: 409 }
-      );
-    }
-
-    if (body.action === "APPROVE") {
-      const pool = getPgPool();
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-
-        const updateRes = await client.query(
-          `UPDATE slot_requests SET status = 'APPROVED' WHERE id = $1 AND status = 'PENDING' RETURNING *;`,
-          [cleanId]
-        );
-
-        if (updateRes.rowCount === 0) {
-          await client.query("ROLLBACK");
-          return NextResponse.json(
-            { success: false, error: "Đơn yêu cầu đã được xử lý trước đó." },
-            { status: 409 }
-          );
-        }
-
-        const updated = updateRes.rows[0];
-        await client.query(
-          `UPDATE users SET slot_limit = COALESCE(slot_limit, 0) + $1 WHERE id = $2;`,
-          [Number(updated.requested_slots), updated.teacher_id]
-        );
-
-        await client.query("COMMIT");
-
-        return NextResponse.json({
-          success: true,
-          slot_request: {
-            ...updated,
-            requested_slots: Number(updated.requested_slots),
-            total_cost: Number(updated.total_cost),
-          },
-        });
-      } catch (txErr) {
-        await client.query("ROLLBACK");
-        throw txErr;
-      } finally {
-        client.release();
-      }
-    } else {
-      // REJECT
-      const updateRes = await queryPg(
-        `UPDATE slot_requests SET status = 'REJECTED' WHERE id = $1 AND status = 'PENDING' RETURNING *;`,
-        [cleanId]
-      );
-
-      if (updateRes.rowCount === 0) {
-        return NextResponse.json(
-          { success: false, error: "Đơn yêu cầu đã được xử lý trước đó." },
-          { status: 409 }
-        );
-      }
-
-      const updated = updateRes.rows[0];
-      return NextResponse.json({
-        success: true,
-        slot_request: {
-          ...updated,
-          requested_slots: Number(updated.requested_slots),
-          total_cost: Number(updated.total_cost),
-        },
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      slot_request: result.order,
+    });
   } catch (err: any) {
     console.error("API /api/admin/requests/[id] PUT Error:", err);
     return NextResponse.json(

@@ -92,6 +92,9 @@ beforeEach(async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  // FEAT-013 (TASK-041): slot_requests mở rộng thành đơn hàng — chạy migration như DB thật
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-005-system-settings.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-016-slot-orders.sql", "utf8"));
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-006-lessons.sql", "utf8"));
   await h.pg.db.exec(`
     INSERT INTO users (id, name, email, role, teacher_status, slot_limit) VALUES
