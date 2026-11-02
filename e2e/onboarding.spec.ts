@@ -102,8 +102,14 @@ test.describe("Đăng ký giáo viên dùng thử", () => {
   test("đi trọn khảo sát → vào /teacher/classes", async ({ page }) => {
     await page.goto("/register/teacher");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
-    await page.getByLabel("Họ tên", { exact: true }).fill("Cô Hoa E2E");
+    // chưa chọn danh xưng → mascot nhắc
+    await page.getByLabel("Họ tên", { exact: true }).fill("Nguyễn Thị Hoa");
     await page.getByLabel("Họ tên", { exact: true }).press("Enter");
+    await expect(page.getByRole("alert").filter({ hasText: /thầy hay cô/i })).toBeVisible();
+    await page.getByRole("button", { name: "Cô", exact: true }).click();
+    await page.getByLabel("Họ tên", { exact: true }).press("Enter");
+    // câu đầu gọi "cô + tên", câu sau chỉ gọi "cô"
+    await expect(page.getByRole("status").first()).toContainText("cô Hoa", { timeout: 10_000 });
     await page.getByRole("button", { name: "Tiếng Anh" }).click();
     await next(page);
     await page.getByRole("button", { name: "Tiểu học" }).click();
@@ -115,8 +121,11 @@ test.describe("Đăng ký giáo viên dùng thử", () => {
       await next(page);
     }
     await page.getByRole("button", { name: "10–50" }).click();
-    await page.getByRole("button", { name: "AI chấm Writing/Speaking" }).click();
-    await next(page);
+    // không còn câu hỏi tính năng mong muốn
+    await expect(page.getByRole("button", { name: "AI chấm Writing/Speaking" })).toHaveCount(0);
+    await expect(page.getByRole("status").first()).toContainText("Cô biết KitoKit qua đâu", { timeout: 10_000 });
+    // nút Quay lại nằm cùng hàng dưới vùng trả lời
+    await expect(page.getByRole("button", { name: "Quay lại" })).toBeVisible();
     await page.getByRole("button", { name: "Facebook" }).click();
     await page.getByLabel("Số điện thoại", { exact: true }).fill("0912345678");
     await page.getByLabel("Số điện thoại", { exact: true }).press("Enter");

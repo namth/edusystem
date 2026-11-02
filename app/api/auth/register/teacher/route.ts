@@ -15,6 +15,7 @@ import {
   suggestUsernames,
   usernameBaseFromEmail,
   validateUsername,
+  HONORIFICS,
 } from "@/lib/onboarding";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -24,6 +25,7 @@ const VALID_LEVELS = new Set<string>(TEACHER_LEVELS.map((x) => x.code));
 const VALID_WORKPLACE_TYPES = new Set<string>(WORKPLACE_TYPES.map((x) => x.code));
 const VALID_STUDENT_COUNTS = new Set<string>(STUDENT_COUNTS.map((x) => x.code));
 const VALID_NEEDS = new Set<string>(TEACHER_NEEDS.map((x) => x.code));
+const VALID_HONORIFICS = new Set<string>(HONORIFICS.map((o) => o.code));
 const VALID_SOURCES = new Set<string>(SIGNUP_SOURCES.map((x) => x.code));
 
 async function generateUniqueUsernameFromEmail(email: string): Promise<string> {
@@ -167,21 +169,28 @@ export async function POST(req: Request) {
       );
     }
 
-    if (
-      !Array.isArray(body?.needs) ||
-      body.needs.length < 1 ||
-      !body.needs.every((n: unknown) => typeof n === "string" && VALID_NEEDS.has(n))
-    ) {
+    // Danh xưng để xưng hô (thầy/cô) — bắt buộc
+    if (typeof body?.honorific !== "string" || !VALID_HONORIFICS.has(body.honorific)) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Vui lòng chọn ít nhất một nhu cầu sử dụng.",
-          field: "needs",
-        },
+        { success: false, error: "Vui lòng chọn danh xưng thầy hoặc cô.", field: "honorific" },
         { status: 400 }
       );
     }
-    const needs = body.needs as string[];
+    const honorific = body.honorific as string;
+
+    // Nhu cầu sử dụng: không còn hỏi khi đăng ký (02/11) — vẫn nhận nếu client cũ gửi
+    if (
+      body?.needs !== undefined &&
+      body?.needs !== null &&
+      (!Array.isArray(body.needs) ||
+        !body.needs.every((n: unknown) => typeof n === "string" && VALID_NEEDS.has(n)))
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Nhu cầu sử dụng không hợp lệ.", field: "needs" },
+        { status: 400 }
+      );
+    }
+    const needs = Array.isArray(body?.needs) ? (body.needs as string[]) : [];
 
     let source: string | null = null;
     if (body?.source !== undefined && body?.source !== null && body?.source !== "") {
@@ -270,6 +279,7 @@ export async function POST(req: Request) {
       workplace_type: workplaceType,
       workplace_name: workplaceName,
       student_count: studentCount,
+      honorific,
       needs,
       source,
     };

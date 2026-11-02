@@ -57,7 +57,8 @@ export interface RegisterTeacherPayload {
   workplaceType: string;
   workplaceName?: string | null;
   studentCount: string;
-  needs: string[];
+  honorific: "THAY" | "CO" | "";
+  needs?: string[];
   source?: string | null;
   phone: string;
   email: string;
@@ -248,14 +249,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Logout via Native Backend API (/api/auth/logout)
+  // Chờ server xoá cookie rồi tải lại hẳn trang đăng nhập: bỏ cache router phía client
+  // (trang đã render cho tài khoản cũ) và state cũ, tránh /login thấy user cũ rồi tự chuyển vào trang của họ.
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST", cache: "no-store" });
     } catch (e) {
       console.error("Logout error:", e);
-    } finally {
-      setUser(null);
     }
+    setUser(null);
+    try {
+      window.sessionStorage.removeItem("kitokit-signup-student");
+      window.sessionStorage.removeItem("kitokit-signup-teacher");
+    } catch {
+      // Bỏ qua khi trình duyệt chặn sessionStorage
+    }
+    window.location.replace("/login");
   };
 
   // Đổi mật khẩu lần đầu (bắt buộc) rồi lưu hồ sơ — gọi API thật, chỉ cập nhật state khi server đã lưu

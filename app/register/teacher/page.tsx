@@ -16,12 +16,13 @@ import {
   TEACHER_LEVELS,
   WORKPLACE_TYPES,
   STUDENT_COUNTS,
-  TEACHER_NEEDS,
+  HONORIFICS,
   SIGNUP_SOURCES,
   PLACEHOLDER_EMAIL_DOMAIN,
   isPlaceholderEmail,
 } from "@/lib/onboarding";
 import InterviewShell from "@/components/onboarding/InterviewShell";
+import StepActions from "@/components/onboarding/StepActions";
 import ChoiceChips from "@/components/onboarding/ChoiceChips";
 import Mascot, { type MascotMood } from "@/components/onboarding/Mascot";
 import Confetti from "@/components/onboarding/Confetti";
@@ -34,7 +35,6 @@ type TeacherStep =
   | "levels"
   | "workplace"
   | "studentCount"
-  | "needs"
   | "source"
   | "phone"
   | "email"
@@ -43,13 +43,13 @@ type TeacherStep =
 
 interface TeacherDraft {
   step: TeacherStep;
+  honorific: "" | "THAY" | "CO";
   name: string;
   subjects: string[];
   levels: string[];
   workplaceType: string;
   workplaceName: string;
   studentCount: string;
-  needs: string[];
   source: string;
   phone: string;
   email: string;
@@ -62,13 +62,13 @@ interface SubjectOption {
 
 const INITIAL_DRAFT: TeacherDraft = {
   step: "intro",
+  honorific: "",
   name: "",
   subjects: [],
   levels: [],
   workplaceType: "",
   workplaceName: "",
   studentCount: "",
-  needs: [],
   source: "",
   phone: "",
   email: "",
@@ -106,7 +106,11 @@ export default function TeacherRegisterPage() {
   ]);
 
   const step: TeacherStep = draft.step || "intro";
-  const displayName = draft.name.trim() || "thầy cô";
+  // Danh xưng: câu ngay sau màn tên gọi "thầy/cô + tên riêng", các câu sau chỉ gọi "thầy"/"cô"
+  const xung = draft.honorific === "THAY" ? "thầy" : draft.honorific === "CO" ? "cô" : "thầy cô";
+  const Xung = xung.charAt(0).toUpperCase() + xung.slice(1);
+  const givenName = draft.name.trim().split(/\s+/).pop() || "";
+  const displayName = givenName ? `${xung} ${givenName}` : xung;
 
   useEffect(() => {
     let active = true;
@@ -147,7 +151,6 @@ export default function TeacherRegisterPage() {
       "levels",
       "workplace",
       "studentCount",
-      "needs",
       "source",
       "phone",
       "email",
@@ -161,6 +164,11 @@ export default function TeacherRegisterPage() {
 
   const handleNameNext = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!draft.honorific) {
+      setMood("oops");
+      setErrorMsg("Kito nên gọi là thầy hay cô ạ? Vui lòng chọn danh xưng.");
+      return;
+    }
     const trimmed = draft.name.trim();
     if (trimmed.length < 2 || trimmed.length > 100) {
       setMood("oops");
@@ -170,7 +178,7 @@ export default function TeacherRegisterPage() {
     goToStep("subjects", "happy");
   };
 
-  const toggleMulti = (field: "subjects" | "levels" | "needs", code: string) => {
+  const toggleMulti = (field: "subjects" | "levels", code: string) => {
     setErrorMsg(null);
     const list = draft[field] || [];
     const next = list.includes(code) ? list.filter((x) => x !== code) : [...list, code];
@@ -180,7 +188,7 @@ export default function TeacherRegisterPage() {
   const handleSubjectsNext = () => {
     if (!draft.subjects || draft.subjects.length === 0) {
       setMood("oops");
-      setErrorMsg("Thầy cô vui lòng chọn ít nhất một môn giảng dạy ạ.");
+      setErrorMsg(`${Xung} vui lòng chọn ít nhất một môn giảng dạy ạ.`);
       return;
     }
     goToStep("levels", "happy");
@@ -189,7 +197,7 @@ export default function TeacherRegisterPage() {
   const handleLevelsNext = () => {
     if (!draft.levels || draft.levels.length === 0) {
       setMood("oops");
-      setErrorMsg("Thầy cô vui lòng chọn ít nhất một cấp học ạ.");
+      setErrorMsg(`${Xung} vui lòng chọn ít nhất một cấp học ạ.`);
       return;
     }
     goToStep("workplace", "happy");
@@ -205,7 +213,7 @@ export default function TeacherRegisterPage() {
     if (e) e.preventDefault();
     if (!draft.workplaceType) {
       setMood("oops");
-      setErrorMsg("Thầy cô vui lòng chọn nơi công tác ạ.");
+      setErrorMsg(`${Xung} vui lòng chọn nơi công tác ạ.`);
       return;
     }
     goToStep("studentCount", "happy");
@@ -214,17 +222,9 @@ export default function TeacherRegisterPage() {
   const handleStudentCountSelect = (code: string) => {
     setErrorMsg(null);
     setMood("happy");
-    updateDraft({ studentCount: code, step: "needs" });
+    updateDraft({ studentCount: code, step: "source" });
   };
 
-  const handleNeedsNext = () => {
-    if (!draft.needs || draft.needs.length === 0) {
-      setMood("oops");
-      setErrorMsg("Thầy cô vui lòng chọn ít nhất một tính năng cần dùng ạ.");
-      return;
-    }
-    goToStep("source", "happy");
-  };
 
   const handleSourceSelect = (code: string) => {
     setErrorMsg(null);
@@ -237,7 +237,7 @@ export default function TeacherRegisterPage() {
     const cleaned = draft.phone.trim().replace(/[\s.\-]/g, "");
     if (!/^(\+84|0)\d{9,10}$/.test(cleaned)) {
       setMood("oops");
-      setErrorMsg("Thầy cô vui lòng nhập số điện thoại Việt Nam hợp lệ (9–11 chữ số) ạ.");
+      setErrorMsg(`${Xung} vui lòng nhập số điện thoại Việt Nam hợp lệ (9–11 chữ số) ạ.`);
       return;
     }
     goToStep("email", "happy");
@@ -248,7 +248,7 @@ export default function TeacherRegisterPage() {
     const clean = draft.email.trim().toLowerCase();
     if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
       setMood("oops");
-      setErrorMsg("Thầy cô vui lòng nhập địa chỉ email hợp lệ ạ.");
+      setErrorMsg(`${Xung} vui lòng nhập địa chỉ email hợp lệ ạ.`);
       return;
     }
     if (isPlaceholderEmail(clean)) {
@@ -282,7 +282,7 @@ export default function TeacherRegisterPage() {
       workplaceType: draft.workplaceType,
       workplaceName: draft.workplaceName.trim() || null,
       studentCount: draft.studentCount,
-      needs: draft.needs,
+      honorific: draft.honorific,
       source: draft.source || null,
       phone: draft.phone.trim(),
       email: draft.email.trim().toLowerCase(),
@@ -304,13 +304,13 @@ export default function TeacherRegisterPage() {
 
     if (res.networkError) {
       setNetworkFailed(true);
-      setErrorMsg(res.error || "Lỗi kết nối mạng. Thông tin của thầy cô vẫn được giữ nguyên.");
+      setErrorMsg(res.error || `Lỗi kết nối mạng. Thông tin của ${xung} vẫn được giữ nguyên.`);
       return;
     }
 
     if (res.status === 429) {
       const mins = res.retryAfterSeconds ? Math.max(1, Math.ceil(res.retryAfterSeconds / 60)) : 60;
-      setErrorMsg(`Thầy cô thao tác quá nhiều lần. Vui lòng chờ khoảng ${mins} phút rồi thử lại ạ.`);
+      setErrorMsg(`${Xung} thao tác quá nhiều lần. Vui lòng chờ khoảng ${mins} phút rồi thử lại ạ.`);
       return;
     }
 
@@ -322,7 +322,6 @@ export default function TeacherRegisterPage() {
         workplaceType: "workplace",
         workplaceName: "workplace",
         studentCount: "studentCount",
-        needs: "needs",
         source: "source",
         phone: "phone",
         email: "email",
@@ -334,7 +333,7 @@ export default function TeacherRegisterPage() {
       }
     }
 
-    setErrorMsg(res.error || "Đăng ký chưa thành công, thầy cô vui lòng kiểm tra lại thông tin ạ.");
+    setErrorMsg(res.error || `Đăng ký chưa thành công, ${xung} vui lòng kiểm tra lại thông tin ạ.`);
   };
 
   // Màn hoàn tất dùng thử giáo viên
@@ -356,7 +355,7 @@ export default function TeacherRegisterPage() {
               Tài khoản dùng thử đã sẵn sàng!
             </h1>
             <p className="text-sm text-ink-muted">
-              Chào mừng thầy cô {displayName} đến với không gian giảng dạy KitoKit.
+              Chào mừng {displayName} đến với không gian giảng dạy KitoKit.
             </p>
           </div>
 
@@ -383,7 +382,7 @@ export default function TeacherRegisterPage() {
               </li>
             </ul>
             <p className="pt-2 border-t border-brand-200 text-xs font-bold text-brand-800">
-              Kito sẽ liên hệ xác minh trong 1–2 ngày làm việc để mở đủ tính năng cho thầy cô.
+              Kito sẽ liên hệ xác minh trong 1–2 ngày làm việc để mở đủ tính năng cho {xung}.
             </p>
           </div>
 
@@ -406,7 +405,6 @@ export default function TeacherRegisterPage() {
     "levels",
     "workplace",
     "studentCount",
-    "needs",
     "source",
     "phone",
     "email",
@@ -425,37 +423,33 @@ export default function TeacherRegisterPage() {
       subtext = "Tài khoản dùng thử được kích hoạt ngay sau khi hoàn tất.";
       break;
     case "name":
-      question = "Thầy cô tên là gì ạ?";
+      question = "Kito nên gọi thầy hay cô, và tên của mình là gì ạ?";
       break;
     case "subjects":
-      question = `Rất vui được đồng hành cùng ${displayName}! Thầy cô dạy môn gì ạ?`;
-      subtext = "Thầy cô có thể chọn một hoặc nhiều môn.";
+      question = `Rất vui được đồng hành cùng ${displayName}! ${Xung} dạy môn gì ạ?`;
+      subtext = `${Xung} có thể chọn một hoặc nhiều môn.`;
       break;
     case "levels":
-      question = `Học sinh của ${displayName} ở cấp nào ạ?`;
+      question = `Học sinh của ${xung} ở cấp nào ạ?`;
       subtext = "Có thể chọn nhiều cấp học.";
       break;
     case "workplace":
-      question = `${displayName} đang dạy ở đâu ạ?`;
+      question = `${Xung} đang dạy ở đâu ạ?`;
       break;
     case "studentCount":
-      question = `${displayName} dạy khoảng bao nhiêu học sinh ạ?`;
-      break;
-    case "needs":
-      question = `${displayName} cần KitoKit giúp việc gì nhất ạ?`;
-      subtext = "Chọn các tính năng thầy cô quan tâm nhất.";
+      question = `${Xung} dạy khoảng bao nhiêu học sinh ạ?`;
       break;
     case "source":
-      question = `${displayName} biết KitoKit qua đâu ạ?`;
+      question = `${Xung} biết KitoKit qua đâu ạ?`;
       break;
     case "phone":
-      question = `Số điện thoại / Zalo để Kito liên hệ xác minh cho ${displayName} ạ?`;
+      question = `Số điện thoại / Zalo để Kito liên hệ xác minh cho ${xung} ạ?`;
       break;
     case "email":
-      question = `Email đăng nhập của ${displayName} là gì ạ?`;
+      question = `Email đăng nhập của ${xung} là gì ạ?`;
       break;
     case "password":
-      question = "Cuối cùng, thầy cô đặt mật khẩu nhé (ít nhất 8 ký tự).";
+      question = `Cuối cùng, ${xung} đặt mật khẩu nhé (ít nhất 8 ký tự).`;
       break;
   }
 
@@ -503,6 +497,26 @@ export default function TeacherRegisterPage() {
       {/* Màn 1: Họ tên */}
       {step === "name" && (
         <form onSubmit={handleNameNext} className="space-y-4">
+          <div className="flex gap-3" role="group" aria-label="Danh xưng">
+            {HONORIFICS.map(({ code, label }) => (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={draft.honorific === code}
+                onClick={() => {
+                  setErrorMsg(null);
+                  updateDraft({ honorific: code });
+                }}
+                className={`flex-1 px-4 py-3 rounded-2xl border-2 text-base font-extrabold transition-colors cursor-pointer ${
+                  draft.honorific === code
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : "border-line bg-white text-ink hover:border-brand-300 hover:bg-brand-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <label htmlFor="teacher-name" className="block text-xs font-bold uppercase text-brand-700">
             Họ tên
           </label>
@@ -513,17 +527,17 @@ export default function TeacherRegisterPage() {
             aria-label="Họ tên"
             value={draft.name}
             onChange={(e) => updateDraft({ name: e.target.value })}
-            placeholder="Ví dụ: Cô Nguyễn Thanh Hoa"
+            placeholder="Ví dụ: Nguyễn Thanh Hoa"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -536,7 +550,7 @@ export default function TeacherRegisterPage() {
             multiple
             onSelect={(code) => toggleMulti("subjects", code)}
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="button"
               onClick={handleSubjectsNext}
@@ -544,7 +558,7 @@ export default function TeacherRegisterPage() {
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </div>
       )}
 
@@ -557,7 +571,7 @@ export default function TeacherRegisterPage() {
             multiple
             onSelect={(code) => toggleMulti("levels", code)}
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="button"
               onClick={handleLevelsNext}
@@ -565,7 +579,7 @@ export default function TeacherRegisterPage() {
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </div>
       )}
 
@@ -594,14 +608,14 @@ export default function TeacherRegisterPage() {
               className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           </div>
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -613,29 +627,10 @@ export default function TeacherRegisterPage() {
             selected={draft.studentCount}
             onSelect={handleStudentCountSelect}
           />
+          <StepActions />
         </div>
       )}
 
-      {/* Màn 6: Cần tính năng gì */}
-      {step === "needs" && (
-        <div className="space-y-5">
-          <ChoiceChips
-            options={TEACHER_NEEDS}
-            selected={draft.needs}
-            multiple
-            onSelect={(code) => toggleMulti("needs", code)}
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleNeedsNext}
-              className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
-            >
-              Tiếp
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Màn 7: Nguồn biết đến */}
       {step === "source" && (
@@ -645,7 +640,7 @@ export default function TeacherRegisterPage() {
             selected={draft.source}
             onSelect={handleSourceSelect}
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="button"
               onClick={() => goToStep("phone", "think")}
@@ -653,7 +648,7 @@ export default function TeacherRegisterPage() {
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </div>
       )}
 
@@ -673,14 +668,14 @@ export default function TeacherRegisterPage() {
             placeholder="0912345678"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -700,14 +695,14 @@ export default function TeacherRegisterPage() {
             placeholder="thayco@truong.edu.vn"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -769,7 +764,7 @@ export default function TeacherRegisterPage() {
             <p className="text-xs font-medium text-ink-muted">{pwStrength.label}</p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <StepActions>
             {networkFailed && (
               <button
                 type="button"
@@ -794,7 +789,7 @@ export default function TeacherRegisterPage() {
                 <span>Tiếp</span>
               )}
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
     </InterviewShell>

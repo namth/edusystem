@@ -10,6 +10,7 @@ import {
   STUDENT_COUNTS,
   TEACHER_NEEDS,
   SIGNUP_SOURCES,
+  HONORIFICS,
 } from "@/lib/onboarding";
 import {
   UserCheck,
@@ -34,6 +35,7 @@ interface TeacherProfileData {
     workplace_type?: string;
     workplace_name?: string;
     student_count?: string;
+    honorific?: string;
     needs?: string[];
     source?: string;
   };
@@ -377,6 +379,7 @@ export default function AdminTeacherDetailPage() {
   const workplaceLabel = mapOptionLabel(WORKPLACE_TYPES, answers.workplace_type);
   const studentCountLabel = mapOptionLabel(STUDENT_COUNTS, answers.student_count);
   const sourceLabel = mapOptionLabel(SIGNUP_SOURCES, answers.source);
+  const honorificLabel = mapOptionLabel(HONORIFICS, answers.honorific);
 
   return (
     <AdminLayout>
@@ -504,11 +507,15 @@ export default function AdminTeacherDetailPage() {
                     <strong className="text-ink">{studentCountLabel}</strong>
                   </div>
                   <div>
-                    <span className="text-ink-subtle block">Nhu cầu sử dụng:</span>
-                    <strong className="text-ink">
-                      {needLabels.length > 0 ? needLabels.join(", ") : "Chưa cung cấp"}
-                    </strong>
+                    <span className="text-ink-subtle block">Danh xưng:</span>
+                    <strong className="text-ink">{honorificLabel || "Chưa cung cấp"}</strong>
                   </div>
+                  {needLabels.length > 0 && (
+                    <div>
+                      <span className="text-ink-subtle block">Nhu cầu sử dụng:</span>
+                      <strong className="text-ink">{needLabels.join(", ")}</strong>
+                    </div>
+                  )}
                   <div>
                     <span className="text-ink-subtle block">Nguồn biết đến KitoKit:</span>
                     <strong className="text-ink">{sourceLabel}</strong>

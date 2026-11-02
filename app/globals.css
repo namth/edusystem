@@ -2,6 +2,9 @@
 
 /* Token màu thương hiệu KitoKit (lấy từ logo). Dùng qua class: bg-brand-600, text-ink, border-line…
    Bật dark mode sau này: định nghĩa lại các biến dưới đây trong một bộ chọn tối. */
+/* Quy tắc gradient (DEC-022, 02/11/2026): chỉ chuyển trong MỘT dải màu, từ đậm sang nhạt dần
+   (vd from-brand-700 via-brand-500 to-brand-300). Không pha xanh với cam (brand ↔ accent).
+   Kiểm bởi tests/design-rules.test.ts. */
 @theme {
   --color-brand-50: #eef4ff;
   --color-brand-100: #dce7ff;

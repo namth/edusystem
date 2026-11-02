@@ -136,7 +136,7 @@ describe("Trang /register và /register/teacher", () => {
   it("giáo viên: dùng enum lib/onboarding, gọi registerTeacher, nêu đủ giới hạn dùng thử", () => {
     const s = read("app/register/teacher/page.tsx");
     expect(s).toMatch(/@\/lib\/onboarding/);
-    for (const e of ["TEACHER_LEVELS", "WORKPLACE_TYPES", "STUDENT_COUNTS", "TEACHER_NEEDS"]) expect(s, e).toContain(e);
+    for (const e of ["HONORIFICS", "TEACHER_LEVELS", "WORKPLACE_TYPES", "STUDENT_COUNTS"]) expect(s, e).toContain(e);
     expect(s).toMatch(/registerTeacher/);
     expect(s).toMatch(/thầy cô/i);
     expect(s).toMatch(/1 lớp/);

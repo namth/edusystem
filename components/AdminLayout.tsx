@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   QrCode,
@@ -34,13 +34,11 @@ export default function AdminLayout({
   searchValue = "",
 }: AdminLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    router.push("/login");
+    void logout(); // logout() tự tải lại trang /login sau khi xoá phiên
   };
 
   const navItems = [

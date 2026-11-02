@@ -47,7 +47,7 @@ flowchart TD
   S6 -->|Không| S6b[Tạo tên đăng nhập → hiện email tạm @kito.io.vn] --> S7
   S7[Mật khẩu] --> S8[Hoàn tất: ăn mừng + nhắc tên đăng nhập] --> SD[/student/dashboard/]
   T1 --> T2[Tên] --> T3[Môn dạy] --> T4[Cấp học] --> T5[Nơi dạy] --> T6[Quy mô học sinh]
-  T6 --> T7[Cần tính năng gì] --> T8[Biết KitoKit qua đâu] --> T9[SĐT/Zalo] --> T10[Email] --> T11[Mật khẩu]
+  T6 --> T8[Biết KitoKit qua đâu] --> T9[SĐT/Zalo] --> T10[Email] --> T11[Mật khẩu]
   T11 --> T12[Hoàn tất: giải thích chế độ dùng thử] --> TD[/teacher/classes + banner dùng thử/]
   TD -.->|Admin xác minh| TV[Mở đủ tính năng + thông báo]
 ```
@@ -56,7 +56,7 @@ flowchart TD
 - **Bố cục:**
   - Màn rộng: mascot nằm bên trái, bong bóng thoại chứa câu hỏi, ô trả lời ở bên phải.
   - Màn hẹp: mascot nhỏ ở trên, bong bóng thoại ngay dưới, ô trả lời chiếm phần còn lại.
-  - Trên cùng có thanh tiến độ và nút ← quay lại.
+  - Trên cùng có thanh tiến độ (gradient xanh đậm → nhạt, DEC-022). Nút ← Quay lại nằm **cùng hàng với nút Tiếp** ở cuối vùng trả lời (`components/onboarding/StepActions.tsx`).
 - **Mỗi màn chỉ có một câu hỏi.**
   - Câu chọn sẵn hiện dạng **chip lớn**. Câu chọn một: bấm chip là sang câu tiếp. Câu chọn nhiều: có nút "Tiếp".
   - Câu nhập chữ: có một ô nhập, Enter để tiếp, lỗi kiểm tra hiện ngay dưới ô và do mascot nói.
@@ -96,17 +96,17 @@ Mascot xưng "mình", gọi người dùng là "bạn". Câu hỏi mẫu (kỹ s
 - **Học sinh dưới 13 tuổi:** không hỏi ngày sinh và không thu SĐT ở giai đoạn này.
 
 ### 3.3 Câu hỏi luồng giáo viên (`/register/teacher`)
+> Cập nhật 02/11: thêm danh xưng ở màn tên; câu ngay sau gọi "thầy/cô + tên riêng" (vd "cô Hoa"), các câu sau chỉ gọi danh xưng ("Cô dạy khoảng bao nhiêu học sinh ạ?"). Bỏ câu hỏi tính năng mong muốn (API vẫn nhận `needs` tuỳ chọn cho client cũ).
 Cùng khung phỏng vấn, mascot vẫn là "Kito" nhưng xưng hô lịch sự hơn: mascot xưng "Kito", gọi người dùng là "thầy cô".
 
 | # | Mascot hỏi | Kiểu trả lời | Bắt buộc | Lưu vào |
 | :- | :--- | :--- | :---: | :--- |
 | 0 | "Chào thầy cô! Kito sẽ hỏi vài câu để chuẩn bị không gian dạy học phù hợp nhất." | "Bắt đầu" | — | — |
-| 1 | "Thầy cô tên là gì ạ?" | chữ | ✓ | `users.name` |
+| 1 | "Kito nên gọi thầy hay cô, và tên của mình là gì ạ?" | 2 nút danh xưng **Thầy / Cô** (bắt buộc) + ô họ tên | ✓ | `answers.honorific` (`THAY`/`CO`), `users.name` |
 | 2 | "Thầy cô dạy môn gì?" | chip nhiều lựa chọn (môn hệ thống + "Khác: …") | ✓ | `teacher_profiles.answers.subjects` |
 | 3 | "Học sinh của thầy cô ở cấp nào?" | chip nhiều lựa chọn: Mầm non, Tiểu học, THCS, THPT, Luyện thi chứng chỉ, Đại học, Người đi làm | ✓ | `answers.levels` |
 | 4 | "Thầy cô đang dạy ở đâu?" | chip một lựa chọn: Trường công lập, Trường tư thục/quốc tế, Trung tâm, Gia sư/dạy tự do; sau đó có ô tên trường/trung tâm (tuỳ chọn) | ✓ | `answers.workplace_type`, `answers.workplace_name` |
 | 5 | "Thầy cô dạy khoảng bao nhiêu học sinh?" | chip: Dưới 10, 10–50, 50–200, Trên 200 | ✓ | `answers.student_count` |
-| 6 | "Thầy cô cần KitoKit giúp việc gì nhất?" | chip nhiều lựa chọn: AI chấm Writing/Speaking, Soạn đề & bài học, AI nhập đề từ file, Quản lý lớp & lộ trình, Theo dõi tiến độ học sinh | ✓ (≥1) | `answers.needs` |
 | 7 | "Thầy cô biết KitoKit qua đâu?" | chip: Facebook, Zalo, Bạn bè/đồng nghiệp giới thiệu, Tìm kiếm Google, Khác | — | `answers.source` |
 | 8 | "Số điện thoại / Zalo để Kito liên hệ xác minh ạ?" | SĐT Việt Nam, 9–11 số | ✓ | `users.phone` |
 | 9 | "Email đăng nhập của thầy cô?" | email bắt buộc (giáo viên **không** dùng email tạm), cấm đuôi `@kito.io.vn` | ✓ | `users.email` |
