@@ -204,7 +204,8 @@ Thư viện:
 | TASK-038 | Ghi nhận token AI: `db-migration-014-ai-usage.sql`, `lib/ai-usage.ts` (ngữ cảnh `withAiUsageContext` + `recordAiUsage`), `lib/ai-pricing.ts`, gắn vào `ai-engine` / `document-parser` / `portkey`, route chấm và AI parse; API + mục cấu hình bảng giá model, tỷ giá | — |
 | TASK-039 | Slot = học sinh: bỏ trừ/hoàn slot khi chấm AI, `lib/student-slots.ts`, chặn ghi danh vượt slot ở mọi đường ghi danh, `usage` trong `GET /api/teacher/slot-requests`; `db-migration-015-student-slots.sql` (chạy tay một lần, không đưa vào `ensureSchema`) | — |
 | TASK-040 | Gộp tiêu chí vào Chuẩn chấm: `RubricManager`, 2 tab, chuyển hướng `/admin/rubrics`, bỏ mục menu rubrics | — |
-| TASK-041 | Đơn hàng & VietQR: `db-migration-016-slot-orders.sql` (cột `slot_requests` + settings), `lib/slot-orders.ts`, `lib/vietqr.ts`, API đơn, `PaymentPanel`, `/admin/orders` (kèm tab cấu hình thanh toán), `/teacher/slots`, `/teacher/orders/[id]`, nút tạo đơn ở `/admin/teachers/[id]`, thông báo | TASK-039 |
-| TASK-042 | Tổng quan & menu: `/admin`, `/api/admin/dashboard`, sắp lại menu `AdminLayout` + đếm đơn chờ, chuyển hướng đăng nhập ADMIN | TASK-038, TASK-041 |
+| TASK-041 | Đơn hàng & VietQR — server: `db-migration-016-slot-orders.sql` (cột `slot_requests` + settings), `lib/vietqr.ts`, `lib/slot-orders.ts`, API đơn, cấu hình thanh toán, thông báo `ORDER_*`, route cũ `/api/admin/requests` đi qua thư viện | TASK-039 |
+| TASK-042 | Đơn hàng — giao diện: gói `qrcode`, `PaymentPanel`, `/admin/orders` (kèm tab cấu hình thanh toán), `/admin/orders/[id]`, `/teacher/slots`, `/teacher/orders/[id]`, nút tạo đơn ở `/admin/teachers/[id]`, chuyển hướng `/admin/requests` | TASK-041 |
+| TASK-043 | Tổng quan & menu: `/admin`, `/api/admin/dashboard`, sắp lại menu `AdminLayout` + đếm đơn chờ, chuyển hướng đăng nhập ADMIN | TASK-038, TASK-041 |
 
 TASK-038, TASK-039 và TASK-040 chạy song song được, vì không chạm cùng file.
