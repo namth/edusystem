@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
+import { checkRateLimit, recordRateLimitHit } from "@/lib/rate-limit";
 import crypto from "crypto";
+
+const FORGOT_WINDOW_MS = 15 * 60 * 1000;
+const FORGOT_MAX_REQUESTS = 5;
 
 export async function POST(req: Request) {
   try {
@@ -12,12 +16,33 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const rateKey = `forgot:${cleanEmail}`;
+
+    const rl = checkRateLimit(rateKey, FORGOT_MAX_REQUESTS, FORGOT_WINDOW_MS);
+    if (!rl.allowed) {
+      const minutes = Math.max(1, Math.ceil(rl.retryAfterSeconds / 60));
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Bạn đã thử sai quá nhiều lần. Vui lòng thử lại sau ${minutes} phút.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rl.retryAfterSeconds) },
+        }
+      );
+    }
+
+    recordRateLimitHit(rateKey, FORGOT_WINDOW_MS);
 
     // Query user profile directly from PostgreSQL
-    const result = await queryPg(`SELECT id, email, name FROM users WHERE LOWER(email) = $1 LIMIT 1;`, [cleanEmail]);
+    const result = await queryPg(
+      `SELECT id, email, name, email_is_placeholder FROM users WHERE LOWER(email) = $1 LIMIT 1;`,
+      [cleanEmail]
+    );
 
-    if (result.rows.length === 0) {
-      // Security: Even if email is not found, return generic success message to prevent account enumeration
+    if (result.rows.length === 0 || result.rows[0].email_is_placeholder === true) {
+      // Security: Even if email is not found or is placeholder, return generic success message to prevent account enumeration
       return NextResponse.json({
         success: true,
         message: `Nếu địa chỉ "${cleanEmail}" tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn.`,

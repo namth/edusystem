@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { queryPg } from "@/lib/db-pg";
 import { ScoringRubric } from "@/types/scoring";
 
 // 🇬🇧 1. IELTS Standard Rubrics
@@ -177,67 +177,141 @@ export const ALL_OFFICIAL_STANDARDS_RUBRICS: ScoringRubric[] = [
 
 /**
  * Resolves the active scoring rubric for a given exam by ID,
- * applying any custom rubric overrides specified in the exam record.
+ * applying the scoring standard configured for the exam or course,
+ * falling back to the internal 10-point standard (std_internal_10).
  */
 export async function resolveRubricForExam(
   examId?: string,
   skillCategory?: string
 ): Promise<ScoringRubric> {
-  let baseRubric = skillCategory?.includes("SPEAKING")
-    ? DEFAULT_IELTS_SPEAKING_RUBRIC
-    : skillCategory?.includes("WRITING")
-    ? DEFAULT_IELTS_WRITING_RUBRIC
-    : DEFAULT_INTERNAL_RUBRIC;
+  const cat = (skillCategory || "").toUpperCase();
+  const skill = cat.includes("SPEAKING")
+    ? "Speaking"
+    : cat.includes("WRITING")
+    ? "Writing"
+    : "Reading";
+
+  const baseRubric: ScoringRubric =
+    skill === "Speaking"
+      ? DEFAULT_IELTS_SPEAKING_RUBRIC
+      : skill === "Writing"
+      ? DEFAULT_IELTS_WRITING_RUBRIC
+      : DEFAULT_INTERNAL_RUBRIC;
 
   if (!examId) return baseRubric;
 
   try {
-    const { data: exam } = await supabase
-      .from("exams")
-      .select("scoring_rubric_id, scoring_rubric_override")
-      .eq("id", examId)
-      .maybeSingle();
+    let standardId: string | null = null;
 
-    if (exam?.scoring_rubric_id) {
-      const { data: rubricRow } = await supabase
-        .from("scoring_rubrics")
-        .select("*")
-        .eq("id", exam.scoring_rubric_id)
-        .maybeSingle();
+    // 1. Check exam's scoring_standard_id
+    try {
+      const examRes = await queryPg(
+        "SELECT scoring_standard_id FROM exams WHERE id = $1",
+        [examId]
+      );
+      if (examRes.rows.length > 0 && examRes.rows[0].scoring_standard_id) {
+        standardId = examRes.rows[0].scoring_standard_id;
+      }
+    } catch (e) {
+      // ignore
+    }
 
-      if (rubricRow) {
-        baseRubric = {
-          id: rubricRow.id,
-          name: rubricRow.name,
-          description: rubricRow.description,
-          framework: rubricRow.framework || "IELTS",
-          language: rubricRow.language || "EN",
-          scale: {
-            min: Number(rubricRow.scale_min ?? 0),
-            max: Number(rubricRow.scale_max ?? 9),
-            step: Number(rubricRow.scale_step ?? 0.5),
-          },
-          criteria: Array.isArray(rubricRow.criteria) ? rubricRow.criteria : baseRubric.criteria,
-          outputLanguage: rubricRow.output_language || "vi",
-        };
+    // 2. Check course's default_scoring_standard_id via curriculum_items
+    if (!standardId) {
+      try {
+        const courseRes = await queryPg(
+          `SELECT c.default_scoring_standard_id
+           FROM curriculum_items ci
+           JOIN courses c ON c.id = ci.course_id
+           WHERE ci.exam_id = $1 AND c.default_scoring_standard_id IS NOT NULL
+           LIMIT 1;`,
+          [examId]
+        );
+        if (courseRes.rows.length > 0 && courseRes.rows[0].default_scoring_standard_id) {
+          standardId = courseRes.rows[0].default_scoring_standard_id;
+        }
+      } catch (e) {
+        // ignore if curriculum_items or column doesn't exist
       }
     }
 
-    // Apply exam-level override if specified
-    if (exam?.scoring_rubric_override && typeof exam.scoring_rubric_override === "object") {
-      const override = exam.scoring_rubric_override;
-      baseRubric = {
-        ...baseRubric,
-        ...override,
-        scale: {
-          ...baseRubric.scale,
-          ...(override.scale || {}),
-        },
-      };
+    // 3. Fallback to std_internal_10
+    if (!standardId) {
+      standardId = "std_internal_10";
     }
+
+    // 4. Fetch the scoring standard
+    let stdRes = await queryPg(
+      "SELECT * FROM scoring_standards WHERE id = $1",
+      [standardId]
+    );
+
+    if (stdRes.rows.length === 0 && standardId !== "std_internal_10") {
+      stdRes = await queryPg(
+        "SELECT * FROM scoring_standards WHERE id = 'std_internal_10'"
+      );
+    }
+
+    if (stdRes.rows.length === 0) {
+      return baseRubric;
+    }
+
+    const standardRow = stdRes.rows[0];
+    const rawSections = standardRow.sections;
+    const sections: any[] = Array.isArray(rawSections)
+      ? rawSections
+      : typeof rawSections === "string"
+      ? JSON.parse(rawSections)
+      : [];
+
+    const section = sections.find((s: any) => s.skill === skill);
+    if (!section) {
+      return baseRubric;
+    }
+
+    const scale = {
+      min: Number(section.min ?? baseRubric.scale.min),
+      max: Number(section.max ?? baseRubric.scale.max),
+      step: Number(section.step ?? baseRubric.scale.step),
+    };
+
+    if (section.rubric_id) {
+      try {
+        const rubRes = await queryPg(
+          "SELECT * FROM scoring_rubrics WHERE id = $1",
+          [section.rubric_id]
+        );
+        if (rubRes.rows.length > 0) {
+          const rubRow = rubRes.rows[0];
+          const rawCriteria = rubRow.criteria;
+          const criteria = Array.isArray(rawCriteria)
+            ? rawCriteria
+            : typeof rawCriteria === "string"
+            ? JSON.parse(rawCriteria)
+            : baseRubric.criteria;
+
+          return {
+            id: rubRow.id,
+            name: rubRow.name || baseRubric.name,
+            description: rubRow.description || baseRubric.description,
+            framework: rubRow.framework || standardRow.framework || baseRubric.framework || "IELTS",
+            language: rubRow.language || baseRubric.language || "EN",
+            scale,
+            criteria,
+            outputLanguage: rubRow.output_language || baseRubric.outputLanguage || "vi",
+          };
+        }
+      } catch (err) {
+        console.warn("Failed to fetch scoring_rubrics for rubric_id:", section.rubric_id, err);
+      }
+    }
+
+    return {
+      ...baseRubric,
+      scale,
+    };
   } catch (err) {
     console.warn("Failed to resolve rubric from DB, using default fallback:", err);
+    return baseRubric;
   }
-
-  return baseRubric;
 }

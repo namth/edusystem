@@ -1,0 +1,40 @@
+{
+  "id": "TASK-028",
+  "title": "Bố cục trang làm bài tự chọn theo nội dung (thẻ tập trung / chia đôi / thanh nghe)",
+  "status": "accepted",
+  "conversation_id": "175b4d4d-540d-40a9-8086-d47a81d9dd78",
+  "history": [
+    {
+      "at": "2026-11-01T12:01:28",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T12:05:11",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T12:05:38",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T12:19:02",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T12:21:54",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-028-bo-cuc-trang-lam-bai/verify.sh",
+    "tests/exam-layout.test.ts",
+    "tests/stimulus-html.test.ts",
+    "tests/exam-runner-ui.test.ts"
+  ],
+  "via": "agy"
+}

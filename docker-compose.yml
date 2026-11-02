@@ -16,7 +16,10 @@ services:
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - PORTKEY_API_KEY=${PORTKEY_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PORTKEY_CONFIG_ID=${PORTKEY_CONFIG_ID}
       - PORTKEY_MODEL=${PORTKEY_MODEL}
       - REDIS_URL=redis://redis:6379
@@ -24,6 +27,21 @@ services:
       - NEO4J_USERNAME=${NEO4J_USERNAME}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
       - NEO4J_DATABASE=${NEO4J_DATABASE}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      - DEFAULT_AI_MODEL=${DEFAULT_AI_MODEL:-}
+      - SLOT_UNIT_PRICE_VND=${SLOT_UNIT_PRICE_VND:-0}
+      - GCP_CLIENT_EMAIL=${GCP_CLIENT_EMAIL:-}
+      - GCP_PRIVATE_KEY=${GCP_PRIVATE_KEY:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    volumes:
+      # Media bài học (ảnh/mp3, vd 3 khoá Cambridge ở /media/ej/...) nằm ngoài thư mục code trên server.
+      # Next.js chỉ phục vụ file có trong public/ lúc khởi động: thêm file thì restart nextjs.
+      - ${MEDIA_HOST_DIR:-../edusystem-media}:/app/public/media:ro
     depends_on:
       - redis
     restart: unless-stopped
@@ -49,6 +67,7 @@ services:
       - PORTKEY_API_KEY=${PORTKEY_API_KEY}
       - PORTKEY_CONFIG_ID=${PORTKEY_CONFIG_ID}
       - PORTKEY_MODEL=${PORTKEY_MODEL}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
     depends_on:
       - redis
       - nextjs

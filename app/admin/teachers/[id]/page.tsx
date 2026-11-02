@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
+import {
+  TEACHER_LEVELS,
+  WORKPLACE_TYPES,
+  STUDENT_COUNTS,
+  TEACHER_NEEDS,
+  SIGNUP_SOURCES,
+} from "@/lib/onboarding";
 import {
   UserCheck,
   Edit3,
@@ -16,7 +22,26 @@ import {
   Cpu,
   X,
   Zap,
+  ClipboardList,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
+
+interface TeacherProfileData {
+  answers: {
+    subjects?: string[];
+    levels?: string[];
+    workplace_type?: string;
+    workplace_name?: string;
+    student_count?: string;
+    needs?: string[];
+    source?: string;
+  };
+  reviewed_by?: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string | null;
+}
 
 interface TeacherDetail {
   id: string;
@@ -26,6 +51,8 @@ interface TeacherDetail {
   target_band?: string;
   created_at: string;
   slot_limit: number;
+  teacher_status?: "TRIAL" | "VERIFIED" | "REJECTED" | null;
+  profile?: TeacherProfileData | null;
 }
 
 interface ManagedClass {
@@ -49,12 +76,55 @@ interface AILogRecord {
   created_at: string;
 }
 
+function mapOptionLabel(
+  options: readonly { readonly code: string; readonly label: string }[],
+  code?: string
+): string {
+  if (!code) return "Chưa chọn";
+  const found = options.find((o) => o.code === code);
+  return found ? found.label : code;
+}
+
+function mapOptionLabels(
+  options: readonly { readonly code: string; readonly label: string }[],
+  codes?: string[]
+): string[] {
+  if (!Array.isArray(codes) || codes.length === 0) return [];
+  return codes.map((c) => {
+    const found = options.find((o) => o.code === c);
+    return found ? found.label : c;
+  });
+}
+
+function renderStatusBadge(status?: string | null) {
+  if (status === "TRIAL") {
+    return (
+      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-300">
+        Dùng thử
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+        Từ chối
+      </span>
+    );
+  }
+  return (
+    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+      Đã xác minh
+    </span>
+  );
+}
+
 export default function AdminTeacherDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const teacherId = (Array.isArray(rawId) ? rawId[0] : rawId) || "";
 
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
+  const [profile, setProfile] = useState<TeacherProfileData | null>(null);
   const [classes, setClasses] = useState<ManagedClass[]>([]);
   const [aiLogs, setAiLogs] = useState<AILogRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +132,10 @@ export default function AdminTeacherDetailPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTestingPortkey, setIsTestingPortkey] = useState(false);
+
+  // Verify states
+  const [reviewNote, setReviewNote] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Edit Modals
   const [showEditInfoModal, setShowEditInfoModal] = useState(false);
@@ -86,13 +160,17 @@ export default function AdminTeacherDetailPage() {
       if (!res.ok || !data.success || !data.teacher) {
         setNotFound(true);
         setTeacher(null);
+        setProfile(null);
         setClasses([]);
         setAiLogs([]);
         return;
       }
 
       const tObj: TeacherDetail = data.teacher;
+      const profObj: TeacherProfileData | null = data.profile ?? tObj.profile ?? null;
       setTeacher(tObj);
+      setProfile(profObj);
+      setReviewNote(profObj?.review_note || "");
       setName(tObj.name);
       setEmail(tObj.email);
       setPhone(tObj.phone || "");
@@ -113,6 +191,40 @@ export default function AdminTeacherDetailPage() {
     fetchTeacherData();
   }, [teacherId]);
 
+  const handleVerifyDecision = async (decision: "VERIFIED" | "REJECTED") => {
+    if (!teacherId) return;
+    setIsVerifying(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/admin/teachers/${teacherId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision,
+          note: reviewNote.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Không thể cập nhật trạng thái xác minh.");
+        return;
+      }
+      setSuccessMsg(
+        decision === "VERIFIED"
+          ? "Đã xác minh giáo viên thành công! Toàn bộ giới hạn dùng thử đã được mở."
+          : "Đã cập nhật trạng thái từ chối xác minh cho giáo viên."
+      );
+      await fetchTeacherData();
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e.message || "Lỗi kết nối khi xác minh giáo viên.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   // Compute 100% REAL totals from PostgreSQL ai_usage_logs
   const totalRealTokens = aiLogs.reduce((sum, log) => sum + log.total_tokens, 0);
   const totalRealRequests = aiLogs.length;
@@ -126,39 +238,35 @@ export default function AdminTeacherDetailPage() {
   const handleTestPortkeyLive = async () => {
     if (!teacher) return;
     setIsTestingPortkey(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
     try {
       const apiRes = await fetch("/api/admin/test-portkey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teacherId: teacher.id,
-          userPrompt: "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
-          studentId: "student_01",
+          userPrompt:
+            "Analyze this sample IELTS essay: 'Task 2: Some people think that universities should provide graduates with knowledge and skills needed in the workplace.'",
           submissionId: `test_sub_${Date.now().toString().slice(-4)}`,
         }),
       });
 
       const res = await apiRes.json();
       if (!apiRes.ok || !res.success) {
-        alert("Lỗi kết nối Portkey Gateway: " + (res.error || "Không thể gửi request"));
+        setErrorMsg("Lỗi kết nối Portkey Gateway: " + (res.error || "Không thể gửi request"));
         return;
       }
 
-      if (res.isSimulated) {
-        setSuccessMsg(
-          `Đã chạy thử nghiệm Portkey Gateway (Chế độ Simulation)! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và đã ghi nhật ký vào PostgreSQL. (Để kết nối API live thực tế, hãy thêm PORTKEY_API_KEY vào .env.local).`
-        );
-      } else {
-        setSuccessMsg(
-          `Đã gọi LIVE Portkey AI Gateway thành công! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và ghi nhật ký trực tiếp vào CSDL.`
-        );
-      }
+      setSuccessMsg(
+        `Đã gọi LIVE Portkey AI Gateway thành công! Tiêu thụ ${res.usage.totalTokens} tokens ($${res.usage.costUsd} USD) và ghi nhật ký trực tiếp vào CSDL.`
+      );
 
       fetchTeacherData();
       setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err: any) {
       console.error(err);
-      alert("Lỗi kết nối Portkey Gateway: " + (err.message || err));
+      setErrorMsg("Lỗi kết nối Portkey Gateway: " + (err.message || err));
     } finally {
       setIsTestingPortkey(false);
     }
@@ -232,9 +340,9 @@ export default function AdminTeacherDetailPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6] max-w-4xl mx-auto my-8">
-          <Loader2 className="w-5 h-5 animate-spin text-[#6d3807]" />
-          <span>Đang nạp thông tin giảng viên &amp; Portkey Logs từ PostgreSQL...</span>
+        <div className="flex items-center justify-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line max-w-4xl mx-auto my-8">
+          <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
+          <span>Đang nạp thông tin giảng viên &amp; khảo sát từ PostgreSQL...</span>
         </div>
       </AdminLayout>
     );
@@ -243,17 +351,17 @@ export default function AdminTeacherDetailPage() {
   if (notFound || !teacher) {
     return (
       <AdminLayout>
-        <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-3xl border border-[#d8c2b6] text-center space-y-4 shadow-sm font-sans">
+        <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-3xl border border-line text-center space-y-4 shadow-sm font-sans">
           <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
             <X className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-[#211a16]">Không tìm thấy thông tin Giảng viên</h2>
-          <p className="text-xs text-[#52443a]">
-            Tài khoản giảng viên ID <strong className="text-[#6d3807]">{teacherId}</strong> không tồn tại hoặc đã bị xóa khỏi CSDL PostgreSQL.
+          <h2 className="text-xl font-bold text-ink">Không tìm thấy thông tin Giảng viên</h2>
+          <p className="text-xs text-ink-muted">
+            Tài khoản giảng viên ID <strong className="text-brand-600">{teacherId}</strong> không tồn tại hoặc đã bị xóa khỏi CSDL PostgreSQL.
           </p>
           <Link
             href="/admin/teachers"
-            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-[#6d3807] text-white text-xs font-bold rounded-xl hover:bg-[#8a4f1e] transition-all"
+            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại Danh sách Giáo viên</span>
@@ -263,31 +371,39 @@ export default function AdminTeacherDetailPage() {
     );
   }
 
+  const answers = profile?.answers || {};
+  const levelLabels = mapOptionLabels(TEACHER_LEVELS, answers.levels);
+  const needLabels = mapOptionLabels(TEACHER_NEEDS, answers.needs);
+  const workplaceLabel = mapOptionLabel(WORKPLACE_TYPES, answers.workplace_type);
+  const studentCountLabel = mapOptionLabel(STUDENT_COUNTS, answers.student_count);
+  const sourceLabel = mapOptionLabel(SIGNUP_SOURCES, answers.source);
+
   return (
     <AdminLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="border-b border-[#d8c2b6]/40 pb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div className="border-b border-line/40 pb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
-            <Link href="/admin/teachers" className="text-xs text-[#6d3807] hover:underline flex items-center mb-2 font-medium">
-              <ArrowLeft className="w-4 h-4 mr-1 text-[#6d3807]" />
+            <Link href="/admin/teachers" className="text-xs text-brand-600 hover:underline flex items-center mb-2 font-medium">
+              <ArrowLeft className="w-4 h-4 mr-1 text-brand-600" />
               Quay lại Danh sách Giáo viên
             </Link>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight flex items-center space-x-3">
+            <h1 className="text-3xl font-bold text-ink tracking-tight flex flex-wrap items-center gap-3">
               <span>{teacher.name}</span>
-              <span className="px-3 py-1 rounded-full bg-[#fff1ea] text-[#6d3807] text-xs font-bold border border-[#ffb782]">
+              <span className="px-3 py-1 rounded-full bg-brand-50 text-brand-600 text-xs font-bold border border-brand-300">
                 TEACHER
               </span>
+              {renderStatusBadge(teacher.teacher_status)}
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
-              Hồ sơ quản lý giảng viên chi tiết &bull; ID: <strong className="text-[#004d5e]">{teacher.id}</strong>
+            <p className="text-sm text-ink-muted mt-1">
+              Hồ sơ quản lý giảng viên chi tiết &bull; ID: <strong className="text-brand-800">{teacher.id}</strong>
             </p>
           </div>
 
           <button
             onClick={handleTestPortkeyLive}
             disabled={isTestingPortkey}
-            className="px-5 py-2.5 bg-[#004d5e] hover:bg-[#003845] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 disabled:opacity-50"
+            className="px-5 py-2.5 bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 disabled:opacity-50"
           >
             {isTestingPortkey ? (
               <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -313,62 +429,160 @@ export default function AdminTeacherDetailPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Basic Info & Slot Capacity */}
+          {/* Left Column: Basic Info, Verification & Slot Capacity */}
           <div className="space-y-6">
             {/* Basic Info Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-3">
-                <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2">
-                  <UserCheck className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-line/40 pb-3">
+                <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                  <UserCheck className="w-5 h-5 text-brand-600" />
                   <span>Thông Tin Cơ Bản</span>
                 </h2>
                 <button
                   onClick={() => setShowEditInfoModal(true)}
-                  className="px-3 py-1.5 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-medium hover:bg-[#f9ebe4]"
+                  className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100"
                 >
                   <Edit3 className="w-3.5 h-3.5 inline mr-1" />
                   Sửa
                 </button>
               </div>
 
-              <div className="space-y-2.5 text-xs text-[#211a16]">
+              <div className="space-y-2.5 text-xs text-ink">
                 <p>
-                  <span className="text-[#857469]">Họ &amp; Tên:</span> <strong className="block text-sm text-[#211a16]">{teacher.name}</strong>
+                  <span className="text-ink-subtle">Họ &amp; Tên:</span> <strong className="block text-sm text-ink">{teacher.name}</strong>
                 </p>
                 <p>
-                  <span className="text-[#857469]">Email:</span> <strong className="block text-[#004d5e]">{teacher.email}</strong>
+                  <span className="text-ink-subtle">Email:</span> <strong className="block text-brand-800">{teacher.email}</strong>
                 </p>
                 <p>
-                  <span className="text-[#857469]">Số điện thoại:</span> <strong className="block">{teacher.phone || "Chưa cập nhật"}</strong>
+                  <span className="text-ink-subtle">Số điện thoại:</span> <strong className="block">{teacher.phone || "Chưa cập nhật"}</strong>
                 </p>
                 <p>
-                  <span className="text-[#857469]">Bằng cấp / Trình độ:</span> <strong className="block text-[#6d3807]">{teacher.target_band || "Chưa cập nhật"}</strong>
+                  <span className="text-ink-subtle">Bằng cấp / Trình độ:</span> <strong className="block text-brand-600">{teacher.target_band || "Chưa cập nhật"}</strong>
                 </p>
                 <p>
-                  <span className="text-[#857469]">Ngày tham gia:</span> <span className="block text-[#52443a]">{teacher.created_at}</span>
+                  <span className="text-ink-subtle">Ngày tham gia:</span> <span className="block text-ink-muted">{teacher.created_at}</span>
                 </p>
               </div>
             </div>
 
+            {/* Khảo sát đăng ký & Xác minh */}
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-line/40 pb-3">
+                <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                  <ClipboardList className="w-5 h-5 text-brand-600" />
+                  <span>Khảo sát đăng ký</span>
+                </h2>
+                {renderStatusBadge(teacher.teacher_status)}
+              </div>
+
+              {profile && Object.keys(answers).length > 0 ? (
+                <div className="space-y-3 text-xs text-ink">
+                  <div>
+                    <span className="text-ink-subtle block">Môn giảng dạy:</span>
+                    <strong className="text-ink">
+                      {Array.isArray(answers.subjects) && answers.subjects.length > 0
+                        ? answers.subjects.join(", ")
+                        : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Cấp học giảng dạy:</span>
+                    <strong className="text-ink">
+                      {levelLabels.length > 0 ? levelLabels.join(", ") : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nơi công tác:</span>
+                    <strong className="text-ink">
+                      {workplaceLabel}
+                      {answers.workplace_name ? ` — ${answers.workplace_name}` : ""}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Quy mô học sinh:</span>
+                    <strong className="text-ink">{studentCountLabel}</strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nhu cầu sử dụng:</span>
+                    <strong className="text-ink">
+                      {needLabels.length > 0 ? needLabels.join(", ") : "Chưa cung cấp"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-subtle block">Nguồn biết đến KitoKit:</span>
+                    <strong className="text-ink">{sourceLabel}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-ink-muted italic">
+                  Giáo viên này chưa có dữ liệu khảo sát đăng ký.
+                </p>
+              )}
+
+              <div className="pt-3 border-t border-line/40 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-ink mb-1">
+                    Ghi chú xác minh (tối đa 500 ký tự)
+                  </label>
+                  <textarea
+                    rows={2}
+                    maxLength={500}
+                    value={reviewNote}
+                    onChange={(e) => setReviewNote(e.target.value)}
+                    placeholder="Nhập ghi chú xác minh hoặc lý do từ chối..."
+                    className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs focus:outline-none focus:border-brand-600"
+                  />
+                </div>
+
+                {profile?.reviewed_at && (
+                  <p className="text-[11px] text-ink-subtle">
+                    Lần duyệt gần nhất: {new Date(profile.reviewed_at).toLocaleString("vi-VN")}
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={isVerifying}
+                    onClick={() => handleVerifyDecision("VERIFIED")}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Xác minh</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isVerifying}
+                    onClick={() => handleVerifyDecision("REJECTED")}
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Từ chối</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Slot Capacity Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-3">
-                <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-line/40 pb-3">
+                <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                  <Award className="w-5 h-5 text-brand-600" />
                   <span>Hạn Mức Sĩ Số Slots</span>
                 </h2>
                 <button
                   onClick={() => setShowEditSlotModal(true)}
-                  className="px-3 py-1.5 bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] rounded-xl text-xs font-bold hover:bg-[#ffdcc5]"
+                  className="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-300 rounded-xl text-xs font-bold hover:bg-brand-100"
                 >
                   Sửa Slot
                 </button>
               </div>
 
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]">
-                  <span className="text-[10px] text-[#857469] font-bold block uppercase">Tổng Slot</span>
-                  <span className="text-lg font-bold text-[#6d3807]">{totalSlotLimit}</span>
+                <div className="p-3 bg-surface-alt rounded-xl border border-line">
+                  <span className="text-[10px] text-ink-subtle font-bold block uppercase">Tổng Slot</span>
+                  <span className="text-lg font-bold text-brand-600">{totalSlotLimit}</span>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
                   <span className="text-[10px] text-emerald-800 font-bold block uppercase">Đã Dùng</span>
@@ -382,13 +596,13 @@ export default function AdminTeacherDetailPage() {
 
               {/* Progress bar */}
               <div>
-                <div className="flex justify-between text-xs text-[#52443a] mb-1 font-medium">
+                <div className="flex justify-between text-xs text-ink-muted mb-1 font-medium">
                   <span>Tỷ lệ sử dụng slot:</span>
                   <span>{Math.round((usedSlotsCount / totalSlotLimit) * 100)}%</span>
                 </div>
-                <div className="w-full bg-[#fff8f5] h-2.5 rounded-full overflow-hidden border border-[#d8c2b6]">
+                <div className="w-full bg-surface-alt h-2.5 rounded-full overflow-hidden border border-line">
                   <div
-                    className="bg-[#6d3807] h-full rounded-full transition-all"
+                    className="bg-brand-600 h-full rounded-full transition-all"
                     style={{ width: `${Math.min(100, (usedSlotsCount / totalSlotLimit) * 100)}%` }}
                   />
                 </div>
@@ -399,14 +613,14 @@ export default function AdminTeacherDetailPage() {
           {/* Right Column: Real Portkey AI Analytics & Managed Classes */}
           <div className="lg:col-span-2 space-y-6">
             {/* Real Portkey AI Token Usage Analytics Section */}
-            <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-[#d8c2b6]/40 pb-3">
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-line/40 pb-3">
                 <div>
-                  <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2">
-                    <Cpu className="w-5 h-5 text-[#6d3807]" />
+                  <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                    <Cpu className="w-5 h-5 text-brand-600" />
                     <span>Mức Độ Sử Dụng AI Token (Real PostgreSQL &amp; Portkey Logs)</span>
                   </h2>
-                  <p className="text-xs text-[#52443a] mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     Dữ liệu token tiêu thụ thực tế được gửi qua Portkey Gateway và ghi log trực tiếp vào DB.
                   </p>
                 </div>
@@ -416,40 +630,40 @@ export default function AdminTeacherDetailPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-[#fff1ea] rounded-2xl border border-[#ffb782] space-y-1">
-                  <span className="text-xs text-[#52443a] font-medium block">Tổng Real Tokens Đã Dùng:</span>
-                  <span className="text-xl font-bold text-[#6d3807] block">{totalRealTokens.toLocaleString("vi-VN")} tokens</span>
-                  <span className="text-[10px] text-[#857469] block">Model: Portkey AI Gateway</span>
+                <div className="p-4 bg-brand-50 rounded-2xl border border-brand-300 space-y-1">
+                  <span className="text-xs text-ink-muted font-medium block">Tổng Real Tokens Đã Dùng:</span>
+                  <span className="text-xl font-bold text-brand-600 block">{totalRealTokens.toLocaleString("vi-VN")} tokens</span>
+                  <span className="text-[10px] text-ink-subtle block">Model: Portkey AI Gateway</span>
                 </div>
 
-                <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-1">
-                  <span className="text-xs text-[#52443a] font-medium block">Tổng Lượt Request Thực Tế:</span>
-                  <span className="text-xl font-bold text-[#004d5e] block">{totalRealRequests} Requests</span>
-                  <span className="text-[10px] text-[#857469] block">Lưu vết trong PostgreSQL</span>
+                <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-1">
+                  <span className="text-xs text-ink-muted font-medium block">Tổng Lượt Request Thực Tế:</span>
+                  <span className="text-xl font-bold text-brand-800 block">{totalRealRequests} Requests</span>
+                  <span className="text-[10px] text-ink-subtle block">Lưu vết trong PostgreSQL</span>
                 </div>
 
-                <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-1">
-                  <span className="text-xs text-[#52443a] font-medium block">Tổng Chi Phí Ước Tính:</span>
-                  <span className="text-xl font-bold text-[#211a16] block">${totalRealCostUsd.toFixed(4)} USD</span>
+                <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-1">
+                  <span className="text-xs text-ink-muted font-medium block">Tổng Chi Phí Ước Tính:</span>
+                  <span className="text-xl font-bold text-ink block">${totalRealCostUsd.toFixed(4)} USD</span>
                   <span className="text-[10px] text-emerald-700 block font-bold">&check; Portkey Metadata Tracked</span>
                 </div>
               </div>
 
               {/* Real Logs Table */}
-              <div className="mt-4 pt-4 border-t border-[#d8c2b6]/30 space-y-3">
-                <h3 className="text-xs font-bold text-[#211a16] uppercase tracking-wider">
+              <div className="mt-4 pt-4 border-t border-line/30 space-y-3">
+                <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
                   Nhật Ký Gọi Portkey Gateway Thực Tế (PostgreSQL `ai_usage_logs`)
                 </h3>
 
                 {aiLogs.length === 0 ? (
-                  <div className="p-6 text-center border border-dashed border-[#d8c2b6] rounded-2xl bg-[#fff8f5]">
-                    <p className="text-xs text-[#52443a]">Chưa có nhật ký gọi AI Portkey nào cho giáo viên này. Bấm nút <strong>"Test Portkey Live Call"</strong> ở góc trên để chạy thử request live!</p>
+                  <div className="p-6 text-center border border-dashed border-line rounded-2xl bg-surface-alt">
+                    <p className="text-xs text-ink-muted">Chưa có nhật ký gọi AI Portkey nào cho giáo viên này. Bấm nút <strong>"Test Portkey Live Call"</strong> ở góc trên để chạy thử request live!</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-[#d8c2b6]">
+                  <div className="overflow-x-auto rounded-xl border border-line">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="bg-[#fff8f5] border-b border-[#d8c2b6] font-bold text-[#52443a]">
+                        <tr className="bg-surface-alt border-b border-line font-bold text-ink-muted">
                           <th className="p-3">Thời Gian Request</th>
                           <th className="p-3">Mô Hình AI (Model)</th>
                           <th className="p-3">Prompt / Completion</th>
@@ -457,15 +671,15 @@ export default function AdminTeacherDetailPage() {
                           <th className="p-3 text-right">Chi Phí (USD)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#d8c2b6]/30">
+                      <tbody className="divide-y divide-line/30">
                         {aiLogs.map((log) => (
-                          <tr key={log.id} className="hover:bg-[#fff8f5]">
-                            <td className="p-3 font-medium text-[#211a16]">{log.created_at}</td>
-                            <td className="p-3 text-[#004d5e] font-semibold">{log.model}</td>
-                            <td className="p-3 text-[#857469]">
+                          <tr key={log.id} className="hover:bg-surface-alt">
+                            <td className="p-3 font-medium text-ink">{log.created_at}</td>
+                            <td className="p-3 text-brand-800 font-semibold">{log.model}</td>
+                            <td className="p-3 text-ink-subtle">
                               {log.prompt_tokens} in / {log.completion_tokens} out
                             </td>
-                            <td className="p-3 font-bold text-[#6d3807]">
+                            <td className="p-3 font-bold text-brand-600">
                               {log.total_tokens.toLocaleString("vi-VN")} tokens
                             </td>
                             <td className="p-3 text-right font-mono font-bold text-emerald-800">
@@ -481,31 +695,31 @@ export default function AdminTeacherDetailPage() {
             </div>
 
             {/* Managed Classes Section */}
-            <div className="bg-white p-6 rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-              <h2 className="text-base font-bold text-[#6d3807] flex items-center space-x-2 border-b border-[#d8c2b6]/40 pb-3">
-                <BookOpen className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2 border-b border-line/40 pb-3">
+                <BookOpen className="w-5 h-5 text-brand-600" />
                 <span>Các Lớp Học Đang Quản Lý ({classes.length} Lớp)</span>
               </h2>
 
               {classes.length === 0 ? (
-                <div className="p-6 text-center border border-dashed border-[#d8c2b6] rounded-2xl bg-[#fff8f5]">
-                  <p className="text-xs text-[#52443a]">Giảng viên này hiện chưa được phân công quản lý lớp học nào.</p>
+                <div className="p-6 text-center border border-dashed border-line rounded-2xl bg-surface-alt">
+                  <p className="text-xs text-ink-muted">Giảng viên này hiện chưa được phân công quản lý lớp học nào.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {classes.map((c) => (
-                    <div key={c.id} className="p-4 rounded-2xl border border-[#d8c2b6] bg-[#fff8f5] flex items-center justify-between">
+                    <div key={c.id} className="p-4 rounded-2xl border border-line bg-surface-alt flex items-center justify-between">
                       <div>
-                        <span className="px-2.5 py-0.5 rounded bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-[10px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-300 text-[10px] font-bold">
                           Mã Lớp: {c.code}
                         </span>
-                        <h3 className="text-base font-bold text-[#211a16] mt-1">{c.name}</h3>
-                        <p className="text-xs text-[#52443a]">Lịch học: {c.schedule}</p>
+                        <h3 className="text-base font-bold text-ink mt-1">{c.name}</h3>
+                        <p className="text-xs text-ink-muted">Lịch học: {c.schedule}</p>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-xs text-[#52443a] block">Sĩ số học viên:</span>
-                        <span className="text-lg font-bold text-[#6d3807]">{c.student_count} Học viên</span>
+                        <span className="text-xs text-ink-muted block">Sĩ số học viên:</span>
+                        <span className="text-lg font-bold text-brand-600">{c.student_count} Học viên</span>
                       </div>
                     </div>
                   ))}
@@ -518,60 +732,60 @@ export default function AdminTeacherDetailPage() {
         {/* Modal: Edit Basic Info */}
         {showEditInfoModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807]">Sửa Thông Tin Cơ Bản Giáo Viên</h2>
-                <button onClick={() => setShowEditInfoModal(false)} className="text-[#857469]">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600">Sửa Thông Tin Cơ Bản Giáo Viên</h2>
+                <button onClick={() => setShowEditInfoModal(false)} className="text-ink-subtle">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveInfo} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Họ &amp; Tên (*)</label>
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">Họ &amp; Tên (*)</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Email (*)</label>
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">Email (*)</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Số Điện Thoại</label>
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">Số Điện Thoại</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">Trình Độ / Bằng Cấp</label>
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">Trình Độ / Bằng Cấp</label>
                   <input
                     type="text"
                     value={qualification}
                     onChange={(e) => setQualification(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div className="pt-2 flex space-x-3">
-                  <button type="button" onClick={() => setShowEditInfoModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-medium shadow">
+                  <button type="button" onClick={() => setShowEditInfoModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-medium shadow">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" /> : "Lưu Thay Đổi"}
                   </button>
                 </div>
@@ -583,17 +797,17 @@ export default function AdminTeacherDetailPage() {
         {/* Modal: Edit Slot Capacity */}
         {showEditSlotModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807]">Sửa Hạn Mức Slot Giảng Viên</h2>
-                <button onClick={() => setShowEditSlotModal(false)} className="text-[#857469]">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600">Sửa Hạn Mức Slot Giảng Viên</h2>
+                <button onClick={() => setShowEditSlotModal(false)} className="text-ink-subtle">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveSlotLimit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Tổng Số Slot Được Cấp (Slots Capacity)
                   </label>
                   <input
@@ -603,13 +817,13 @@ export default function AdminTeacherDetailPage() {
                     step={50}
                     value={slotLimit}
                     onChange={(e) => setSlotLimit(Number(e.target.value))}
-                    className="w-full px-4 py-3 bg-[#fff1ea] border border-[#ffb782] rounded-xl text-lg font-bold text-[#6d3807] focus:outline-none"
+                    className="w-full px-4 py-3 bg-brand-50 border border-brand-300 rounded-xl text-lg font-bold text-brand-600 focus:outline-none"
                   />
                 </div>
 
                 <div className="pt-2 flex space-x-3">
-                  <button type="button" onClick={() => setShowEditSlotModal(false)} className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium">Hủy</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-[#6d3807] text-[#ffffff] rounded-xl text-xs font-medium shadow">
+                  <button type="button" onClick={() => setShowEditSlotModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-medium shadow">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" /> : "Lưu Số Slot"}
                   </button>
                 </div>

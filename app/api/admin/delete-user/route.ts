@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { runCypherQuery } from "@/lib/neo4j";
+import { requireRole } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const body = await req.json();
     const { userId } = body;

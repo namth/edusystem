@@ -1,0 +1,39 @@
+{
+  "id": "TASK-001",
+  "title": "Bắt buộc xác thực & phân quyền cho toàn bộ API route",
+  "status": "accepted",
+  "conversation_id": "e227f48f-8dce-4c76-bdf4-8c02969f0021",
+  "history": [
+    {
+      "at": "2026-10-31T07:43:22",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T07:45:44",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-10-31T07:53:01",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T07:59:41",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T08:00:27",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-001-phan-quyen-api/verify.sh",
+    "tests/api-auth.test.ts",
+    "vitest.config.ts"
+  ],
+  "via": "agy"
+}

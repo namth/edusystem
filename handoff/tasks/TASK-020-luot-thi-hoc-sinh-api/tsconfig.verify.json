@@ -1,0 +1,5 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "exclude": ["../../../node_modules", "../../../.next", "../../../tests/scoring-standards-api.test.ts"]
+}

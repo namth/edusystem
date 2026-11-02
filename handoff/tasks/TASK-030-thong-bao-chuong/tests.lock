@@ -1,0 +1,4 @@
+b05eab744bd90e7e5353be74588d62b1d755b53c91fbe4b737aa33bbaf7f7d6a  handoff/tasks/TASK-030-thong-bao-chuong/verify.sh
+f4e4980bcc80ae7b545473296df6d19dff4ffc13e71c8e1963311e1ad920da72  tests/notifications-api.test.ts
+b9605f55c844b2bd75a2b4b3072f905e093645aaaa8f3e6df08a57da25ac7a78  tests/client-bundle-safety.test.ts
+a53297442ff78f29ad552a9973579de88827907344c4ad6d5a9d3dc6326e6e35  tests/notifications-lib.test.ts

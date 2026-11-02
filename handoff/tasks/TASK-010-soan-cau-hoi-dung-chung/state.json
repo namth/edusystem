@@ -1,0 +1,55 @@
+{
+  "id": "TASK-010",
+  "title": "Tách QuestionSetEditor dùng chung, API ghi đề thi, trang tạo đề lưu qua API",
+  "status": "accepted",
+  "conversation_id": "a6002b0b-4916-477e-8925-004fe8de8656",
+  "history": [
+    {
+      "at": "2026-10-31T12:16:15",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:24:05",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:24:21",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:46:10",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:49:04",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-010-soan-cau-hoi-dung-chung/verify.sh",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "docs/db-migration-007-question-owner.sql"
+  ],
+  "via": "agy"
+}

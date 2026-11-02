@@ -15,7 +15,7 @@ Cần chuyển đổi sang một **Hệ thống Xác thực & Phân quyền Chuy
 
 ## Decision Drivers
 1. **Security**: Mật khẩu phải được băm an toàn (Bcrypt), Session lưu trữ qua HTTP-Only Cookies an toàn trước XSS.
-2. **Access Control (RBAC)**: Ngăn chặn triệt để nguy cơ người dùng tự phong quyền (Role Escalation). Trang đăng ký công khai chỉ cho phép tạo tài khoản `STUDENT`.
+2. **Access Control (RBAC)**: Ngăn chặn triệt để nguy cơ người dùng tự phong quyền (Role Escalation). Trang đăng ký công khai chỉ cho phép tạo tài khoản `STUDENT`. *(Sửa 2026-11-02, DEC-027: đăng ký công khai tạo `STUDENT` hoặc `TEACHER` ở chế độ dùng thử; vai trò do route quyết định, không bao giờ tạo `ADMIN`.)*
 3. **Data Integrity**: Dữ liệu người dùng giữa Supabase Auth (`auth.users`), PostgreSQL (`public.users`) và Neo4j DB phải luôn nhất quán 100%.
 4. **User Experience (UX)**: Chuyển hướng không nhấp nháy UI (No FOUC), tự động khôi phục session, hỗ trợ quên mật khẩu và đổi mật khẩu lần đầu.
 

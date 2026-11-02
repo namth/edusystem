@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
 import {
   PlusCircle,
   Users,
@@ -18,6 +17,8 @@ import {
   Edit3,
   Trash2,
   Layers,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 interface ClassRoom {
@@ -52,6 +53,7 @@ export default function TeacherClassesPage() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Status Filter Tab
   const [statusTab, setStatusTab] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "UPCOMING">("ALL");
@@ -77,28 +79,16 @@ export default function TeacherClassesPage() {
     if (!user) return;
     try {
       setLoading(true);
-      // 1. Fetch Classes
-      const { data: clsData, error } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("teacher_id", user.id)
-        .order("created_at", { ascending: false });
+      setErrorMessage(null);
 
-      if (error) {
-        console.error("Classes load error:", error);
-        return;
+      const res = await fetch("/api/teacher/classes");
+      const data = await res.json();
+
+      if (!res.ok || !data.classes) {
+        throw new Error(data.error || "Không thể tải danh sách lớp học");
       }
 
-      // 2. Fetch Enrollments headcount
-      const { data: enrData } = await supabase.from("enrollments").select("*");
-      const classHeadcountMap: Record<string, number> = {};
-      if (enrData) {
-        enrData.forEach((e: any) => {
-          classHeadcountMap[e.class_id] = (classHeadcountMap[e.class_id] || 0) + 1;
-        });
-      }
-
-      const formatted: ClassRoom[] = (clsData || []).map((row: any) => {
+      const formatted: ClassRoom[] = data.classes.map((row: any) => {
         const { schedule: cleanSched, status: parsedStatus } = parseScheduleAndStatus(row.schedule);
         return {
           id: row.id,
@@ -109,13 +99,14 @@ export default function TeacherClassesPage() {
           schedule: cleanSched,
           status: parsedStatus,
           description: row.description || "Lớp luyện thi IELTS chuyên sâu target 7.0+, bổ trợ từ vựng & ngữ pháp.",
-          student_count: classHeadcountMap[row.id] || 0,
+          student_count: Number(row.student_count) || 0,
         };
       });
 
       setClasses(formatted);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setErrorMessage(e.message || "Lỗi nạp danh sách lớp học.");
     } finally {
       setLoading(false);
     }
@@ -133,40 +124,30 @@ export default function TeacherClassesPage() {
 
     setIsSubmitting(true);
     try {
-      const classId = `cls_${Date.now().toString().slice(-3)}`;
-      const code = `IELTS${Math.floor(1000 + Math.random() * 9000)}`;
       const finalSchedule = encodeScheduleWithStatus(schedule.trim() || "Thứ 2 - Thứ 4 (18:00 - 20:00)", createStatus);
 
-      const { error } = await supabase.from("classes").insert([
-        {
-          id: classId,
+      const res = await fetch("/api/teacher/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: className.trim(),
-          code,
-          teacher_id: user.id,
-          max_slots: 30,
           schedule: finalSchedule,
-        },
-      ]);
+          max_slots: 30,
+        }),
+      });
 
-      if (error) {
-        console.error("Class creation error:", error.message || error);
-        alert("Lỗi khi tạo lớp học: " + (error.message || "Không thể lưu vào CSDL"));
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi khi tạo lớp học: " + (data.error || "Không thể lưu vào CSDL"));
         return;
-      }
-
-      // Sync Neo4j teacher manages class
-      try {
-        const { syncTeacherManagesClass } = await import("@/lib/neo4j");
-        await syncTeacherManagesClass(user.id, classId);
-      } catch (err) {
-        console.warn("Neo4j relationship sync warning:", err);
       }
 
       setClassName("");
       setShowCreateModal(false);
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi tạo lớp học: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -190,25 +171,27 @@ export default function TeacherClassesPage() {
     try {
       const finalSchedule = encodeScheduleWithStatus(editSchedule.trim(), editStatus);
 
-      const { error } = await supabase
-        .from("classes")
-        .update({
+      const res = await fetch(`/api/teacher/classes/${editingClass.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: editName.trim(),
-          code: editCode.trim(),
           schedule: finalSchedule,
           max_slots: Number(editMaxSlots) || 30,
-        })
-        .eq("id", editingClass.id);
+        }),
+      });
 
-      if (error) {
-        alert("Lỗi cập nhật lớp học: " + error.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi cập nhật lớp học: " + (data.error || "Không thể cập nhật"));
         return;
       }
 
       setShowEditModal(false);
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi cập nhật lớp: " + err.message);
     } finally {
       setIsEditingSubmitting(false);
     }
@@ -218,14 +201,20 @@ export default function TeacherClassesPage() {
     if (!confirm(`Bạn có chắc chắn muốn xóa lớp học "${className}" không?\nLưu ý: Thao tác này sẽ giải tán lớp học khỏi hệ thống.`)) return;
 
     try {
-      const { error } = await supabase.from("classes").delete().eq("id", classId);
-      if (error) {
-        alert("Lỗi xóa lớp học: " + error.message);
+      const res = await fetch(`/api/teacher/classes/${classId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert("Lỗi xóa lớp học: " + (data.error || "Không thể xóa lớp học"));
         return;
       }
+
       fetchClasses();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Lỗi kết nối khi xóa lớp: " + err.message);
     }
   };
 
@@ -254,34 +243,34 @@ export default function TeacherClassesPage() {
 
   return (
     <TeacherLayout>
-      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
+      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#6d3807] uppercase tracking-wider font-bold mb-1">
-              <BookOpen className="w-4 h-4 text-[#6d3807]" />
-              <span>Teacher Portal &bull; Classrooms & Lifecycle Management</span>
+            <div className="flex items-center space-x-2 text-xs text-brand-600 uppercase tracking-wider font-bold mb-1">
+              <BookOpen className="w-4 h-4 text-brand-600" />
+              <span>Giáo viên &bull; Classrooms &amp; Lifecycle Management</span>
             </div>
-            <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="font-headline text-3xl font-bold text-ink tracking-tight">
               Quản Lý Lớp Học &amp; Danh Sách Học Viên
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Quản lý thông tin lớp học, theo dõi sĩ số, cập nhật trạng thái vòng đời lớp học và phân bổ bài thi.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 cursor-pointer font-headline"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 cursor-pointer font-headline"
           >
-            <PlusCircle className="w-4 h-4 text-[#ffb782]" />
+            <PlusCircle className="w-4 h-4 text-accent-400" />
             <span>+ Tạo Lớp Học Mới</span>
           </button>
         </div>
 
         {/* Lifecycle Status Filter Bar */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-[#d8c2b6]/40">
-          <span className="text-xs font-bold text-[#6d3807] uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-line/40">
+          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
             <Layers className="w-4 h-4" /> Trạng Thái Lớp:
           </span>
           {[
@@ -295,8 +284,8 @@ export default function TeacherClassesPage() {
               onClick={() => setStatusTab(tab.id as any)}
               className={`px-4 py-2 rounded-xl text-xs font-bold font-headline transition-all cursor-pointer whitespace-nowrap ${
                 statusTab === tab.id
-                  ? "bg-[#6d3807] text-white shadow-xs"
-                  : "bg-white text-[#52443a] hover:bg-[#fff8f5] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-xs"
+                  : "bg-white text-ink-muted hover:bg-surface-alt border border-line"
               }`}
             >
               {tab.label}
@@ -304,75 +293,92 @@ export default function TeacherClassesPage() {
           ))}
         </div>
 
+        {/* Error Notification with Retry */}
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{errorMessage}</span>
+            </div>
+            <button
+              onClick={fetchClasses}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Thử lại</span>
+            </button>
+          </div>
+        )}
+
         {/* Classes Grid */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
-            <span>Đang nạp danh sách lớp học từ PostgreSQL...</span>
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
+            <span>Đang nạp danh sách lớp học từ API PostgreSQL...</span>
           </div>
         ) : filteredClasses.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <BookOpen className="w-12 h-12 text-[#6d3807] mx-auto opacity-50" />
-            <p className="text-xs text-[#52443a]">Không tìm thấy lớp học nào thuộc trạng thái này.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <BookOpen className="w-12 h-12 text-brand-600 mx-auto opacity-50" />
+            <p className="text-xs text-ink-muted">Không tìm thấy lớp học nào thuộc trạng thái này.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClasses.map((cls) => (
               <div
                 key={cls.id}
-                className="bg-[#ffffff] p-6 rounded-3xl border border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all group"
+                className="bg-white p-6 rounded-3xl border border-line shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all group"
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="px-2.5 py-1 bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] text-xs font-bold rounded-lg font-mono">
+                    <span className="px-2.5 py-1 bg-brand-50 text-brand-600 border border-brand-300 text-xs font-bold rounded-lg font-mono">
                       Mã: {cls.code}
                     </span>
                     {getStatusBadge(cls.status)}
                   </div>
 
-                  <h3 className="font-bold text-lg text-[#211a16] group-hover:text-[#6d3807] transition-colors font-headline">
+                  <h3 className="font-bold text-lg text-ink group-hover:text-brand-600 transition-colors font-headline">
                     {cls.name}
                   </h3>
 
-                  <div className="flex justify-between items-center text-xs text-[#52443a]">
+                  <div className="flex justify-between items-center text-xs text-ink-muted">
                     <span className="flex items-center">
-                      <Users className="w-3.5 h-3.5 mr-1 text-[#6d3807]" />
+                      <Users className="w-3.5 h-3.5 mr-1 text-brand-600" />
                       <strong>{cls.student_count}</strong> / {cls.max_slots} Học viên
                     </span>
-                    <span className="text-[11px] font-mono text-[#857469]">ID: {cls.id}</span>
+                    <span className="text-[11px] font-mono text-ink-subtle">ID: {cls.id}</span>
                   </div>
 
-                  <div className="pt-2 border-t border-[#d8c2b6]/30 text-xs text-[#6d3807] font-medium flex items-center">
-                    <Clock className="w-3.5 h-3.5 mr-1.5 shrink-0 text-[#6d3807]" />
+                  <div className="pt-2 border-t border-line/30 text-xs text-brand-600 font-medium flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1.5 shrink-0 text-brand-600" />
                     <span>Lịch học: {cls.schedule}</span>
                   </div>
                 </div>
 
                 {/* Class Card Footer Actions */}
-                <div className="pt-3 border-t border-[#d8c2b6]/40 flex items-center space-x-2">
+                <div className="pt-3 border-t border-line/40 flex items-center space-x-2">
                   <Link
                     href={`/teacher/classes/${cls.id}`}
-                    className="flex-1 py-2.5 bg-[#6d3807] text-white hover:bg-[#8a4f1e] text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs font-headline"
+                    className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs font-headline"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-[#ffb782]" />
+                    <BookOpen className="w-3.5 h-3.5 text-accent-400" />
                     <span>Vào Lớp Học</span>
                   </Link>
 
                   <button
                     onClick={() => copyInviteLink(cls.code)}
-                    className="p-2.5 bg-[#fff8f5] border border-[#d8c2b6] hover:bg-[#f9ebe4] text-[#6d3807] rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                    className="p-2.5 bg-surface-alt border border-line hover:bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center transition-all cursor-pointer"
                     title="Copy Link Mời Học Sinh"
                   >
                     {copiedCode === cls.code ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     ) : (
-                      <Copy className="w-4 h-4 text-[#6d3807]" />
+                      <Copy className="w-4 h-4 text-brand-600" />
                     )}
                   </button>
 
                   <button
                     onClick={() => openEditModal(cls)}
-                    className="p-2.5 bg-[#fff8f5] border border-[#d8c2b6] hover:bg-[#f9ebe4] text-[#6d3807] rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                    className="p-2.5 bg-surface-alt border border-line hover:bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center transition-all cursor-pointer"
                     title="Chỉnh Sửa Thông Tin Lớp"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -394,20 +400,20 @@ export default function TeacherClassesPage() {
         {/* Modal: Create Class */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2 font-headline">
-                  <PlusCircle className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2 font-headline">
+                  <PlusCircle className="w-5 h-5 text-brand-600" />
                   <span>Tạo Lớp Học Mới</span>
                 </h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-[#857469] cursor-pointer">
+                <button onClick={() => setShowCreateModal(false)} className="text-ink-subtle cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateClass} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Tên Lớp Học (*)
                   </label>
                   <input
@@ -416,12 +422,12 @@ export default function TeacherClassesPage() {
                     placeholder="Ví dụ: IELTS Master 7.5 - Khóa K25"
                     value={className}
                     onChange={(e) => setClassName(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Lịch Học Offline / Online
                   </label>
                   <input
@@ -430,18 +436,18 @@ export default function TeacherClassesPage() {
                     placeholder="Ví dụ: Thứ 2 - Thứ 4 - Thứ 6 (19:30 - 21:30)"
                     value={schedule}
                     onChange={(e) => setSchedule(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Trạng Thái Khai Giảng
                   </label>
                   <select
                     value={createStatus}
                     onChange={(e) => setCreateStatus(e.target.value as any)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                   >
                     <option value="ACTIVE">🟢 Đang Diễn Ra (Đang giảng dạy)</option>
                     <option value="UPCOMING">🟡 Sắp Khai Giảng (Tuyển sinh)</option>
@@ -453,16 +459,16 @@ export default function TeacherClassesPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5] cursor-pointer"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Xác Nhận Tạo Lớp</span>
                   </button>
                 </div>
@@ -474,20 +480,20 @@ export default function TeacherClassesPage() {
         {/* Modal: Edit Class */}
         {showEditModal && editingClass && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2 font-headline">
-                  <Edit3 className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2 font-headline">
+                  <Edit3 className="w-5 h-5 text-brand-600" />
                   <span>Chỉnh Sửa Thông Tin Lớp Học</span>
                 </h2>
-                <button onClick={() => setShowEditModal(false)} className="text-[#857469] cursor-pointer">
+                <button onClick={() => setShowEditModal(false)} className="text-ink-subtle cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleUpdateClass} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Tên Lớp Học (*)
                   </label>
                   <input
@@ -495,42 +501,41 @@ export default function TeacherClassesPage() {
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
-                      Mã Lớp Học (*)
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
+                      Mã Lớp Học
                     </label>
                     <input
                       type="text"
-                      required
+                      disabled
                       value={editCode}
-                      onChange={(e) => setEditCode(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-mono font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-gray-100 border border-line rounded-xl text-xs font-mono font-bold text-gray-500 cursor-not-allowed"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Sức Chứa (Tối đa)
                     </label>
                     <input
                       type="number"
                       required
                       min="1"
-                      max="100"
+                      max="500"
                       value={editMaxSlots}
                       onChange={(e) => setEditMaxSlots(Number(e.target.value))}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Lịch Học
                   </label>
                   <input
@@ -538,18 +543,18 @@ export default function TeacherClassesPage() {
                     required
                     value={editSchedule}
                     onChange={(e) => setEditSchedule(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                     Trạng Thái Vòng Đời Lớp Học (*)
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as any)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                   >
                     <option value="ACTIVE">🟢 Đang Diễn Ra (Đang trong thời gian học)</option>
                     <option value="COMPLETED">🔴 Đã Hoàn Thành (Kết thúc khóa & lưu trữ điểm)</option>
@@ -561,16 +566,16 @@ export default function TeacherClassesPage() {
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5] cursor-pointer"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isEditingSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isEditingSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isEditingSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Cập Nhật Thông Tin</span>
                   </button>
                 </div>

@@ -1,0 +1,3 @@
+789c2ded9b24aec7a2879dced624273eb8e2bc146de6ef3caf1a96893358f2ee  handoff/tasks/TASK-001-phan-quyen-api/verify.sh
+fbaaa22fd9f76bba36bc15472d0255780d416b7f4e56e3d0874f29830034db0c  tests/api-auth.test.ts
+38f6a895eb917e3efac3ee59ea682e9d4b33ef23fd16c4117cf132b573225140  vitest.config.ts

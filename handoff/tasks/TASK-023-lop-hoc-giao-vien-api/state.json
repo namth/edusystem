@@ -1,0 +1,69 @@
+{
+  "id": "TASK-023",
+  "title": "Lớp học của giáo viên qua API pg (lớp, thành viên, giao đề, thêm học sinh)",
+  "status": "accepted",
+  "conversation_id": "3e17f389-c8d3-414f-87d8-3586ea7e1851",
+  "history": [
+    {
+      "at": "2026-10-31T16:12:40",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T16:14:54",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T16:17:17",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T16:30:48",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T16:33:23",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-023-lop-hoc-giao-vien-api/verify.sh",
+    "tests/admin-api.test.ts",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/class-roadmap-ui.test.ts",
+    "tests/client-bundle-safety.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-attempts-api.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exam-runner-ui.test.ts",
+    "tests/exam-scoring.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/flashcards-uploads-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lesson-library-ui.test.ts",
+    "tests/lesson-player.test.ts",
+    "tests/lesson-preview.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/scoring-standards-api.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/standard-selection.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/teacher-classes-api.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "docs/db-migration-004-enrollments-assignments.sql"
+  ],
+  "via": "agy"
+}

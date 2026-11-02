@@ -1,63 +1,35 @@
-# DANH MỤC TÍNH NĂNG & NỢ KỸ THUẬT (FEATURE INDEX & TECHNICAL DEBT)
-**Dự án:** English Learning & AI Mock Test System  
-**Ngày rà soát:** 25/07/2026
+# Danh mục tính năng
 
----
+> Cập nhật 31/10/2026. Nguồn chuẩn: `CONTEXT.md` (bất biến), `docs/14-decisions.md` (DEC), `docs/features/*.md` (đặc tả), `handoff/KE-HOACH.md` (tiến độ).
 
-## 1. Tính năng Đã Hoàn thiện (Completed Features)
+## Nền tảng & bảo mật
+- Đăng nhập JWT HS256 trong cookie httpOnly; mật khẩu băm scrypt; không bí mật viết cứng (`JWT_SECRET`, `DATABASE_URL`… bắt buộc từ môi trường).
+- Mọi API route kiểm tra phiên/vai trò bằng `lib/api-auth.ts` (`requireRole`, token nội bộ cho worker). Ngoại lệ công khai có chủ đích: `app/api/auth/*`, `app/api/classes/lookup/[ref]`.
+- Trình duyệt không truy cập DB: mọi dữ liệu qua API route dùng `queryPg`. Upload file qua `/api/uploads` (server đẩy lên Supabase Storage bằng service role).
+- Test: Vitest + PGlite (Postgres thật trong bộ nhớ), `npm test`.
 
-### 👨‍🏫 Phân hệ Giáo viên (Teacher)
-- [x **Bộ công cụ Tạo Đề thi 4 Kỹ năng (Interactive Exam Creator):**
-  - Đóng gói đầy đủ các dạng bài: Listening MC, Reading Passage & Sub-questions, Writing Task 1/2, Flashcard Grid 3 cột, Sentence Ordering, Matching Pairs, Fill-in-the-blank (Dropdown / Option Bank).
-  - Tích hợp **AI Voice Generator Realtime** sử dụng Google Gemini 3.1/2.5 Flash TTS (`app/api/tts/route.ts`) phát thử âm thanh trực tiếp với accent tùy chọn (Male / Female, US/UK).
-  - Tách rời văn bản bài đọc (`stimulusText`) và văn bản tạo giọng đọc AI (`stimulusAudioText`).
-  - Hỗ trợ Chỉnh sửa (Edit) và Xóa (Delete) các câu hỏi phụ/thẻ flashcard trong giao diện preview.
-  - Quản lý trạng thái form độc lập khi chuyển đổi giữa các kỹ năng và dạng câu hỏi (`resetCategoryStates`).
-- [x] **Quản lý Bài thi & Phân loại Khóa học (Test Manager Dashboard):**
-  - Điều hướng dạng Tab theo danh mục Khóa học (Courses).
-  - Hiển thị badge số lượng đề thi cho từng khóa học (`app/teacher/tests/page.tsx`).
-- [x] **Chấm bài & Nhận xét Bài thi:**
-  - Giao diện xem bài làm học sinh, chấm điểm và trả nhận xét (`app/teacher/grading/page.tsx`).
+## Giáo viên
+- **Khóa học & lộ trình** (`/teacher/tests`): cây unit → bài học/đề, kéo thả cập nhật tại chỗ; chuẩn chấm mặc định của khóa.
+- **Kho đề** & soạn đề (`/teacher/tests/create`): `QuestionSetEditor` 15 dạng câu, chọn chuẩn chấm; **AI Import** DOCX/PDF/ảnh (FEAT-009).
+- **Kho bài học** (`/teacher/lessons`, FEAT-010): soạn bài từ khối câu hỏi dùng chung, xem trước như học sinh, gắn vào lộ trình.
+- **Thư viện flashcard** dùng chung (`/teacher/flashcards`).
+- **Lớp học** (`/teacher/classes`): tạo lớp, mã lớp, thêm học sinh (mật khẩu tạm), giao đề; tab Lộ trình: chế độ mở bài (thủ công / mở hết / tuần tự), ngưỡng hoàn thành, mở riêng cho học sinh, bảng tiến độ.
+- **Chấm bài** (`/teacher/grading`): sửa điểm từng kỹ năng theo chuẩn chấm; **mua slot AI** (`/teacher/slots`, giá tính ở server).
 
-### 👨‍🎓 Phân hệ Học sinh (Student)
-- [x] **Giao diện Làm bài thi 4 Kỹ năng (Exam Runner):**
-  - Đếm ngược thời gian làm bài, audio player cho kỹ năng Listening, trình soạn thảo bài viết Writing (`app/student/exam/[examId]/page.tsx`).
-- [x] **Trang Lớp học & Đăng ký Khóa học:**
-  - Xem danh sách lớp học, khóa học đã đăng ký, hiển thị thông tin học phí & mã QR thanh toán chuyển khoản (`app/student/page.tsx`, `app/student/class/[classId]/page.tsx`).
-- [x] **Phân tích Kết quả & Tiến độ (Analytics):**
-  - Biểu đồ theo dõi sự tiến bộ các kỹ năng IELTS qua các bài mock test (`app/student/analytics/page.tsx`).
+## Học sinh
+- Trang chủ: lớp của tôi + tham gia lớp bằng mã (không bán khóa học trên app — DEC-019); tham gia qua link mời `/join/[classId]`.
+- Tab **Lộ trình** trong lớp; **làm bài học** (`/student/lesson/[id]`): chấm khách quan ngay, AI chấm tự luận nền, làm lại không giới hạn.
+- **Làm đề** (`/student/exam/[id]`, FEAT-011): giờ theo server, chia phần kỹ năng, ghi âm Speaking, chấm theo chuẩn (IELTS/TOEIC/HSK/Thang 10…), xem lại kết quả; analytics.
 
-### 🛡️ Phân hệ Quản trị viên (Admin)
-- [x] **Quản lý Học sinh & Giáo viên:**
-  - Danh sách người dùng, xem chi tiết lịch sử học tập và làm bài của học sinh (`app/admin/students/page.tsx`, `app/admin/students/[id]/page.tsx`).
-- [x] **Duyệt Đơn Đăng ký & Nạp Slot:**
-  - Duyệt đơn mua khóa học và cấp slot tài khoản cho giáo viên (`app/admin/orders/page.tsx`, `app/admin/slots/page.tsx`).
+## Admin
+- Tài khoản, học sinh, giáo viên, lớp; duyệt đơn mua slot (tự cộng slot).
+- **Chuẩn chấm điểm** (`/admin/scoring-standards`): phần thi theo kỹ năng, quy đổi tuyến tính / bảng tra, quy tắc tổng; rubric tiêu chí AI (`/admin/rubrics`); cấu hình model AI (`/admin/settings`).
 
-### ⚙️ Hạ tầng Backend & Dữ liệu
-- [x] Tích hợp AI Engine (`lib/ai-engine.ts`) qua Portkey AI Gateway / OpenAI.
-- [x] Thiết lập Redis Streams & Event Producer (`lib/redis-queue.ts`, `app/api/events/route.ts`).
-- [x] Đã cấu hình và kết nối Neo4j Graph DB (`lib/neo4j.ts`) đồng bộ mối quan hệ `HAS_EXAM`.
-- [x] Đã thiết lập Schema 7 bảng cơ sở dữ liệu trên PostgreSQL / Supabase (`lib/db-schema.ts`, `lib/db-init.js`).
+## Hạ tầng
+- PostgreSQL (`lib/db-pg.ts`, `ensureSchema` chạy migration `docs/db-migration-00*.sql`), Neo4j (đồng bộ phụ), Redis Streams + `worker/grading-worker.js` (chấm AI nền bài học & đề thi).
+- Deploy: `scripts/deploy.sh` (build image ở máy local, đẩy lên server). Phối hợp Antigravity: `handoff/`, `scripts/handoff.py`, `scripts/agy-worktree.sh` (worktree song song, 2 tài khoản, máy thợ qua SSH).
 
----
-
-## 2. Tính năng Đang Làm Dở (In-Progress / Partial Features)
-
-- [ ] **Kết nối dữ liệu thực từ Supabase vào Giao diện Frontend:**
-  - Hầu hết các trang Dashboard (Student, Teacher, Admin) đang đọc từ dữ liệu giả lập `lib/mock-data.ts` thay vì query trực tiếp qua Supabase Client `lib/supabase.ts`.
-- [ ] **Worker xử lý Redis Streams tự động:**
-  - API Producer `/api/events` đã đẩy sự kiện thành công vào Redis Stream, nhưng cần background worker chạy liên tục (daemon process) để tiêu thụ tin nhắn thay vì gọi hàm trực tiếp.
-- [ ] **Chấm bài Nói (Speaking Auto-Grading) với Realtime Audio Recording:**
-  - Giao diện Speaking hiện mới chỉ hỗ trợ xem đề câu hỏi, chưa có bộ thu âm trực tiếp WebRTC/MediaRecorder trên giao diện làm bài của học sinh.
-
----
-
-## 3. Rà soát Nợ Kỹ thuật (Technical Debt & Mock Data Audit)
-
-| Vị trí / File | Loại Nợ (Type) | Chi Tiết & Rủi Ro | Hướng Khắc Phục Khuyên Dùng |
-| :--- | :--- | :--- | :--- |
-| `lib/mock-data.ts` | **Hardcoded / Mock Data** | Chứa toàn bộ dữ liệu tĩnh về Khóa học, Bài thi, Lớp học, Đơn hàng (`INITIAL_COURSES`, `INITIAL_TESTS`, `INITIAL_CLASSES`). | Chuyển đổi các Server Components / API Routes sang truy vấn PostgreSQL (Supabase) hoặc Neo4j. |
-| `app/student/page.tsx` | **Mock UI** | Đang dùng ảnh QR tĩnh từ Unsplash cho mục thanh toán chuyển khoản học phí. | Tích hợp thư viện VietQR / SePay để sinh mã QR động theo đúng số tiền và cú pháp chuyển khoản. |
-| `lib/ai-engine.ts` (Dòng 4) | **Hardcoded API Key Fallback** | Key Portkey AI fallback đang được hardcode trực tiếp trong source code nếu thiếu `.env`. | Xóa bỏ fallback hardcode, bắt buộc đọc từ `process.env.PORTKEY_API_KEY` để đảm bảo bảo mật. |
-| `app/teacher/grading/page.tsx` | **Mock Data Logic** | Đang hardcode tên bài thi `sub.exam_id === "test_01" ? "IELTS Mock Standard #01" : "Đề Thi Khác"`. | Join bảng `exams` trên Supabase để lấy tiêu đề chính xác theo `exam_id`. |
-| `app/student/exam/[examId]/page.tsx` | **Mock State** | Khi học sinh nộp bài, kết quả đang được lưu vào Local State / Session tạm thời. | Đẩy dữ liệu câu trả lời vào bảng `submissions` trên Supabase qua API `/api/submissions`. |
+## Chưa làm / ngoài phạm vi
+- Bán khóa học cho học sinh (DEC-019).
+- Cổng thanh toán tự động cho đơn mua slot (đang duyệt tay).
+- Dạng Speaking trong bài học (chỉ có trong đề thi).

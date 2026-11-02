@@ -1,0 +1,40 @@
+{
+  "id": "TASK-002",
+  "title": "Gỡ bí mật viết cứng & luồng mật khẩu plaintext",
+  "status": "accepted",
+  "conversation_id": "e127c3b3-1cbe-455f-bd8c-4ba13a512769",
+  "history": [
+    {
+      "at": "2026-10-31T07:53:58",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T08:00:37",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T08:00:58",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T08:05:44",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T08:06:23",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-002-go-bi-mat-mat-khau/verify.sh",
+    "tests/secrets-password.test.ts",
+    "tests/api-auth.test.ts",
+    "vitest.config.ts"
+  ],
+  "via": "agy"
+}

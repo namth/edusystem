@@ -1,2490 +1,696 @@
 "use client";
 
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
-import { evaluateWritingSubmission, evaluateSpeakingSubmission } from "@/lib/ai-engine";
-import { getMediaStimulusInfo, parseSentenceRewriteCue } from "@/lib/question-content-types";
-import { uploadAudioToSupabaseStorage } from "@/lib/audio-storage";
+import StudentLayout from "@/components/StudentLayout";
+import LessonPlayer, { FlashcardItem } from "@/components/lesson-player/LessonPlayer";
+import { emptyExamAnswerFor, groupQuestionsBySkill, formatRemaining } from "@/lib/exam-player";
+import { countAnswered } from "@/lib/lesson-player";
+import { sanitizeStimulusHtml } from "@/lib/stimulus-html";
+import { summarizeAttemptResult } from "@/lib/attempt-summary";
 import {
-  Timer,
-  ArrowLeft,
-  Star,
-  CheckCircle2,
-  Loader2,
-  Play,
-  Volume2,
-  Mic,
-  Square,
-  MoveUp,
-  MoveDown,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Layers,
-  RefreshCw,
-  Radio,
-  VolumeX,
-  User,
-  X,
+  buildScreens, navStatus, screenIndexOfQuestion, clampScreenIndex,
+  unansweredNumbers, formatSavedAt, keyToOptionLetter, isTypingTarget, applyOptionShortcut,
+} from "@/lib/exam-layout";
+import {
+  Timer, AlertCircle, Loader2, Clock, FileCheck, ExternalLink,
+  ArrowLeft, ArrowRight, Flag, LayoutGrid, Volume2, GripVertical, X, CheckCircle2,
 } from "lucide-react";
 
-interface QuestionItem {
-  id: string;
-  number: number;
-  skill: "Reading" | "Listening" | "Writing" | "Speaking";
-  category: string;
-  prompt?: string;
-  stimulus_text?: string;
-  stimulus_audio_url?: string;
-  flashcard_ids?: string[];
-  options?: any;
-  passage?: string;
-  content: any;
+interface ExamContentData {
+  exam: { id: string; title: string; duration_minutes: number; skills?: string[] };
+  standard?: { id: string; name: string; sections?: { skill: string; min: number; max: number }[] };
+  questions: any[];
+  flashcards?: FlashcardItem[];
 }
 
-// Memoized Stimulus HTML Renderer to prevent re-evaluating HTML on parent renders
-const StimulusContentRenderer = memo(function StimulusContentRenderer({ html }: { html: string }) {
-  // Replace &nbsp; with regular spaces so the browser can wrap text at word boundaries
-  const sanitized = html.replace(/&nbsp;/g, " ").replace(/\u00A0/g, " ");
-  return (
-    <div
-      className="p-6 md:p-8 rounded-2xl bg-white border border-[#d8c2b6] shadow-sm rich-stimulus-content"
-      dangerouslySetInnerHTML={{ __html: sanitized }}
-    />
-  );
-});
-
-// Isolated Exam Countdown Timer Component to prevent 1-second parent page re-renders
-const ExamCountdownTimer = memo(function ExamCountdownTimer({ initialSeconds }: { initialSeconds: number }) {
-  const [secsLeft, setSecsLeft] = useState(initialSeconds);
-
-  useEffect(() => {
-    setSecsLeft(initialSeconds);
-  }, [initialSeconds]);
-
-  useEffect(() => {
-    if (secsLeft <= 0) return;
-    const timer = setInterval(() => {
-      setSecsLeft((t) => (t > 0 ? t - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [initialSeconds]);
-
-  const m = Math.floor(secsLeft / 60);
-  const s = secsLeft % 60;
-  const formatted = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-
-  const isWarning = secsLeft < 300;
-
-  return (
-    <div className={`flex items-center gap-2 font-mono text-sm font-extrabold px-4 py-2 rounded-xl border shadow-2xs transition-all ${
-      isWarning
-        ? "bg-rose-600 text-white border-rose-700 animate-pulse"
-        : "bg-[#fff1ea] text-[#6d3807] border-2 border-[#ffb782]"
-    }`}>
-      <Timer className={`w-4 h-4 ${isWarning ? "text-white" : "text-[#6d3807]"}`} />
-      <span className="tracking-wider">{formatted}</span>
-    </div>
-  );
-});
-
-interface QuestionItem {
+interface AttemptData {
   id: string;
-  number: number;
-  skill: "Reading" | "Listening" | "Writing" | "Speaking";
-  category: string;
-  prompt?: string;
-  stimulus_text?: string;
-  stimulus_audio_url?: string;
-  flashcard_ids?: string[];
-  content: any;
+  started_at: string;
+  deadline_at: string;
+  status: "IN_PROGRESS" | "GRADED" | "GRADING" | "NEEDS_REVIEW";
+  answers?: Record<string, unknown>;
+  section_scores?: Record<string, { score: number | null; earned?: number; max?: number }>;
+  total_score?: number | null;
+  passed?: boolean | null;
+  is_late?: boolean;
+  standard_snapshot?: any;
 }
 
-export default function ExamWorkspacePage() {
+function StudentExamInner() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
-  const examId = params.examId as string;
+  const examId = (params?.examId || "") as string;
+  const classId = searchParams.get("classId") || undefined;
 
-  const [questions, setQuestions] = useState<QuestionItem[]>([]);
-  const [examTitle, setExamTitle] = useState("IELTS Academic Mock Test");
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
-  const [timeLeft, setTimeLeft] = useState(2720);
-  const [showSidePanel, setShowSidePanel] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedSubId, setSubmittedSubId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState<"loading" | "start" | "running" | "submitting" | "result" | "error">("loading");
+  const [examMeta, setExamMeta] = useState<{ id: string; title: string; duration_minutes: number } | null>(null);
+  const [contentData, setContentData] = useState<ExamContentData | null>(null);
+  const [attempt, setAttempt] = useState<AttemptData | null>(null);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [activeSkill, setActiveSkill] = useState<string>("");
+  const [currentScreenIdx, setCurrentScreenIdx] = useState<number>(0);
+  const [flaggedIds, setFlaggedIds] = useState<Record<string, boolean>>({});
+  const [saveStatusText, setSaveStatusText] = useState<string>("");
+  const [splitRatio, setSplitRatio] = useState<number>(55);
+  const [fontSize, setFontSize] = useState<"text-sm" | "text-base" | "text-lg">("text-base");
+  const [mobileSplitTab, setMobileSplitTab] = useState<"passage" | "questions">("passage");
+  const [showNavigator, setShowNavigator] = useState<boolean>(true);
+  const [showMobileNav, setShowMobileNav] = useState<boolean>(false);
+  const [showExitModal, setShowExitModal] = useState<boolean>(false);
+  const [now, setNow] = useState<number>(Date.now());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [startLoading, setStartLoading] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
-  // Audio Playback Tracking State (loading / playing per button ID)
-  const [audioLoadingId, setAudioLoadingId] = useState<string | null>(null);
-  const [audioPlayingId, setAudioPlayingId] = useState<string | null>(null);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const answersRef = useRef<Record<string, unknown>>({});
+  answersRef.current = answers;
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const gradingPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoSubmittedRef = useRef<boolean>(false);
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const passageScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Active Flashcard Index & Slide Direction per question
-  const [flashcardIndexMap, setFlashcardIndexMap] = useState<Record<string, number>>({});
-  const [slideDirectionMap, setSlideDirectionMap] = useState<Record<string, "next" | "prev">>({});
-
-  // Active Selected Option Chip for Drag & Drop / Click Assignment
-  const [activeSelectedChip, setActiveSelectedChip] = useState<string | null>(null);
-
-  // Custom Pointer-Based Drag Engine State (ORDERING)
-  const [activePointerDragIdx, setActivePointerDragIdx] = useState<number | null>(null);
-  const [pointerHoverIdx, setPointerHoverIdx] = useState<number | null>(null);
-  const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
-  const [pointerDragItemText, setPointerDragItemText] = useState<string | null>(null);
-  const [pointerDragSize, setPointerDragSize] = useState<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null);
-  const pointerDragInfoRef = useRef<{ qId: string; startIdx: number; currentHoverIdx: number; items: string[] } | null>(null);
-  // Custom Pointer Drag State for MATCHING Questions
-  const [matchingDragState, setMatchingDragState] = useState<{
-    qId: string;
-    sourceSlotIdx: number | null;
-    sourceBankWord: string | null;
-    dragWordText: string;
-  } | null>(null);
-  const [matchingHoverSlotIdx, setMatchingHoverSlotIdx] = useState<number | null>(null);
-  const [matchingPointerPos, setMatchingPointerPos] = useState<{ x: number; y: number } | null>(null);
-  const [matchingDragSize, setMatchingDragSize] = useState<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null);
-  const matchingDragRef = useRef<{ qId: string; sourceSlotIdx: number | null; hoverSlotIdx: number | null; dragWordText: string } | null>(null);
-
-  // Custom Pointer Drag State for FILL_IN Questions
-  const [fillInDragState, setFillInDragState] = useState<{
-    qId: string;
-    sourceGapIdx: number | null;
-    sourceBankWord: string | null;
-    dragWordText: string;
-  } | null>(null);
-  const [fillInHoverGapIdx, setFillInHoverGapIdx] = useState<number | null>(null);
-  const [fillInPointerPos, setFillInPointerPos] = useState<{ x: number; y: number } | null>(null);
-  const [fillInDragSize, setFillInDragSize] = useState<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null);
-  const fillInDragRef = useRef<{ qId: string; sourceGapIdx: number | null; hoverGapIdx: number | null; dragWordText: string } | null>(null);
-
-  // Microphone Recording State
-  const [isRecordingMap, setIsRecordingMap] = useState<Record<string, boolean>>({});
-  const [recordingTimerMap, setRecordingTimerMap] = useState<Record<string, number>>({});
-  const [recordedAudioMap, setRecordedAudioMap] = useState<Record<string, string>>({});
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const speechRecognitionRef = useRef<any>(null);
-  const recordingIntervalRef = useRef<any>(null);
-
-  // ----------------------------------------------------
-  // Load Specific Exam and Its Questions from Database
-  // ----------------------------------------------------
-  useEffect(() => {
-    const fetchExamData = async () => {
-      try {
-        setLoading(true);
-        const { data: examData, error: examErr } = await supabase
-          .from("exams")
-          .select("*")
-          .eq("id", examId)
-          .maybeSingle();
-
-        if (examErr || !examData) {
-          console.error("Exam load error:", examErr);
-          setLoading(false);
-          return;
-        }
-
-        setExamTitle(examData.title || "Đề Thi Thử 4 Kỹ Năng");
-        setTimeLeft((examData.duration_minutes || 90) * 60);
-
-        const qList: QuestionItem[] = [];
-        let num = 1;
-
-        if (examData.question_ids && Array.isArray(examData.question_ids) && examData.question_ids.length > 0) {
-          const { data: qData, error: qErr } = await supabase
-            .from("questions")
-            .select("*")
-            .in("id", examData.question_ids);
-
-          if (!qErr && qData && qData.length > 0) {
-            const qMap = new Map(qData.map((q: any) => [q.id, q]));
-            examData.question_ids.forEach((id: string) => {
-              const qRow = qMap.get(id);
-              if (qRow) {
-                const fcIds = qRow.flashcard_ids || qRow.content?.flashcard_ids || qRow.content?.flashcardIds || [];
-                qList.push({
-                  id: qRow.id,
-                  number: num++,
-                  skill: qRow.skill,
-                  category: qRow.category,
-                  prompt: qRow.prompt || "",
-                  stimulus_text: qRow.stimulus_text || "",
-                  stimulus_audio_url: qRow.stimulus_audio_url || "",
-                  flashcard_ids: fcIds,
-                  content: { ...qRow.content, flashcard_ids: fcIds },
-                  options: qRow.options || qRow.content?.options || [],
-                  passage: qRow.stimulus_text || "",
-                });
-              }
-            });
-          }
-        }
-
-        if (qList.length === 0) {
-          const { data: qData } = await supabase.from("questions").select("*").order("id", { ascending: true });
-          if (qData && qData.length > 0) {
-            qData.forEach((qRow: any) => {
-              const fcIds = qRow.flashcard_ids || qRow.content?.flashcard_ids || qRow.content?.flashcardIds || [];
-              qList.push({
-                id: qRow.id,
-                number: num++,
-                skill: qRow.skill,
-                category: qRow.category,
-                prompt: qRow.prompt || "",
-                stimulus_text: qRow.stimulus_text || "",
-                stimulus_audio_url: qRow.stimulus_audio_url || "",
-                flashcard_ids: fcIds,
-                content: { ...qRow.content, flashcard_ids: fcIds },
-                options: qRow.options || qRow.content?.options || [],
-                passage: qRow.stimulus_text || "",
-              });
-            });
-          }
-        }
-
-        // Resolve Flashcards for any Flashcard questions from 'flashcards' table
-        const allFcIds = new Set<string>();
-        qList.forEach((q) => {
-          if (q.category && q.category.includes("FLASHCARD")) {
-            const ids: string[] = (q as any).flashcard_ids || q.content?.flashcard_ids || q.content?.flashcardIds || [];
-            ids.forEach((id: string) => { if (id) allFcIds.add(id); });
-          }
-        });
-
-        if (allFcIds.size > 0) {
-          const { data: fcRows } = await supabase.from("flashcards").select("*").in("id", Array.from(allFcIds));
-          if (fcRows && fcRows.length > 0) {
-            const fcMap = new Map(fcRows.map((f: any) => [f.id, f]));
-            qList.forEach((q) => {
-              if (q.category && q.category.includes("FLASHCARD")) {
-                const ids: string[] = (q as any).flashcard_ids || q.content?.flashcard_ids || q.content?.flashcardIds || [];
-                const resolvedCards = ids.map((id: string) => {
-                  const row = fcMap.get(id);
-                  if (!row) return null;
-                  return {
-                    id: row.id,
-                    vietnamese_name: row.vietnamese_name,
-                    correct_english_word: row.correct_english_word,
-                    options: row.options || [],
-                    image_url: row.image_url,
-                    audio_url: row.audio_url,
-                  };
-                }).filter(Boolean);
-
-                if (resolvedCards.length > 0) {
-                  q.content = { ...q.content, flashcard_ids: ids, flashcards_resolved: resolvedCards };
-                }
-              }
-            });
-          }
-        }
-
-        setQuestions(qList);
-      } catch (err) {
-        console.error("Exam load exception:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (examId) fetchExamData();
-  }, [examId]);
-
-  // Custom Pointer Drag Handler for ORDERING Questions
-  const handleStartPointerDrag = (
-    e: React.PointerEvent,
-    qId: string,
-    orderedKey: string,
-    startIdx: number,
-    itemText: string,
-    currentOrderedItems: string[]
-  ) => {
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("button")) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const targetEl = e.currentTarget as HTMLElement;
-    const rect = targetEl.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    setPointerPos({ x: e.clientX, y: e.clientY });
-    setActivePointerDragIdx(startIdx);
-    setPointerHoverIdx(startIdx);
-    setPointerDragItemText(itemText);
-    setPointerDragSize({
-      offsetX,
-      offsetY,
-      width: rect.width,
-      height: rect.height,
-    });
-
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-
-    pointerDragInfoRef.current = {
-      qId,
-      startIdx,
-      currentHoverIdx: startIdx,
-      items: [...currentOrderedItems],
-    };
-
-    const handlePointerMove = (moveEvt: PointerEvent) => {
-      moveEvt.preventDefault();
-      setPointerPos({ x: moveEvt.clientX, y: moveEvt.clientY });
-
-      const el = document.elementFromPoint(moveEvt.clientX, moveEvt.clientY);
-      if (el) {
-        const orderItemEl = el.closest("[data-order-idx]");
-        if (orderItemEl) {
-          const targetIdx = parseInt(orderItemEl.getAttribute("data-order-idx") || "-1", 10);
-          if (targetIdx >= 0 && pointerDragInfoRef.current) {
-            if (pointerDragInfoRef.current.currentHoverIdx !== targetIdx) {
-              pointerDragInfoRef.current.currentHoverIdx = targetIdx;
-              setPointerHoverIdx(targetIdx);
-            }
-          }
-        }
-      }
-    };
-
-    const handlePointerUp = (upEvt: PointerEvent) => {
-      upEvt.preventDefault();
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-
-      if (pointerDragInfoRef.current) {
-        const { startIdx: sIdx, currentHoverIdx: hIdx, items } = pointerDragInfoRef.current;
-        if (sIdx !== hIdx && sIdx >= 0 && hIdx >= 0 && hIdx < items.length) {
-          const updated = [...items];
-          const moved = updated.splice(sIdx, 1)[0];
-          updated.splice(hIdx, 0, moved);
-          handleUpdateAnswer(orderedKey, updated);
-        }
-      }
-
-      setActivePointerDragIdx(null);
-      setPointerHoverIdx(null);
-      setPointerPos(null);
-      setPointerDragItemText(null);
-      setPointerDragSize(null);
-      pointerDragInfoRef.current = null;
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-  };
-
-  // Custom Pointer Drag Handler for MATCHING Questions (Supports Slot Swapping)
-  const handleStartMatchingPointerDrag = (
-    e: React.PointerEvent,
-    qId: string,
-    sourceSlotIdx: number | null,
-    sourceBankWord: string | null,
-    dragWordText: string
-  ) => {
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("button")) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const targetEl = e.currentTarget as HTMLElement;
-    const rect = targetEl.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    setMatchingPointerPos({ x: e.clientX, y: e.clientY });
-    setMatchingDragState({
-      qId,
-      sourceSlotIdx,
-      sourceBankWord,
-      dragWordText,
-    });
-    setMatchingHoverSlotIdx(sourceSlotIdx);
-    setMatchingDragSize({
-      offsetX,
-      offsetY,
-      width: rect.width,
-      height: rect.height,
-    });
-
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-
-    matchingDragRef.current = {
-      qId,
-      sourceSlotIdx,
-      hoverSlotIdx: sourceSlotIdx,
-      dragWordText,
-    };
-
-    const handlePointerMove = (moveEvt: PointerEvent) => {
-      moveEvt.preventDefault();
-      setMatchingPointerPos({ x: moveEvt.clientX, y: moveEvt.clientY });
-
-      const el = document.elementFromPoint(moveEvt.clientX, moveEvt.clientY);
-      if (el) {
-        const matchSlotEl = el.closest("[data-match-slot-idx]");
-        if (matchSlotEl) {
-          const targetIdx = parseInt(matchSlotEl.getAttribute("data-match-slot-idx") || "-1", 10);
-          if (targetIdx >= 0 && matchingDragRef.current) {
-            if (matchingDragRef.current.hoverSlotIdx !== targetIdx) {
-              matchingDragRef.current.hoverSlotIdx = targetIdx;
-              setMatchingHoverSlotIdx(targetIdx);
-            }
-          }
-        } else {
-          if (matchingDragRef.current && matchingDragRef.current.hoverSlotIdx !== null) {
-            matchingDragRef.current.hoverSlotIdx = null;
-            setMatchingHoverSlotIdx(null);
-          }
-        }
-      }
-    };
-
-    const handlePointerUp = (upEvt: PointerEvent) => {
-      upEvt.preventDefault();
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-
-      if (matchingDragRef.current) {
-        const { sourceSlotIdx: sIdx, hoverSlotIdx: hIdx, dragWordText: wText } = matchingDragRef.current;
-        if (hIdx !== null && hIdx >= 0) {
-          if (sIdx !== null && sIdx !== hIdx) {
-            const wordAtSource = answers[`${qId}_match_${sIdx}`];
-            const wordAtHover = answers[`${qId}_match_${hIdx}`];
-            handleUpdateAnswer(`${qId}_match_${hIdx}`, wordAtSource);
-            handleUpdateAnswer(`${qId}_match_${sIdx}`, wordAtHover || null);
-          } else if (sIdx === null) {
-            handleUpdateAnswer(`${qId}_match_${hIdx}`, wText);
-          }
-        } else if (sIdx !== null && hIdx === null) {
-          handleUpdateAnswer(`${qId}_match_${sIdx}`, "");
-        }
-      }
-
-      setMatchingDragState(null);
-      setMatchingHoverSlotIdx(null);
-      setMatchingPointerPos(null);
-      setMatchingDragSize(null);
-      matchingDragRef.current = null;
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-  };
-
-  // Custom Pointer Drag Handler for FILL_IN Questions (Supports Gap↔Gap Swap and Bank↔Gap)
-  const handleStartFillInPointerDrag = (
-    e: React.PointerEvent,
-    qId: string,
-    sourceGapIdx: number | null,
-    sourceBankWord: string | null,
-    dragWordText: string
-  ) => {
-    if (e.button !== 0) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const targetEl = e.currentTarget as HTMLElement;
-    const rect = targetEl.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    setFillInPointerPos({ x: e.clientX, y: e.clientY });
-    setFillInDragState({ qId, sourceGapIdx, sourceBankWord, dragWordText });
-    setFillInHoverGapIdx(sourceGapIdx);
-    setFillInDragSize({ offsetX, offsetY, width: rect.width, height: rect.height });
-
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-
-    fillInDragRef.current = { qId, sourceGapIdx, hoverGapIdx: sourceGapIdx, dragWordText };
-
-    const handlePointerMove = (moveEvt: PointerEvent) => {
-      moveEvt.preventDefault();
-      setFillInPointerPos({ x: moveEvt.clientX, y: moveEvt.clientY });
-
-      const el = document.elementFromPoint(moveEvt.clientX, moveEvt.clientY);
-      if (el) {
-        const gapEl = el.closest("[data-gap-slot-idx]");
-        if (gapEl) {
-          const targetIdx = parseInt(gapEl.getAttribute("data-gap-slot-idx") || "-1", 10);
-          if (targetIdx >= 0 && fillInDragRef.current) {
-            if (fillInDragRef.current.hoverGapIdx !== targetIdx) {
-              fillInDragRef.current.hoverGapIdx = targetIdx;
-              setFillInHoverGapIdx(targetIdx);
-            }
-          }
-        } else {
-          if (fillInDragRef.current && fillInDragRef.current.hoverGapIdx !== null) {
-            fillInDragRef.current.hoverGapIdx = null;
-            setFillInHoverGapIdx(null);
-          }
-        }
-      }
-    };
-
-    const handlePointerUp = (upEvt: PointerEvent) => {
-      upEvt.preventDefault();
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-
-      if (fillInDragRef.current) {
-        const { qId: q, sourceGapIdx: sIdx, hoverGapIdx: hIdx, dragWordText: wText } = fillInDragRef.current;
-        if (hIdx !== null && hIdx >= 0) {
-          // Dropped onto a gap slot
-          const sourceKey = sIdx !== null ? `${q}_gap_${sIdx}` : null;
-          const targetKey = `${q}_gap_${hIdx}`;
-          const wordAtTarget = answers[targetKey] || "";
-          if (sIdx !== null && sIdx !== hIdx) {
-            // Gap↔Gap swap
-            handleUpdateAnswer(targetKey, wText);
-            handleUpdateAnswer(sourceKey!, wordAtTarget);
-          } else if (sIdx === null) {
-            // Bank→Gap place
-            handleUpdateAnswer(targetKey, wText);
-          }
-          // If sIdx === hIdx, dropped back on self — no change
-        } else if (sIdx !== null && hIdx === null) {
-          // Gap→Bank un-fill: release outside any gap
-          handleUpdateAnswer(`${q}_gap_${sIdx}`, "");
-        }
-      }
-
-      setFillInDragState(null);
-      setFillInHoverGapIdx(null);
-      setFillInPointerPos(null);
-      setFillInDragSize(null);
-      fillInDragRef.current = null;
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-  };
-
-  // Timer countdown
-  useEffect(() => {
-    const timer = setInterval(() => setTimeLeft((t) => (t > 0 ? t - 1 : 0)), 1000);
-    return () => clearInterval(timer);
+  useEffect(() => () => {
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
+    if (gradingPollingRef.current) clearInterval(gradingPollingRef.current);
   }, []);
 
-  // Unified Keyboard Navigation: ArrowLeft/Right for question prev/next,
-  // with flashcard-slide priority when on a FLASHCARD question
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't hijack arrow keys when user is typing inside text inputs, textareas, or select dropdowns
-      const target = e.target as HTMLElement;
-      const tag = target ? target.tagName : "";
-      const inputType = (target as HTMLInputElement)?.type;
+  const initAnswers = useCallback((questions: any[], savedAnswers?: Record<string, unknown>) => {
+    const initial: Record<string, unknown> = { ...(savedAnswers || {}) };
+    for (const q of questions) {
+      if (initial[q.id] === undefined) initial[q.id] = emptyExamAnswerFor(q);
+    }
+    setAnswers(initial);
+  }, []);
 
-      if (
-        (tag === "INPUT" && inputType !== "radio" && inputType !== "checkbox") ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT"
-      ) {
+  const fetchContentAndEnter = useCallback(async (curAttempt: AttemptData) => {
+    try {
+      const res = await fetch(`/api/student/exams/${examId}/content`);
+      if (!res.ok) throw new Error("Không thể tải nội dung đề thi");
+      const data: ExamContentData = await res.json();
+      setContentData(data);
+      initAnswers(data.questions || [], curAttempt.answers);
+      const grouped = groupQuestionsBySkill(data.questions || []);
+      if (grouped.length > 0) setActiveSkill(grouped[0].skill);
+      setCurrentScreenIdx(0);
+      setPhase("running");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Lỗi tải đề thi");
+      setPhase("error");
+    }
+  }, [examId, initAnswers]);
+
+  const checkInitialStatus = useCallback(async () => {
+    setPhase("loading");
+    setErrorMessage(null);
+    try {
+      const contentRes = await fetch(`/api/student/exams/${examId}/content`);
+      if (contentRes.ok) {
+        const cData: ExamContentData = await contentRes.json();
+        setContentData(cData);
+        const attRes = await fetch(`/api/student/exams/${examId}/attempts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ classId }),
+        });
+        if (attRes.ok) {
+          const { attempt: curAttempt, remaining_attempts } = await attRes.json();
+          setAttempt(curAttempt);
+          setRemainingAttempts(remaining_attempts ?? null);
+          initAnswers(cData.questions || [], curAttempt.answers);
+          const grouped = groupQuestionsBySkill(cData.questions || []);
+          if (grouped.length > 0) setActiveSkill(grouped[0].skill);
+          setCurrentScreenIdx(0);
+          setPhase("running");
+          return;
+        }
+      }
+      const examRes = await fetch(`/api/exams/${examId}`);
+      if (examRes.status === 404) { setErrorMessage("Không tìm thấy đề thi."); setPhase("error"); return; }
+      if (!examRes.ok) { setErrorMessage("Lỗi tải thông tin đề thi."); setPhase("error"); return; }
+      const examJson = await examRes.json();
+      setExamMeta(examJson.exam);
+      setPhase("start");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Đã xảy ra lỗi khi kết nối máy chủ.");
+      setPhase("error");
+    }
+  }, [examId, classId, initAnswers]);
+
+  useEffect(() => { if (examId) checkInitialStatus(); }, [examId, checkInitialStatus]);
+
+  const handleStartExam = async () => {
+    setStartLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/student/exams/${examId}/attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classId }),
+      });
+      if (res.status === 403) { setErrorMessage("Bạn không có quyền làm đề thi này (403)."); return; }
+      if (res.status === 409) { setErrorMessage("Bạn đã hết lượt làm đề này (409)."); return; }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMessage(data.error || "Không thể bắt đầu lượt thi.");
         return;
       }
+      const { attempt: newAttempt, remaining_attempts } = await res.json();
+      setAttempt(newAttempt);
+      setRemainingAttempts(remaining_attempts ?? null);
+      await fetchContentAndEnter(newAttempt);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Lỗi khi bắt đầu làm bài.");
+    } finally {
+      setStartLoading(false);
+    }
+  };
 
-      const currentQ = questions[currentIdx];
-      if (!currentQ) return;
+  const saveTempAnswers = useCallback(async (currentAnswers?: Record<string, unknown>) => {
+    if (!attempt || attempt.status !== "IN_PROGRESS") return;
+    try {
+      const res = await fetch(`/api/student/exam-attempts/${attempt.id}/answers`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: currentAnswers || answersRef.current }),
+      });
+      if (res.status === 409 && autoSaveIntervalRef.current) { clearInterval(autoSaveIntervalRef.current); return; }
+      setSaveStatusText(res.ok ? formatSavedAt(new Date()) : "Chưa lưu được");
+    } catch {
+      setSaveStatusText("Chưa lưu được");
+    }
+  }, [attempt]);
 
-      const isFlashcard = currentQ.category.includes("FLASHCARD");
+  const doSubmit = useCallback(async (finalAnswers: Record<string, unknown>, isAuto = false) => {
+    if (!attempt) return;
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
+    setPhase("submitting");
+    setShowConfirmModal(false);
+    try {
+      const res = await fetch(`/api/student/exam-attempts/${attempt.id}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: finalAnswers }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Lỗi nộp bài thi");
+      }
+      const { attempt: submittedAttempt } = await res.json();
+      setAttempt(submittedAttempt);
+      setPhase("result");
+      if (submittedAttempt.status === "GRADING") {
+        gradingPollingRef.current = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/submissions/${submittedAttempt.id}`);
+            if (pollRes.ok) {
+              const pollJson = await pollRes.json();
+              if (pollJson.submission && pollJson.submission.status !== "GRADING") {
+                setAttempt(pollJson.submission);
+                if (gradingPollingRef.current) clearInterval(gradingPollingRef.current);
+              }
+            }
+          } catch {}
+        }, 5000);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Lỗi nộp bài thi.");
+      setPhase("error");
+    }
+  }, [attempt]);
 
-      if (e.key === "ArrowLeft") {
-        if (isFlashcard) {
-          const fcList = currentQ.content.flashcards_resolved || [];
-          const activeIdx = flashcardIndexMap[currentQ.id] || 0;
-          if (activeIdx > 0) {
-            // Still have prev cards — navigate card
-            e.preventDefault();
-            setSlideDirectionMap((prev) => ({ ...prev, [currentQ.id]: "prev" }));
-            setFlashcardIndexMap((prev) => ({ ...prev, [currentQ.id]: activeIdx - 1 }));
-            return;
-          }
-        }
-        // Fall through to prev question
-        if (currentIdx > 0) {
-          e.preventDefault();
-          setCurrentIdx((i) => i - 1);
-        }
-      } else if (e.key === "ArrowRight") {
-        if (isFlashcard) {
-          const fcList = currentQ.content.flashcards_resolved || [];
-          const activeIdx = flashcardIndexMap[currentQ.id] || 0;
-          if (activeIdx < fcList.length - 1) {
-            // Still have next cards — navigate card
-            e.preventDefault();
-            setSlideDirectionMap((prev) => ({ ...prev, [currentQ.id]: "next" }));
-            setFlashcardIndexMap((prev) => ({ ...prev, [currentQ.id]: activeIdx + 1 }));
-            return;
-          }
-        }
-        // Fall through to next question
-        if (currentIdx < questions.length - 1) {
-          e.preventDefault();
-          setCurrentIdx((i) => i + 1);
-        }
+  useEffect(() => {
+    if (phase !== "running" || !attempt?.deadline_at) return;
+    countdownIntervalRef.current = setInterval(() => {
+      const curNow = Date.now();
+      setNow(curNow);
+      if (new Date(attempt.deadline_at).getTime() - curNow <= 0 && !hasAutoSubmittedRef.current) {
+        hasAutoSubmittedRef.current = true;
+        // Tự động nộp bài thi khi hết giờ (autoSubmit)
+        doSubmit(answersRef.current, true);
+      }
+    }, 1000);
+    autoSaveIntervalRef.current = setInterval(() => { saveTempAnswers(); }, 30000);
+    return () => {
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
+    };
+  }, [phase, attempt?.deadline_at, doSubmit, saveTempAnswers]);
+
+  const questions = contentData?.questions || [];
+  const flashcards = contentData?.flashcards || [];
+  const groupedSkills = useMemo(() => groupQuestionsBySkill(questions), [questions]);
+  const orderedQuestions = useMemo(() => groupedSkills.flatMap((g) => g.questions), [groupedSkills]);
+  const screens = useMemo(() => buildScreens(questions), [questions]);
+  const safeScreenIdx = clampScreenIndex(currentScreenIdx, screens.length);
+  const currentScreen = screens[safeScreenIdx] || null;
+
+  const screenQuestions = useMemo(() => {
+    if (!currentScreen) return [];
+    const map = new Map(orderedQuestions.map((q) => [String(q.id), q]));
+    return currentScreen.questionIds.map((id) => map.get(String(id))).filter(Boolean);
+  }, [currentScreen, orderedQuestions]);
+
+  const screenStartNumber = useMemo(() => {
+    if (!currentScreen || currentScreen.questionIds.length === 0) return 1;
+    const idx = orderedQuestions.findIndex((q) => String(q.id) === String(currentScreen.questionIds[0]));
+    return idx >= 0 ? idx + 1 : 1;
+  }, [currentScreen, orderedQuestions]);
+
+  useEffect(() => {
+    if (currentScreen?.skill && currentScreen.skill !== activeSkill) setActiveSkill(currentScreen.skill);
+    if (passageScrollRef.current) passageScrollRef.current.scrollTop = 0;
+  }, [currentScreen?.key]);
+
+  const goToScreen = useCallback((nextIdx: number) => {
+    setCurrentScreenIdx(clampScreenIndex(nextIdx, screens.length));
+    setShowMobileNav(false);
+  }, [screens.length]);
+
+  useEffect(() => {
+    if (phase !== "running") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => { window.removeEventListener("beforeunload", onBeforeUnload); };
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "running") return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target) || showConfirmModal || showExitModal) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); setCurrentScreenIdx((p) => clampScreenIndex(p - 1, screens.length)); return; }
+      if (e.key === "ArrowRight") { e.preventDefault(); setCurrentScreenIdx((p) => clampScreenIndex(p + 1, screens.length)); return; }
+      const letter = keyToOptionLetter(e.key);
+      if (letter && screenQuestions.length === 1) {
+        const onlyQ = screenQuestions[0];
+        const nextAns = applyOptionShortcut(onlyQ, answersRef.current[onlyQ.id], letter);
+        if (nextAns !== null) setAnswers((prev) => ({ ...prev, [onlyQ.id]: nextAns }));
       }
     };
+    window.addEventListener("keydown", onKeyDown);
+    return () => { window.removeEventListener("keydown", onKeyDown); };
+  }, [phase, screens.length, screenQuestions, showConfirmModal, showExitModal]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIdx, questions, flashcardIndexMap]);
-
-
-  const handlePrevFc = (qId: string, activeIdx: number) => {
-    if (activeIdx > 0) {
-      setSlideDirectionMap((prev) => ({ ...prev, [qId]: "prev" }));
-      setFlashcardIndexMap((prev) => ({ ...prev, [qId]: activeIdx - 1 }));
-    }
+  const handleDividerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const onMove = (ev: PointerEvent) => {
+      const rect = splitContainerRef.current?.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+      setSplitRatio(Math.max(30, Math.min(70, Math.round(((ev.clientX - rect.left) / rect.width) * 100))));
+    };
+    const onUp = () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
-  const handleNextFc = (qId: string, activeIdx: number, maxIdx: number) => {
-    if (activeIdx < maxIdx) {
-      setSlideDirectionMap((prev) => ({ ...prev, [qId]: "next" }));
-      setFlashcardIndexMap((prev) => ({ ...prev, [qId]: activeIdx + 1 }));
-    }
-  };
-
-  const formatTimer = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const handleUpdateAnswer = (key: string, val: any) => {
-    setAnswers((prev) => ({ ...prev, [key]: val }));
-    if (typeof document !== "undefined" && document.activeElement && (document.activeElement as HTMLElement).blur) {
-      const tag = document.activeElement.tagName;
-      const type = (document.activeElement as HTMLInputElement).type;
-      if (tag === "INPUT" && (type === "radio" || type === "checkbox")) {
-        (document.activeElement as HTMLElement).blur();
-      }
-    }
-  };
-
-  const toggleFlag = (qId: string) => {
-    setFlagged((prev) => ({ ...prev, [qId]: !prev[qId] }));
-  };
-
-  const handleNext = () => {
-    if (currentIdx < questions.length - 1) setCurrentIdx(currentIdx + 1);
-  };
-
-  const handlePrev = () => {
-    if (currentIdx > 0) setCurrentIdx(currentIdx - 1);
-  };
-
-  // ----------------------------------------------------
-  // Audio Player with Loading & Playing States
-  // ----------------------------------------------------
-  const playSpeechAudio = async (text: string, gender: "Female" | "Male" = "Female", buttonId: string = "default") => {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-    }
-
-    if (audioPlayingId === buttonId) {
-      setAudioPlayingId(null);
-      setAudioLoadingId(null);
-      return;
-    }
-
-    setAudioLoadingId(buttonId);
-    setAudioPlayingId(null);
-
-    try {
-      const url = text.startsWith("http://") || text.startsWith("https://") || text.startsWith("data:") || text.startsWith("/api/tts")
-        ? text
-        : `/api/tts?text=${encodeURIComponent(text)}&gender=${gender}`;
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-
-      audio.oncanplay = () => {
-        setAudioLoadingId(null);
-        setAudioPlayingId(buttonId);
-        audio.play();
-      };
-
-      audio.onended = () => {
-        setAudioPlayingId(null);
-        setAudioLoadingId(null);
-        currentAudioRef.current = null;
-      };
-
-      audio.onerror = () => {
-        setAudioLoadingId(null);
-        setAudioPlayingId(null);
-        currentAudioRef.current = null;
-      };
-    } catch (e) {
-      console.error(e);
-      setAudioLoadingId(null);
-      setAudioPlayingId(null);
-    }
-  };
-
-  // ----------------------------------------------------
-  // Real Browser Microphone Recording (Direct Audio File Storage)
-  // ----------------------------------------------------
-  const startRecording = async (qId: string) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setRecordedAudioMap((prev) => ({ ...prev, [qId]: audioUrl }));
-
-        // Store direct audio file base64 data as student's answer
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-          const base64Audio = reader.result as string;
-          handleUpdateAnswer(qId, base64Audio || audioUrl);
-        };
-
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecordingMap((prev) => ({ ...prev, [qId]: true }));
-      setRecordingTimerMap((prev) => ({ ...prev, [qId]: 0 }));
-
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTimerMap((prev) => ({ ...prev, [qId]: (prev[qId] || 0) + 1 }));
-      }, 1000);
-    } catch (err) {
-      console.error("Microphone access error:", err);
-      alert("Không thể truy cập Microphone. Vui lòng cho phép quyền sử dụng Micro trên trình duyệt.");
-    }
-  };
-
-  const stopRecording = (qId: string) => {
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecordingMap((prev) => ({ ...prev, [qId]: false }));
-  };
-
-  // Helper: Is Question Answered (Checks base & subkeys)
-  const isQuestionAnswered = (q: QuestionItem) => {
-    if (answers[q.id]) return true;
-    return Object.keys(answers).some((key) => {
-      if (key.startsWith(`${q.id}_`)) {
-        const val = answers[key];
-        if (Array.isArray(val)) return val.length > 0;
-        return !!val;
-      }
-      return false;
+  const toggleScreenFlag = () => {
+    if (!currentScreen) return;
+    const ids = currentScreen.questionIds;
+    const allFlagged = ids.every((id) => Boolean(flaggedIds[id]));
+    setFlaggedIds((prev) => {
+      const next = { ...prev };
+      for (const id of ids) next[id] = !allFlagged;
+      return next;
     });
   };
 
-  // Helper to parse (word) gap positions or _____ blanks from text
-  const parseFillInGaps = (rawText: string) => {
-    if (!rawText) return { parts: ["Fill in the missing words."], gaps: [] };
-
-    // Check if rawText contains (word) brackets
-    if (/\([^)]+\)/.test(rawText)) {
-      const parts = rawText.split(/\(([^)]+)\)/g);
-      const gaps: string[] = [];
-      const textSegments: string[] = [];
-
-      parts.forEach((part, i) => {
-        if (i % 2 === 1) gaps.push(part.trim());
-        else textSegments.push(part);
-      });
-
-      return { parts: textSegments, gaps };
-    }
-
-    // Check if rawText contains ______ blanks
-    if (/_____+/.test(rawText)) {
-      const textSegments = rawText.split(/_____+/g);
-      const gaps = Array(textSegments.length - 1).fill("blank");
-      return { parts: textSegments, gaps };
-    }
-
-    return { parts: [rawText], gaps: [] };
-  };
-
-  // ----------------------------------------------------
-  // Submit Exam & AI Grading
-  // ----------------------------------------------------
-  const handleSubmit = async () => {
-    if (!user || questions.length === 0) return;
-    setIsSubmitting(true);
-
-    try {
-      const subId = `sub_${Date.now().toString().slice(-6)}`;
-      setSubmittedSubId(subId);
-
-      // 1. Process & Upload Audio Recordings to Supabase Storage
-      const finalAnswers: Record<string, any> = { ...answers };
-      for (const qId of Object.keys(finalAnswers)) {
-        const val = finalAnswers[qId];
-        if (typeof val === "string" && val.startsWith("data:audio")) {
-          const publicAudioUrl = await uploadAudioToSupabaseStorage(val, subId, qId);
-          finalAnswers[qId] = publicAudioUrl;
-        }
-      }
-
-      // 2. Extract writing essay text if present
-      let writingEssay = "";
-      let writingPrompt = "";
-      for (const q of questions) {
-        if (q.category === "WRITING_ESSAY" || q.skill === "Writing") {
-          const essayVal = finalAnswers[q.id] || finalAnswers[`${q.id}_essay`];
-          if (essayVal && typeof essayVal === "string" && essayVal.trim().length > 10) {
-            writingEssay = essayVal;
-            writingPrompt = q.prompt || q.stimulus_text || "";
-            break;
-          }
-        }
-      }
-
-      // Calculate basic auto graded score for MC questions
-      let correctCount = 0;
-      let totalAutoGraded = 0;
-      for (const q of questions) {
-        if (q.category.includes("MC") || q.category.includes("FILL_IN")) {
-          totalAutoGraded++;
-          const userAns = finalAnswers[q.id];
-          const correctAns = q.content?.correctAnswer || q.content?.correct_answer;
-          if (userAns && correctAns && String(userAns).trim().toLowerCase() === String(correctAns).trim().toLowerCase()) {
-            correctCount++;
-          }
-        }
-      }
-      const autoScore = totalAutoGraded > 0 ? Math.round((correctCount / totalAutoGraded) * 9 * 2) / 2 : 7.0;
-
-      // 3. Post to /api/submissions
-      const res = await fetch("/api/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          student_id: user.id || "student_01",
-          exam_id: examId,
-          answers: finalAnswers,
-          writing_essay: writingEssay,
-          writing_prompt: writingPrompt,
-          time_spent_seconds: Math.max(0, 3600 - timeLeft),
-          auto_graded_score: autoScore,
-        }),
-      });
-
-      const resData = await res.json();
-      if (resData.success && resData.data?.id) {
-        setSubmittedSubId(resData.data.id);
-      } else {
-        setSubmittedSubId(subId);
-      }
-      if (!resData.success) {
-        console.warn("Submissions API error:", resData.error);
-      }
-
-      // 4. Show Submission Modal to student
-      setIsSubmitted(true);
-    } catch (e) {
-      console.error("Submit error:", e);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  if (phase === "loading") {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5]">
-        <Loader2 className="w-8 h-8 text-[#6d3807] animate-spin mb-2" />
-        <p className="font-mono text-xs text-[#52443a]">Đang nạp dữ liệu bài thi {examId}...</p>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
+        <p className="text-sm font-medium text-ink-muted">Đang chuẩn bị đề thi...</p>
       </div>
     );
   }
 
-  if (questions.length === 0) {
+  if (phase === "error") {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Không tìm thấy bài thi hoặc đề thi chưa được nạp.</p>
-        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
-          Quay lại Dashboard
-        </Link>
+      <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-white border border-rose-200 text-center space-y-4">
+        <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
+        <h2 className="text-lg font-bold text-ink">Không thể tải đề thi</h2>
+        <p className="text-sm text-rose-700">{errorMessage || "Đã xảy ra lỗi."}</p>
+        <div className="flex justify-center gap-3 pt-2">
+          <button type="button" onClick={checkInitialStatus} className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold cursor-pointer">Thử lại</button>
+          <Link href="/student/dashboard" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold">Về Dashboard</Link>
+        </div>
       </div>
     );
   }
 
-  const currentQ = questions[currentIdx];
-  const currentSkill = currentQ.skill;
+  if (phase === "start") {
+    return (
+      <div className="max-w-2xl mx-auto my-10 p-6 md:p-8 rounded-3xl bg-white border border-line space-y-6">
+        <div className="border-b border-line-soft pb-4">
+          <h1 className="text-2xl font-bold font-headline text-ink mb-2">{examMeta?.title || "Đề thi"}</h1>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-ink-muted">
+            <span className="flex items-center gap-1 font-semibold"><Clock className="w-4 h-4 text-brand-600" />Thời gian: {examMeta?.duration_minutes ?? 0} phút</span>
+            {remainingAttempts !== null && remainingAttempts !== undefined && (
+              <span className="flex items-center gap-1 font-semibold text-purple-700"><FileCheck className="w-4 h-4" />Số lượt còn lại: {remainingAttempts}</span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800"><AlertCircle className="w-4 h-4 text-amber-700" />Lưu ý quan trọng:</div>
+          <p className="text-xs text-ink-muted leading-relaxed">Đồng hồ tính theo máy chủ, tải lại trang không dừng giờ. Vui lòng đảm bảo kết nối mạng ổn định trong suốt quá trình làm bài thi.</p>
+        </div>
+        {errorMessage && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">{errorMessage}</div>}
+        <div className="flex items-center justify-between pt-2">
+          <Link href="/student/dashboard" className="inline-flex items-center gap-1 text-xs font-bold text-ink-muted hover:text-brand-600"><ArrowLeft className="w-4 h-4" /> Quay lại</Link>
+          <button type="button" disabled={startLoading} onClick={handleStartExam} className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-xs cursor-pointer">
+            {startLoading && <Loader2 className="w-4 h-4 animate-spin" />}Bắt đầu làm bài
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "submitting") {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="w-10 h-10 text-brand-600 animate-spin" />
+        <h3 className="text-base font-bold text-ink">Đang nộp bài thi lên máy chủ...</h3>
+        <p className="text-xs text-ink-muted">Hệ thống đang lưu bài và tiến hành chấm điểm.</p>
+      </div>
+    );
+  }
+
+  if (phase === "result" && attempt) {
+    const summary = summarizeAttemptResult({ ...attempt, standard_snapshot: attempt.standard_snapshot || contentData?.standard || null });
+    const pendingLabel = summary.pending.length > 0 ? summary.pending.join(", ") : "tự luận";
+    return (
+      <div className="max-w-3xl mx-auto my-8 p-6 md:p-8 rounded-3xl bg-white border border-line space-y-6">
+        <div className="flex items-center justify-between border-b border-line-soft pb-4">
+          <div><h1 className="text-xl font-bold font-headline text-ink">Kết Quả Bài Thi</h1><p className="text-xs text-ink-subtle">Mã bài nộp: {attempt.id}</p></div>
+          {attempt.is_late && <span className="px-3 py-1 bg-rose-100 border border-rose-300 text-rose-800 rounded-lg text-xs font-bold">Nộp trễ</span>}
+        </div>
+        {(summary.state === "PARTIAL" || summary.state === "WAITING_AI") && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-3 text-xs text-blue-900 font-medium"><Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0 mt-0.5" /><div className="space-y-1"><div className="font-bold">AI đang chấm phần {pendingLabel}…</div><div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div></div></div>}
+        {summary.state === "WAITING_TEACHER" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 text-xs text-amber-900 font-medium"><AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" /><div className="space-y-1"><div className="font-bold">Giáo viên sẽ chấm phần {pendingLabel}.</div><div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div></div></div>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 rounded-2xl bg-surface-alt border border-line-soft text-center space-y-1">
+            <div className="text-xs font-bold text-ink-subtle uppercase tracking-wider">Tổng điểm</div>
+            {summary.state === "FINAL" ? <div className="text-3xl font-extrabold text-brand-600">{summary.total !== null ? summary.total : "—"}</div> : <div className="text-base font-extrabold text-brand-600 pt-1">Chờ phần {pendingLabel}</div>}
+          </div>
+          <div className="p-5 rounded-2xl bg-surface-alt border border-line-soft text-center space-y-1">
+            <div className="text-xs font-bold text-ink-subtle uppercase tracking-wider">Kết quả xếp loại</div>
+            <div className="text-2xl font-extrabold">{summary.state === "FINAL" ? (summary.passed === true ? <span className="text-emerald-700">Đạt</span> : summary.passed === false ? <span className="text-rose-700">Chưa đạt</span> : <span className="text-gray-500">—</span>) : <span className="text-sm font-semibold text-ink-subtle">Chờ chấm xong</span>}</div>
+          </div>
+        </div>
+        {summary.graded.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-ink uppercase tracking-wider">{summary.state === "FINAL" ? "Điểm từng phần:" : "Đã chấm:"}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {summary.graded.map((g) => (<div key={g.skill} className="p-3.5 rounded-xl border border-line-soft bg-surface-alt text-center space-y-1"><div className="text-xs font-bold text-ink-muted">{g.skill}</div><div className="text-xl font-bold text-brand-600">{g.score}</div>{g.max !== undefined && g.earned !== undefined && <div className="text-[11px] text-ink-subtle">{g.earned}/{g.max} câu</div>}</div>))}
+            </div>
+          </div>
+        )}
+        {summary.pending.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-ink uppercase tracking-wider">{summary.state === "WAITING_TEACHER" ? "Chờ giáo viên chấm:" : "AI đang chấm:"}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {summary.pending.map((skill) => (<div key={skill} className="p-3.5 rounded-xl border border-dashed border-line bg-surface-alt text-center space-y-1"><div className="text-xs font-bold text-ink-muted">{skill}</div><div className="text-xs font-semibold text-ink-subtle">{summary.state === "WAITING_TEACHER" ? "Giáo viên sẽ chấm" : "AI đang chấm…"}</div></div>))}
+            </div>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-line-soft">
+          <Link href="/student/dashboard" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold">Về Dashboard</Link>
+          <Link href={`/student/exam/review/${attempt.id}`} className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-xs"><span>Xem chi tiết</span><ExternalLink className="w-3.5 h-3.5" /></Link>
+        </div>
+      </div>
+    );
+  }
+
+  const msRemaining = attempt?.deadline_at ? new Date(attempt.deadline_at).getTime() - now : 0;
+  const answeredCount = countAnswered(questions, answers);
+  const totalCount = questions.length;
+  const progressPct = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+  const missingNums = unansweredNumbers(questions, answers);
+  const isCurrentScreenFlagged = Boolean(currentScreen && currentScreen.questionIds.every((id) => flaggedIds[id]));
+  const handleAnswerChange = (qId: string, val: unknown) => setAnswers((prev) => ({ ...prev, [qId]: val }));
+
+  const renderNavigatorGrid = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink">Bảng câu hỏi</span>
+        <span className="text-xs font-semibold text-brand-600">{answeredCount}/{totalCount} đã làm</span>
+      </div>
+      <div className="grid grid-cols-5 gap-2">
+        {orderedQuestions.map((q, idx) => {
+          const st = navStatus({
+            isCurrent: Boolean(currentScreen?.questionIds.includes(q.id)),
+            isFlagged: Boolean(flaggedIds[q.id]),
+            isAnswered: countAnswered([q], answers) > 0,
+          });
+          const btnStyle =
+            st === "current" ? "bg-brand-600 text-white border-brand-600 ring-2 ring-brand-600/30" :
+            st === "flagged" ? "bg-amber-100 text-amber-900 border-amber-400" :
+            st === "answered" ? "bg-emerald-100 text-emerald-900 border-emerald-400" :
+            "bg-white text-ink-muted border-line hover:border-brand-600";
+          return (
+            <button key={q.id} type="button" onClick={() => { const t = screenIndexOfQuestion(screens, q.id); if (t >= 0) goToScreen(t); }} className={`h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer ${btnStyle}`}>
+              {idx + 1}
+            </button>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-line-soft text-[11px] font-medium text-ink-muted">
+        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-brand-600 inline-block" />Đang làm</div>
+        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-200 border border-amber-400 inline-block" />Đánh dấu</div>
+        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-200 border border-emerald-400 inline-block" />Đã làm</div>
+        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-white border border-line inline-block" />Chưa làm</div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="h-screen bg-[#fff8f5] overflow-hidden font-sans text-[#211a16] flex flex-col">
-      {/* Top Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#fff8f5] border-b border-[#d8c2b6] flex justify-between items-center px-6 h-16 shrink-0 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <Link href="/student/dashboard" className="p-2 text-[#52443a] hover:text-[#6d3807] transition-all rounded-lg hover:bg-white">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="font-headline text-base md:text-lg font-bold truncate max-w-md">{examTitle}</h1>
+    <div className="fixed inset-0 z-50 bg-surface-alt flex flex-col overflow-hidden">
+      <header className="shrink-0 bg-surface-alt border-b border-line px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <button type="button" onClick={() => setShowExitModal(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-line bg-white hover:bg-brand-50 text-xs font-bold text-ink-muted cursor-pointer">
+              <ArrowLeft className="w-3.5 h-3.5" />Thoát
+            </button>
+            <div className="min-w-0">
+              <h2 className="font-headline font-bold text-sm text-ink truncate">{contentData?.exam.title || "Bài thi"}</h2>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-brand-600 font-semibold">
+                <span>Màn {safeScreenIdx + 1} / {Math.max(1, screens.length)}</span>
+                <span>•</span>
+                <span>Đã làm {answeredCount}/{totalCount} câu</span>
+                {saveStatusText && <><span>•</span><span className={saveStatusText === "Chưa lưu được" ? "text-rose-700" : "text-emerald-700"}>{saveStatusText}</span></>}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono text-sm font-extrabold ${msRemaining < 300000 ? "bg-rose-50 text-rose-700 border-rose-300 animate-pulse" : "bg-white text-brand-600 border-line"}`}>
+              <Timer className="w-4 h-4" /><span>{formatRemaining(msRemaining)}</span>
+            </div>
+            <button type="button" onClick={() => setShowMobileNav(true)} className="lg:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-line bg-white text-xs font-bold text-ink-muted cursor-pointer"><LayoutGrid className="w-4 h-4" />Bảng câu</button>
+            <button type="button" onClick={() => setShowNavigator((v) => !v)} className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-line bg-white hover:bg-brand-50 text-xs font-bold text-ink-muted cursor-pointer"><LayoutGrid className="w-4 h-4" />Bảng câu hỏi</button>
+            <button type="button" onClick={() => setShowConfirmModal(true)} className="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">Nộp bài</button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4">
-          {user?.name && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fff1ea] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-bold shadow-2xs">
-              <User className="w-3.5 h-3.5 text-[#6d3807]" />
-              <span>Học sinh: {user.name}</span>
+        {groupedSkills.length > 1 && (
+          <div className="flex items-center gap-2 mt-2 overflow-x-auto pt-1">
+            {groupedSkills.map((g) => (
+              <button
+                key={g.skill}
+                type="button"
+                onClick={() => {
+                  saveTempAnswers();
+                  setActiveSkill(g.skill);
+                  const firstQ = g.questions[0];
+                  if (firstQ) { const idx = screenIndexOfQuestion(screens, firstQ.id); if (idx >= 0) goToScreen(idx); }
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer ${activeSkill === g.skill ? "bg-brand-600 text-white" : "bg-white text-ink-muted border border-line hover:bg-brand-50"}`}
+              >
+                {g.skill} ({g.questions.length})
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div className="h-1 w-full bg-line-soft shrink-0"><div className="h-full bg-brand-600 transition-all duration-300" style={{ width: `${progressPct}%` }} /></div>
+
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {currentScreen?.mode === "LISTENING" && (
+            <div className="flex-1 overflow-y-auto">
+              {currentScreen.stimulus_audio_url && (
+                <div className="sticky top-0 z-20 bg-surface-alt/95 backdrop-blur-xs border-b border-line px-4 py-3">
+                  <div className="max-w-3xl mx-auto flex items-center gap-3 rounded-xl border border-line bg-white p-2.5 shadow-2xs">
+                    <Volume2 className="w-5 h-5 text-brand-600 shrink-0" />
+                    <audio controls src={currentScreen.stimulus_audio_url} className="w-full h-8" />
+                  </div>
+                </div>
+              )}
+              <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-5">
+                {currentScreen.stimulus_text && (
+                  <div className="rounded-2xl border border-line bg-white p-5 text-sm leading-relaxed text-ink [&_img]:max-h-[45vh] [&_img]:w-auto [&_img]:max-w-full [&_img]:object-contain [&_img]:mx-auto [&_img]:rounded-xl" dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
+                )}
+                <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+              </div>
             </div>
           )}
 
-          <ExamCountdownTimer initialSeconds={timeLeft} />
+          {currentScreen?.mode === "FOCUS" && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <div className="max-w-[720px] mx-auto space-y-5">
+                {currentScreen.stimulus_text && (
+                  <div className="rounded-2xl border border-line bg-white p-5 text-sm leading-relaxed text-ink shadow-2xs [&_img]:max-h-[45vh] [&_img]:w-auto [&_img]:max-w-full [&_img]:object-contain [&_img]:mx-auto [&_img]:rounded-xl" dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
+                )}
+                <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || isSubmitted}
-            className="bg-[#6d3807] text-white hover:bg-[#8a4f1e] transition-all px-5 py-2 rounded-xl font-bold text-xs shadow-sm uppercase tracking-wide disabled:opacity-50 cursor-pointer"
-          >
-            {isSubmitting ? "Đang Tải Âm Thanh..." : "Nộp Bài Thi"}
+          {currentScreen?.mode === "SPLIT" && (
+            <>
+              <div className="lg:hidden flex flex-col flex-1 min-h-0">
+                <div className="flex border-b border-line bg-white px-4 pt-2 gap-2 shrink-0">
+                  <button type="button" onClick={() => setMobileSplitTab("passage")} className={`px-4 py-2 text-xs font-bold border-b-2 cursor-pointer ${mobileSplitTab === "passage" ? "border-brand-600 text-brand-600" : "border-transparent text-ink-muted"}`}>Bài đọc</button>
+                  <button type="button" onClick={() => setMobileSplitTab("questions")} className={`px-4 py-2 text-xs font-bold border-b-2 cursor-pointer ${mobileSplitTab === "questions" ? "border-brand-600 text-brand-600" : "border-transparent text-ink-muted"}`}>Câu hỏi ({screenQuestions.length})</button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {mobileSplitTab === "passage" ? (
+                    <div className={`rounded-2xl border border-line bg-white p-5 leading-relaxed text-ink ${fontSize} [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-xl`} dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
+                  ) : (
+                    <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                  )}
+                </div>
+              </div>
+
+              <div ref={splitContainerRef} className="hidden lg:flex flex-1 min-h-0 overflow-hidden">
+                <div style={{ width: `${splitRatio}%` }} className="h-full flex flex-col bg-white border-r border-line">
+                  <div className="flex items-center justify-between px-5 py-2.5 border-b border-line-soft bg-surface-alt shrink-0">
+                    <span className="text-xs font-bold uppercase tracking-wider text-brand-600">Bài đọc</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] text-ink-muted mr-1">Cỡ chữ:</span>
+                      {(["text-sm", "text-base", "text-lg"] as const).map((sz, i) => (
+                        <button key={sz} type="button" onClick={() => setFontSize(sz)} className={`px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${fontSize === sz ? "bg-brand-600 text-white" : "bg-surface-alt text-ink-muted border border-line"}`}>
+                          {i === 0 ? "A-" : i === 1 ? "A" : "A+"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div ref={passageScrollRef} className={`flex-1 overflow-y-auto p-6 leading-relaxed text-ink ${fontSize} [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-xl [&_p]:my-2`} dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
+                </div>
+
+                <div onPointerDown={handleDividerPointerDown} title="Kéo để chỉnh độ rộng cột" className="w-2.5 bg-line-soft hover:bg-line cursor-col-resize flex items-center justify-center shrink-0 select-none">
+                  <GripVertical className="w-3.5 h-3.5 text-brand-600" />
+                </div>
+
+                <div style={{ width: `${100 - splitRatio}%` }} className="h-full overflow-y-auto p-6">
+                  <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                </div>
+              </div>
+            </>
+          )}
+        </main>
+
+        {showNavigator && (
+          <aside className="hidden lg:block w-64 shrink-0 border-l border-line bg-surface-alt p-4 overflow-y-auto">
+            {renderNavigatorGrid()}
+          </aside>
+        )}
+      </div>
+
+      <footer className="shrink-0 bg-white border-t border-line px-4 py-2.5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+          <button type="button" disabled={safeScreenIdx <= 0} onClick={() => goToScreen(safeScreenIdx - 1)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-line bg-white hover:bg-brand-50 disabled:opacity-40 text-xs font-bold text-ink cursor-pointer">
+            <ArrowLeft className="w-4 h-4" />Màn trước
           </button>
-        </div>
-      </header>
 
-      {/* Submission Confirmation Modal Overlay */}
-      {isSubmitted && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-3xl max-w-md text-center shadow-xl border border-[#d8c2b6] space-y-4 relative">
-            {/* Top-Right Dismiss Button */}
-            <button
-              onClick={() => setIsSubmitted(false)}
-              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-[#6d3807] hover:bg-[#fff1ea] rounded-full transition-all cursor-pointer"
-              title="Đóng thông báo"
-            >
-              <X className="w-5 h-5" />
+          <button type="button" onClick={toggleScreenFlag} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold cursor-pointer ${isCurrentScreenFlagged ? "bg-amber-100 border-amber-400 text-amber-900" : "bg-white border-line text-ink-muted hover:bg-surface-alt"}`}>
+            <Flag className="w-3.5 h-3.5" />
+            {isCurrentScreenFlagged ? "Đã đánh dấu xem lại" : "Đánh dấu xem lại"}
+          </button>
+
+          {safeScreenIdx < screens.length - 1 ? (
+            <button type="button" onClick={() => goToScreen(safeScreenIdx + 1)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold cursor-pointer">
+              Màn tiếp<ArrowRight className="w-4 h-4" />
             </button>
+          ) : (
+            <button type="button" onClick={() => setShowConfirmModal(true)} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold cursor-pointer">
+              <CheckCircle2 className="w-4 h-4" />Nộp bài
+            </button>
+          )}
+        </div>
+      </footer>
 
-            <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
-            <h2 className="text-xl font-bold text-[#6d3807]">🎉 Bài Thi Đã Được Nộp Thành Công!</h2>
-            <p className="text-xs text-[#52443a] leading-relaxed">
-              Hệ thống đã lưu trữ file âm thanh bài nói và đang tự động chấm điểm bài thi không đồng bộ bằng AI (Gemini Flash Lite).
-            </p>
-            <div className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs text-[#6d3807] font-bold">
-              ⚡ Hệ thống đang chấm điểm ngầm. Kết quả chi tiết sẽ sớm gửi qua thông báo!
+      {showMobileNav && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex justify-end lg:hidden">
+          <div className="w-72 bg-white h-full p-4 overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-2">
+              <span className="font-bold text-sm text-ink">Điều hướng nhanh</span>
+              <button type="button" onClick={() => setShowMobileNav(false)} className="p-1 text-ink-muted"><X className="w-4 h-4" /></button>
             </div>
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/student/dashboard")}
-                className="w-full py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-              >
-                Trở Về Dashboard
-              </button>
+            {renderNavigatorGrid()}
+          </div>
+        </div>
+      )}
 
-              {submittedSubId && (
-                <button
-                  type="button"
-                  onClick={() => router.push(`/student/exam/review/${submittedSubId}`)}
-                  className="w-full py-2.5 bg-[#fff1ea] hover:bg-[#ffb782] text-[#6d3807] rounded-xl text-xs font-bold border border-[#d8c2b6] transition-all cursor-pointer"
-                >
-                  Xem Bài Thi Vừa Nộp
-                </button>
-              )}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 border border-line">
+            <h3 className="font-bold text-sm text-ink">Tạm rời phòng thi?</h3>
+            <p className="text-xs text-ink-muted leading-relaxed">Đồng hồ làm bài trên máy chủ vẫn tiếp tục chạy. Các câu trả lời của bạn sẽ được lưu nháp trước khi rời trang.</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowExitModal(false)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold cursor-pointer">Ở lại làm tiếp</button>
+              <button type="button" onClick={async () => { await saveTempAnswers(); router.push("/student/dashboard"); }} className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold cursor-pointer">Rời trang</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Floating Pointer Drag Ghost Image Preview (Preserves Exact Click Offset & Dimensions) */}
-      {activePointerDragIdx !== null && pointerPos && pointerDragItemText && pointerDragSize && (
-        <div
-          style={{
-            left: `${pointerPos.x - pointerDragSize.offsetX}px`,
-            top: `${pointerPos.y - pointerDragSize.offsetY}px`,
-            width: `${pointerDragSize.width}px`,
-            height: `${pointerDragSize.height}px`,
-          }}
-          className="fixed pointer-events-none z-50 p-3 rounded-xl border-2 border-[#6d3807] bg-[#fff1ea] text-[#6d3807] text-xs font-bold shadow-2xl opacity-95 cursor-grabbing flex items-center justify-center text-center"
-        >
-          <span className="font-bold truncate text-center w-full">{pointerDragItemText}</span>
-        </div>
-      )}
-
-      {/* Floating MATCHING Drag Ghost Image Preview */}
-      {matchingDragState && matchingPointerPos && matchingDragSize && (
-        <div
-          style={{
-            left: `${matchingPointerPos.x - matchingDragSize.offsetX}px`,
-            top: `${matchingPointerPos.y - matchingDragSize.offsetY}px`,
-            width: `${matchingDragSize.width}px`,
-            height: `${matchingDragSize.height}px`,
-          }}
-          className="fixed pointer-events-none z-50 p-2.5 rounded-xl border-2 border-[#6d3807] bg-[#fff1ea] text-[#6d3807] text-xs font-bold shadow-2xl opacity-95 cursor-grabbing flex items-center justify-center text-center"
-        >
-          <span className="font-bold truncate text-center w-full">{matchingDragState.dragWordText}</span>
-        </div>
-      )}
-
-      {/* Floating FILL_IN Drag Ghost Image Preview */}
-      {fillInDragState && fillInPointerPos && fillInDragSize && (
-        <div
-          style={{
-            left: `${fillInPointerPos.x - fillInDragSize.offsetX}px`,
-            top: `${fillInPointerPos.y - fillInDragSize.offsetY}px`,
-            width: `${fillInDragSize.width}px`,
-            height: `${fillInDragSize.height}px`,
-          }}
-          className="fixed pointer-events-none z-50 px-3 rounded-lg border-2 border-[#6d3807] bg-[#fff1ea] text-[#6d3807] text-xs font-bold shadow-2xl opacity-95 cursor-grabbing flex items-center justify-center text-center"
-        >
-          <span className="font-bold truncate text-center w-full">{fillInDragState.dragWordText}</span>
-        </div>
-      )}
-
-      {/* Custom Keyframe Animations */}
-      <style>{`
-        @keyframes slideInNext {
-          0% { transform: translateX(45px) scale(0.94); opacity: 0.2; }
-          100% { transform: translateX(0) scale(1); opacity: 1; }
-        }
-        @keyframes slideInPrev {
-          0% { transform: translateX(-45px) scale(0.94); opacity: 0.2; }
-          100% { transform: translateX(0) scale(1); opacity: 1; }
-        }
-        @keyframes fcFadeInUp {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        .anim-slide-next {
-          animation: slideInNext 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .anim-slide-prev {
-          animation: slideInPrev 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .anim-fc-fade {
-          animation: fcFadeInUp 0.38s ease-out forwards;
-        }
-      `}</style>
-
-      {/* Main Workspace (Split Screen) */}
-      <main className="flex-1 mt-16 flex w-full h-[calc(100vh-64px)]">
-        {/* Left Pane: Passage / Audio Stimulus */}
-        <section className="w-1/2 h-full overflow-y-auto bg-[#fffbff] border-r border-[#d8c2b6] p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#d8c2b6]/60 pb-3">
-            <span className="px-3 py-1 bg-[#fff1ea] text-[#6d3807] text-xs font-bold rounded-lg border border-[#ffb782]/40 uppercase tracking-wide">
-              {currentSkill} &bull; Dạng: {currentQ.category}
-            </span>
-            <span className="text-xs font-bold text-[#857469]">Câu {currentQ.number} / {questions.length}</span>
-          </div>
-
-          <div className="space-y-4 text-sm sm:text-base text-[#211a16] leading-relaxed">
-            {/* 1. Question Prompt (Short Heading/Instruction) */}
-            {currentQ.prompt && (
-              <h3 className="text-lg font-bold text-[#6d3807] font-headline">{currentQ.prompt}</h3>
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-line">
+            <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+              <AlertCircle className="w-5 h-5" />
+              <span>{missingNums.length > 0 ? "Chưa hoàn thành toàn bộ câu hỏi" : "Xác nhận nộp bài thi"}</span>
+            </div>
+            <p className="text-xs text-ink-muted leading-relaxed">Bạn đã trả lời {answeredCount}/{totalCount} câu hỏi. Bạn có chắc chắn muốn nộp bài ngay bây giờ không?</p>
+            {missingNums.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-brand-600">Câu chưa làm (bấm để nhảy tới):</div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                  {missingNums.map((num) => {
+                    const targetQ = orderedQuestions[num - 1];
+                    return (
+                      <button key={num} type="button" onClick={() => { setShowConfirmModal(false); if (targetQ) { const idx = screenIndexOfQuestion(screens, targetQ.id); if (idx >= 0) goToScreen(idx); } }} className="px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold cursor-pointer">
+                        Câu {num}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
-
-            {/* 2. Media Stimulus (YouTube Video Embed or Audio Player) */}
-            {(() => {
-              const mediaUrl = currentQ.stimulus_audio_url || (currentQ.category.startsWith("LISTENING") ? "Welcome to the IELTS test orientation." : "");
-              const mediaInfo = getMediaStimulusInfo(mediaUrl);
-
-              if (mediaInfo.type === "YOUTUBE" && mediaInfo.embedUrl) {
-                return (
-                  <div className="overflow-hidden rounded-2xl border border-[#d8c2b6] shadow-sm aspect-video w-full bg-black">
-                    <iframe
-                      src={mediaInfo.embedUrl}
-                      title="YouTube Video Stimulus"
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                );
-              }
-
-              if (mediaInfo.type === "AUDIO" || currentQ.category.startsWith("LISTENING")) {
-                const audioBtnId = `stimulus_${currentQ.id}`;
-                const isLoading = audioLoadingId === audioBtnId;
-                const isPlaying = audioPlayingId === audioBtnId;
-                const targetSpeechOrUrl = mediaInfo.rawUrl || "Welcome to the IELTS test orientation.";
-
-                return (
-                  <div className="p-4 rounded-2xl bg-[#fff8f5] border border-[#ffb782] space-y-2 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#6d3807] flex items-center space-x-1.5 text-sm">
-                        <Volume2 className={`w-4.5 h-4.5 ${isPlaying ? "animate-bounce" : "text-[#6d3807]"}`} />
-                        <span>Bài Nghe Audio</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => playSpeechAudio(targetSpeechOrUrl, "Female", audioBtnId)}
-                        className="px-4 py-1.5 bg-[#6d3807] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 hover:bg-[#8a4f1e] shadow-sm transition-all"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                        ) : isPlaying ? (
-                          <Volume2 className="w-3.5 h-3.5 animate-pulse" />
-                        ) : (
-                          <Play className="w-3.5 h-3.5 fill-white" />
-                        )}
-                        <span>{isLoading ? "Đang tải..." : isPlaying ? "Đang phát..." : "Phát Bài Nghe"}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-
-              return null;
-            })()}
-
-            {/* 3. Shared Stimulus HTML Text Content */}
-            {(() => {
-              const stimulusHtml = currentQ.stimulus_text || currentQ.passage || "";
-
-              if (currentQ.category === "WRITING_SHORT_ANSWER" && (currentQ.content.sub_questions || currentQ.content.subQuestions || currentQ.content.shortAnswersList)?.length > 0) {
-                return (
-                  <div className="p-4.5 rounded-2xl bg-[#fff8f5]/50 border border-[#d8c2b6]/60 text-sm font-medium text-[#52443a] leading-relaxed">
-                    <div className="space-y-3">
-                      <span className="font-bold text-[#6d3807] block uppercase text-xs">Danh sách câu hỏi cần trả lời:</span>
-                      {(currentQ.content.sub_questions || currentQ.content.subQuestions || currentQ.content.shortAnswersList).map((sub: any, idx: number) => (
-                        <div key={idx} className="p-3.5 bg-white rounded-xl border border-[#d8c2b6] space-y-1">
-                          <span className="font-bold text-[#211a16] block text-sm">
-                            Câu {idx + 1}: {sub.text || sub.questionText || sub.subQuestionText || sub.prompt || `Câu hỏi ${idx + 1}`}
-                          </span>
-                          <span className="text-xs text-[#6d3807] font-bold block">Giới hạn: {sub.max_words || sub.maxWords || 50} từ</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-
-              if (!stimulusHtml || !stimulusHtml.trim()) return null;
-
-              return <StimulusContentRenderer html={stimulusHtml} />;
-            })()}
-          </div>
-        </section>
-
-        {/* Right Pane: Question Interactive Workspace */}
-        <section className="w-1/2 h-full flex flex-col bg-[#fff8f5] relative">
-          {/* Top Control Bar with Stepper Buttons & Centered Quick Nav Grid */}
-          <div className="p-2.5 bg-white border-b border-[#d8c2b6] flex items-center justify-between gap-2 px-4 shadow-2xs">
-            {/* Left: Prev Button & Flag Tag */}
-            <div className="flex items-center space-x-1.5 shrink-0">
-              <button
-                onClick={handlePrev}
-                disabled={currentIdx === 0}
-                className="px-3 py-1.5 bg-[#fff8f5] hover:bg-[#fff1ea] border border-[#d8c2b6] disabled:opacity-40 text-[#211a16] text-xs font-bold rounded-xl transition-all shadow-2xs"
-              >
-                ‹ Câu Trước
-              </button>
-
-              <button
-                onClick={() => toggleFlag(currentQ.id)}
-                className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  flagged[currentQ.id] ? "bg-[#ffb782] text-[#6d3807]" : "bg-gray-100 text-[#52443a] hover:bg-[#fff1ea]"
-                }`}
-                title={flagged[currentQ.id] ? "Đã Gắn Tag" : "Gắn Tag Cần Xem"}
-              >
-                <Star className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-[#6d3807]" : ""}`} />
-              </button>
-            </div>
-
-            {/* Center: Question Quick Nav Grid */}
-            <div className="flex-1 flex items-center justify-center overflow-x-auto py-1 px-2 gap-1.5 max-w-full no-scrollbar">
-              {questions.map((q, idx) => {
-                const isAnswered = isQuestionAnswered(q);
-                const isFlagged = !!flagged[q.id];
-                const isCurrent = idx === currentIdx;
-
-                let style = "bg-gray-50 text-[#52443a] border border-[#d8c2b6]";
-                if (isAnswered) style = "bg-emerald-700 text-white font-bold border-emerald-800 shadow-2xs";
-                if (isFlagged) style = "bg-[#ffb782] text-[#6d3807] font-bold";
-                if (isCurrent) style += " ring-2 ring-[#6d3807]";
-
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => setCurrentIdx(idx)}
-                    className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 flex items-center justify-center transition-all ${style}`}
-                  >
-                    {q.number}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right: Next Button */}
-            <div className="shrink-0">
-              <button
-                onClick={handleNext}
-                disabled={currentIdx === questions.length - 1}
-                className="px-3.5 py-1.5 bg-[#6d3807] hover:bg-[#8a4f1e] disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all shadow-2xs"
-              >
-                Câu Tiếp Theo ›
-              </button>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowConfirmModal(false)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold cursor-pointer">Làm tiếp</button>
+              <button type="button" onClick={() => doSubmit(answers)} className="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold cursor-pointer">Xác nhận nộp bài</button>
             </div>
           </div>
-
-          {/* Interactive Question Body */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            <div className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm space-y-4">
-
-              {/* ========================================================= */}
-              {/* 1. MULTIPLE CHOICE (READING_MC & LISTENING_MC) */}
-              {/* ========================================================= */}
-              {(currentQ.category === "READING_MC" || currentQ.category === "LISTENING_MC") && (
-                <div className="space-y-3.5">
-                  <span className="text-sm font-bold text-[#6d3807] block uppercase">Chọn đáp án đúng nhất:</span>
-
-                  {/* All cases use sub_questions — single or multiple */}
-                  {currentQ.content.sub_questions && (() => {
-                    const subQs: any[] = currentQ.content.sub_questions;
-                    const isSingle = subQs.length === 1;
-
-                    return subQs.map((sub: any, i: number) => {
-                      const subAnsKey = isSingle ? currentQ.id : `${currentQ.id}_sub_${i}`;
-                      const audioBtnId = `mc_sub_audio_${currentQ.id}_${i}`;
-                      const isAudioLoading = audioLoadingId === audioBtnId;
-                      const isAudioPlaying = audioPlayingId === audioBtnId;
-
-                      return (
-                        <div key={i} className={`space-y-2.5 ${!isSingle ? "p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]" : ""}`}>
-                          {/* Question text */}
-                          {sub.text && (
-                            <div className="flex items-start gap-2">
-                              {!isSingle && (
-                                <span className="shrink-0 font-bold text-[#6d3807] text-sm sm:text-base">Câu {i + 1}.</span>
-                              )}
-                              <span className="font-bold text-[#211a16] text-sm sm:text-base">{sub.text}</span>
-                            </div>
-                          )}
-
-                          {/* Sub-question audio player (LISTENING_MC) */}
-                          {currentQ.category === "LISTENING_MC" && sub.audio_url && (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => playSpeechAudio(sub.audio_url, "Female", audioBtnId)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fff1ea] border border-[#d8c2b6] rounded-lg text-xs font-bold text-[#6d3807] hover:bg-[#ffb782] transition-all"
-                              >
-                                {isAudioLoading ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : isAudioPlaying ? (
-                                  <Volume2 className="w-3.5 h-3.5 animate-bounce text-emerald-700" />
-                                ) : (
-                                  <Volume2 className="w-3.5 h-3.5" />
-                                )}
-                                <span>{isAudioPlaying ? "Đang phát âm thanh..." : "Nghe âm thanh câu hỏi"}</span>
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Options */}
-                          <div className="space-y-2">
-                            {[sub.option_a, sub.option_b, sub.option_c, sub.option_d].filter(Boolean).map((optStr: string) => {
-                              const isSubSel = answers[subAnsKey] === optStr;
-                              return (
-                                <label
-                                  key={optStr}
-                                  onClick={() => handleUpdateAnswer(subAnsKey, optStr)}
-                                  className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${
-                                    isSubSel ? "border-2 border-[#6d3807] bg-[#fff1ea] font-bold text-[#6d3807]" : "border-[#d8c2b6] bg-white hover:bg-[#fff8f5]"
-                                  }`}
-                                >
-                                  <input type="radio" checked={isSubSel} onChange={() => {}} className="accent-[#6d3807] w-4 h-4" />
-                                  <span>{optStr}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* 2. FILL-IN GAPS (READING_FILL_IN & LISTENING_FILL_IN) */}
-              {/* ========================================================= */}
-              {(currentQ.category === "READING_FILL_IN" || currentQ.category === "LISTENING_FILL_IN") && (() => {
-                const { parts, gaps } = parseFillInGaps(currentQ.content.passage || "");
-                const subtype = currentQ.content.fill_subtype || "OPTION_BANK";
-                const optionBank = currentQ.content.option_bank || [];
-
-                return (
-                  <div className="space-y-4 text-sm">
-                    <span className="text-sm font-bold text-[#6d3807] block uppercase">
-                      Điền từ vào chỗ khuyết ({subtype === "INLINE_SELECT" ? "Dropdown Select" : subtype === "OPTION_BANK" ? "Ngân Hàng Từ" : "Tự Gõ"}):
-                    </span>
-
-                    {/* Text Passage Flow with Embedded Gap Controls (Clean layout with NO guide text) */}
-                    <div className="p-4 rounded-xl bg-[#fff8f5] border border-[#d8c2b6] leading-loose font-medium text-[#211a16]">
-                      {parts.map((partText, idx) => (
-                        <span key={idx}>
-                          {partText}
-                          {idx < gaps.length && (() => {
-                            const gapAnsKey = `${currentQ.id}_gap_${idx}`;
-                            const currentAns = answers[gapAnsKey] || "";
-
-                            if (subtype === "INLINE_SELECT") {
-                              const gapOptions =
-                                currentQ.content.option_banks?.find((g: any) => g.gap_index === idx)?.options ||
-                                currentQ.content.inline_options_per_gap?.find((g: any) => g.gap_index === idx)?.options ||
-                                Array.from(new Set([gaps[idx], ...optionBank])).slice(0, 4);
-
-                              return (
-                                <select
-                                  value={currentAns}
-                                  onChange={(e) => handleUpdateAnswer(gapAnsKey, e.target.value)}
-                                  className="inline-block mx-1 px-3 py-1 bg-white border-2 border-[#6d3807] rounded-lg font-bold text-[#6d3807] focus:outline-none shadow-sm cursor-pointer text-sm"
-                                >
-                                  <option value="">-- Chọn từ --</option>
-                                  {gapOptions.map((optWord: string) => (
-                                    <option key={optWord} value={optWord}>
-                                      {optWord}
-                                    </option>
-                                  ))}
-                                </select>
-                              );
-                            }
-
-                            if (subtype === "OPTION_BANK") {
-                              const isDraggingFillIn = fillInDragState !== null && fillInDragState.qId === currentQ.id;
-                              const isGapSource = isDraggingFillIn && fillInDragState.sourceGapIdx === idx;
-                              const isGapHovered = isDraggingFillIn && fillInHoverGapIdx === idx;
-
-                              // Determine display for this gap during drag
-                              let gapDisplayVal = currentAns;
-                              let gapIsPlaceholder = false;
-
-                              if (isDraggingFillIn) {
-                                if (isGapHovered && fillInDragState.sourceGapIdx !== idx) {
-                                  // Target gap: show empty dashed
-                                  gapIsPlaceholder = true;
-                                } else if (isGapSource) {
-                                  if (fillInHoverGapIdx !== null && fillInHoverGapIdx !== idx) {
-                                    // Source shows temp word from hovered gap
-                                    const hoverKey = `${currentQ.id}_gap_${fillInHoverGapIdx}`;
-                                    const hoverWord = answers[hoverKey] || "";
-                                    gapDisplayVal = hoverWord;
-                                    if (!hoverWord) gapIsPlaceholder = true;
-                                  } else {
-                                    // Source with no hover target: show empty dashed
-                                    gapIsPlaceholder = true;
-                                  }
-                                }
-                              }
-
-                              return (
-                                <span
-                                  data-gap-slot-idx={idx}
-                                  onPointerDown={currentAns ? (e) => handleStartFillInPointerDrag(e, currentQ.id, idx, null, currentAns) : undefined}
-                                  onClick={() => {
-                                    if (fillInDragState) return;
-                                    if (currentAns) handleUpdateAnswer(gapAnsKey, "");
-                                    else if (activeSelectedChip) {
-                                      handleUpdateAnswer(gapAnsKey, activeSelectedChip);
-                                      setActiveSelectedChip(null);
-                                    }
-                                  }}
-                                  className={`inline-flex items-center justify-center mx-1 px-3.5 py-1 rounded-lg font-bold transition-all min-w-[90px] h-8 align-middle border-2 ${
-                                    gapIsPlaceholder
-                                      ? "border-dashed border-[#6d3807] bg-[#fff8f5]"
-                                      : gapDisplayVal
-                                      ? "border-emerald-700 bg-emerald-50 text-emerald-800 shadow-sm cursor-grab"
-                                      : "border-dashed border-[#6d3807] bg-white text-[#6d3807] cursor-pointer"
-                                  }`}
-                                  style={{ transition: "all 0.9s ease-out" }}
-                                >
-                                  {gapIsPlaceholder ? null : gapDisplayVal}
-                                </span>
-                              );
-                            }
-
-                            // Free typing input fallback
-                            return (
-                              <input
-                                type="text"
-                                value={currentAns}
-                                onChange={(e) => handleUpdateAnswer(gapAnsKey, e.target.value)}
-                                className="inline-block mx-1 w-32 px-3 py-1 bg-white border-2 border-[#6d3807] rounded-lg text-xs font-bold text-[#6d3807] text-center"
-                              />
-                            );
-                          })()}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Option Bank Choice Chips (Fitting text width!) */}
-                    {subtype === "OPTION_BANK" && (() => {
-                      const perGapBanks: Array<{ gap_index: number; options: string[] }> = currentQ.content.option_banks || [];
-                      const hasPerGap = perGapBanks.length > 0;
-
-                      return (
-                        <div className="p-3.5 bg-white rounded-xl border border-[#d8c2b6] space-y-3">
-                          <span className="font-bold text-[#6d3807] block text-xs">Ngân hàng từ chọn (Click từ hoặc Kéo thả vào ô trống):</span>
-
-                          {hasPerGap ? (
-                            <div className="space-y-3">
-                              {perGapBanks.map((gb, gIdx) => (
-                                <div key={gIdx} className="space-y-1.5 p-2.5 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/60">
-                                  <span className="text-[11px] font-bold text-[#6d3807] block">Chỗ trống {gIdx + 1}:</span>
-                                  <div className="flex flex-wrap gap-2">
-                                    {gb.options.map((word: string) => {
-                                      const isUsed = Object.keys(answers).some(
-                                        (k) => k.startsWith(`${currentQ.id}_gap_`) && answers[k] === word
-                                      );
-                                      const isChipActive = activeSelectedChip === word;
-                                      const isDraggingFillIn = fillInDragState !== null && fillInDragState.qId === currentQ.id;
-                                      const isBeingDragged = isDraggingFillIn && fillInDragState.dragWordText === word;
-
-                                      return (
-                                        <button
-                                          key={word}
-                                          type="button"
-                                          onPointerDown={!isUsed || isBeingDragged ? (e) => handleStartFillInPointerDrag(e, currentQ.id, null, word, word) : undefined}
-                                          onClick={() => {
-                                            if (fillInDragState) return;
-                                            if (isUsed) return;
-                                            if (isChipActive) setActiveSelectedChip(null);
-                                            else {
-                                              const targetGapKey = `${currentQ.id}_gap_${gIdx}`;
-                                              handleUpdateAnswer(targetGapKey, word);
-                                              setActiveSelectedChip(null);
-                                            }
-                                          }}
-                                          className={`w-auto px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                            isUsed && !isBeingDragged
-                                              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-30 line-through"
-                                              : isChipActive
-                                              ? "bg-[#6d3807] text-white border-[#6d3807] shadow-md ring-2 ring-[#ffb782]"
-                                              : "bg-white text-[#6d3807] border-[#ffb782] hover:border-[#6d3807] cursor-grab shadow-2xs"
-                                          }`}
-                                        >
-                                          {word}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {optionBank.map((word: string) => {
-                                const isUsed = Object.keys(answers).some(
-                                  (k) => k.startsWith(`${currentQ.id}_gap_`) && answers[k] === word
-                                );
-                                const isChipActive = activeSelectedChip === word;
-
-                                const isDraggingFillIn = fillInDragState !== null && fillInDragState.qId === currentQ.id;
-                                const isBeingDragged = isDraggingFillIn && fillInDragState.dragWordText === word;
-
-                                return (
-                                  <button
-                                    key={word}
-                                    type="button"
-                                    onPointerDown={!isUsed || isBeingDragged ? (e) => handleStartFillInPointerDrag(e, currentQ.id, null, word, word) : undefined}
-                                    onClick={() => {
-                                      if (fillInDragState) return;
-                                      if (isUsed) return;
-                                      if (isChipActive) setActiveSelectedChip(null);
-                                      else {
-                                        setActiveSelectedChip(word);
-                                        for (let i = 0; i < gaps.length; i++) {
-                                          if (!answers[`${currentQ.id}_gap_${i}`]) {
-                                            handleUpdateAnswer(`${currentQ.id}_gap_${i}`, word);
-                                            setActiveSelectedChip(null);
-                                            break;
-                                          }
-                                        }
-                                      }
-                                    }}
-                                    className={`w-auto px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                      isUsed && !isBeingDragged
-                                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-30 line-through"
-                                        : isChipActive
-                                        ? "bg-[#6d3807] text-white border-[#6d3807] shadow-md ring-2 ring-[#ffb782]"
-                                        : "bg-[#fff1ea] text-[#6d3807] border-[#ffb782] hover:border-[#6d3807] cursor-grab"
-                                    }`}
-                                  >
-                                    {word}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 3. ORDERING (UNIFIED DRAG & DROP / REORDERING INSIDE TARGET BOX) */}
-              {/* ========================================================= */}
-              {(currentQ.category === "READING_ORDERING" || currentQ.category === "LISTENING_ORDERING") && (() => {
-                const isWordOrdering = currentQ.content.ordering_type === "WORD_ORDERING";
-                const correctText: string = currentQ.content.correct_text || "";
-                const rawItems: string[] = isWordOrdering
-                  ? correctText.split(/\s+/).filter(Boolean)
-                  : correctText.split(/(?<=[.!?])\s+/).map((s: string) => s.trim()).filter(Boolean);
-
-                const orderedKey = `${currentQ.id}_ordered`;
-                const orderedItems: string[] = answers[orderedKey] || [];
-                const availableItems = rawItems.filter((item) => !orderedItems.includes(item));
-
-                return (
-                  <div className="space-y-4 text-xs">
-                    <span className="text-xs font-bold text-[#6d3807] block uppercase">
-                      Sắp xếp {isWordOrdering ? "các từ" : "các câu"} (Click hoặc Kéo thả để thêm/bớt và thay đổi vị trí):
-                    </span>
-
-                    {/* Available Items Bank */}
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const rawData = e.dataTransfer.getData("text/plain");
-                        if (rawData && orderedItems.includes(rawData)) {
-                          handleUpdateAnswer(
-                            orderedKey,
-                            orderedItems.filter((i) => i !== rawData)
-                          );
-                        }
-                      }}
-                      className="p-3.5 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2"
-                    >
-                      <span className="font-bold text-[#52443a] block text-[11px]">
-                        Danh sách {isWordOrdering ? "từ" : "câu"} sẵn có:
-                      </span>
-
-                      {isWordOrdering ? (
-                        <div className="flex flex-wrap gap-2">
-                          {availableItems.map((w, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              draggable
-                              onDragStart={(e) => e.dataTransfer.setData("text/plain", w)}
-                              onClick={() => handleUpdateAnswer(orderedKey, [...orderedItems, w])}
-                              className="w-auto px-3.5 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold text-[#6d3807] hover:bg-[#6d3807] hover:text-white transition-all shadow-sm"
-                            >
-                              {w}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {availableItems.map((s, i) => (
-                            <div
-                              key={i}
-                              draggable
-                              onDragStart={(e) => e.dataTransfer.setData("text/plain", s)}
-                              onClick={() => handleUpdateAnswer(orderedKey, [...orderedItems, s])}
-                              className="p-3 bg-white rounded-xl border border-[#d8c2b6] text-xs font-medium text-[#211a16] hover:border-[#6d3807] cursor-pointer shadow-sm flex items-center justify-between"
-                            >
-                              <span>{s}</span>
-                              <span className="text-[10px] font-bold text-[#6d3807] bg-[#fff1ea] px-2 py-0.5 rounded border border-[#ffb782]">+ Thêm</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Ordered Workspace Target Drop Zone with Reordering support */}
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const rawData = e.dataTransfer.getData("text/plain");
-                        try {
-                          const parsed = JSON.parse(rawData);
-                          if (parsed.type === "REORDER_ITEM") return;
-                        } catch (err) {}
-
-                        if (rawData && !orderedItems.includes(rawData)) {
-                          handleUpdateAnswer(orderedKey, [...orderedItems, rawData]);
-                        }
-                      }}
-                      className="p-4 bg-white rounded-xl border-2 border-dashed border-[#6d3807] space-y-3 min-h-[110px]"
-                    >
-                      <div className="flex items-center justify-between border-b border-[#d8c2b6] pb-2">
-                        <span className="font-bold text-[#6d3807] uppercase">Khu vực đã sắp xếp ({orderedItems.length}/{rawItems.length}):</span>
-                        {orderedItems.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateAnswer(orderedKey, [])}
-                            className="text-[11px] font-bold text-rose-600 hover:underline flex items-center space-x-1"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>Xóa làm lại</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {orderedItems.length === 0 ? (
-                        <p className="text-center text-[#857469] font-mono text-[11px] py-4">
-                          Kéo thả hoặc click các {isWordOrdering ? "từ" : "câu"} vào đây để hoàn thiện thứ tự.
-                        </p>
-                      ) : isWordOrdering ? (() => {
-                        const isDragging = activePointerDragIdx !== null && pointerHoverIdx !== null;
-                        let itemsToRender: Array<{ isPlaceholder: boolean; text: string; origIdx: number }> = [];
-
-                        if (isDragging) {
-                          const withoutDrag = orderedItems
-                            .map((text, i) => ({ text, origIdx: i }))
-                            .filter((_, i) => i !== activePointerDragIdx);
-
-                          const clampHover = Math.max(0, Math.min(pointerHoverIdx!, withoutDrag.length));
-
-                          withoutDrag.forEach((item, i) => {
-                            if (i === clampHover) {
-                              itemsToRender.push({ isPlaceholder: true, text: orderedItems[activePointerDragIdx!], origIdx: activePointerDragIdx! });
-                            }
-                            itemsToRender.push({ isPlaceholder: false, text: item.text, origIdx: item.origIdx });
-                          });
-                          if (clampHover >= withoutDrag.length) {
-                            itemsToRender.push({ isPlaceholder: true, text: orderedItems[activePointerDragIdx!], origIdx: activePointerDragIdx! });
-                          }
-                        } else {
-                          itemsToRender = orderedItems.map((text, i) => ({ isPlaceholder: false, text, origIdx: i }));
-                        }
-
-                        return (
-                          <div className="flex flex-wrap gap-2 transition-all duration-900 ease-out relative">
-                            {itemsToRender.map((item, displayIdx) => {
-                              if (item.isPlaceholder) {
-                                return (
-                                  <div
-                                    key={`word_ph_${displayIdx}`}
-                                    data-order-idx={displayIdx}
-                                    style={pointerDragSize ? { width: `${pointerDragSize.width}px`, height: `${pointerDragSize.height}px` } : undefined}
-                                    className="min-w-[64px] min-h-[28px] border-2 border-dashed border-[#6d3807] bg-[#fff8f5] rounded-lg transition-all duration-900 ease-out shadow-inner"
-                                  />
-                                );
-                              }
-
-                              const idx = item.origIdx;
-                              return (
-                                <button
-                                  key={`word_${item.text}_${idx}`}
-                                  type="button"
-                                  data-order-idx={displayIdx}
-                                  onPointerDown={(e) => handleStartPointerDrag(e, currentQ.id, orderedKey, idx, item.text, orderedItems)}
-                                  onClick={() =>
-                                    handleUpdateAnswer(
-                                      orderedKey,
-                                      orderedItems.filter((_, i) => i !== idx)
-                                    )
-                                  }
-                                  className="w-auto px-3.5 py-1.5 bg-[#6d3807] text-white hover:bg-rose-700 rounded-lg text-xs font-bold transition-all duration-900 ease-out transform cursor-grab active:cursor-grabbing shadow-sm touch-none"
-                                >
-                                  {item.text} &times;
-                                </button>
-                              );
-                            })}
-                          </div>
-                        );
-                      })() : (() => {
-                        const isDragging = activePointerDragIdx !== null && pointerHoverIdx !== null;
-                        let itemsToRender: Array<{ isPlaceholder: boolean; text: string; origIdx: number }> = [];
-
-                        if (isDragging) {
-                          const withoutDrag = orderedItems
-                            .map((text, i) => ({ text, origIdx: i }))
-                            .filter((_, i) => i !== activePointerDragIdx);
-
-                          const clampHover = Math.max(0, Math.min(pointerHoverIdx!, withoutDrag.length));
-
-                          withoutDrag.forEach((item, i) => {
-                            if (i === clampHover) {
-                              itemsToRender.push({ isPlaceholder: true, text: orderedItems[activePointerDragIdx!], origIdx: activePointerDragIdx! });
-                            }
-                            itemsToRender.push({ isPlaceholder: false, text: item.text, origIdx: item.origIdx });
-                          });
-                          if (clampHover >= withoutDrag.length) {
-                            itemsToRender.push({ isPlaceholder: true, text: orderedItems[activePointerDragIdx!], origIdx: activePointerDragIdx! });
-                          }
-                        } else {
-                          itemsToRender = orderedItems.map((text, i) => ({ isPlaceholder: false, text, origIdx: i }));
-                        }
-
-                        return (
-                          <div className="space-y-2 transition-all duration-900 ease-out relative">
-                            {itemsToRender.map((item, displayIdx) => {
-                              if (item.isPlaceholder) {
-                                return (
-                                  <div
-                                    key={`sent_ph_${displayIdx}`}
-                                    data-order-idx={displayIdx}
-                                    style={pointerDragSize ? { height: `${pointerDragSize.height}px` } : undefined}
-                                    className="w-full min-h-[44px] border-2 border-dashed border-[#6d3807] bg-[#fff8f5] rounded-xl transition-all duration-900 ease-out shadow-inner"
-                                  />
-                                );
-                              }
-
-                              const idx = item.origIdx;
-                              return (
-                                <div
-                                  key={`sent_${item.text.slice(0, 15)}_${idx}`}
-                                  data-order-idx={displayIdx}
-                                  onPointerDown={(e) => handleStartPointerDrag(e, currentQ.id, orderedKey, idx, item.text, orderedItems)}
-                                  className="p-3 bg-[#fff1ea] border border-[#ffb782] text-[#6d3807] rounded-xl text-xs font-bold flex items-center justify-between shadow-sm cursor-grab active:cursor-grabbing transition-all duration-900 ease-out transform hover:scale-[1.01] touch-none"
-                                >
-                                  <span className="flex-1 mr-2 font-bold pointer-events-none">
-                                    {displayIdx + 1}. {item.text}
-                                  </span>
-                                  <div className="flex items-center space-x-1">
-                                    {idx > 0 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const updated = [...orderedItems];
-                                          const temp = updated[idx];
-                                          updated[idx] = updated[idx - 1];
-                                          updated[idx - 1] = temp;
-                                          handleUpdateAnswer(orderedKey, updated);
-                                        }}
-                                        className="p-1 rounded bg-white border border-[#d8c2b6] text-[#6d3807]"
-                                      >
-                                        <MoveUp className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    {idx < orderedItems.length - 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const updated = [...orderedItems];
-                                          const temp = updated[idx];
-                                          updated[idx] = updated[idx + 1];
-                                          updated[idx + 1] = temp;
-                                          handleUpdateAnswer(orderedKey, updated);
-                                        }}
-                                        className="p-1 rounded bg-white border border-[#d8c2b6] text-[#6d3807]"
-                                      >
-                                        <MoveDown className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateAnswer(
-                                          orderedKey,
-                                          orderedItems.filter((_, i) => i !== idx)
-                                        )
-                                      }
-                                      className="px-2 py-1 bg-rose-600 text-white rounded text-[10px] font-bold"
-                                    >
-                                      Bỏ
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 4. MATCHING PAIRS (BALANCED ALIGNMENT & DIMMED USED ITEMS) */}
-              {/* ========================================================= */}
-              {(currentQ.category === "READING_MATCHING" ||
-                currentQ.category === "LISTENING_MATCHING" ||
-                currentQ.category === "WRITING_MATCHING") && (() => {
-                const pairs: Array<{ id: string; left: string; right: string }> =
-                  currentQ.content.pairs || [];
-
-                const rightOptions = Array.from(new Set(pairs.map((p) => p.right))).sort();
-                const isWritingMatching = currentQ.category === "WRITING_MATCHING";
-
-                return (
-                  <div className="space-y-4 text-xs">
-                    <span className="text-xs font-bold text-[#6d3807] block uppercase">
-                      {isWritingMatching
-                        ? "Gõ từ tiếng Anh dịch từ tương ứng ở cột trái:"
-                        : "Kéo thả hoặc click chọn từ ghép nối đúng vào cột bên dưới:"}
-                    </span>
-
-                    {/* Choice Chips Bank for Reading & Listening Matching */}
-                    {!isWritingMatching && (
-                      <div className="p-3.5 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2">
-                        <span className="font-bold text-[#6d3807] block text-[11px]">Danh sách từ ghép nối (Cột B):</span>
-                        <div className="flex flex-wrap gap-2">
-                          {rightOptions.map((optRight) => {
-                            const isUsed = pairs.some((_, i) => answers[`${currentQ.id}_match_${i}`] === optRight);
-                            const isSelected = activeSelectedChip === optRight;
-
-                            return (
-                              <button
-                                key={optRight}
-                                type="button"
-                                onPointerDown={(e) => {
-                                  if (isUsed) return;
-                                  handleStartMatchingPointerDrag(e, currentQ.id, null, optRight, optRight);
-                                }}
-                                onClick={() => {
-                                  if (isUsed) return;
-                                  for (let i = 0; i < pairs.length; i++) {
-                                    const slotKey = `${currentQ.id}_match_${i}`;
-                                    if (!answers[slotKey]) {
-                                      handleUpdateAnswer(slotKey, optRight);
-                                      break;
-                                    }
-                                  }
-                                }}
-                                className={`w-auto px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                  isUsed
-                                    ? "bg-gray-100 text-gray-400 border-gray-200 opacity-30 pointer-events-none cursor-not-allowed line-through"
-                                    : isSelected
-                                    ? "bg-[#6d3807] text-white border-[#6d3807] shadow-md ring-2 ring-[#ffb782] cursor-grab active:cursor-grabbing touch-none"
-                                    : "bg-white text-[#6d3807] border-[#d8c2b6] hover:bg-[#fff1ea] cursor-grab active:cursor-grabbing touch-none"
-                                }`}
-                              >
-                                {optRight}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Perfectly Aligned 3-Column Matching Table */}
-                    <div className="space-y-2.5">
-                      {pairs.map((pair, idx) => {
-                        const matchKey = `${currentQ.id}_match_${idx}`;
-                        const currentVal = answers[matchKey] || "";
-                        const audioBtnId = `match_audio_${currentQ.id}_${idx}`;
-                        const isAudioLoading = audioLoadingId === audioBtnId;
-                        const isAudioPlaying = audioPlayingId === audioBtnId;
-
-                        return (
-                          <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white border border-[#d8c2b6] shadow-sm">
-                            {/* Column 1: Left Item (Centered) */}
-                            <div className="w-5/12 text-center font-bold text-[#211a16] flex items-center justify-center space-x-2">
-                              <span>{pair.left}</span>
-                              {currentQ.category === "LISTENING_MATCHING" && (
-                                <button
-                                  type="button"
-                                  onClick={() => playSpeechAudio(pair.left, "Female", audioBtnId)}
-                                  className="p-1 rounded bg-[#fff1ea] text-[#6d3807] hover:bg-[#ffb782]"
-                                >
-                                  {isAudioLoading ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6d3807]" />
-                                  ) : isAudioPlaying ? (
-                                    <Volume2 className="w-3.5 h-3.5 animate-bounce" />
-                                  ) : (
-                                    <Volume2 className="w-3.5 h-3.5 text-[#6d3807]" />
-                                  )}
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Column 2: Center Arrow (Straight Vertical Alignment) */}
-                            <div className="w-2/12 text-center font-bold text-[#6d3807] text-base">
-                              ↔
-                            </div>
-
-                            {/* Column 3: Right Target Slot / Input (Centered & Wider Empty Slot) */}
-                            <div className="w-5/12 flex items-center justify-center">
-                              {isWritingMatching ? (
-                                <input
-                                  type="text"
-                                  placeholder="Gõ từ..."
-                                  value={currentVal}
-                                  onChange={(e) => handleUpdateAnswer(matchKey, e.target.value)}
-                                  className="w-full max-w-[180px] px-3.5 py-1.5 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold text-[#6d3807] text-center"
-                                />
-                              ) : (() => {
-                                const isHovered = matchingHoverSlotIdx === idx;
-                                const isSource = matchingDragState?.sourceSlotIdx === idx;
-                                const isDraggingActive = matchingDragState !== null;
-
-                                let displayVal = currentVal;
-                                let isPlaceholder = false;
-
-                                if (isDraggingActive) {
-                                  if (isHovered) {
-                                    isPlaceholder = true;
-                                  } else if (isSource) {
-                                    if (matchingHoverSlotIdx !== null && matchingHoverSlotIdx !== idx) {
-                                      const hoverVal = answers[`${currentQ.id}_match_${matchingHoverSlotIdx}`];
-                                      displayVal = hoverVal || "";
-                                      if (!hoverVal) isPlaceholder = true;
-                                    } else {
-                                      isPlaceholder = true;
-                                    }
-                                  }
-                                }
-
-                                if (isPlaceholder) {
-                                  return (
-                                    <div
-                                      data-match-slot-idx={idx}
-                                      className="min-w-[130px] h-9 px-4 rounded-xl border-2 border-dashed border-[#6d3807] bg-[#fff8f5] shadow-inner transition-all duration-900 ease-out"
-                                    />
-                                  );
-                                }
-
-                                return (
-                                  <div
-                                    data-match-slot-idx={idx}
-                                    onPointerDown={(e) => {
-                                      if (displayVal) {
-                                        handleStartMatchingPointerDrag(e, currentQ.id, idx, null, displayVal);
-                                      }
-                                    }}
-                                    onClick={() => {
-                                      if (displayVal) handleUpdateAnswer(matchKey, "");
-                                      else if (activeSelectedChip) {
-                                        handleUpdateAnswer(matchKey, activeSelectedChip);
-                                        setActiveSelectedChip(null);
-                                      }
-                                    }}
-                                    className={`min-w-[130px] h-9 px-4 rounded-xl border-2 font-bold inline-flex items-center justify-center transition-all duration-900 ease-out transform ${
-                                      displayVal
-                                        ? "border-emerald-700 bg-emerald-50 text-emerald-800 shadow-sm cursor-grab active:cursor-grabbing touch-none hover:scale-[1.02]"
-                                        : "border-dashed border-[#6d3807] bg-[#fff8f5] text-[#6d3807] cursor-pointer"
-                                    }`}
-                                  >
-                                    {displayVal}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 5. FLASHCARD CAROUSEL SLIDE VIEW (CLICKABLE PREV/NEXT DIMMED IMAGES + ANIMATIONS) */}
-              {/* ========================================================= */}
-              {(currentQ.category === "READING_FLASHCARD_SET" || currentQ.category === "WRITING_FLASHCARD_SET") && (() => {
-                const fcList: any[] = currentQ.content?.flashcards_resolved || currentQ.content?.flashcards || [];
-                if (fcList.length === 0) return <p className="text-xs text-[#857469]">Không có thẻ flashcard nào.</p>;
-
-                const activeFcIdx = flashcardIndexMap[currentQ.id] || 0;
-                const activeFc = fcList[activeFcIdx];
-                const prevFc = activeFcIdx > 0 ? fcList[activeFcIdx - 1] : null;
-                const nextFc = activeFcIdx < fcList.length - 1 ? fcList[activeFcIdx + 1] : null;
-
-                const isWritingFc = currentQ.category === "WRITING_FLASHCARD_SET";
-                const fcAudioBtnId = `fc_audio_${currentQ.id}_${activeFcIdx}`;
-
-                const slideDir = slideDirectionMap[currentQ.id] || "next";
-                const slideAnimClass = slideDir === "next" ? "anim-slide-next" : "anim-slide-prev";
-
-                // Options for READING_FLASHCARD_SET MCQ mode (from flashcards.options column)
-                let rawOptionsFromDb: string[] = [];
-                if (Array.isArray(activeFc.options) && activeFc.options.length > 0) {
-                  rawOptionsFromDb = activeFc.options;
-                }
-
-                const mcqOptions = rawOptionsFromDb;
-                const showFreeTypingInput = isWritingFc || mcqOptions.length === 0;
-
-                return (
-                  <div className="space-y-4 text-xs relative mx-auto">
-                    {/* Header counter */}
-                    <div className="flex items-center justify-between border-b border-[#d8c2b6] pb-2">
-                      <span className="font-bold text-[#6d3807] uppercase">
-                        Flashcard {activeFcIdx + 1} / {fcList.length} (Dùng phím ← → trên bàn phím để chuyển thẻ)
-                      </span>
-                    </div>
-
-                    {/* Active Flashcard Card Container (Restored Warm Background & Outer Padding) */}
-                    <div className="relative p-6 rounded-2xl bg-[#fff8f5] border border-[#d8c2b6] space-y-4 shadow-sm text-center">
-                      
-                      {/* Large Arrow Buttons Aligned Centered to Image Container Height */}
-                      <button
-                        type="button"
-                        disabled={activeFcIdx === 0}
-                        onClick={() => handlePrevFc(currentQ.id, activeFcIdx)}
-                        className="absolute left-2 top-[204px] -translate-y-1/2 z-20 w-11 h-11 bg-white border-2 border-[#6d3807] text-[#6d3807] rounded-full flex items-center justify-center shadow-lg disabled:opacity-20 hover:bg-[#6d3807] hover:text-white transition-all"
-                      >
-                        <ChevronLeft className="w-7 h-7 stroke-[3]" />
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={activeFcIdx === fcList.length - 1}
-                        onClick={() => handleNextFc(currentQ.id, activeFcIdx, fcList.length - 1)}
-                        className="absolute right-2 top-[204px] -translate-y-1/2 z-20 w-11 h-11 bg-white border-2 border-[#6d3807] text-[#6d3807] rounded-full flex items-center justify-center shadow-lg disabled:opacity-20 hover:bg-[#6d3807] hover:text-white transition-all"
-                      >
-                        <ChevronRight className="w-7 h-7 stroke-[3]" />
-                      </button>
-
-                      {/* Top Image Frame with Clickable Dimmed Side Previews + Main Active Image Slide Animation */}
-                      <div className="relative h-90 w-full flex items-center justify-center space-x-3 bg-black/5 rounded-2xl p-2 border border-[#d8c2b6] overflow-hidden">
-                        
-                        {/* Dimmed Previous Card Image (Clickable Next/Prev Trigger) */}
-                        {prevFc ? (
-                          <div
-                            onClick={() => handlePrevFc(currentQ.id, activeFcIdx)}
-                            className="w-1/4 h-44 rounded-xl overflow-hidden opacity-25 hover:opacity-60 blur-[0.5px] scale-90 hover:scale-95 transition-all duration-900 flex items-center justify-center shrink-0 cursor-pointer group"
-                            title="Bấm để quay lại thẻ trước"
-                          >
-                            {prevFc.image_url ? (
-                              <img src={prevFc.image_url} alt="" className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-bold text-[#6d3807] text-xs">Thẻ {activeFcIdx}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="w-1/4 h-44 opacity-0 shrink-0" />
-                        )}
-
-                        {/* Main Active Card Image (Slide Animated) */}
-                        <div className="w-2/4 h-81 flex items-center justify-center shrink-0 relative">
-                          {activeFc.image_url ? (
-                            <img
-                              key={`fc_img_${activeFcIdx}`}
-                              src={activeFc.image_url}
-                              alt={activeFc.vietnamese_name}
-                              className={`max-h-full max-w-full object-contain rounded-xl shadow-sm ${slideAnimClass}`}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-[#fff1ea] flex items-center justify-center font-bold text-[#6d3807] text-base rounded-xl">
-                              Thẻ {activeFcIdx + 1}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Dimmed Next Card Image (Clickable Next Trigger) */}
-                        {nextFc ? (
-                          <div
-                            onClick={() => handleNextFc(currentQ.id, activeFcIdx, fcList.length - 1)}
-                            className="w-1/4 h-44 rounded-xl overflow-hidden opacity-25 hover:opacity-60 blur-[0.5px] scale-90 hover:scale-95 transition-all duration-900 flex items-center justify-center shrink-0 cursor-pointer group"
-                            title="Bấm để tới thẻ tiếp theo"
-                          >
-                            {nextFc.image_url ? (
-                              <img src={nextFc.image_url} alt="" className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-bold text-[#6d3807] text-xs">Thẻ {activeFcIdx + 2}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="w-1/4 h-44 opacity-0 shrink-0" />
-                        )}
-                      </div>
-
-                      {/* Card Details & Response Controls with Fade In Up Animation */}
-                      <div key={`fc_details_${activeFcIdx}`} className="space-y-4 pt-1 anim-fc-fade">
-                        <div className="space-y-1.5">
-                          <span className="text-base font-bold text-[#6d3807] block">{activeFc.vietnamese_name}</span>
-                          {activeFc.correct_english_word && (
-                            <button
-                              type="button"
-                              onClick={() => playSpeechAudio(activeFc.correct_english_word, "Female", fcAudioBtnId)}
-                              className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#6d3807] hover:underline bg-white px-3.5 py-1 rounded-full border border-[#d8c2b6] shadow-sm"
-                            >
-                              {audioLoadingId === fcAudioBtnId ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6d3807]" />
-                              ) : audioPlayingId === fcAudioBtnId ? (
-                                <Volume2 className="w-3.5 h-3.5 animate-bounce" />
-                              ) : (
-                                <Volume2 className="w-3.5 h-3.5 text-[#6d3807]" />
-                              )}
-                              <span>Nghe phát âm từ</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {/* READING_FLASHCARD_SET MCQ Chips & Target Drop Slot vs WRITING_FLASHCARD_SET Free Typing Input (With automatic Fallback) */}
-                        {showFreeTypingInput ? (
-                          <div className="max-w-md mx-auto space-y-2">
-                            <label className="block text-[11px] font-bold text-[#52443a]">Gõ chính xác từ tiếng Anh:</label>
-                            <input
-                              type="text"
-                              placeholder="Gõ từ tiếng Anh..."
-                              value={answers[`${currentQ.id}_fc_${activeFcIdx}`] || ""}
-                              onChange={(e) => handleUpdateAnswer(`${currentQ.id}_fc_${activeFcIdx}`, e.target.value)}
-                              className="w-full px-4 py-2 bg-white border-2 border-[#6d3807] rounded-xl text-xs font-bold text-[#6d3807] text-center focus:outline-none"
-                            />
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <span className="block text-[11px] font-bold text-[#52443a]">
-                              Chọn hoặc Kéo thả từ tiếng Anh chính xác vào thẻ:
-                            </span>
-
-                            {/* Drop Target Slot */}
-                            <div
-                              onClick={() => {
-                                const currentAns = answers[`${currentQ.id}_fc_${activeFcIdx}`];
-                                if (currentAns) handleUpdateAnswer(`${currentQ.id}_fc_${activeFcIdx}`, "");
-                                else if (activeSelectedChip) {
-                                  handleUpdateAnswer(`${currentQ.id}_fc_${activeFcIdx}`, activeSelectedChip);
-                                  setActiveSelectedChip(null);
-                                }
-                              }}
-                              onDragOver={(e) => e.preventDefault()}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                const val = e.dataTransfer.getData("text/plain");
-                                if (val) handleUpdateAnswer(`${currentQ.id}_fc_${activeFcIdx}`, val);
-                              }}
-                              className={`min-w-[140px] h-10 px-5 rounded-xl border-2 font-bold inline-flex items-center justify-center transition-all cursor-pointer ${
-                                answers[`${currentQ.id}_fc_${activeFcIdx}`]
-                                  ? "border-emerald-700 bg-emerald-50 text-emerald-800 shadow-sm"
-                                  : "border-dashed border-[#6d3807] bg-white text-[#6d3807]"
-                              }`}
-                            >
-                              {answers[`${currentQ.id}_fc_${activeFcIdx}`]}
-                            </div>
-
-                            {/* Choice Chips (Auto-fitting text width!) */}
-                            <div className="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto pt-1">
-                              {mcqOptions.map((optWord: string) => {
-                                const isSelected = answers[`${currentQ.id}_fc_${activeFcIdx}`] === optWord;
-                                return (
-                                  <button
-                                    key={optWord}
-                                    type="button"
-                                    draggable
-                                    onDragStart={(e) => e.dataTransfer.setData("text/plain", optWord)}
-                                    onClick={() => handleUpdateAnswer(`${currentQ.id}_fc_${activeFcIdx}`, optWord)}
-                                    className={`w-auto px-4 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                                      isSelected
-                                        ? "border-emerald-700 bg-emerald-700 text-white shadow-sm"
-                                        : "border-[#d8c2b6] bg-white text-[#211a16] hover:bg-[#fff1ea] hover:border-[#6d3807]"
-                                    }`}
-                                  >
-                                    {optWord}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Pagination Dots */}
-                      <div className="flex justify-center space-x-1.5 pt-2">
-                        {fcList.map((_, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setSlideDirectionMap((prev) => ({
-                                ...prev,
-                                [currentQ.id]: i > activeFcIdx ? "next" : "prev",
-                              }));
-                              setFlashcardIndexMap((prev) => ({ ...prev, [currentQ.id]: i }));
-                            }}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              i === activeFcIdx ? "bg-[#6d3807] w-6" : "bg-[#d8c2b6]"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 6. WRITING ESSAY (WRITING_ESSAY) */}
-              {/* ========================================================= */}
-              {currentQ.category === "WRITING_ESSAY" && (
-                <div className="space-y-2 text-xs">
-                  <span className="text-xs font-bold text-[#6d3807] block uppercase">Soạn bài luận Task 2 (Tối thiểu 250 từ):</span>
-                  <textarea
-                    rows={10}
-                    placeholder="Nhập bài luận tiếng Anh của bạn tại đây..."
-                    value={answers[currentQ.id] || ""}
-                    onChange={(e) => handleUpdateAnswer(currentQ.id, e.target.value)}
-                    className="w-full p-4 bg-white border border-[#d8c2b6] rounded-xl text-xs leading-relaxed focus:outline-none focus:border-[#6d3807]"
-                  />
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* 7. WRITING FREE TYPING BLANKS */}
-              {/* ========================================================= */}
-              {currentQ.category === "WRITING_FREE_TYPING_BLANKS" && (() => {
-                const passageText = currentQ.content.passage || currentQ.prompt || "";
-                const { parts, gaps } = parseFillInGaps(passageText);
-
-                return (
-                  <div className="space-y-4 text-xs">
-                    <span className="text-xs font-bold text-[#6d3807] block uppercase">
-                      Gõ từ chính xác điền vào chỗ trống:
-                    </span>
-
-                    {/* Text Passage Flow with Embedded Inline Typing Inputs */}
-                    <div className="p-4 rounded-xl bg-[#fff8f5] border border-[#d8c2b6] leading-loose font-medium text-[#211a16]">
-                      {parts.map((partText, idx) => (
-                        <span key={idx}>
-                          {partText}
-                          {idx < (gaps.length > 0 ? gaps.length : 1) && (() => {
-                            const gapAnsKey = gaps.length > 0 ? `${currentQ.id}_gap_${idx}` : currentQ.id;
-                            const currentAns = answers[gapAnsKey] || "";
-
-                            const targetWord = gaps[idx] || "";
-                            const wordLen = targetWord.length || 6;
-                            const widthCh = Math.max(wordLen + 2.5, 4);
-
-                            return (
-                              <input
-                                type="text"
-                                value={currentAns}
-                                onChange={(e) => handleUpdateAnswer(gapAnsKey, e.target.value)}
-                                style={{ width: `${widthCh}ch` }}
-                                className="inline-block mx-1 px-2.5 py-0.5 bg-white border border-[#d8c2b6] focus:border-[#6d3807] rounded-lg text-xs font-bold text-[#6d3807] text-left focus:outline-none focus:ring-1 focus:ring-[#ffb782] shadow-2xs transition-all"
-                              />
-                            );
-                          })()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 8. WRITING SHORT ANSWER (SUB-QUESTIONS WITH MAX WORDS & TEXTAREA) */}
-              {/* ========================================================= */}
-              {currentQ.category === "WRITING_SHORT_ANSWER" && (() => {
-                const rawSubs =
-                  currentQ.content.sub_questions ||
-                  currentQ.content.subQuestions ||
-                  currentQ.content.shortAnswersList ||
-                  [];
-
-                const subQs =
-                  rawSubs.length > 0
-                    ? rawSubs
-                    : [
-                        {
-                          id: currentQ.id,
-                          text: currentQ.prompt || "Nội dung câu hỏi...",
-                          max_words: currentQ.content.max_words || 50,
-                        },
-                      ];
-
-                const isSingle = subQs.length === 1;
-
-                return (
-                  <div className="space-y-4 text-xs">
-                    <div className="flex items-center justify-between border-b border-[#d8c2b6] pb-2">
-                      <span className="text-xs font-bold text-[#6d3807] uppercase">
-                        Danh Sách Câu Hỏi Trả Lời Ngắn ({subQs.length} câu):
-                      </span>
-                    </div>
-
-                    <div className="space-y-4">
-                      {subQs.map((sub: any, i: number) => {
-                        const subAnsKey = isSingle ? currentQ.id : `${currentQ.id}_sub_${i}`;
-                        const maxW = sub.max_words || sub.maxWords || 50;
-                        const qText =
-                          sub.text ||
-                          sub.questionText ||
-                          sub.subQuestionText ||
-                          sub.prompt ||
-                          currentQ.prompt ||
-                          `Câu hỏi ${i + 1}`;
-                        const currentVal = answers[subAnsKey] || (isSingle ? answers[currentQ.id] : "") || "";
-
-                        return (
-                          <div key={i} className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-3 shadow-sm">
-                            <div className="flex items-start justify-between gap-3 border-b border-[#d8c2b6]/50 pb-2">
-                              <span className="font-bold text-[#211a16] text-xs leading-relaxed">
-                                <span className="text-[#6d3807] font-bold mr-1.5">Câu {i + 1}:</span>
-                                {qText}
-                              </span>
-                              <span className="shrink-0 text-[11px] font-bold text-[#6d3807] bg-[#fff1ea] px-3 py-1 rounded-full border border-[#d8c2b6] shadow-2xs">
-                                Tối đa {maxW} từ
-                              </span>
-                            </div>
-
-                            <textarea
-                              rows={3}
-                              placeholder={`Nhập câu trả lời ngắn cho Câu ${i + 1} (Tối đa ${maxW} từ)...`}
-                              value={currentVal}
-                              onChange={(e) => {
-                                handleUpdateAnswer(subAnsKey, e.target.value);
-                                if (isSingle) handleUpdateAnswer(currentQ.id, e.target.value);
-                              }}
-                              className="w-full p-3.5 bg-white border border-[#d8c2b6] rounded-xl text-xs text-[#211a16] font-medium leading-relaxed focus:outline-none focus:border-[#6d3807] focus:ring-2 focus:ring-[#ffb782]/40 shadow-inner"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 9. WRITING SENTENCE REWRITE */}
-              {/* ========================================================= */}
-              {currentQ.category === "WRITING_SENTENCE_REWRITE" && (() => {
-                const rawSub = currentQ.content.sub_questions || currentQ.content.subQuestions || [];
-                const subQuestions = rawSub.length > 0 ? rawSub : [
-                  {
-                    id: `${currentQ.id}_0`,
-                    original_sentence: currentQ.content.original_sentence || currentQ.content.originalSentence || "",
-                    correct_answer: currentQ.content.correct_answer || currentQ.content.correctAnswer || "",
-                  }
-                ];
-
-                return (
-                  <div className="space-y-5 text-xs sm:text-sm font-sans">
-                    {subQuestions.map((sub: any, idx: number) => {
-                      const subKey = subQuestions.length === 1 ? currentQ.id : `${currentQ.id}_sr_${idx}`;
-                      const { cue } = parseSentenceRewriteCue(sub.correct_answer || sub.correctAnswer || "");
-
-                      return (
-                        <div key={sub.id || idx} className="space-y-2 p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] shadow-2xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[#6d3807] text-xs uppercase tracking-wide">
-                              Câu {idx + 1}
-                            </span>
-                            {cue && (
-                              <span className="px-2 py-0.5 bg-[#fff1ea] text-[#6d3807] border border-[#ffb782] rounded-md font-bold text-[11px]">
-                                Từ gợi ý: "{cue}"
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="p-3 bg-white rounded-xl border border-[#d8c2b6]/60 leading-relaxed font-medium text-[#211a16]">
-                            {sub.original_sentence || sub.originalSentence}
-                          </div>
-
-                          <div className="flex items-center bg-white border border-[#d8c2b6] rounded-xl overflow-hidden shadow-2xs focus-within:border-[#6d3807] focus-within:ring-1 focus-within:ring-[#ffb782] transition-all">
-                            {cue && (
-                              <span className="px-3.5 py-2.5 bg-[#fff1ea] text-[#6d3807] font-bold text-xs sm:text-sm border-r border-[#d8c2b6] shrink-0 select-none flex items-center">
-                                {cue}
-                              </span>
-                            )}
-                            <input
-                              type="text"
-                              placeholder={cue ? "gõ tiếp phần còn lại..." : "Nhập câu viết lại hoàn chỉnh..."}
-                              value={answers[subKey] || ""}
-                              onChange={(e) => handleUpdateAnswer(subKey, e.target.value)}
-                              className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-bold placeholder:font-normal placeholder:text-gray-400 text-[#211a16] focus:outline-none bg-transparent"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-              {/* ========================================================= */}
-              {/* 10. REAL SPEAKING RECORDING & DIRECT AUDIO EVALUATION */}
-              {/* ========================================================= */}
-              {(currentQ.category === "SPEAKING_TOPIC_PROMPT" || currentQ.category === "SPEAKING_READ_ALOUD") && (() => {
-                const isRecording = isRecordingMap[currentQ.id];
-                const recTime = recordingTimerMap[currentQ.id] || 0;
-                const audioBlobUrl = recordedAudioMap[currentQ.id] || (typeof answers[currentQ.id] === "string" ? answers[currentQ.id] : null);
-
-                return (
-                  <div className="space-y-4 text-xs text-center font-sans">
-                    <span className="text-xs font-bold text-[#6d3807] block uppercase">
-                      Ghi Âm Bài Nói Trực Tiếp:
-                    </span>
-
-                    {/* Microphone Recording Control Panel */}
-                    <div className="p-6 rounded-2xl bg-[#fff8f5] border-2 border-dashed border-[#6d3807] space-y-4 shadow-2xs">
-                      <div className="flex items-center justify-center space-x-3">
-                        {isRecording ? (
-                          <div className="flex items-center space-x-2 text-rose-600 font-bold animate-pulse text-sm">
-                            <Radio className="w-5 h-5 text-rose-600 animate-spin" />
-                            <span>Đang ghi âm bài nói... ({formatTimer(recTime)})</span>
-                          </div>
-                        ) : audioBlobUrl ? (
-                          <div className="flex items-center space-x-2 text-emerald-700 font-bold text-sm">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                            <span>Đã hoàn thành ghi âm bài nói! Bạn có thể nghe lại hoặc ghi âm lại bên dưới.</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs font-bold text-[#52443a]">
-                            Bấm nút bên dưới để bắt đầu thu âm từ Microphone
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Audio Playback Player if Recorded */}
-                      {audioBlobUrl && !isRecording && (
-                        <div className="p-4 bg-white rounded-xl border border-[#d8c2b6] space-y-2 text-left shadow-2xs">
-                          <span className="font-bold text-[#6d3807] block text-xs">Bản ghi âm giọng nói của bạn:</span>
-                          <audio controls src={audioBlobUrl} className="w-full h-9" />
-                        </div>
-                      )}
-
-                      {/* Control Action Buttons */}
-                      <div className="flex justify-center items-center gap-3">
-                        {!isRecording ? (
-                          <button
-                            type="button"
-                            onClick={() => startRecording(currentQ.id)}
-                            className="px-6 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow-md inline-flex items-center space-x-2 transition-all cursor-pointer"
-                          >
-                            <Mic className="w-4 h-4 text-[#ffb782]" />
-                            <span>{audioBlobUrl ? "🔄 Ghi Âm Lại" : "🎙️ Bắt Đầu Ghi Âm"}</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => stopRecording(currentQ.id)}
-                            className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md inline-flex items-center space-x-2 transition-all animate-bounce cursor-pointer"
-                          >
-                            <Square className="w-4 h-4 text-white fill-white" />
-                            <span>⏹️ Dừng Ghi Âm</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-            </div>
-          </div>
-
-        </section>
-      </main>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function StudentExamPage() {
+  return (
+    <StudentLayout>
+      <Suspense fallback={<div className="min-h-[60vh] flex flex-col items-center justify-center"><Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-2" /><p className="text-xs text-ink-muted">Đang tải trang làm đề...</p></div>}>
+        <StudentExamInner />
+      </Suspense>
+    </StudentLayout>
   );
 }

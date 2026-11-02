@@ -1,9 +1,8 @@
-# 1. Base image
-FROM node:20-alpine AS base
+# 1. Base image (Node 22 cho pdf-parse/pdfjs-dist; Debian glibc chạy được cả ARM64)
+FROM node:22-bookworm-slim AS base
 
 # 2. Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -32,8 +31,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 

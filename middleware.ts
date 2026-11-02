@@ -7,10 +7,17 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("auth_token")?.value;
 
   let userRole: string | null = null;
+  let mustChangePassword = false;
   if (token) {
     // Cryptographically verify HS256 signature using Edge-compatible Web Crypto API
     const payload = await verifyJwtToken(token);
     userRole = payload?.role || null;
+    mustChangePassword = payload?.mcp === true;
+  }
+
+  // Còn mật khẩu tạm → bắt buộc đổi trước khi vào khu vực đã đăng nhập
+  if (userRole && mustChangePassword && !pathname.startsWith("/student/landing")) {
+    return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
   // Guard Admin Routes
@@ -27,9 +34,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Guard Student Routes
+  if (pathname.startsWith("/student")) {
+    if (!pathname.startsWith("/student/landing")) {
+      if (!userRole) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/teacher/:path*"],
+  matcher: ["/admin/:path*", "/teacher/:path*", "/student/:path*"],
 };

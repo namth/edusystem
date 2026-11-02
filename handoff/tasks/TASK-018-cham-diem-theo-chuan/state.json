@@ -1,0 +1,63 @@
+{
+  "id": "TASK-018",
+  "title": "Migration 009 + lib/exam-scoring (điểm phần, tổng theo chuẩn) + chấm Speaking bằng AI",
+  "status": "accepted",
+  "conversation_id": "05cefcf3-7a2a-46db-869a-569b66864947",
+  "history": [
+    {
+      "at": "2026-10-31T14:28:59",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:29:44",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:30:06",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T14:36:52",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T14:39:07",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-018-cham-diem-theo-chuan/verify.sh",
+    "tests/admin-api.test.ts",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/class-roadmap-ui.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exam-scoring.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/flashcards-uploads-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lesson-library-ui.test.ts",
+    "tests/lesson-player.test.ts",
+    "tests/lesson-preview.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "docs/db-migration-009-scoring-standards.sql"
+  ],
+  "via": "agy"
+}

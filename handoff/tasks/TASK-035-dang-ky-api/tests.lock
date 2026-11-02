@@ -1,0 +1,3 @@
+25715e306213240d6a00e21d34ab8ffd51dae03fd546299b3a4fd61d6ee20b67  handoff/tasks/TASK-035-dang-ky-api/verify.sh
+c1cb854869fc06728d53f7bae69d9ad166ead05a121ae9f328bb13f0310d170f  tests/onboarding-api.test.ts
+9f6b89bc6a46dbf8f29fa9e35c684cf403de538081f0c54a93169e28e245c4aa  tests/helpers/pg-fake.ts

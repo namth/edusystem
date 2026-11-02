@@ -1,0 +1,58 @@
+{
+  "id": "TASK-011",
+  "title": "API học sinh: lộ trình lớp, nội dung bài ẩn đáp án, nộp bài, chấm AI nền",
+  "status": "accepted",
+  "conversation_id": "941bd51f-3d98-4fa5-87c3-b4afb6d8a062",
+  "history": [
+    {
+      "at": "2026-10-31T12:26:05",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T12:28:38",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T12:29:03",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T12:40:07",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T12:46:01",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-011-hoc-sinh-bai-hoc-api/verify.sh",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "docs/db-migration-004-enrollments-assignments.sql",
+    "docs/db-migration-006-lessons.sql",
+    "handoff/tasks/TASK-011-hoc-sinh-bai-hoc-api/tsconfig.verify.json"
+  ],
+  "via": "agy"
+}

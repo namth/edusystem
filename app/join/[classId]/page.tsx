@@ -4,8 +4,6 @@ import { useState, useEffect, use } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import {
   School,
   User,
@@ -30,11 +28,11 @@ interface ClassInfo {
   id: string;
   name: string;
   code: string;
-  teacher_id: string;
-  teacher_name?: string;
-  schedule?: string;
-  max_slots?: number;
+  teacher_name?: string | null;
+  schedule?: string | null;
+  max_slots?: number | null;
   enrolled_count?: number;
+  is_enrolled?: boolean;
 }
 
 export default function JoinClassPage({ params }: { params: Promise<{ classId: string }> }) {
@@ -46,6 +44,7 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
 
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loadingClass, setLoadingClass] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"register" | "login">("register");
@@ -64,88 +63,62 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1. Fetch Class and Teacher Info
+  // 1. Fetch Class and Teacher Info via public lookup API
   useEffect(() => {
     async function loadClassData() {
       setLoadingClass(true);
+      setNotFound(false);
       try {
-        // Query by id OR code
-        let { data: classRow } = await supabase
-          .from("classes")
-          .select("*")
-          .or(`id.eq.${rawClassId},code.eq.${rawClassId}`)
-          .maybeSingle();
-
-        if (!classRow) {
-          // Fallback to first class
-          const { data: firstClass } = await supabase.from("classes").select("*").limit(1).single();
-          classRow = firstClass;
+        const res = await fetch(`/api/classes/lookup/${encodeURIComponent(rawClassId)}`);
+        if (res.status === 404) {
+          setNotFound(true);
+          setClassInfo(null);
+          return;
         }
 
-        if (classRow) {
-          // Fetch Teacher Name
-          let teacherName = "Thầy Nguyễn Văn Đức";
-          if (classRow.teacher_id) {
-            const { data: teacherRow } = await supabase
-              .from("users")
-              .select("name")
-              .eq("id", classRow.teacher_id)
-              .maybeSingle();
-            if (teacherRow?.name) teacherName = teacherRow.name;
-          }
-
-          // Count Enrollments
-          const { count } = await supabase
-            .from("enrollments")
-            .select("*", { count: "exact", head: true })
-            .eq("class_id", classRow.id);
-
-          setClassInfo({
-            ...classRow,
-            teacher_name: teacherName,
-            enrolled_count: count || 0,
-          });
-
-          // Check if current user is already enrolled
-          if (user) {
-            const { data: enr } = await supabase
-              .from("enrollments")
-              .select("id")
-              .eq("student_id", user.id)
-              .eq("class_id", classRow.id)
-              .maybeSingle();
-
-            if (enr) setIsAlreadyEnrolled(true);
-          }
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success || !json.class) {
+          setErrorMsg(json.error || "Không thể tải thông tin lớp học.");
+          setClassInfo(null);
+          return;
         }
+
+        setClassInfo(json.class);
+        setIsAlreadyEnrolled(Boolean(json.class.is_enrolled));
       } catch (err) {
         console.error("Error loading class:", err);
+        setErrorMsg("Đã xảy ra lỗi khi tải thông tin lớp học.");
       } finally {
         setLoadingClass(false);
       }
     }
 
-    loadClassData();
-  }, [rawClassId, user]);
-
-  // Helper: Enroll Student into Class & Sync Neo4j
-  const enrollStudent = async (studentId: string, targetClassId: string) => {
-    try {
-      await supabase.from("enrollments").upsert(
-        [
-          {
-            id: `enr_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            student_id: studentId,
-            class_id: targetClassId,
-            status: "APPROVED",
-          },
-        ],
-        { onConflict: "student_id,class_id" }
-      );
-      await syncStudentEnrolledInClass(studentId, targetClassId);
-    } catch (err) {
-      console.error("Enrollment error:", err);
+    if (rawClassId) {
+      loadClassData();
     }
+  }, [rawClassId]);
+
+  // Helper: Enroll Student via API
+  const enrollInClass = async (code: string) => {
+    const res = await fetch("/api/student/enroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (res.status === 409) {
+      return { success: false, error: "Lớp học đã đủ chỗ, vui lòng liên hệ giáo viên." };
+    }
+    if (res.status === 403) {
+      return { success: false, error: "Chỉ tài khoản học sinh mới tham gia lớp được." };
+    }
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error || "Lỗi ghi danh lớp học." };
+    }
+
+    return { success: true, data: json };
   };
 
   // Handle Logged-In User Join Click
@@ -154,8 +127,12 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await enrollStudent(user.id, classInfo.id);
-      router.push("/student/dashboard");
+      const res = await enrollInClass(classInfo.code);
+      if (res.success) {
+        router.push("/student/dashboard");
+      } else {
+        setErrorMsg(res.error);
+      }
     } catch (err: any) {
       setErrorMsg("Không thể tham gia lớp học. Vui lòng thử lại!");
     } finally {
@@ -178,16 +155,18 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       return;
     }
 
+    if (!classInfo) return;
+
     setIsSubmitting(true);
     try {
       const res = await register(regName, regEmail, regPassword, regPhone);
       if (res.success) {
-        // Fetch newly created user ID from current session
-        const { data: sessionRes } = await supabase.auth.getUser();
-        if (sessionRes?.user && classInfo) {
-          await enrollStudent(sessionRes.user.id, classInfo.id);
+        const enrollRes = await enrollInClass(classInfo.code);
+        if (enrollRes.success) {
+          router.push("/student/dashboard");
+        } else {
+          setErrorMsg(enrollRes.error);
         }
-        router.push("/student/dashboard");
       } else {
         setErrorMsg(res.error || "Đăng ký không thành công. Email có thể đã được sử dụng!");
       }
@@ -209,15 +188,21 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       return;
     }
 
+    if (!classInfo) return;
+
     setIsSubmitting(true);
     try {
       const res = await login(loginId, loginPassword);
-      if (res.success && res.user && classInfo) {
-        await enrollStudent(res.user.id, classInfo.id);
-        if (res.user.mustChangePassword) {
-          router.push("/change-password");
+      if (res.success && res.user) {
+        const enrollRes = await enrollInClass(classInfo.code);
+        if (enrollRes.success) {
+          if (res.user.mustChangePassword) {
+            router.push("/change-password");
+          } else {
+            router.push("/student/dashboard");
+          }
         } else {
-          router.push("/student/dashboard");
+          setErrorMsg(enrollRes.error);
         }
       } else {
         setErrorMsg(res.error || "Tên đăng nhập hoặc mật khẩu không đúng!");
@@ -232,26 +217,43 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
 
   if (loadingClass) {
     return (
-      <div className="min-h-screen bg-[#fff8f5] flex items-center justify-center text-xs font-bold text-[#6d3807]">
+      <div className="min-h-screen bg-surface-alt flex items-center justify-center text-xs font-bold text-brand-600">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         <span>Đang tải thông tin lớp học...</span>
       </div>
     );
   }
 
+  if (notFound || !classInfo) {
+    return (
+      <div className="min-h-screen bg-surface-alt flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center border border-rose-200">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h1 className="text-xl font-bold text-brand-600 text-center">
+          Link mời không hợp lệ hoặc lớp không còn tồn tại.
+        </h1>
+        <Link
+          href="/student/dashboard"
+          className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all"
+        >
+          Quay lại Dashboard
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#fff8f5] min-h-screen flex flex-col academic-grid font-sans text-[#211a16] selection:bg-[#6d3807] selection:text-white">
+    <div className="bg-surface-alt min-h-screen flex flex-col academic-grid font-sans text-ink selection:bg-brand-600 selection:text-white">
       {/* Top Header */}
-      <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-10 bg-white/80 backdrop-blur-md z-50 border-b border-[#d8c2b6]/30">
+      <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-10 bg-white/80 backdrop-blur-md z-50 border-b border-line/30">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-[#6d3807] rounded-xl flex items-center justify-center text-white shadow-xs">
-            <School className="w-5 h-5 text-[#ffb782]" />
-          </div>
-          <span className="text-xl font-bold text-[#6d3807] tracking-tight">
-            EduTest Pro
+          <img src="/brand/kitokit-mark.png" alt="" className="w-9 h-9 object-contain" />
+          <span className="text-xl font-bold text-brand-600 tracking-tight">
+            KitoKit
           </span>
         </div>
-        <Link href="/login" className="text-xs font-bold text-[#6d3807] hover:underline">
+        <Link href="/login" className="text-xs font-bold text-brand-600 hover:underline">
           Đăng nhập hệ thống &rarr;
         </Link>
       </header>
@@ -263,42 +265,44 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
           {/* Left Visual / Class Detail Pane */}
           <div className="hidden lg:flex flex-col space-y-8 pr-6">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#f9ebe4] border border-[#d8c2b6]/50 rounded-full text-xs font-bold text-[#6d3807]">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-100 border border-line/50 rounded-full text-xs font-bold text-brand-600">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>MÃ LỚP: {classInfo?.code || "IELTS75K24"}</span>
+                <span>MÃ LỚP: {classInfo.code}</span>
               </div>
-              <h1 className="text-3xl font-extrabold text-[#6d3807] leading-tight tracking-tight">
-                {classInfo?.name || "Lớp Học IELTS Khảo Thí Special"}
+              <h1 className="text-3xl font-extrabold text-brand-600 leading-tight tracking-tight">
+                {classInfo.name}
               </h1>
-              <p className="text-xs text-[#52443a] leading-relaxed max-w-md">
+              <p className="text-xs text-ink-muted leading-relaxed max-w-md">
                 Đăng ký hoặc đăng nhập tài khoản học viên để tự động tham gia lớp học và mở khóa ngân hàng đề thi của giảng viên.
               </p>
             </div>
 
             {/* Class Metadata Box */}
-            <div className="p-5 bg-white/90 rounded-2xl border border-[#d8c2b6]/50 shadow-xs space-y-3">
-              <div className="flex items-center gap-3 text-xs font-bold text-[#211a16]">
-                <User className="w-4 h-4 text-[#6d3807]" />
-                <span>Giảng viên: <strong className="text-[#6d3807]">{classInfo?.teacher_name}</strong></span>
-              </div>
-              {classInfo?.schedule && (
-                <div className="flex items-center gap-3 text-xs font-semibold text-[#52443a]">
-                  <Calendar className="w-4 h-4 text-[#6d3807]" />
+            <div className="p-5 bg-white/90 rounded-2xl border border-line/50 shadow-xs space-y-3">
+              {classInfo.teacher_name && (
+                <div className="flex items-center gap-3 text-xs font-bold text-ink">
+                  <User className="w-4 h-4 text-brand-600" />
+                  <span>Giảng viên: <strong className="text-brand-600">{classInfo.teacher_name}</strong></span>
+                </div>
+              )}
+              {classInfo.schedule && (
+                <div className="flex items-center gap-3 text-xs font-semibold text-ink-muted">
+                  <Calendar className="w-4 h-4 text-brand-600" />
                   <span>Lịch học: {classInfo.schedule}</span>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-xs font-semibold text-[#52443a]">
-                <Users className="w-4 h-4 text-[#6d3807]" />
-                <span>Sĩ số: {classInfo?.enrolled_count} / {classInfo?.max_slots || 35} học viên</span>
+              <div className="flex items-center gap-3 text-xs font-semibold text-ink-muted">
+                <Users className="w-4 h-4 text-brand-600" />
+                <span>Sĩ số: {classInfo.enrolled_count ?? 0} / {classInfo.max_slots ?? 35} học viên</span>
               </div>
             </div>
 
             {/* Floating Visual Card */}
-            <div className="relative w-full aspect-video max-w-[380px] rounded-3xl overflow-hidden shadow-md border border-[#d8c2b6]/40 float-anim">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#6d3807]/20 to-transparent z-10" />
+            <div className="relative w-full aspect-video max-w-[380px] rounded-3xl overflow-hidden shadow-md border border-line/40 float-anim">
+              <div className="absolute inset-0 bg-gradient-to-tr from-brand-600/20 to-transparent z-10" />
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK1LOHlfWUn4f96qQY5VZ6AFGdycltIZyQPAem2c4NoS1inlFPiWq1UzXqG-cfa7_g9PiXg8IQmAAPn2RpXwtokGME4IL_E3TuyvCFvZ_J4RM_fFKNfmhcvcxB9qf-1kSBdYYAwaZbK239WFhmtZaxR84ixeH8dJyOinjW0S4bSqqxGGOcLRPwloePCBCqMkcScjtiMkyfqefJ-5YJ5ndbh3vSFeccntNjkZv-HrrhwVN1Wir2d_3y"
-                alt="EduTest Class Portal"
+                src="/brand/kitokit-mark.png"
+                alt="KitoKit — Lớp học"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -306,26 +310,28 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
 
           {/* Right Form Pane */}
           <div className="w-full flex justify-center lg:justify-end">
-            <div className="w-full max-w-[440px] bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-[#d8c2b6]/40 space-y-6">
+            <div className="w-full max-w-[440px] bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-line/40 space-y-6">
               
               {user ? (
                 /* Already Logged In Case */
                 <div className="space-y-6 text-center">
-                  <div className="w-16 h-16 bg-[#f9ebe4] rounded-2xl flex items-center justify-center mx-auto border border-[#d8c2b6]/50">
-                    <School className="w-8 h-8 text-[#6d3807]" />
+                  <div className="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto border border-line/50">
+                    <School className="w-8 h-8 text-brand-600" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-extrabold text-[#211a16]">
+                    <h2 className="text-xl font-extrabold text-ink">
                       {isAlreadyEnrolled ? "BẠN ĐÃ LÀ THÀNH VIÊN LỚP HỌC" : "THAM GIA LỚP HỌC NGAY"}
                     </h2>
-                    <p className="text-xs text-[#857469] mt-1.5">
-                      Xin chào <strong className="text-[#6d3807]">{user.name}</strong> ({user.email})
+                    <p className="text-xs text-ink-subtle mt-1.5">
+                      Xin chào <strong className="text-brand-600">{user.name}</strong> ({user.email})
                     </p>
                   </div>
 
-                  <div className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6]/60 text-left text-xs space-y-1.5">
-                    <p className="font-bold text-[#6d3807]">{classInfo?.name}</p>
-                    <p className="text-[#52443a]">Giảng viên: {classInfo?.teacher_name}</p>
+                  <div className="p-4 bg-surface-alt rounded-xl border border-line/60 text-left text-xs space-y-1.5">
+                    <p className="font-bold text-brand-600">{classInfo.name}</p>
+                    {classInfo.teacher_name && (
+                      <p className="text-ink-muted">Giảng viên: {classInfo.teacher_name}</p>
+                    )}
                   </div>
 
                   {errorMsg && (
@@ -338,7 +344,7 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                   {isAlreadyEnrolled ? (
                     <Link
                       href="/student/dashboard"
-                      className="w-full py-3.5 bg-[#6d3807] hover:bg-[#85460c] text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2"
+                      className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2"
                     >
                       <span>VÀO BẢNG ĐIỀU KHIỂN HỌC VIÊN</span>
                       <ArrowRight className="w-4 h-4" />
@@ -348,16 +354,16 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       type="button"
                       onClick={handleLoggedInJoin}
                       disabled={isSubmitting}
-                      className="w-full py-3.5 bg-[#6d3807] hover:bg-[#85460c] text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                      className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#ffb782]" />
+                          <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
                           <span>Đang đăng ký ghi danh...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-[#ffb782]" />
+                          <CheckCircle2 className="w-4 h-4 text-accent-400" />
                           <span>XÁC NHẬN THAM GIA LỚP HỌC</span>
                         </>
                       )}
@@ -368,23 +374,23 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                 /* Unauthenticated User: Form with 2 Tabs (Register & Join OR Login & Join) */
                 <>
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#211a16] tracking-tight">
+                    <h2 className="text-2xl font-extrabold text-ink tracking-tight">
                       THAM GIA LỚP HỌC
                     </h2>
-                    <p className="text-xs text-[#857469] mt-1">
-                      {classInfo?.name}
+                    <p className="text-xs text-ink-subtle mt-1">
+                      {classInfo.name}
                     </p>
                   </div>
 
                   {/* Tab Switcher */}
-                  <div className="flex p-1 bg-[#f9ebe4] rounded-xl border border-[#d8c2b6]/30">
+                  <div className="flex p-1 bg-brand-100 rounded-xl border border-line/30">
                     <button
                       type="button"
                       onClick={() => { setActiveTab("register"); setErrorMsg(null); }}
                       className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         activeTab === "register"
-                          ? "bg-white text-[#6d3807] shadow-xs"
-                          : "text-[#857469] hover:text-[#211a16]"
+                          ? "bg-white text-brand-600 shadow-xs"
+                          : "text-ink-subtle hover:text-ink"
                       }`}
                     >
                       Tạo Tài Khoản Mới
@@ -394,8 +400,8 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       onClick={() => { setActiveTab("login"); setErrorMsg(null); }}
                       className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         activeTab === "login"
-                          ? "bg-white text-[#6d3807] shadow-xs"
-                          : "text-[#857469] hover:text-[#211a16]"
+                          ? "bg-white text-brand-600 shadow-xs"
+                          : "text-ink-subtle hover:text-ink"
                       }`}
                     >
                       Đã Có Tài Khoản
@@ -413,73 +419,73 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                     /* Register Form */
                     <form onSubmit={handleRegisterSubmit} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Họ và Tên Học Viên
                         </label>
                         <div className="relative">
-                          <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type="text"
                             required
                             value={regName}
                             onChange={(e) => setRegName(e.target.value)}
                             placeholder="Ví dụ: Nguyễn Văn An"
-                            className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Địa Chỉ Email
                         </label>
                         <div className="relative">
-                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type="email"
                             required
                             value={regEmail}
                             onChange={(e) => setRegEmail(e.target.value)}
                             placeholder="student.name@edu.vn"
-                            className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Số Điện Thoại (Tùy chọn)
                         </label>
                         <div className="relative">
-                          <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type="tel"
                             value={regPhone}
                             onChange={(e) => setRegPhone(e.target.value)}
                             placeholder="0912 345 678"
-                            className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Mật Khẩu
                         </label>
                         <div className="relative">
-                          <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={regPassword}
                             onChange={(e) => setRegPassword(e.target.value)}
                             placeholder="Mật khẩu tối thiểu 6 ký tự"
-                            className="w-full pl-10 pr-10 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-10 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#857469] hover:text-[#211a16] cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink cursor-pointer"
                           >
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -489,16 +495,16 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-3.5 bg-[#6d3807] hover:bg-[#85460c] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+                        className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#ffb782]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
                             <span>Đang tạo tài khoản & vào lớp...</span>
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-4 h-4 text-[#ffb782]" />
+                            <UserCheck className="w-4 h-4 text-accent-400" />
                             <span>ĐĂNG KÝ & THAM GIA LỚP HỌC</span>
                           </>
                         )}
@@ -508,40 +514,40 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                     /* Login Form */
                     <form onSubmit={handleLoginSubmit} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Email / Tên Đăng Nhập
                         </label>
                         <div className="relative">
-                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type="text"
                             required
                             value={loginId}
                             onChange={(e) => setLoginId(e.target.value)}
                             placeholder="student.name@edu.vn"
-                            className="w-full pl-10 pr-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-3 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1.5">
+                        <label className="block text-xs font-bold uppercase text-brand-600 mb-1.5">
                           Mật Khẩu
                         </label>
                         <div className="relative">
-                          <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#857469]" />
+                          <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                           <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={loginPassword}
                             onChange={(e) => setLoginPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="w-full pl-10 pr-10 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold text-[#211a16] placeholder-[#a89588] focus:outline-none focus:ring-2 focus:ring-[#6d3807]"
+                            className="w-full pl-10 pr-10 py-2.5 bg-surface-alt border border-line rounded-xl text-xs font-bold text-ink placeholder-ink-subtle focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#857469] hover:text-[#211a16] cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink cursor-pointer"
                           >
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -551,16 +557,16 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-3.5 bg-[#6d3807] hover:bg-[#85460c] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+                        className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#ffb782]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
                             <span>Đang đăng nhập & ghi danh...</span>
                           </>
                         ) : (
                           <>
-                            <LogIn className="w-4 h-4 text-[#ffb782]" />
+                            <LogIn className="w-4 h-4 text-accent-400" />
                             <span>ĐĂNG NHẬP & THAM GIA LỚP HỌC</span>
                           </>
                         )}
@@ -577,13 +583,13 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-[#857469] border-t border-[#d8c2b6]/30">
+      <footer className="mt-auto py-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-ink-subtle border-t border-line/30">
         <div className="flex items-center gap-3">
-          <span>© 2026 EduTest Pro Academic</span>
-          <span className="w-1 h-1 bg-[#857469] rounded-full" />
+          <span>© 2026 KitoKit</span>
+          <span className="w-1 h-1 bg-ink-subtle rounded-full" />
           <span>Hệ Thống Đánh Giá & Khảo Thí</span>
         </div>
-        <div className="flex items-center gap-1.5 italic text-xs text-[#6d3807]">
+        <div className="flex items-center gap-1.5 italic text-xs text-brand-600">
           <ShieldCheck className="w-4 h-4" />
           <span>Môi Trường Khảo Thí An Toàn</span>
         </div>

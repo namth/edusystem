@@ -1,0 +1,4 @@
+488b988b891c9b9020fd9a531dd58cc8190cd5d9ef14f9c963aceb3eda6cb134  handoff/tasks/TASK-002-go-bi-mat-mat-khau/verify.sh
+35017129fcb73b79805a7909928ce26e2d3ffbcc553e80c1a3ad42a6a24e2e6e  tests/secrets-password.test.ts
+fbaaa22fd9f76bba36bc15472d0255780d416b7f4e56e3d0874f29830034db0c  tests/api-auth.test.ts
+38f6a895eb917e3efac3ee59ea682e9d4b33ef23fd16c4117cf132b573225140  vitest.config.ts

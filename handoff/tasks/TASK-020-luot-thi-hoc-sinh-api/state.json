@@ -1,0 +1,38 @@
+{
+  "id": "TASK-020",
+  "title": "Lượt thi học sinh do server quản lý, chấm khi nộp, grade-async/grade-override bằng pg",
+  "status": "accepted",
+  "conversation_id": "ead97b26-9f3d-4cbe-ba5e-731f07d234d1",
+  "history": [
+    {
+      "at": "2026-10-31T14:34:10",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:40:30",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:40:52",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T15:14:16",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T15:26:45",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-020-luot-thi-hoc-sinh-api/verify.sh",
+    "tests/student-api.test.ts"
+  ],
+  "via": "agy"
+}

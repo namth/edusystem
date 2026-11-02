@@ -163,7 +163,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
                 },
               },
               color: {
-                colors: ["#fff1ea", "#ffffff", "#6d3807", "#d8c2b6"],
+                colors: ["#eef4ff", "#ffffff", "#1453e0", "#e2e8f0"],
                 text: "Màu nền ô",
               },
             },
@@ -208,7 +208,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   }, [value]);
 
   return (
-    <div ref={containerRef} className="rich-editor-wrapper text-xs text-[#211a16] bg-white rounded-2xl border border-[#d8c2b6] overflow-hidden shadow-2xs">
+    <div ref={containerRef} className="rich-editor-wrapper text-xs text-ink bg-white rounded-2xl border border-line overflow-hidden shadow-2xs">
       <div className="editor-container min-h-[180px]" />
     </div>
   );

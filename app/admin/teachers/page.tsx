@@ -1,25 +1,65 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { UserCheck, UserPlus, Trash2, Loader2, CheckCircle2, Award, X, Save, ArrowRight } from "lucide-react";
+import {
+  UserCheck,
+  UserPlus,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  Award,
+  X,
+  Save,
+  ArrowRight,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 
 interface TeacherUser {
   id: string;
   name: string;
   email: string;
-  password?: string;
   phone?: string;
   created_at: string;
   slot_limit?: number;
+  teacher_status?: "TRIAL" | "VERIFIED" | "REJECTED" | null;
 }
 
-export default function AdminTeachersPage() {
+function renderStatusBadge(status?: string | null) {
+  if (status === "TRIAL") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-300">
+        Dùng thử
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+        Từ chối
+      </span>
+    );
+  }
+  return (
+    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+      Đã xác minh
+    </span>
+  );
+}
+
+function AdminTeachersContent() {
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams?.get("status") === "TRIAL" ? "TRIAL" : "ALL";
+
+  const [activeTab, setActiveTab] = useState<"ALL" | "TRIAL">(initialStatus);
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
+  const [trialCount, setTrialCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -35,40 +75,67 @@ export default function AdminTeachersPage() {
   const [qualification, setQualification] = useState("M.A TESOL (IELTS 8.5)");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchTeachers = async () => {
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("role", "TEACHER")
-        .order("created_at", { ascending: false });
+  useEffect(() => {
+    const urlStatus = searchParams?.get("status");
+    if (urlStatus === "TRIAL") {
+      setActiveTab("TRIAL");
+    }
+  }, [searchParams]);
 
-      if (userError) {
-        console.error("Teachers load error:", userError);
+  const fetchTeachers = async (tab: "ALL" | "TRIAL" = activeTab) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const endpoint =
+        tab === "TRIAL"
+          ? "/api/admin/users?role=TEACHER&teacherStatus=TRIAL"
+          : "/api/admin/users?role=TEACHER";
+
+      const [res, trialRes] = await Promise.all([
+        fetch(endpoint),
+        tab === "ALL"
+          ? Promise.resolve(null)
+          : fetch("/api/admin/users?role=TEACHER&teacherStatus=TRIAL"),
+      ]);
+
+      const data = await res.json();
+
+      if (!res.ok || !data.users) {
+        setError(data.error || "Không thể tải danh sách giảng viên.");
         return;
       }
 
-      const formatted: TeacherUser[] = (userData || []).map((row: any) => ({
+      const formatted: TeacherUser[] = (data.users || []).map((row: any) => ({
         id: row.id,
         name: row.name,
         email: row.email,
-        password: row.password,
         phone: row.phone || "0912345679",
         created_at: new Date(row.created_at).toLocaleDateString("vi-VN"),
-        slot_limit: row.slot_limit || 250,
+        slot_limit: row.slot_limit ?? 250,
+        teacher_status: row.teacher_status ?? "VERIFIED",
       }));
 
       setTeachers(formatted);
-    } catch (e) {
+
+      if (tab === "ALL") {
+        setTrialCount(formatted.filter((t) => t.teacher_status === "TRIAL").length);
+      } else if (trialRes && trialRes.ok) {
+        const trialJson = await trialRes.json();
+        setTrialCount(Array.isArray(trialJson.users) ? trialJson.users.length : formatted.length);
+      } else {
+        setTrialCount(formatted.length);
+      }
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "Lỗi hệ thống khi tải danh sách giảng viên.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTeachers();
-  }, []);
+    fetchTeachers(activeTab);
+  }, [activeTab]);
 
   const filteredTeachers = useMemo(() => {
     if (!searchQuery.trim()) return teachers;
@@ -135,7 +202,7 @@ export default function AdminTeachersPage() {
       setEmail("");
       setPassword("");
       setPhone("");
-      fetchTeachers();
+      fetchTeachers(activeTab);
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (e: any) {
       console.error(e);
@@ -163,7 +230,7 @@ export default function AdminTeachersPage() {
       }
 
       setSuccessMsg(`Đã xóa thành công giảng viên "${teacherName}" khỏi hệ thống.`);
-      fetchTeachers();
+      fetchTeachers(activeTab);
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (e) {
       console.error(e);
@@ -181,17 +248,17 @@ export default function AdminTeachersPage() {
     >
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#004d5e] uppercase tracking-wider font-bold mb-1">
-              <UserCheck className="w-4 h-4 text-[#004d5e]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-800 uppercase tracking-wider font-bold mb-1">
+              <UserCheck className="w-4 h-4 text-brand-800" />
               <span>Super Admin &bull; Faculty &amp; Teacher Management</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Quản Lý Giáo Viên &amp; Hạn Mức Sĩ Số
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
-              Theo dõi hồ sơ giảng viên và điều chỉnh hạn mức slot sinh viên trong PostgreSQL Database.
+            <p className="text-sm text-ink-muted mt-1">
+              Theo dõi hồ sơ giảng viên, xác minh giáo viên dùng thử và điều chỉnh hạn mức slot trong PostgreSQL Database.
             </p>
           </div>
 
@@ -200,10 +267,46 @@ export default function AdminTeachersPage() {
               setModalError(null);
               setShowCreateModal(true);
             }}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
-            <UserPlus className="w-4 h-4 text-[#ffb782]" />
+            <UserPlus className="w-4 h-4 text-accent-400" />
             <span>+ Thêm Giáo Viên Mới</span>
+          </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ALL")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+              activeTab === "ALL"
+                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                : "bg-white text-ink-muted border-line hover:bg-surface-alt"
+            }`}
+          >
+            Tất cả giáo viên
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("TRIAL")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
+              activeTab === "TRIAL"
+                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                : "bg-white text-ink-muted border-line hover:bg-surface-alt"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Chờ xác minh</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "TRIAL"
+                  ? "bg-white/20 text-white"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {trialCount}
+            </span>
           </button>
         </div>
 
@@ -214,54 +317,74 @@ export default function AdminTeachersPage() {
           </div>
         )}
 
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-xs font-bold">{error}</span>
+            </div>
+            <button
+              onClick={() => fetchTeachers(activeTab)}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
+
         {/* Clean Teachers List */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
             <span>Đang nạp danh sách giảng viên từ PostgreSQL...</span>
           </div>
         ) : filteredTeachers.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <p className="text-xs text-[#52443a]">Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm.</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <p className="text-xs text-ink-muted">
+              {activeTab === "TRIAL"
+                ? "Chưa có giáo viên nào chờ xác minh."
+                : "Không tìm thấy giảng viên nào khớp với từ khóa tìm kiếm."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredTeachers.map((t) => (
               <div
                 key={t.id}
-                className="bg-white p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
+                className="bg-white p-6 rounded-2xl border border-line shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#fff1ea] text-[#6d3807] text-xs font-bold border border-[#ffb782]">
+                    <div className="flex items-center flex-wrap gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-600 text-xs font-bold border border-brand-300">
                         TEACHER
                       </span>
-                      <span className="text-xs text-[#857469]">ID: {t.id}</span>
+                      {renderStatusBadge(t.teacher_status)}
+                      <span className="text-xs text-ink-subtle">ID: {t.id}</span>
                     </div>
-                    <span className="text-xs text-[#857469]">Tạo ngày: {t.created_at}</span>
+                    <span className="text-xs text-ink-subtle">Tạo ngày: {t.created_at}</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-[#211a16]">{t.name}</h3>
-                  <p className="text-xs text-[#52443a]">
-                    Email: <strong className="text-[#004d5e]">{t.email}</strong> &bull; SĐT: {t.phone}
+                  <h3 className="text-lg font-bold text-ink">{t.name}</h3>
+                  <p className="text-xs text-ink-muted">
+                    Email: <strong className="text-brand-800">{t.email}</strong> &bull; SĐT: {t.phone}
                   </p>
 
-                  <div className="pt-2 border-t border-[#d8c2b6]/30 flex items-center justify-between text-xs text-[#6d3807]">
+                  <div className="pt-2 border-t border-line/30 flex items-center justify-between text-xs text-brand-600">
                     <span className="flex items-center font-medium">
-                      <Award className="w-4 h-4 mr-1 text-[#6d3807]" />
-                      Hạn mức Slot Sĩ Số: <strong className="ml-1 text-[#6d3807] font-bold">{t.slot_limit} Slots</strong>
+                      <Award className="w-4 h-4 mr-1 text-brand-600" />
+                      Hạn mức Slot Sĩ Số: <strong className="ml-1 text-brand-600 font-bold">{t.slot_limit} Slots</strong>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#d8c2b6]/20">
+                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-line/20">
                   <Link
                     href={`/admin/teachers/${t.id}`}
-                    className="px-3.5 py-2 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-medium hover:bg-[#f9ebe4] flex items-center space-x-1 transition-all"
+                    className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 flex items-center space-x-1 transition-all"
                   >
-                    <span>Xem Hồ Sơ &amp; Sửa Slot</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#6d3807]" />
+                    <span>Xem Hồ Sơ &amp; Xác Minh</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-brand-600" />
                   </Link>
 
                   <button
@@ -281,13 +404,13 @@ export default function AdminTeachersPage() {
         {/* Modal: Create Teacher */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-[#d8c2b6] space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2">
-                  <UserPlus className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-brand-600" />
                   <span>Tạo Tài Khoản Giáo Viên Mới</span>
                 </h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-[#857469] hover:text-[#211a16]">
+                <button onClick={() => setShowCreateModal(false)} className="text-ink-subtle hover:text-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -300,7 +423,7 @@ export default function AdminTeachersPage() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Họ &amp; Tên Giảng Viên (*)
                   </label>
                   <input
@@ -309,12 +432,12 @@ export default function AdminTeachersPage() {
                     placeholder="Ví dụ: Thầy Nguyễn Văn Đức"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Email Đăng Nhập (*)
                   </label>
                   <input
@@ -323,12 +446,12 @@ export default function AdminTeachersPage() {
                     placeholder="teacher.duc@edtech.edu.vn"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Mật Khẩu Khởi Tạo (*)
                   </label>
                   <input
@@ -337,12 +460,12 @@ export default function AdminTeachersPage() {
                     placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Số Điện Thoại Liên Hệ
                   </label>
                   <input
@@ -350,12 +473,12 @@ export default function AdminTeachersPage() {
                     placeholder="0912345679"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#211a16] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink mb-1">
                     Bằng Cấp &amp; Trình Độ Giảng Dạy
                   </label>
                   <input
@@ -363,7 +486,7 @@ export default function AdminTeachersPage() {
                     placeholder="M.A TESOL (IELTS 8.5)"
                     value={qualification}
                     onChange={(e) => setQualification(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm focus:outline-none focus:border-[#6d3807]"
+                    className="w-full px-3 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
@@ -371,16 +494,16 @@ export default function AdminTeachersPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5]"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Lưu Giảng Viên</span>
                   </button>
                 </div>
@@ -390,5 +513,13 @@ export default function AdminTeachersPage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+export default function AdminTeachersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-xs text-ink-muted">Đang tải...</div>}>
+      <AdminTeachersContent />
+    </Suspense>
   );
 }

@@ -1,0 +1,43 @@
+{
+  "id": "TASK-003",
+  "title": "API học sinh trên PostgreSQL: lớp, ghi danh, bài giao, bài nộp",
+  "status": "accepted",
+  "conversation_id": "41251d04-5af4-4178-b008-dd7d6ff68918",
+  "history": [
+    {
+      "at": "2026-10-31T08:17:22",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T08:18:22",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T08:18:44",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T08:24:33",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T08:25:40",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-003-api-hoc-sinh-pg/verify.sh",
+    "tests/student-api.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "tests/api-auth.test.ts",
+    "tests/secrets-password.test.ts",
+    "vitest.config.ts",
+    "docs/db-migration-004-enrollments-assignments.sql"
+  ],
+  "via": "agy"
+}

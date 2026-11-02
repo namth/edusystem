@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { parseExamRawTextWithAI, StructuredExamData } from "@/lib/ai-engine";
+import type { StructuredExamData } from "@/lib/ai-engine";
 import { Sparkles, FileText, CheckCircle2, BookOpen, Mic, PenTool, Headphones, Loader2 } from "lucide-react";
 
 export default function AIExamImporterPage() {
@@ -16,8 +16,14 @@ export default function AIExamImporterPage() {
     setIsParsing(true);
     setIsPublished(false);
     try {
-      const result = await parseExamRawTextWithAI(rawContent);
-      setParsedData(result);
+      const res = await fetch("/api/admin/parse-exam-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawContent }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Lỗi bóc tách đề thi.");
+      setParsedData(json.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -33,11 +39,11 @@ export default function AIExamImporterPage() {
     <AdminLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
         {/* Header */}
-        <div className="border-b border-[#d8c2b6]/40 pb-6">
-          <h1 className="font-headline text-3xl font-bold text-[#211a16] tracking-tight">
+        <div className="border-b border-line/40 pb-6">
+          <h1 className="font-headline text-3xl font-bold text-ink tracking-tight">
             Global AI Exam Importer &amp; Parser
           </h1>
-          <p className="text-sm text-[#52443a] mt-1">
+          <p className="text-sm text-ink-muted mt-1">
             Bóc tách tài liệu đề thi thô bằng AI (GPT-4o-mini) thành cấu trúc JSON 4 kỹ năng chuẩn.
           </p>
         </div>
@@ -56,13 +62,13 @@ export default function AIExamImporterPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Raw Input */}
-          <div className="bg-[#ffffff] p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col">
+          <div className="bg-white p-6 rounded-2xl border border-line shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-bold font-headline text-[#6d3807] flex items-center space-x-2">
-                <FileText className="w-4 h-4 text-[#6d3807]" />
+              <label className="text-sm font-bold font-headline text-brand-600 flex items-center space-x-2">
+                <FileText className="w-4 h-4 text-brand-600" />
                 <span>Văn Bản Đề Thi Thô (Input)</span>
               </label>
-              <span className="text-xs font-mono text-[#857469]">
+              <span className="text-xs font-mono text-ink-subtle">
                 {rawContent.length} ký tự
               </span>
             </div>
@@ -72,14 +78,14 @@ export default function AIExamImporterPage() {
               placeholder="Dán toàn bộ nội dung đề thi, bài đọc, câu hỏi trắc nghiệm hoặc đề luận vào đây..."
               value={rawContent}
               onChange={(e) => setRawContent(e.target.value)}
-              className="w-full p-4 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-sm font-sans focus:outline-none focus:border-[#6d3807] resize-none mb-4 leading-relaxed"
+              className="w-full p-4 bg-surface-alt border border-line rounded-xl text-sm font-sans focus:outline-none focus:border-brand-600 resize-none mb-4 leading-relaxed"
             />
 
             <div className="mt-auto">
               <button
                 onClick={handleParseExam}
                 disabled={isParsing || !rawContent.trim()}
-                className="w-full py-3.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl font-mono text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-2 font-headline disabled:opacity-50"
+                className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-mono text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-2 font-headline disabled:opacity-50"
               >
                 {isParsing ? (
                   <>
@@ -88,7 +94,7 @@ export default function AIExamImporterPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-[#ffb782]" />
+                    <Sparkles className="w-4 h-4 text-accent-400" />
                     <span>Bóc Tách Đề Thi 4 Kỹ Năng Bằng AI &rarr;</span>
                   </>
                 )}
@@ -97,20 +103,20 @@ export default function AIExamImporterPage() {
           </div>
 
           {/* Structured Output */}
-          <div className="bg-[#ffffff] p-6 rounded-2xl border border-[#d8c2b6] shadow-sm flex flex-col">
-            <h2 className="text-sm font-bold font-headline text-[#6d3807] mb-4 flex items-center justify-between border-b border-[#d8c2b6]/40 pb-3">
+          <div className="bg-white p-6 rounded-2xl border border-line shadow-sm flex flex-col">
+            <h2 className="text-sm font-bold font-headline text-brand-600 mb-4 flex items-center justify-between border-b border-line/40 pb-3">
               <span>Cấu Trúc Đề Thi Đã Trích Xuất (JSON Output)</span>
               {parsedData && (
-                <span className="px-2.5 py-1 bg-[#DCFCE7] text-emerald-800 text-xs rounded-full font-mono font-bold">
+                <span className="px-2.5 py-1 bg-green-100 text-emerald-800 text-xs rounded-full font-mono font-bold">
                   Sẵn sàng xuất bản
                 </span>
               )}
             </h2>
 
             {!parsedData && (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-[#d8c2b6] rounded-xl bg-[#fff8f5]">
-                <Sparkles className="w-12 h-12 text-[#d8c2b6] mb-3" />
-                <p className="text-xs text-[#857469]">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-line rounded-xl bg-surface-alt">
+                <Sparkles className="w-12 h-12 text-line mb-3" />
+                <p className="text-xs text-ink-subtle">
                   Chưa có dữ liệu. Vui lòng dán đề thi bên trái và bấm nút bóc tách bằng AI.
                 </p>
               </div>
@@ -118,17 +124,17 @@ export default function AIExamImporterPage() {
 
             {parsedData && (
               <div className="flex-1 overflow-y-auto max-h-[500px] space-y-4 pr-1">
-                <div className="p-4 rounded-xl bg-[#fff1ea] border border-[#ffb783]">
-                  <h3 className="font-bold text-base text-[#6d3807] font-headline">{parsedData.title}</h3>
-                  <p className="text-xs text-[#52443a] mt-1">{parsedData.description}</p>
+                <div className="p-4 rounded-xl bg-brand-50 border border-brand-300">
+                  <h3 className="font-bold text-base text-brand-600 font-headline">{parsedData.title}</h3>
+                  <p className="text-xs text-ink-muted mt-1">{parsedData.description}</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-[#d8c2b6] bg-white">
-                  <div className="flex items-center space-x-2 font-bold text-xs font-mono uppercase text-[#6d3807] mb-2">
-                    <BookOpen className="w-4 h-4 text-[#6d3807]" />
+                <div className="p-4 rounded-xl border border-line bg-white">
+                  <div className="flex items-center space-x-2 font-bold text-xs font-mono uppercase text-brand-600 mb-2">
+                    <BookOpen className="w-4 h-4 text-brand-600" />
                     <span>Reading Section ({parsedData.reading.length} Passages)</span>
                   </div>
-                  <p className="text-xs text-[#52443a] italic bg-[#fff8f5] p-2 rounded border border-[#d8c2b6]">
+                  <p className="text-xs text-ink-muted italic bg-surface-alt p-2 rounded border border-line">
                     "{parsedData.reading[0]?.passage}"
                   </p>
                 </div>
@@ -136,12 +142,12 @@ export default function AIExamImporterPage() {
             )}
 
             {parsedData && (
-              <div className="mt-4 pt-4 border-t border-[#d8c2b6]/40">
+              <div className="mt-4 pt-4 border-t border-line/40">
                 <button
                   onClick={handlePublishExam}
-                  className="w-full py-3.5 bg-[#785840] hover:bg-[#6d3807] text-white rounded-xl font-mono text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline"
+                  className="w-full py-3.5 bg-ink-muted hover:bg-brand-600 text-white rounded-xl font-mono text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#ffb782]" />
+                  <CheckCircle2 className="w-4 h-4 text-accent-400" />
                   <span>Lưu &amp; Xuất Bản Đề Thi Lên Hệ Thống</span>
                 </button>
               </div>

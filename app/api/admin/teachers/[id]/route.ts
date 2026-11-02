@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
+import { requireRole } from "@/lib/api-auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const { id: teacherId } = await params;
 
@@ -19,6 +23,39 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const teacherRow = userRes.rows[0];
+    let profile: {
+      answers: Record<string, any>;
+      reviewed_by?: string | null;
+      reviewed_at: string | null;
+      review_note: string | null;
+      created_at: string | null;
+    } | null = null;
+    try {
+      const profRes = await queryPg(
+        `SELECT answers, reviewed_by, reviewed_at, review_note, created_at
+         FROM teacher_profiles
+         WHERE user_id = $1
+         LIMIT 1;`,
+        [cleanId]
+      );
+      if (profRes.rows.length > 0) {
+        const pr = profRes.rows[0];
+        profile = {
+          answers:
+            typeof pr.answers === "string"
+              ? JSON.parse(pr.answers)
+              : pr.answers || {},
+          reviewed_by: pr.reviewed_by ?? null,
+          reviewed_at: pr.reviewed_at ?? null,
+          review_note: pr.review_note ?? null,
+          created_at: pr.created_at ?? null,
+        };
+      }
+    } catch (e) {
+      console.warn("teacher_profiles fetch warning:", e);
+    }
+
+    const teacherStatus = teacherRow.teacher_status ?? null;
     const teacher = {
       id: teacherRow.id,
       name: teacherRow.name,
@@ -27,6 +64,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       target_band: teacherRow.target_band || "",
       created_at: new Date(teacherRow.created_at).toLocaleDateString("vi-VN"),
       slot_limit: teacherRow.slot_limit || 250,
+      teacher_status: teacherStatus,
+      profile,
     };
 
     // 2. Fetch classes managed by this teacher
@@ -74,6 +113,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({
       success: true,
       teacher,
+      teacher_status: teacherStatus,
+      profile,
       classes: managedClasses,
       aiLogs,
     });
@@ -84,6 +125,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN"]);
+  if (auth.error) return auth.error;
+
   try {
     const { id: teacherId } = await params;
     const body = await req.json();

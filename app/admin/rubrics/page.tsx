@@ -303,27 +303,27 @@ export default function AdminRubricsPage() {
       searchPlaceholder="Tìm kiếm Bộ Rubric theo tên, chuẩn (VSTEP, PTE, IELTS...), ID, kỹ năng..."
       searchValue={searchQuery}
     >
-      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-[#211a16]">
+      <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#d8c2b6]/40 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/40 pb-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs text-[#6d3807] uppercase tracking-wider font-bold mb-1">
-              <Globe className="w-4 h-4 text-[#6d3807]" />
+            <div className="flex items-center space-x-2 text-xs text-brand-600 uppercase tracking-wider font-bold mb-1">
+              <Globe className="w-4 h-4 text-brand-600" />
               <span>Scoring Rubrics System &bull; Dynamic Frameworks</span>
             </div>
-            <h1 className="text-3xl font-bold text-[#211a16] tracking-tight font-headline">
+            <h1 className="text-3xl font-bold text-ink tracking-tight font-headline">
               Quản Lý Tiêu Chí Chấm Điểm Linh Hoạt
             </h1>
-            <p className="text-sm text-[#52443a] mt-1">
+            <p className="text-sm text-ink-muted mt-1">
               Tự động hóa 100% Bộ Tiêu Chuẩn (IELTS, TOEIC, TOEFL, CEFR, HSK, JLPT, VSTEP, PTE...) và Ngôn ngữ khảo thí mà không cần sửa mã nguồn.
             </p>
           </div>
 
           <button
             onClick={openCreateModal}
-            className="px-5 py-2.5 bg-[#6d3807] hover:bg-[#8a4f1e] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 font-headline cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4 text-[#ffb782]" />
+            <PlusCircle className="w-4 h-4 text-accent-400" />
             <span>+ Tạo Bộ Tiêu Chuẩn Mới</span>
           </button>
         </div>
@@ -336,8 +336,8 @@ export default function AdminRubricsPage() {
         )}
 
         {/* Dynamic Framework Tabs Filter */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-[#d8c2b6]/40 scrollbar-thin">
-          <span className="text-xs font-bold text-[#6d3807] uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-line/40 scrollbar-thin">
+          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider font-mono mr-2 flex items-center gap-1 shrink-0">
             <Layers className="w-4 h-4" /> Chuẩn:
           </span>
           {dynamicFrameworkTabs.map((fw) => (
@@ -346,8 +346,8 @@ export default function AdminRubricsPage() {
               onClick={() => setSelectedFramework(fw)}
               className={`px-4 py-2 rounded-xl text-xs font-bold font-headline transition-all cursor-pointer whitespace-nowrap ${
                 selectedFramework === fw
-                  ? "bg-[#6d3807] text-white shadow-xs"
-                  : "bg-white text-[#52443a] hover:bg-[#fff8f5] border border-[#d8c2b6]"
+                  ? "bg-brand-600 text-white shadow-xs"
+                  : "bg-white text-ink-muted hover:bg-surface-alt border border-line"
               }`}
             >
               {getFrameworkTabLabel(fw)}
@@ -357,26 +357,26 @@ export default function AdminRubricsPage() {
 
         {/* Rubrics Grid */}
         {loading ? (
-          <div className="flex items-center space-x-2 text-xs text-[#52443a] p-12 bg-white rounded-2xl border border-[#d8c2b6]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6d3807]" />
+          <div className="flex items-center space-x-2 text-xs text-ink-muted p-12 bg-white rounded-2xl border border-line">
+            <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
             <span>Đang nạp danh mục Tiêu chí Rubric từ cơ sở dữ liệu...</span>
           </div>
         ) : filteredRubrics.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-2xl border border-[#d8c2b6] space-y-3">
-            <Award className="w-12 h-12 text-[#6d3807] mx-auto opacity-50" />
-            <p className="text-xs text-[#52443a]">Không tìm thấy Bộ Rubric nào thuộc tiêu chuẩn "{selectedFramework}".</p>
+          <div className="p-12 text-center bg-white rounded-2xl border border-line space-y-3">
+            <Award className="w-12 h-12 text-brand-600 mx-auto opacity-50" />
+            <p className="text-xs text-ink-muted">Không tìm thấy Bộ Rubric nào thuộc tiêu chuẩn "{selectedFramework}".</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredRubrics.map((r) => (
               <div
                 key={r.id}
-                className="bg-white p-6 rounded-3xl border-2 border-[#d8c2b6] shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-all"
+                className="bg-white p-6 rounded-3xl border-2 border-line shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-all"
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#6d3807] text-white font-mono text-[11px] font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-600 text-white font-mono text-[11px] font-bold">
                         {r.framework}
                       </span>
                       {getLanguageBadge(r.language)}
@@ -387,37 +387,37 @@ export default function AdminRubricsPage() {
                       </span>
                     </div>
 
-                    <span className="px-3 py-1 bg-[#fff1ea] text-[#6d3807] text-xs font-bold rounded-lg border border-[#ffb783] font-mono">
+                    <span className="px-3 py-1 bg-brand-50 text-brand-600 text-xs font-bold rounded-lg border border-brand-300 font-mono">
                       Thang: {r.scale_min} - {r.scale_max} (Step: {r.scale_step})
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-bold font-headline text-[#211a16]">{r.name}</h3>
-                  {r.description && <p className="text-xs text-[#52443a] leading-relaxed">{r.description}</p>}
+                  <h3 className="text-xl font-bold font-headline text-ink">{r.name}</h3>
+                  {r.description && <p className="text-xs text-ink-muted leading-relaxed">{r.description}</p>}
 
                   {/* Criteria List Cards */}
-                  <div className="space-y-2 pt-2 border-t border-[#d8c2b6]/40">
-                    <span className="text-[11px] font-bold text-[#6d3807] uppercase tracking-wider block font-mono">
+                  <div className="space-y-2 pt-2 border-t border-line/40">
+                    <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider block font-mono">
                       Cấu trúc {r.criteria.length} Tiêu chí đánh giá AI:
                     </span>
                     <div className="grid grid-cols-2 gap-2">
                       {r.criteria.map((c, idx) => (
-                        <div key={idx} className="p-2.5 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs space-y-1">
-                          <div className="flex justify-between items-center font-bold text-[#211a16]">
+                        <div key={idx} className="p-2.5 bg-surface-alt rounded-xl border border-line text-xs space-y-1">
+                          <div className="flex justify-between items-center font-bold text-ink">
                             <span>{c.label}</span>
-                            <span className="text-[10px] text-[#6d3807] font-mono">{(c.weight * 100).toFixed(0)}%</span>
+                            <span className="text-[10px] text-brand-600 font-mono">{(c.weight * 100).toFixed(0)}%</span>
                           </div>
-                          <p className="text-[10px] text-[#857469] line-clamp-2">{c.descriptor}</p>
+                          <p className="text-[10px] text-ink-subtle line-clamp-2">{c.descriptor}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-[#d8c2b6]/30">
+                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-line/30">
                   <button
                     onClick={() => openEditModal(r)}
-                    className="px-3.5 py-2 bg-[#fff8f5] text-[#6d3807] border border-[#d8c2b6] rounded-xl text-xs font-bold hover:bg-[#fff1ea] flex items-center space-x-1.5 transition-all font-headline cursor-pointer"
+                    className="px-3.5 py-2 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-bold hover:bg-brand-50 flex items-center space-x-1.5 transition-all font-headline cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Chỉnh Sửa</span>
@@ -439,13 +439,13 @@ export default function AdminRubricsPage() {
         {/* Modal: Create / Edit Rubric with Dynamic ComboBoxes */}
         {showModal && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl border border-[#d8c2b6] space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-[#d8c2b6]/40 pb-4">
-                <h2 className="text-xl font-bold text-[#6d3807] flex items-center space-x-2 font-headline">
-                  <Award className="w-5 h-5 text-[#6d3807]" />
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl border border-line space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b border-line/40 pb-4">
+                <h2 className="text-xl font-bold text-brand-600 flex items-center space-x-2 font-headline">
+                  <Award className="w-5 h-5 text-brand-600" />
                   <span>{editingRubric ? `Chỉnh Sửa Rubric: ${editingRubric.name}` : "Tạo Mới Bộ Rubric Linh Hoạt Đa Chuẩn"}</span>
                 </h2>
-                <button onClick={() => setShowModal(false)} className="text-[#857469] cursor-pointer">
+                <button onClick={() => setShowModal(false)} className="text-ink-subtle cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -453,7 +453,7 @@ export default function AdminRubricsPage() {
               <form onSubmit={handleSaveRubric} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Tên Bộ Rubric (*)
                     </label>
                     <input
@@ -462,18 +462,18 @@ export default function AdminRubricsPage() {
                       placeholder="Ví dụ: VSTEP B2 Writing Task 2"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Kỹ Năng Áp Dụng (*)
                     </label>
                     <select
                       value={skill}
                       onChange={(e) => setSkill(e.target.value as any)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     >
                       <option value="Writing">Writing (Bài viết tự luận)</option>
                       <option value="Speaking">Speaking (Bài nói thu âm micro)</option>
@@ -484,7 +484,7 @@ export default function AdminRubricsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Dynamic ComboBox: Framework */}
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Bộ Tiêu Chuẩn (Framework) (*)
                     </label>
                     <input
@@ -494,19 +494,19 @@ export default function AdminRubricsPage() {
                       placeholder="Chọn hoặc tự nhập (vd: VSTEP, PTE, DELE...)"
                       value={frameworkInput}
                       onChange={(e) => setFrameworkInput(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                     <datalist id="framework-options">
                       {PRESET_FRAMEWORKS.map((fw) => (
                         <option key={fw} value={fw} />
                       ))}
                     </datalist>
-                    <span className="text-[10px] text-[#857469] mt-0.5 block">💡 Có thể gõ tùy chỉnh chuẩn mới (vd: VSTEP, PTE, TOPIK...)</span>
+                    <span className="text-[10px] text-ink-subtle mt-0.5 block">💡 Có thể gõ tùy chỉnh chuẩn mới (vd: VSTEP, PTE, TOPIK...)</span>
                   </div>
 
                   {/* Dynamic ComboBox: Language */}
                   <div>
-                    <label className="block text-xs font-bold uppercase text-[#6d3807] mb-1">
+                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
                       Ngôn Ngữ Khảo Thí (Language) (*)
                     </label>
                     <input
@@ -516,19 +516,19 @@ export default function AdminRubricsPage() {
                       placeholder="Chọn mã (EN, ZH, JA, DE, ES, KO, VI...)"
                       value={languageInput}
                       onChange={(e) => setLanguageInput(e.target.value)}
-                      className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-bold focus:outline-none focus:border-[#6d3807]"
+                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold focus:outline-none focus:border-brand-600"
                     />
                     <datalist id="language-options">
                       {PRESET_LANGUAGES.map((l) => (
                         <option key={l.code} value={l.code} label={l.label} />
                       ))}
                     </datalist>
-                    <span className="text-[10px] text-[#857469] mt-0.5 block">💡 Mã ngôn ngữ: EN, ZH, JA, FR, DE, ES, KO, VI...</span>
+                    <span className="text-[10px] text-ink-subtle mt-0.5 block">💡 Mã ngôn ngữ: EN, ZH, JA, FR, DE, ES, KO, VI...</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#52443a] mb-1">
+                  <label className="block text-xs font-bold uppercase text-ink-muted mb-1">
                     Mô Tả Bộ Rubric
                   </label>
                   <input
@@ -536,40 +536,40 @@ export default function AdminRubricsPage() {
                     placeholder="Mô tả mục đích sử dụng cho khóa học..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 bg-[#fff8f5] border border-[#d8c2b6] rounded-xl text-xs font-medium focus:outline-none focus:border-[#6d3807]"
+                    className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-brand-600"
                   />
                 </div>
 
                 {/* Scale Configuration */}
-                <div className="grid grid-cols-3 gap-3 p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6]">
+                <div className="grid grid-cols-3 gap-3 p-4 bg-surface-alt rounded-2xl border border-line">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6d3807]">Scale Min</label>
+                    <label className="block text-[11px] font-bold text-brand-600">Scale Min</label>
                     <input
                       type="number"
                       step="0.5"
                       value={scaleMin}
                       onChange={(e) => setScaleMin(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                      className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6d3807]">Scale Max</label>
+                    <label className="block text-[11px] font-bold text-brand-600">Scale Max</label>
                     <input
                       type="number"
                       step="0.5"
                       value={scaleMax}
                       onChange={(e) => setScaleMax(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                      className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6d3807]">Bước Điểm (Step)</label>
+                    <label className="block text-[11px] font-bold text-brand-600">Bước Điểm (Step)</label>
                     <input
                       type="number"
                       step="0.1"
                       value={scaleStep}
                       onChange={(e) => setScaleStep(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                      className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                     />
                   </div>
                 </div>
@@ -577,13 +577,13 @@ export default function AdminRubricsPage() {
                 {/* Dynamic Criteria List Editor */}
                 <div className="space-y-3 pt-2">
                   <div className="flex justify-between items-center">
-                    <label className="block text-xs font-bold uppercase text-[#6d3807]">
+                    <label className="block text-xs font-bold uppercase text-brand-600">
                       Danh Sách Các Tiêu Chí Thành Phần ({criteria.length})
                     </label>
                     <button
                       type="button"
                       onClick={handleAddCriteria}
-                      className="px-3 py-1 bg-[#fff1ea] text-[#6d3807] border border-[#ffb783] rounded-lg text-xs font-bold hover:bg-[#ffdcc5] transition-all cursor-pointer"
+                      className="px-3 py-1 bg-brand-50 text-brand-600 border border-brand-300 rounded-lg text-xs font-bold hover:bg-brand-100 transition-all cursor-pointer"
                     >
                       + Thêm Tiêu Chí
                     </button>
@@ -591,7 +591,7 @@ export default function AdminRubricsPage() {
 
                   <div className="space-y-3">
                     {criteria.map((crit, idx) => (
-                      <div key={idx} className="p-3 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2">
+                      <div key={idx} className="p-3 bg-surface-alt rounded-xl border border-line space-y-2">
                         <div className="grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-6">
                             <input
@@ -599,12 +599,12 @@ export default function AdminRubricsPage() {
                               placeholder="Tên tiêu chí (vd: Task Achievement)"
                               value={crit.label}
                               onChange={(e) => handleCriteriaChange(idx, "label", e.target.value)}
-                              className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold"
+                              className="w-full p-2 bg-white border border-line rounded-lg text-xs font-bold"
                             />
                           </div>
 
                           <div className="col-span-4 flex items-center space-x-1">
-                            <span className="text-[10px] font-bold text-[#52443a]">Trọng số:</span>
+                            <span className="text-[10px] font-bold text-ink-muted">Trọng số:</span>
                             <input
                               type="number"
                               step="0.05"
@@ -612,7 +612,7 @@ export default function AdminRubricsPage() {
                               max="1"
                               value={crit.weight}
                               onChange={(e) => handleCriteriaChange(idx, "weight", Number(e.target.value))}
-                              className="w-20 p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs font-bold text-center"
+                              className="w-20 p-2 bg-white border border-line rounded-lg text-xs font-bold text-center"
                             />
                           </div>
 
@@ -633,7 +633,7 @@ export default function AdminRubricsPage() {
                             placeholder="Mô tả chi tiết tiêu chuẩn chấm cho AI Engine..."
                             value={crit.descriptor}
                             onChange={(e) => handleCriteriaChange(idx, "descriptor", e.target.value)}
-                            className="w-full p-2 bg-white border border-[#d8c2b6] rounded-lg text-xs text-[#52443a]"
+                            className="w-full p-2 bg-white border border-line rounded-lg text-xs text-ink-muted"
                           />
                         </div>
                       </div>
@@ -645,16 +645,16 @@ export default function AdminRubricsPage() {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-3 border border-[#d8c2b6] text-[#52443a] rounded-xl text-xs font-medium hover:bg-[#fff8f5] cursor-pointer"
+                    className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-[#6d3807] hover:bg-[#8a4f1e] text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 font-headline cursor-pointer"
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 font-headline cursor-pointer"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-[#ffb782]" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
                     <span>Lưu Bộ Rubric</span>
                   </button>
                 </div>

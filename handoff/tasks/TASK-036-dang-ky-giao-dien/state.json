@@ -1,0 +1,41 @@
+{
+  "id": "TASK-036",
+  "title": "Giao diện đăng nhập mới và luồng đăng ký phỏng vấn có mascot (học sinh, giáo viên)",
+  "status": "accepted",
+  "conversation_id": "42a82343-783c-4906-a522-d674eae0cc65",
+  "history": [
+    {
+      "at": "2026-11-02T12:21:45",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T14:20:55",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T14:21:24",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-02T15:20:35",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-02T15:23:46",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-036-dang-ky-giao-dien/verify.sh",
+    "tests/onboarding-ui.test.ts",
+    "e2e/onboarding.spec.ts",
+    "e2e/auth.spec.ts",
+    "e2e/seed.ts"
+  ],
+  "via": "agy"
+}

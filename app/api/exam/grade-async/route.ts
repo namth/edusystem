@@ -1,305 +1,250 @@
 import { NextResponse } from "next/server";
-import { getServerSupabaseClient } from "@/lib/supabase-server";
-import { evaluateSpeakingWithAudio, evaluateWritingWithRubric } from "@/lib/ai-engine";
-import { resolveRubricForExam } from "@/lib/rubric-resolver";
-import { parseFillInGaps } from "@/lib/question-content-types";
+import { hasValidInternalToken, requireRole } from "@/lib/api-auth";
+import { queryPg } from "@/lib/db-pg";
+import {
+  type ScoringStandard,
+  aggregateTotal,
+} from "@/lib/exam-scoring";
+import { gradeExamOpenAnswer } from "@/lib/exam-ai-grading";
+import { tallyAndScoreSections } from "@/lib/exam-attempts";
+import { notifyExamGraded, notifyNeedsReview } from "@/lib/notifications";
 
 export async function POST(req: Request) {
-  const supabase = getServerSupabaseClient();
-  let subIdForError: string | null = null;
+  if (!hasValidInternalToken(req)) {
+    const auth = await requireRole(["ADMIN", "TEACHER"]);
+    if (auth.error) return auth.error;
+  }
 
-  try {
-    const { submissionId } = await req.json();
-    if (!submissionId) {
-      return NextResponse.json({ error: "Missing submissionId" }, { status: 400 });
-    }
-    subIdForError = submissionId;
+  const body = await req.json().catch(() => ({}));
+  const submissionId = body?.submissionId;
+  if (!submissionId) {
+    return NextResponse.json(
+      { success: false, error: "Missing submissionId" },
+      { status: 400 }
+    );
+  }
 
-    // 1. Fetch submission record
-    const { data: sub, error: subError } = await supabase
-      .from("submissions")
-      .select("*")
-      .eq("id", submissionId)
-      .maybeSingle();
+  const subRes = await queryPg(
+    "SELECT * FROM submissions WHERE id = $1 LIMIT 1",
+    [submissionId]
+  );
+  if (subRes.rows.length === 0) {
+    return NextResponse.json(
+      { success: false, error: "Submission not found" },
+      { status: 404 }
+    );
+  }
 
-    if (subError || !sub) {
-      return NextResponse.json({ error: "Submission not found" }, { status: 404 });
-    }
+  const sub = subRes.rows[0];
+  if (sub.status !== "GRADING") {
+    return NextResponse.json(
+      { success: true, skipped: true },
+      { status: 200 }
+    );
+  }
 
-    // If already graded or reviewed, return existing
-    if ((sub.status === "GRADED" || sub.status === "TEACHER_REVIEWED") && sub.final_evaluation_details) {
-      return NextResponse.json({ success: true, submission: sub });
-    }
+  // Worker đã giao quá số lần cho phép mà vẫn lỗi → chuyển giáo viên chấm tay thay vì kẹt GRADING
+  if (body?.giveUp === true && hasValidInternalToken(req)) {
+    const moved = await queryPg(
+      `UPDATE submissions
+       SET status = 'NEEDS_REVIEW', total_score = NULL, passed = NULL,
+           last_grading_error = COALESCE(last_grading_error, $2)
+       WHERE id = $1 AND status = 'GRADING'
+       RETURNING id`,
+      [submissionId, "Worker chấm AI thất bại sau nhiều lần thử"]
+    );
+    if (moved.rows.length > 0) await refundSlotAndNotify(sub);
+    return NextResponse.json({ success: true, submissionId, status: "NEEDS_REVIEW", gaveUp: true });
+  }
 
-    const currentAttempts = (sub.grading_attempts || 0) + 1;
+  const snapshot: ScoringStandard =
+    typeof sub.standard_snapshot === "string"
+      ? JSON.parse(sub.standard_snapshot)
+      : sub.standard_snapshot || {};
+  const results: any[] =
+    typeof sub.results === "string"
+      ? JSON.parse(sub.results)
+      : sub.results || [];
+  const answers: Record<string, any> =
+    typeof sub.answers === "string"
+      ? JSON.parse(sub.answers)
+      : sub.answers || {};
 
-    // Update status to IN_PROGRESS & increment attempts
-    await supabase
-      .from("submissions")
-      .update({
-        status: "AI_GRADING_IN_PROGRESS",
-        grading_attempts: currentAttempts,
-      })
-      .eq("id", submissionId);
+  const aiResults = results.filter((r) => r.kind === "AI");
+  let totalGradingAttempts = Number(sub.grading_attempts || 0);
+  let finalGradingError: string | null = null;
 
-    const studentAnswers = sub.answers || {};
-    const examId = sub.exam_id;
+  if (aiResults.length > 0) {
+    const aiQIds = Array.from(new Set(aiResults.map((r) => r.question_id)));
+    const placeholders = aiQIds.map((_, i) => `$${i + 1}`).join(", ");
+    const qRes = await queryPg(
+      `SELECT id, skill, category, prompt, stimulus_text FROM questions WHERE id IN (${placeholders});`,
+      aiQIds
+    );
+    const qMap = new Map<string, any>(qRes.rows.map((q: any) => [q.id, q]));
 
-    // 2. Fetch Exam & Questions
-    const { data: exam } = await supabase
-      .from("exams")
-      .select("*")
-      .eq("id", examId)
-      .maybeSingle();
+    for (const r of aiResults) {
+      const q = qMap.get(r.question_id);
+      const skillName = q?.skill || r.skill;
+      const section = (snapshot.sections || []).find((s) => s.skill === skillName) || {
+        min: 0,
+        max: 9,
+        step: 0.5,
+      };
 
-    let questionIds: string[] = [];
-    if (exam && Array.isArray(exam.question_ids)) {
-      questionIds = exam.question_ids;
-    }
+      const prompt = q?.prompt || q?.stimulus_text || q?.category || "";
+      const studentAns = answers[r.question_id] || "";
+      const rubricId = (section as any).rubric_id;
 
-    let questions: any[] = [];
-    if (questionIds.length > 0) {
-      const { data: qData } = await supabase
-        .from("questions")
-        .select("*")
-        .in("id", questionIds);
-      if (qData) questions = qData;
-    } else {
-      const { data: qData } = await supabase.from("questions").select("*");
-      if (qData) questions = qData;
-    }
+      let attempts = 0;
+      let lastErr: any = null;
+      let gradedScore: number | undefined = undefined;
+      let gradedFeedback: string | null = null;
 
-    // 3. Process Non-AI Auto-Grading & AI Tasks with Dynamic Rubric
-    let correctNonAiCount = 0;
-    let totalNonAiCount = 0;
-    const nonAiDetails: Record<string, any> = {};
-    const aiEvaluationDetails: Record<string, any> = {};
-
-    const aiCategories = [
-      "WRITING_ESSAY",
-      "WRITING_SHORT_ANSWER",
-      "WRITING_SENTENCE_REWRITE",
-      "SPEAKING_TOPIC_PROMPT",
-      "SPEAKING_READ_ALOUD",
-    ];
-
-    for (const q of questions) {
-      const cat = q.category;
-      const isAiTask = aiCategories.includes(cat);
-
-      if (isAiTask) {
-        const studentAns = studentAnswers[q.id] || "";
-        const promptText = q.prompt || q.stimulus_text || cat;
-        const rubric = await resolveRubricForExam(examId, cat);
-
-        let evalRes;
-        if (cat.startsWith("SPEAKING")) {
-          // Gemini Multimodal Audio Grading
-          evalRes = await evaluateSpeakingWithAudio(studentAns, promptText, rubric);
-        } else {
-          // Writing Rubric Evaluation
-          evalRes = await evaluateWritingWithRubric(studentAns, promptText, rubric);
-        }
-
-        aiEvaluationDetails[q.id] = {
-          questionId: q.id,
-          category: cat,
-          prompt: promptText,
-          studentAnswer: studentAns,
-          evaluation: evalRes,
-        };
-      } else {
-        // Non-AI Auto Grading
-        if (cat === "READING_MC" || cat === "LISTENING_MC") {
-          const subQs: any[] = q.content?.sub_questions || [];
-          const isSingle = subQs.length === 1;
-
-          subQs.forEach((sub: any, idx: number) => {
-            totalNonAiCount++;
-            const subKey = isSingle ? q.id : `${q.id}_sub_${idx}`;
-            const studentChoice = (studentAnswers[subKey] || "").trim();
-            const correctTarget = (sub.correct_answer || "").trim();
-
-            const isCorrect =
-              !!studentChoice &&
-              !!correctTarget &&
-              studentChoice.toLowerCase() === correctTarget.toLowerCase();
-
-            if (isCorrect) correctNonAiCount++;
-
-            nonAiDetails[subKey] = {
-              questionId: q.id,
-              subIndex: idx,
-              studentChoice,
-              correctAnswer: correctTarget,
-              isCorrect,
-            };
+      while (attempts < 3) {
+        attempts++;
+        try {
+          const aiOut = await gradeExamOpenAnswer({
+            category: q?.category || r.category,
+            prompt,
+            answer: studentAns,
+            section: {
+              min: Number(section.min),
+              max: Number(section.max),
+              step: Number(section.step),
+            },
+            rubric_id: rubricId,
+            exam_id: sub.exam_id,
           });
-        } else if (cat === "READING_FILL_IN" || cat === "LISTENING_FILL_IN" || cat === "WRITING_FREE_TYPING_BLANKS") {
-          const passageText = q.content?.passage || q.prompt || "";
-          const { gaps } = parseFillInGaps(passageText);
-          const gapList = gaps.length > 0 ? gaps : [""];
-
-          gapList.forEach((gapTarget: string, idx: number) => {
-            totalNonAiCount++;
-            const gapKey = gaps.length > 0 ? `${q.id}_gap_${idx}` : q.id;
-            const studentInput = (studentAnswers[gapKey] || "").trim();
-            const targetWord = (gapTarget || "").trim();
-
-            const isCorrect =
-              !!studentInput &&
-              !!targetWord &&
-              studentInput.toLowerCase() === targetWord.toLowerCase();
-
-            if (isCorrect) correctNonAiCount++;
-
-            nonAiDetails[gapKey] = {
-              questionId: q.id,
-              gapIndex: idx,
-              studentInput,
-              correctWord: targetWord,
-              isCorrect,
-            };
-          });
-        } else if (cat === "READING_MATCHING" || cat === "LISTENING_MATCHING") {
-          const pairs: any[] = q.content?.pairs || [];
-          pairs.forEach((pair: any, idx: number) => {
-            totalNonAiCount++;
-            const pairKey = `${q.id}_pair_${idx}`;
-            const studentMatch = (studentAnswers[pairKey] || "").trim();
-            const correctRight = (pair.right || "").trim();
-
-            const isCorrect =
-              !!studentMatch &&
-              !!correctRight &&
-              studentMatch.toLowerCase() === correctRight.toLowerCase();
-
-            if (isCorrect) correctNonAiCount++;
-
-            nonAiDetails[pairKey] = {
-              questionId: q.id,
-              leftText: pair.left,
-              studentMatch,
-              correctRight,
-              isCorrect,
-            };
-          });
-        } else if (cat === "READING_ORDERING" || cat === "LISTENING_ORDERING") {
-          totalNonAiCount++;
-          const studentOrder = (studentAnswers[q.id] || "").trim();
-          const targetOrder = (q.content?.correct_text || "").trim();
-
-          const isCorrect =
-            !!studentOrder &&
-            !!targetOrder &&
-            studentOrder.toLowerCase() === targetOrder.toLowerCase();
-
-          if (isCorrect) correctNonAiCount++;
-
-          nonAiDetails[q.id] = {
-            questionId: q.id,
-            studentOrder,
-            correctOrder: targetOrder,
-            isCorrect,
-          };
-        } else {
-          totalNonAiCount++;
-          const studentInput = (studentAnswers[q.id] || "").trim();
-          const targetAnswer = (q.content?.correct_answer || q.content?.answer || "").trim();
-
-          const isCorrect =
-            !!studentInput &&
-            !!targetAnswer &&
-            studentInput.toLowerCase() === targetAnswer.toLowerCase();
-
-          if (isCorrect) correctNonAiCount++;
-
-          nonAiDetails[q.id] = {
-            questionId: q.id,
-            studentInput,
-            targetAnswer,
-            isCorrect,
-          };
+          if (typeof aiOut === "number") {
+            gradedScore = aiOut;
+            gradedFeedback = null;
+          } else {
+            gradedScore = aiOut.score;
+            gradedFeedback =
+              typeof aiOut.feedback === "string"
+                ? aiOut.feedback.slice(0, 2000)
+                : null;
+          }
+          lastErr = null;
+          break;
+        } catch (err: any) {
+          lastErr = err;
         }
       }
-    }
 
-    const rawScoreFormatted = `${correctNonAiCount}/${Math.max(totalNonAiCount, 1)}`;
-    const finalScoreVal = Math.round((correctNonAiCount / Math.max(totalNonAiCount, 1)) * 10 * 10) / 10;
+      totalGradingAttempts += attempts;
 
-    const evaluationSummary = {
-      rawScore: rawScoreFormatted,
-      correctNonAiCount,
-      totalNonAiCount,
-      nonAiDetails,
-      aiTasks: aiEvaluationDetails,
-    };
-
-    // 4. Update Submission Record
-    const { error: updateError } = await supabase
-      .from("submissions")
-      .update({
-        status: "GRADED",
-        score: finalScoreVal,
-        final_score: rawScoreFormatted,
-        ai_score: finalScoreVal,
-        ai_feedback: `Hoàn thành chấm bài! Điểm trắc nghiệm & điền từ: ${rawScoreFormatted} câu đúng. Phản hồi AI chi tiết bên dưới.`,
-        ai_evaluation_details: evaluationSummary,
-        final_evaluation_details: evaluationSummary,
-      })
-      .eq("id", submissionId);
-
-    if (updateError) {
-      console.error("Submission update error in grade-async:", updateError);
-    }
-
-    // 5. Send Notification
-    if (sub.student_id) {
-      try {
-        await supabase.from("notifications").insert([
-          {
-            user_id: sub.student_id,
-            title: `Kết quả bài thi ${exam?.title || "Mới"} đã sẵn sàng!`,
-            message: `Bài thi của bạn đạt ${rawScoreFormatted} điểm trắc nghiệm. Nhấp để xem nhận xét AI & tiêu chí chi tiết.`,
-            link: `/student/exam/review/${submissionId}`,
-            created_at: new Date().toISOString(),
-            read: false,
-          },
-        ]);
-      } catch (notifErr) {
-        console.warn("Notification insert warning:", notifErr);
+      if (lastErr) {
+        console.error("AI grading failed after 3 attempts:", lastErr);
+        finalGradingError = lastErr.message || String(lastErr);
+        delete r.score;
+      } else if (gradedScore !== undefined) {
+        r.score = gradedScore;
+        r.feedback = gradedFeedback;
       }
     }
+  }
+
+  // Recalculate section_scores
+  const existingSectionScores =
+    typeof sub.section_scores === "string"
+      ? JSON.parse(sub.section_scores)
+      : sub.section_scores;
+  const sectionScores = tallyAndScoreSections(snapshot, results, existingSectionScores);
+
+  if (finalGradingError) {
+    await queryPg(
+      `UPDATE submissions
+       SET status = 'NEEDS_REVIEW',
+           results = $1,
+           section_scores = $2,
+           total_score = NULL,
+           passed = NULL,
+           grading_attempts = $3,
+           last_grading_error = $4
+       WHERE id = $5`,
+      [
+        JSON.stringify(results),
+        JSON.stringify(sectionScores),
+        totalGradingAttempts,
+        finalGradingError,
+        submissionId,
+      ]
+    );
+
+    await refundSlotAndNotify(sub);
 
     return NextResponse.json({
       success: true,
       submissionId,
-      rawScore: rawScoreFormatted,
-      status: "GRADED",
+      status: "NEEDS_REVIEW",
+      total_score: null,
+      passed: null,
     });
-  } catch (err: any) {
-    console.error("Async grading route error:", err);
-
-    if (subIdForError) {
-      const supabase = getServerSupabaseClient();
-      const { data: currentSub } = await supabase
-        .from("submissions")
-        .select("grading_attempts")
-        .eq("id", subIdForError)
-        .maybeSingle();
-
-      const attempts = (currentSub?.grading_attempts || 1);
-      const nextStatus = attempts >= 3 ? "GRADED_WITH_FALLBACK" : "AI_GRADING_FAILED";
-
-      await supabase
-        .from("submissions")
-        .update({
-          status: nextStatus,
-          last_grading_error: err?.message || "Internal grading error",
-        })
-        .eq("id", subIdForError);
-    }
-
-    return NextResponse.json({ error: err?.message || "Internal error" }, { status: 500 });
   }
+
+  const scoreMap: Record<string, number | null> = {};
+  for (const [skill, entry] of Object.entries(sectionScores)) {
+    scoreMap[skill] = entry.score;
+  }
+  const { total, passed } = aggregateTotal(snapshot, scoreMap);
+
+  await queryPg(
+    `UPDATE submissions
+     SET status = 'GRADED',
+         graded_at = NOW(),
+         results = $1,
+         section_scores = $2,
+         total_score = $3,
+         passed = $4,
+         grading_attempts = $5,
+         last_grading_error = $6
+     WHERE id = $7`,
+    [
+      JSON.stringify(results),
+      JSON.stringify(sectionScores),
+      total,
+      passed,
+      totalGradingAttempts,
+      finalGradingError,
+      submissionId,
+    ]
+  );
+
+  await notifyExamGraded(submissionId);
+
+  return NextResponse.json({
+    success: true,
+    submissionId,
+    status: "GRADED",
+    total_score: total,
+    passed,
+  });
+}
+
+// Hoàn slot đã trừ lúc nộp (GV lớp, không thì người tạo đề) và báo giáo viên chấm tay
+async function refundSlotAndNotify(sub: any) {
+  let teacherId: string | null = null;
+  if (sub.class_ref) {
+    const classRes = await queryPg(
+      "SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1",
+      [sub.class_ref]
+    );
+    teacherId = classRes.rows[0]?.teacher_id || null;
+  }
+  if (!teacherId && sub.exam_id) {
+    const examRes = await queryPg(
+      "SELECT created_by FROM exams WHERE id = $1 LIMIT 1",
+      [sub.exam_id]
+    );
+    teacherId = examRes.rows[0]?.created_by || null;
+  }
+  if (teacherId) {
+    await queryPg(
+      "UPDATE users SET slot_limit = slot_limit + 1 WHERE id = $1",
+      [teacherId]
+    );
+  }
+  await notifyNeedsReview(sub.id);
 }

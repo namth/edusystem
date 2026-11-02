@@ -1,0 +1,68 @@
+{
+  "id": "TASK-022",
+  "title": "Trang làm đề mới (giờ theo server, LessonPlayer + ghi âm Speaking) và trang xem lại",
+  "status": "accepted",
+  "conversation_id": "f28a54a9-aafd-4367-8f74-d32f1feb79a4",
+  "history": [
+    {
+      "at": "2026-10-31T14:53:55",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-10-31T14:54:47",
+      "status": "assigned",
+      "note": "giao qua agy (gemini-3.8-flash-high)"
+    },
+    {
+      "at": "2026-10-31T14:55:17",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-10-31T15:22:12",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-10-31T15:31:13",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-022-trang-lam-de-moi/verify.sh",
+    "tests/admin-api.test.ts",
+    "tests/ai-import.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/class-roadmap-api.test.ts",
+    "tests/class-roadmap-ui.test.ts",
+    "tests/client-bundle-safety.test.ts",
+    "tests/curriculum-api.test.ts",
+    "tests/curriculum-dnd.test.ts",
+    "tests/exam-attempts-api.test.ts",
+    "tests/exam-flow.test.ts",
+    "tests/exam-runner-ui.test.ts",
+    "tests/exam-scoring.test.ts",
+    "tests/exams-api.test.ts",
+    "tests/flashcards-uploads-api.test.ts",
+    "tests/grading-hardening.test.ts",
+    "tests/grading.test.ts",
+    "tests/lesson-library-ui.test.ts",
+    "tests/lesson-player.test.ts",
+    "tests/lesson-preview.test.ts",
+    "tests/lessons-api.test.ts",
+    "tests/migration-006.test.ts",
+    "tests/roadmap.test.ts",
+    "tests/scoring-standards-api.test.ts",
+    "tests/secrets-password.test.ts",
+    "tests/standard-selection.test.ts",
+    "tests/student-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/student-pages.test.ts",
+    "tests/helpers/pg-fake.ts",
+    "vitest.config.ts",
+    "handoff/tasks/TASK-022-trang-lam-de-moi/tsconfig.verify.json"
+  ],
+  "via": "agy"
+}

@@ -2,517 +2,429 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
-  XCircle,
   Sparkles,
-  Volume2,
-  FileText,
-  Mic,
   Award,
   BookOpen,
   Loader2,
   UserCheck,
   AlertCircle,
 } from "lucide-react";
-import { EvaluationResult } from "@/types/scoring";
+import LessonPlayer from "@/components/lesson-player/LessonPlayer";
+import { sanitizeQuestionForStudent } from "@/lib/grading";
+import { summarizeAttemptResult } from "@/lib/attempt-summary";
 
 export default function ExamSubmissionReviewPage() {
   const params = useParams();
-  const router = useRouter();
   const submissionId = params.submissionId as string;
 
   const [submission, setSubmission] = useState<any>(null);
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorStatus, setErrorStatus] = useState<403 | 404 | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let timerId: any = null;
+    let isMounted = true;
 
     const fetchReviewData = async () => {
       try {
-        // 1. Load Submission
-        let subRecord = null;
-        const { data: subData, error: subError } = await supabase
-          .from("submissions")
-          .select("*")
-          .eq("id", submissionId)
-          .maybeSingle();
+        const res = await fetch(`/api/submissions/${submissionId}`);
+        if (!isMounted) return;
 
-        if (subError) {
-          console.warn("Supabase load submission warning:", subError.message);
-        }
-
-        if (subData) {
-          subRecord = subData;
-        } else {
-          // Fallback: Fetch latest submission via /api/submissions API
-          try {
-            const apiRes = await fetch(`/api/submissions?student_id=student_01`);
-            const apiJson = await apiRes.json();
-            if (apiJson.success && Array.isArray(apiJson.data) && apiJson.data.length > 0) {
-              subRecord = apiJson.data.find((s: any) => s.id === submissionId) || apiJson.data[0];
-            }
-          } catch (e) {
-            console.warn("API fallback fetch warning:", e);
-          }
-        }
-
-        if (!subRecord) {
+        if (res.status === 403) {
+          setErrorStatus(403);
           setLoading(false);
           return;
         }
 
-        setSubmission(subRecord);
-
-        // 2. Load Exam
-        const { data: examData } = await supabase
-          .from("exams")
-          .select("*")
-          .eq("id", subData.exam_id)
-          .maybeSingle();
-
-        setExam(examData);
-
-        // 3. Load Questions
-        let questionIds: string[] = [];
-        if (examData && Array.isArray(examData.question_ids)) {
-          questionIds = examData.question_ids;
+        if (res.status === 404) {
+          setErrorStatus(404);
+          setLoading(false);
+          return;
         }
 
-        let qData: any[] = [];
-        if (questionIds.length > 0) {
-          const { data } = await supabase
-            .from("questions")
-            .select("*")
-            .in("id", questionIds);
-          if (data) qData = data;
-        } else {
-          const { data } = await supabase.from("questions").select("*");
-          if (data) qData = data;
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          setErrorMsg(errJson.error || "Lỗi tải chi tiết bài nộp.");
+          setLoading(false);
+          return;
         }
 
-        setQuestions(qData);
+        const json = await res.json();
+        if (!isMounted) return;
 
-        // If still pending or in progress, poll again in 3 seconds
-        if (subData.status === "PENDING_GRADING" || subData.status === "AI_GRADING_IN_PROGRESS") {
-          timerId = setTimeout(fetchReviewData, 3000);
+        if (!json.success || !json.submission) {
+          setErrorMsg(json.error || "Không tìm thấy bài nộp.");
+          setLoading(false);
+          return;
         }
-      } catch (err) {
+
+        setSubmission(json.submission);
+        setExam(json.exam || null);
+
+        // Chuẩn hóa và ẩn thông tin nội bộ của câu hỏi qua sanitizeQuestionForStudent
+        const rawQuestions = Array.isArray(json.questions) ? json.questions : [];
+        const sanitized = rawQuestions.map((q: any) => sanitizeQuestionForStudent(q));
+        setQuestions(sanitized);
+
+        setErrorStatus(null);
+        setErrorMsg(null);
+
+        // Nếu trạng thái đang chấm GRADING, tự động cập nhật sau 5 giây
+        if (
+          json.submission.status === "GRADING" ||
+          json.submission.status === "PENDING_GRADING" ||
+          json.submission.status === "AI_GRADING_IN_PROGRESS"
+        ) {
+          timerId = setTimeout(fetchReviewData, 5000);
+        }
+      } catch (err: any) {
+        if (!isMounted) return;
         console.error("Error loading review:", err);
+        setErrorMsg(err?.message || "Đã xảy ra lỗi khi tải bài nộp.");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchReviewData();
 
     return () => {
+      isMounted = false;
       if (timerId) clearTimeout(timerId);
     };
-  }, [submissionId]);
+  }, [submissionId, retryCount]);
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5]">
-        <Loader2 className="w-8 h-8 text-[#6d3807] animate-spin mb-2" />
-        <p className="font-mono text-xs text-[#52443a]">Đang nạp chi tiết bài nộp {submissionId}...</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt">
+        <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-2" />
+        <p className="font-mono text-xs text-ink-muted">Đang nạp chi tiết bài nộp {submissionId}...</p>
       </div>
     );
   }
 
-  if (!submission) {
+  if (errorStatus === 403) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#fff8f5] space-y-4">
-        <p className="text-sm text-[#52443a]">Không tìm thấy thông tin bài nộp này.</p>
-        <Link href="/student/dashboard" className="px-4 py-2 bg-[#6d3807] text-white rounded-xl text-xs font-bold">
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
+        <p className="text-sm text-ink-muted">Bạn không có quyền xem bài nộp này.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
           Quay lại Dashboard
         </Link>
       </div>
     );
   }
 
-  const studentAnswers = submission.answers || {};
-  const finalDetails = submission.final_evaluation_details || submission.ai_evaluation_details || {};
-  const nonAiDetails = finalDetails.nonAiDetails || {};
-  const aiTasks = finalDetails.aiTasks || {};
-  const teacherReview = submission.teacher_review || null;
+  if (errorStatus === 404 || (!submission && !errorMsg)) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
+        <p className="text-sm text-ink-muted">Không tìm thấy bài nộp.</p>
+        <Link href="/student/dashboard" className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
+          Quay lại Dashboard
+        </Link>
+      </div>
+    );
+  }
 
-  const rawScore = submission.final_score || finalDetails.rawScore || `${finalDetails.correctNonAiCount || 0}/${finalDetails.totalNonAiCount || 0}`;
+  if (errorMsg) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-surface-alt space-y-4">
+        <p className="text-sm text-rose-700 font-bold">{errorMsg}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            setErrorMsg(null);
+            setRetryCount((c) => c + 1);
+          }}
+          className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 cursor-pointer"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
 
-  const isTeacherReviewed = submission.status === "TEACHER_REVIEWED" || !!teacherReview;
-  const isPending = submission.status === "PENDING_GRADING" || submission.status === "AI_GRADING_IN_PROGRESS";
-  const isFailed = submission.status === "AI_GRADING_FAILED";
+  const summary = summarizeAttemptResult({
+    status: submission.status,
+    total_score: submission.total_score,
+    passed: submission.passed,
+    section_scores: submission.section_scores,
+    standard_snapshot: submission.standard_snapshot,
+  });
+  const pendingLabel = summary.pending.length > 0 ? summary.pending.join(", ") : "tự luận";
+  const teacherFeedback = submission.teacher_feedback || submission.teacher_review?.teacher_note;
 
-  // Helper to resolve score for a given question (Teacher override prioritized)
-  const resolveEvaluation = (qId: string): EvaluationResult | null => {
-    if (teacherReview?.overridden_scores?.[qId]) {
-      return { ...teacherReview.overridden_scores[qId], _source: "teacher" };
+  const rawResults: any[] = Array.isArray(submission.results)
+    ? submission.results
+    : typeof submission.results === "string"
+    ? (() => {
+        try {
+          return JSON.parse(submission.results);
+        } catch {
+          return [];
+        }
+      })()
+    : [];
+
+  const normalizedResults = rawResults.map((r: any) => {
+    if (r && r.kind === "AI" && typeof r.score === "number") {
+      const items = Array.isArray(r.items) && r.items.length > 0
+        ? r.items.map((it: any, idx: number) => (idx === 0 ? { ...it, band: r.score, score: r.score } : it))
+        : [{ key: "ai", correct: true, given: "", expected: "", band: r.score, score: r.score }];
+      return { ...r, items };
     }
-    if (aiTasks[qId]?.evaluation) {
-      return { ...aiTasks[qId].evaluation, _source: "ai" };
+    return r;
+  });
+
+  const resultByQuestionId = new Map<string, any>();
+  for (const r of normalizedResults) {
+    if (r && r.question_id) {
+      resultByQuestionId.set(String(r.question_id), r);
     }
-    return null;
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#211a16] font-sans">
+    <div className="min-h-screen bg-surface-alt text-ink font-sans pb-16">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#fff8f5] border-b border-[#d8c2b6] flex justify-between items-center px-6 h-16 shadow-2xs">
+      <header className="sticky top-0 z-50 bg-surface-alt/95 backdrop-blur-sm border-b border-line flex justify-between items-center px-6 h-16 shadow-2xs">
         <div className="flex items-center gap-3">
-          <Link href="/student/dashboard" className="p-2 text-[#52443a] hover:text-[#6d3807] transition-all rounded-lg hover:bg-white">
+          <Link
+            href="/student/dashboard"
+            className="p-2 text-ink-muted hover:text-brand-600 transition-all rounded-lg hover:bg-white"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="font-headline text-base font-bold text-[#211a16]">{exam?.title || "Xem Chi Tiết Bài Thi"}</h1>
-            <p className="text-[11px] text-[#857469]">Mã bài nộp: {submissionId}</p>
+            <h1 className="font-headline text-base font-bold text-ink">
+              {exam?.title || "Xem Chi Tiết Bài Thi"}
+            </h1>
+            <p className="text-[11px] text-ink-subtle">Mã bài nộp: {submissionId}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          {isTeacherReviewed ? (
-            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-300 flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-emerald-700" />
-              <span>Đã Được Giáo Viên Review</span>
-            </span>
-          ) : isPending ? (
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg border border-blue-300 flex items-center gap-1.5 animate-pulse">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Đang Chấm AI...</span>
-            </span>
-          ) : isFailed ? (
-            <span className="px-3 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-lg border border-rose-300 flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5 text-rose-700" />
-              <span>Cần Chấm Lại</span>
-            </span>
-          ) : (
-            <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-300">
-              Đã Chấm Điểm AI
+          {submission.is_late && (
+            <span className="px-3 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-lg border border-rose-300">
+              Nộp trễ
             </span>
           )}
+
+          {summary.state === "PARTIAL" || summary.state === "WAITING_AI" ? (
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg border border-blue-300 flex items-center gap-1.5 animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>AI đang chấm phần {pendingLabel}…</span>
+            </span>
+          ) : summary.state === "WAITING_TEACHER" ? (
+            <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-300 flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
+              <span>Giáo viên sẽ chấm phần {pendingLabel}</span>
+            </span>
+          ) : summary.state === "FINAL" ? (
+            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-300 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Đã hoàn thành chấm điểm</span>
+            </span>
+          ) : null}
         </div>
       </header>
 
       {/* Main Container */}
       <main className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Banner Alert for Status */}
-        {isPending && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 text-xs flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-700 shrink-0" />
-              <span>Hệ thống AI đang tiến hành phân tích bài thi của bạn. Trang sẽ tự động cập nhật kết quả khi hoàn tất...</span>
+        {/* Banner trạng thái đang chấm */}
+        {(summary.state === "PARTIAL" || summary.state === "WAITING_AI") && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 text-xs flex items-start gap-2.5">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold">AI đang chấm phần {pendingLabel}…</div>
+              <div>
+                Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang). Trang cũng tự động cập nhật khi hoàn tất.
+              </div>
             </div>
           </div>
         )}
 
-        {/* Teacher Note Banner */}
-        {teacherReview?.teacher_note && (
-          <div className="p-5 bg-gradient-to-r from-emerald-50 to-[#fff8f5] rounded-3xl border-2 border-emerald-300 shadow-xs space-y-1">
+        {summary.state === "WAITING_TEACHER" && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold">Giáo viên sẽ chấm phần {pendingLabel}.</div>
+              <div>Có điểm, hệ thống sẽ báo ở mục Thông báo (chuông trên thanh đầu trang).</div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner nhận xét của giáo viên */}
+        {teacherFeedback && (
+          <div className="p-5 bg-gradient-to-r from-emerald-50 to-surface-alt rounded-3xl border-2 border-emerald-300 shadow-xs space-y-1">
             <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs uppercase tracking-wide">
               <UserCheck className="w-4 h-4 text-emerald-700" />
-              <span>Ghi Chú Từ Giáo Viên:</span>
+              <span>Nhận xét từ giáo viên:</span>
             </div>
-            <p className="text-xs text-[#211a16] leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200">
-              "{teacherReview.teacher_note}"
+            <p className="text-xs text-ink leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200 whitespace-pre-wrap">
+              {teacherFeedback}
             </p>
           </div>
         )}
 
-        {/* 4-Skill Score Breakdown Banner */}
-        <div className="p-6 bg-white rounded-3xl border border-[#d8c2b6] shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#d8c2b6]/60 pb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#fff1ea] text-[#6d3807] rounded-full border border-[#d8c2b6] text-xs font-bold">
-              <Award className="w-4 h-4 text-[#6d3807]" />
-              <span>Bảng Tổng Hợp Kết Quả Thi</span>
+        {/* Tổng kết điểm */}
+        <div className="p-6 bg-white rounded-3xl border border-line shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-line-soft pb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-full border border-line text-xs font-bold">
+              <Award className="w-4 h-4 text-brand-600" />
+              <span>Bảng Tổng Hợp Kết Quả</span>
             </div>
-            <span className="text-xs text-[#857469] font-mono">Tổng câu hỏi: {questions.length}</span>
+            <span className="text-xs text-ink-subtle font-mono">
+              Tổng số câu hỏi: {questions.length}
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Objective Score (Reading / Listening) */}
-            <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-1">
-              <span className="text-[11px] font-bold text-[#857469] uppercase block">Reading &amp; Listening</span>
-              <div className="text-xl font-extrabold text-[#6d3807]">
-                {rawScore} <span className="text-xs font-normal text-[#52443a]">câu đúng</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-surface-alt rounded-2xl border border-line-soft text-center space-y-1">
+              <span className="text-xs font-bold text-ink-subtle uppercase tracking-wider block">
+                Tổng điểm
+              </span>
+              {summary.state === "FINAL" ? (
+                <div className="text-3xl font-extrabold text-brand-600">
+                  {summary.total !== null ? summary.total : "—"}
+                </div>
+              ) : (
+                <div className="text-base font-extrabold text-brand-600 pt-1">
+                  Chờ phần {pendingLabel}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-surface-alt rounded-2xl border border-line-soft text-center space-y-1">
+              <span className="text-xs font-bold text-ink-subtle uppercase tracking-wider block">
+                Kết quả xếp loại
+              </span>
+              <div className="text-2xl font-extrabold">
+                {summary.state === "FINAL" ? (
+                  summary.passed === true ? (
+                    <span className="text-emerald-700">Đạt</span>
+                  ) : summary.passed === false ? (
+                    <span className="text-rose-700">Chưa đạt</span>
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )
+                ) : (
+                  <span className="text-sm font-semibold text-ink-subtle">Chờ chấm xong</span>
+                )}
               </div>
-              <p className="text-[10px] text-[#857469]">Trắc nghiệm, Điền từ, Nối cặp, Sắp xếp</p>
             </div>
-
-            {/* Writing Band Score */}
-            {(() => {
-              const writingQ = questions.find((q) => q.skill === "Writing" || q.category?.startsWith("WRITING"));
-              const writingEval = writingQ ? resolveEvaluation(writingQ.id) : null;
-
-              return (
-                <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-1">
-                  <span className="text-[11px] font-bold text-[#857469] uppercase block">Writing Task</span>
-                  <div className="text-xl font-extrabold text-purple-900">
-                    {writingEval ? `Band ${writingEval.overallScore}` : "Chờ Chấm"}
-                  </div>
-                  <p className="text-[10px] text-[#857469]">
-                    {writingEval?._source === "teacher" ? "✏️ Đã được Giáo viên phê duyệt" : "Chấm theo tiêu chí IELTS Writing"}
-                  </p>
-                </div>
-              );
-            })()}
-
-            {/* Speaking Band Score */}
-            {(() => {
-              const speakingQ = questions.find((q) => q.skill === "Speaking" || q.category?.startsWith("SPEAKING"));
-              const speakingEval = speakingQ ? resolveEvaluation(speakingQ.id) : null;
-
-              return (
-                <div className="p-4 bg-[#fff8f5] rounded-2xl border border-[#d8c2b6] space-y-1">
-                  <span className="text-[11px] font-bold text-[#857469] uppercase block">Speaking Task</span>
-                  <div className="text-xl font-extrabold text-emerald-900">
-                    {speakingEval ? `Band ${speakingEval.overallScore}` : "Chờ Chấm"}
-                  </div>
-                  <p className="text-[10px] text-[#857469]">
-                    {speakingEval?._source === "teacher" ? "✏️ Đã được Giáo viên phê duyệt" : "Multimodal Audio Pronunciation"}
-                  </p>
-                </div>
-              );
-            })()}
           </div>
+
+          {/* Các phần đã chấm */}
+          {summary.graded.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
+                {summary.state === "FINAL" ? "Điểm từng phần:" : "Đã chấm:"}
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {summary.graded.map((g) => (
+                  <div
+                    key={g.skill}
+                    className="p-3.5 rounded-xl border border-line-soft bg-surface-alt text-center space-y-1"
+                  >
+                    <div className="text-xs font-bold text-ink-muted">{g.skill}</div>
+                    <div className="text-xl font-bold text-brand-600">{g.score}</div>
+                    {g.max !== undefined && g.earned !== undefined && (
+                      <div className="text-[11px] text-ink-subtle">
+                        {g.earned}/{g.max} câu
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Các phần đang chờ chấm */}
+          {summary.pending.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
+                {summary.state === "WAITING_TEACHER" ? "Chờ giáo viên chấm:" : "AI đang chấm:"}
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {summary.pending.map((skill) => (
+                  <div
+                    key={skill}
+                    className="p-3.5 rounded-xl border border-dashed border-line bg-surface-alt text-center space-y-1"
+                  >
+                    <div className="text-xs font-bold text-ink-muted">{skill}</div>
+                    <div className="text-xs font-semibold text-ink-subtle">
+                      {summary.state === "WAITING_TEACHER"
+                        ? "Giáo viên sẽ chấm"
+                        : "AI đang chấm…"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Detailed Questions Review List */}
-        <div className="space-y-6">
-          <h3 className="text-base font-bold text-[#6d3807] uppercase tracking-wide flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            <span>Chi Tiết Từng Câu Hỏi &amp; Đánh Giá AI / Giáo Viên:</span>
-          </h3>
+        {/* Danh sách câu hỏi hiển thị qua LessonPlayer ở chế độ kết quả + nhận xét AI */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-brand-600 font-bold text-sm uppercase tracking-wide">
+            <BookOpen className="w-4 h-4" />
+            <span>Chi tiết từng câu hỏi &amp; bài làm:</span>
+          </div>
 
-          {questions.map((q, idx) => {
-            const cat = q.category;
-            const isAiTask = [
-              "WRITING_ESSAY",
-              "WRITING_SHORT_ANSWER",
-              "WRITING_SENTENCE_REWRITE",
-              "SPEAKING_TOPIC_PROMPT",
-              "SPEAKING_READ_ALOUD",
-            ].includes(cat);
+          <div className="space-y-6">
+            {questions.map((q, idx) => {
+              const qResult = resultByQuestionId.get(String(q.id));
+              const isAiQuestion = qResult?.kind === "AI";
+              const hasAiScore = isAiQuestion && typeof qResult?.score === "number";
+              const aiFeedback = isAiQuestion && qResult?.feedback ? String(qResult.feedback) : null;
 
-            const evalData = resolveEvaluation(q.id);
-            const studentAns = studentAnswers[q.id];
+              return (
+                <div key={q.id || idx} className="space-y-2">
+                  <LessonPlayer
+                    questions={[q]}
+                    flashcards={[]}
+                    answers={submission.answers || {}}
+                    results={normalizedResults}
+                    onChange={() => {}}
+                    disabled={true}
+                    allowSpeaking={true}
+                    startNumber={idx + 1}
+                  />
 
-            return (
-              <div key={q.id || idx} className="p-6 bg-white rounded-2xl border border-[#d8c2b6] shadow-sm space-y-4">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#d8c2b6]/60 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 bg-[#6d3807] text-white text-xs font-bold rounded-lg">
-                      Câu {idx + 1}
-                    </span>
-                    <span className="px-2.5 py-1 bg-[#fff1ea] text-[#6d3807] text-xs font-bold rounded-lg border border-[#d8c2b6]">
-                      {q.skill} &bull; {cat}
-                    </span>
-                  </div>
-
-                  {isAiTask ? (
-                    evalData?._source === "teacher" ? (
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-300 flex items-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>Teacher Override</span>
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full border border-purple-300 flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Đánh Giá Tiêu Chí AI</span>
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-xs font-bold text-[#52443a]">Tự Động So Khớp</span>
-                  )}
-                </div>
-
-                {/* Question Prompt / Text */}
-                {q.prompt && (
-                  <p className="font-bold text-[#211a16] text-sm sm:text-base leading-relaxed">{q.prompt}</p>
-                )}
-
-                {/* Stimulus Text if available */}
-                {q.stimulus_text && (
-                  <div className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] text-xs leading-relaxed text-[#211a16]">
-                    <div dangerouslySetInnerHTML={{ __html: q.stimulus_text }} />
-                  </div>
-                )}
-
-                {/* NON-AI QUESTIONS REVIEW */}
-                {!isAiTask && (
-                  <div className="space-y-3 pt-2">
-                    {(cat === "READING_MC" || cat === "LISTENING_MC") && q.content?.sub_questions && (
-                      <div className="space-y-3">
-                        {q.content.sub_questions.map((sub: any, sIdx: number) => {
-                          const isSingle = q.content.sub_questions.length === 1;
-                          const subKey = isSingle ? q.id : `${q.id}_sub_${sIdx}`;
-                          const detail = nonAiDetails[subKey] || {};
-
-                          return (
-                            <div key={sIdx} className="p-4 rounded-xl bg-[#fff8f5] border border-[#d8c2b6] space-y-2">
-                              {sub.text && <p className="font-bold text-xs text-[#211a16]">Câu {sIdx + 1}: {sub.text}</p>}
-                              <div className="flex items-center justify-between text-xs">
-                                <div>
-                                  <span className="font-medium text-[#52443a]">Đã chọn: </span>
-                                  <span className="font-bold text-[#211a16]">{detail.studentChoice || studentAnswers[subKey] || "(Chưa chọn)"}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-[#52443a]">Đáp án đúng: </span>
-                                  <span className="font-bold text-emerald-700">{sub.correct_answer || detail.correctAnswer}</span>
-                                </div>
-                              </div>
-                              <div className="pt-1 flex items-center gap-1.5">
-                                {detail.isCorrect ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Đúng (+1đ)
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-xs">
-                                    <XCircle className="w-3.5 h-3.5" /> Chưa đúng (0đ)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {(cat === "READING_FILL_IN" || cat === "LISTENING_FILL_IN" || cat === "WRITING_FREE_TYPING_BLANKS") && (
-                      <div className="p-4 rounded-xl bg-[#fff8f5] border border-[#d8c2b6] space-y-2">
-                        <span className="text-xs font-bold text-[#6d3807] block">Chi tiết điền chỗ khuyết:</span>
-                        <div className="space-y-1.5 text-xs">
-                          {Object.keys(nonAiDetails)
-                            .filter((k) => k.startsWith(`${q.id}_gap_`))
-                            .map((gapKey, gIdx) => {
-                              const gDetail = nonAiDetails[gapKey];
-                              return (
-                                <div key={gapKey} className="flex items-center justify-between p-2 bg-white rounded-lg border border-[#d8c2b6]">
-                                  <span>Vị trí {gIdx + 1}: </span>
-                                  <span>Học sinh điền: <strong>{gDetail.studentInput || "(Trống)"}</strong> | Đáp án: <strong className="text-emerald-700">{gDetail.correctWord}</strong></span>
-                                  {gDetail.isCorrect ? (
-                                    <span className="text-emerald-700 font-bold">✅ Đúng (+1đ)</span>
-                                  ) : (
-                                    <span className="text-rose-600 font-bold">❌ Sai (0đ)</span>
-                                  )}
-                                </div>
-                              );
-                            })}
+                  {isAiQuestion && (hasAiScore || aiFeedback) && (
+                    <div className="rounded-2xl border border-purple-200 bg-purple-50/70 p-4 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-800">
+                          <Sparkles className="w-4 h-4 text-purple-700" />
+                          <span>Đánh giá &amp; Nhận xét từ AI</span>
                         </div>
+                        {hasAiScore && (
+                          <span className="inline-flex items-center rounded-xl bg-white border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-900">
+                            Điểm: {qResult.score}
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* AI EVALUATED TASKS REVIEW (WRITING & SPEAKING) */}
-                {isAiTask && (
-                  <div className="space-y-4 pt-2">
-                    {/* Student Submission View (Text or Audio Player) */}
-                    <div className="p-4 bg-[#fff8f5] rounded-xl border border-[#d8c2b6] space-y-2">
-                      <span className="font-bold text-[#6d3807] text-xs block">Bài làm của học sinh:</span>
-                      {typeof studentAns === "string" && (studentAns.startsWith("http") || studentAns.startsWith("data:audio")) ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs font-bold text-[#52443a]">
-                            <Mic className="w-4 h-4 text-[#6d3807]" />
-                            <span>Bản ghi âm bài nói:</span>
-                          </div>
-                          <audio controls src={studentAns} className="w-full h-9" />
-                        </div>
-                      ) : (
-                        <p className="text-xs text-[#211a16] font-medium leading-relaxed whitespace-pre-wrap">
-                          {studentAns || "(Học sinh không để lại câu trả lời)"}
+                      {aiFeedback && (
+                        <p className="text-xs text-ink leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
+                          {aiFeedback}
                         </p>
                       )}
                     </div>
-
-                    {/* Criteria Evaluation Card */}
-                    {evalData ? (
-                      <div className="p-5 bg-gradient-to-br from-[#fff1ea] to-[#fff8f5] rounded-2xl border-2 border-[#ffb782] space-y-4 shadow-2xs">
-                        <div className="flex items-center justify-between border-b border-[#d8c2b6] pb-2">
-                          <span className="font-bold text-[#6d3807] flex items-center gap-1.5 text-xs sm:text-sm">
-                            <Sparkles className="w-4 h-4 text-[#6d3807]" />
-                            <span>
-                              {evalData._source === "teacher"
-                                ? "Đánh Giá Chi Tiết (Phê Duyệt Bởi Giáo Viên)"
-                                : "Đánh Giá Chi Tiết AI (Gemini Multimodal Grader)"}
-                            </span>
-                          </span>
-                          <span className="text-xs font-extrabold text-[#6d3807] bg-white px-3 py-1 rounded-full border border-[#d8c2b6]">
-                            Band Score: {evalData.overallScore || 7.0}
-                          </span>
-                        </div>
-
-                        {/* Criteria Scores Grid */}
-                        {evalData.criteriaScores && (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-                            {Object.entries(evalData.criteriaScores).map(([cKey, scoreVal]) => {
-                              const labels: Record<string, string> = {
-                                pronunciation: "Phát Âm",
-                                fluency_coherence: "Mạch Lạc / Trôi Chảy",
-                                lexical_resource: "Từ Vựng",
-                                grammatical_range: "Ngữ Pháp",
-                                task_achievement: "Task Achievement",
-                                coherence_cohesion: "Liên Kết Câu",
-                                vocabulary: "Từ Vựng",
-                                grammar: "Ngữ Pháp",
-                              };
-                              return (
-                                <div key={cKey} className="p-2.5 bg-white rounded-xl border border-[#d8c2b6]">
-                                  <span className="text-[11px] font-bold text-[#857469] block">{labels[cKey] || cKey}</span>
-                                  <span className="text-sm font-extrabold text-[#6d3807]">{scoreVal}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Feedback Text */}
-                        {evalData.feedback && (
-                          <div className="space-y-1">
-                            <span className="text-xs font-bold text-[#6d3807] block">Nhận xét chi tiết:</span>
-                            <p className="text-xs text-[#211a16] leading-relaxed bg-white p-3 rounded-xl border border-[#d8c2b6]">
-                              {evalData.feedback}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Errors & Improvements */}
-                        {evalData.errorsDetected?.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs font-bold text-rose-700 block">Các điểm cần lưu ý / lỗi phát hiện:</span>
-                            <ul className="list-disc list-inside text-xs text-rose-900 bg-rose-50 p-3 rounded-xl border border-rose-200 space-y-1">
-                              {evalData.errorsDetected.map((errItem: string, eIdx: number) => (
-                                <li key={eIdx}>{errItem}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {evalData.improvements?.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs font-bold text-emerald-800 block">Khuyến nghị cải thiện:</span>
-                            <ul className="list-disc list-inside text-xs text-emerald-900 bg-emerald-50 p-3 rounded-xl border border-emerald-200 space-y-1">
-                              {evalData.improvements.map((impItem: string, iIdx: number) => (
-                                <li key={iIdx}>{impItem}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-[#fff1ea] rounded-xl border border-[#d8c2b6] text-xs text-[#6d3807] font-bold text-center">
-                        ⚡ Bài thi này đang trong tiến trình chấm điểm bất đồng bộ...
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </main>
     </div>

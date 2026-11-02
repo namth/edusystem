@@ -1,0 +1,39 @@
+{
+  "id": "TASK-035",
+  "title": "Đăng ký học sinh không cần email, đăng ký giáo viên dùng thử, đăng nhập bằng tên đăng nhập (API)",
+  "status": "accepted",
+  "conversation_id": "3077cb2b-0c4c-4e04-b3a8-5a333b485936",
+  "history": [
+    {
+      "at": "2026-11-02T11:36:12",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T12:20:14",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T12:21:58",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-02T14:09:52",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-02T14:13:38",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-035-dang-ky-api/verify.sh",
+    "tests/onboarding-api.test.ts",
+    "tests/helpers/pg-fake.ts"
+  ],
+  "via": "agy"
+}

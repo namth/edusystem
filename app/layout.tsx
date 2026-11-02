@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Lexend } from "next/font/google";
+import { Lexend, Baloo_2 } from "next/font/google";
+import { BRAND } from "@/lib/brand";
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
@@ -9,9 +10,17 @@ const lexend = Lexend({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+// Chữ tiêu đề bo tròn, gần nét logo KitoKit
+const baloo = Baloo_2({
+  variable: "--font-baloo",
+  subsets: ["latin", "vietnamese"],
+  weight: ["500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
-  title: "English 4-Skills EdTech Portal",
-  description: "Comprehensive English Learning & AI Mock Test System",
+  title: { default: `${BRAND.name} — ${BRAND.tagline}`, template: `%s · ${BRAND.name}` },
+  description: BRAND.description,
+  applicationName: BRAND.name,
 };
 
 export default function RootLayout({
@@ -22,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${lexend.variable} h-full antialiased`}
+      className={`${lexend.variable} ${baloo.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#fff8f5] text-[#211a16]">
+      <body className="min-h-full flex flex-col font-sans bg-surface-alt text-ink">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

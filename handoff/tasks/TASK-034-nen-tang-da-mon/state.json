@@ -1,0 +1,38 @@
+{
+  "id": "TASK-034",
+  "title": "Nền tảng đa môn: bảng môn học, subject_id cho khoá/đề/bài học, trang quản lý môn, lọc theo môn",
+  "status": "accepted",
+  "conversation_id": "4108cfad-2fa2-47d4-a169-c8444ef735f0",
+  "history": [
+    {
+      "at": "2026-11-01T19:31:21",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-01T19:38:44",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-01T19:39:19",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-01T20:17:46",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-01T20:27:28",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-034-nen-tang-da-mon/verify.sh",
+    "tests/subjects.test.ts"
+  ],
+  "via": "agy"
+}
