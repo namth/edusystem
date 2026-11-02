@@ -33,3 +33,20 @@ test.describe("Xác thực", () => {
     }
   });
 });
+
+test.describe("Đăng xuất bỏ hẳn phiên cũ", () => {
+  test("admin đăng xuất → về /login, vào /register và / không bị đưa ngược vào trang quản trị", async ({ page }) => {
+    await loginApi(page, ACC.admin);
+    await page.goto("/admin/requests");
+    await page.getByRole("button", { name: /Đăng Xuất Admin/i }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    // trang đăng nhập không tự chuyển vào trang quản trị của tài khoản cũ
+    await page.waitForTimeout(1500);
+    await expect(page).toHaveURL(/\/login$/);
+    expect((await page.context().cookies()).find((c) => c.name === "auth_token")?.value || "").toBe("");
+    await page.goto("/register");
+    await expect(page).toHaveURL(/\/register$/);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/admin/);
+  });
+});

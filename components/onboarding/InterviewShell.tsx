@@ -2,9 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import Mascot, { type MascotMood } from "./Mascot";
 import SpeechBubble from "./SpeechBubble";
+import { InterviewNavContext } from "./StepActions";
 
 interface InterviewShellProps {
   stepIndex: number;
@@ -42,28 +42,16 @@ export default function InterviewShell({
       <header className="w-full bg-white/90 backdrop-blur-md border-b border-line">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {canGoBack ? (
-              <button
-                type="button"
-                aria-label="Quay lại"
-                onClick={onBack}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-surface-alt hover:bg-brand-50 text-xs font-bold text-ink transition-colors cursor-pointer shrink-0"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Quay lại</span>
-              </button>
-            ) : (
-              <Link href="/" className="inline-flex items-center gap-2 shrink-0">
-                <img
-                  src="/brand/kitokit-mark-transparent.png"
-                  alt="KitoKit"
-                  className="w-8 h-8 object-contain"
-                />
-                <span className="font-display text-lg font-extrabold text-brand-600">
-                  KitoKit
-                </span>
-              </Link>
-            )}
+            <Link href="/" className="inline-flex items-center gap-2 shrink-0">
+              <img
+                src="/brand/kitokit-mark-transparent.png"
+                alt="KitoKit"
+                className="w-8 h-8 object-contain"
+              />
+              <span className="font-display text-lg font-extrabold text-brand-600">
+                KitoKit
+              </span>
+            </Link>
           </div>
 
           <div className="flex-1 max-w-xs sm:max-w-md mx-2">
@@ -76,7 +64,7 @@ export default function InterviewShell({
               className="w-full h-2.5 bg-line-soft rounded-full overflow-hidden"
             >
               <div
-                className="h-full bg-gradient-to-r from-brand-500 to-accent-400 rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-brand-700 via-brand-500 to-brand-300 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -120,7 +108,9 @@ export default function InterviewShell({
           {/* Cột phải: Vùng trả lời */}
           <div className="lg:col-span-7 w-full">
             <div className="w-full bg-white rounded-3xl border border-line p-5 sm:p-8 shadow-sm">
-              {children}
+              <InterviewNavContext.Provider value={{ canGoBack, onBack }}>
+                {children}
+              </InterviewNavContext.Provider>
             </div>
           </div>
         </div>

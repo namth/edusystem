@@ -73,6 +73,7 @@ const studentWithEmail = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const teacherBody = (over: Record<string, unknown> = {}) => ({
+  honorific: "CO",
   name: "Cô Lan",
   subjects: ["english"],
   levels: ["PRIMARY", "LOWER_SECONDARY"],
@@ -388,6 +389,7 @@ describe("POST /api/auth/register/teacher — giáo viên dùng thử", () => {
       workplace_type: "CENTER",
       workplace_name: "Trung tâm Ánh Dương",
       student_count: "R10_50",
+      honorific: "CO",
       needs: ["AI_GRADING", "AUTHORING"],
       source: "FACEBOOK",
     });
@@ -416,7 +418,9 @@ describe("POST /api/auth/register/teacher — giáo viên dùng thử", () => {
     [{ levels: ["SAO_HOA"] }, "levels"],
     [{ workplaceType: "NHA" }, "workplaceType"],
     [{ studentCount: "1000" }, "studentCount"],
-    [{ needs: [] }, "needs"],
+    [{ honorific: undefined }, "honorific"],
+    [{ honorific: "ANH" }, "honorific"],
+    [{ needs: ["BAY"] }, "needs"],
     [{ source: "TIKTOK_LA" }, "source"],
     [{ phone: "12345" }, "phone"],
     [{ email: undefined }, "email"],
@@ -428,6 +432,13 @@ describe("POST /api/auth/register/teacher — giáo viên dùng thử", () => {
     expect((await res.json()).field).toBe(field);
     expect((await rows(`SELECT count(*)::int AS n FROM users`))[0].n).toBe(0);
     expect((await rows(`SELECT count(*)::int AS n FROM teacher_profiles`))[0].n).toBe(0);
+  });
+
+  it("không gửi needs (02/11 bỏ câu hỏi nhu cầu) vẫn đăng ký được", async () => {
+    expect((await registerTeacher(teacherBody({ needs: undefined }))).status).toBe(201);
+    const u = await userBy("email", "co.lan@gmail.com");
+    const tp = (await rows(`SELECT answers FROM teacher_profiles WHERE user_id = $1`, [u.id]))[0];
+    expect(tp.answers.honorific).toBe("CO");
   });
 
   it("source bỏ trống vẫn hợp lệ; email trùng → 400 không sinh hồ sơ thừa", async () => {

@@ -27,6 +27,7 @@ import {
   suggestUsernames,
 } from "@/lib/onboarding";
 import InterviewShell from "@/components/onboarding/InterviewShell";
+import StepActions from "@/components/onboarding/StepActions";
 import ChoiceChips from "@/components/onboarding/ChoiceChips";
 import Mascot, { type MascotMood } from "@/components/onboarding/Mascot";
 import Confetti from "@/components/onboarding/Confetti";
@@ -732,14 +733,14 @@ export default function StudentRegisterPage() {
             placeholder="Ví dụ: Nguyễn Minh An"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -751,6 +752,7 @@ export default function StudentRegisterPage() {
             selected={draft.gradeLevel}
             onSelect={handleGradeSelect}
           />
+          <StepActions />
         </div>
       )}
 
@@ -763,7 +765,7 @@ export default function StudentRegisterPage() {
             multiple
             onSelect={handleToggleSubject}
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="button"
               onClick={handleSubjectsNext}
@@ -771,7 +773,7 @@ export default function StudentRegisterPage() {
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </div>
       )}
 
@@ -811,12 +813,14 @@ export default function StudentRegisterPage() {
               </div>
             </div>
           )}
+          <StepActions />
         </div>
       )}
 
       {/* Màn 4: Có mã lớp không? */}
       {step === "hasClassCode" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => {
@@ -839,6 +843,8 @@ export default function StudentRegisterPage() {
           >
             Chưa có, bỏ qua
           </button>
+          </div>
+          <StepActions />
         </div>
       )}
 
@@ -886,7 +892,7 @@ export default function StudentRegisterPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 pt-2">
+          <StepActions>
             <button
               type="button"
               onClick={() => {
@@ -903,13 +909,14 @@ export default function StudentRegisterPage() {
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
       {/* Màn 5: Bạn có email không? */}
       {step === "hasEmail" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={handleChooseHasEmail}
@@ -924,6 +931,8 @@ export default function StudentRegisterPage() {
           >
             Không có
           </button>
+          </div>
+          <StepActions />
         </div>
       )}
 
@@ -943,14 +952,14 @@ export default function StudentRegisterPage() {
             placeholder="ten.ban@gmail.com"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -1011,14 +1020,14 @@ export default function StudentRegisterPage() {
             Email tạm của bạn: <u className="font-bold text-ink">{currentPlaceholderEmail}</u> — bạn đổi được sau
           </p>
 
-          <div className="flex justify-end">
+          <StepActions>
             <button
               type="submit"
               className="px-6 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm transition-colors cursor-pointer"
             >
               Tiếp
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
 
@@ -1082,7 +1091,7 @@ export default function StudentRegisterPage() {
             <p className="text-xs font-medium text-ink-muted">{pwStrength.label}</p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <StepActions>
             {networkFailed && (
               <button
                 type="button"
@@ -1107,7 +1116,7 @@ export default function StudentRegisterPage() {
                 <span>Tiếp</span>
               )}
             </button>
-          </div>
+          </StepActions>
         </form>
       )}
     </InterviewShell>

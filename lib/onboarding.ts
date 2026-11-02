@@ -93,7 +93,7 @@ export function usernameBaseFromName(name: string): string {
  */
 export function usernameBaseFromEmail(email: string): string {
   const local = stripVietnamese(String(email || "").split("@")[0] || "");
-  let cleaned = local
+  const cleaned = local
     .replace(/[^a-z0-9._]+/g, ".")
     .replace(/\.{2,}/g, ".")
     .replace(/^[^a-z]+/, "")
@@ -179,6 +179,8 @@ export const ENGLISH_GOALS = [
   opt("GRADE10", "Thi vào 10"),
   opt("UNSURE", "Chưa rõ"),
 ] as const;
+
+export const HONORIFICS = [opt("THAY", "Thầy"), opt("CO", "Cô")] as const;
 
 export const TEACHER_LEVELS = [
   opt("PRESCHOOL", "Mầm non"),
