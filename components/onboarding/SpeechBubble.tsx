@@ -15,38 +15,29 @@ export default function SpeechBubble({
   variant = "default",
   className = "",
 }: SpeechBubbleProps) {
-  const [visibleChars, setVisibleChars] = useState<number>(text.length);
+  // Số ký tự đã gõ lưu kèm câu thoại; câu thoại đổi → bắt đầu gõ lại từ 0
+  const [typed, setTyped] = useState({ text: "", chars: 0 });
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      setVisibleChars(text.length);
-      return;
-    }
     const reduced =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      setVisibleChars(text.length);
-      return;
-    }
-
-    setVisibleChars(0);
     let current = 0;
-    const timer = window.setInterval(() => {
-      current += 1;
-      if (current >= text.length) {
-        setVisibleChars(text.length);
-        window.clearInterval(timer);
-      } else {
-        setVisibleChars(current);
-      }
-    }, 25);
-
+    const timer = window.setInterval(
+      () => {
+        current = reduced ? text.length : current + 1;
+        setTyped({ text, chars: Math.min(current, text.length) });
+        if (current >= text.length) window.clearInterval(timer);
+      },
+      reduced ? 0 : 25
+    );
     return () => window.clearInterval(timer);
   }, [text]);
 
+  const visibleChars = typed.text === text ? typed.chars : 0;
+
   const handleRevealAll = () => {
-    setVisibleChars(text.length);
+    setTyped({ text, chars: text.length });
   };
 
   const shown = text.slice(0, visibleChars);

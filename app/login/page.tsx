@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -21,6 +21,8 @@ import { useAuth } from "@/context/AuthContext";
 import Mascot, { type MascotMood } from "@/components/onboarding/Mascot";
 import SpeechBubble from "@/components/onboarding/SpeechBubble";
 import { safeNextPath } from "@/components/onboarding/redirect";
+
+const noopSubscribe = () => () => {};
 
 function greetingByHour(): string {
   const h = new Date().getHours();
@@ -45,13 +47,12 @@ function LoginFormContent() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mood, setMood] = useState<MascotMood>("idle");
-  const [greeting, setGreeting] = useState(
-    "Chào bạn! Đăng nhập để bắt đầu học và làm bài cùng Kito nhé."
+  // Server render câu chào chung, trình duyệt dùng câu chào theo giờ máy người dùng
+  const greeting = useSyncExternalStore(
+    noopSubscribe,
+    greetingByHour,
+    () => "Chào bạn! Đăng nhập để bắt đầu học và làm bài cùng Kito nhé."
   );
-
-  useEffect(() => {
-    setGreeting(greetingByHour());
-  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {

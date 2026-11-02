@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -117,17 +117,35 @@ export default function StudentRegisterPage() {
     { id: "english", name: "Tiếng Anh" },
   ]);
 
-  // Tra cứu mã lớp (Câu 4a)
-  const [classLookupLoading, setClassLookupLoading] = useState(false);
-  const [classPreview, setClassPreview] = useState<ClassPreview | null>(null);
-  const [classLookupError, setClassLookupError] = useState<string | null>(null);
+  // Tra cứu mã lớp (Câu 4a): lưu kết quả kèm mã đã tra; mã đổi mà chưa có kết quả → đang tra
+  const [classLookup, setClassLookup] = useState<{
+    code: string;
+    preview: ClassPreview | null;
+    error: string | null;
+  } | null>(null);
+  const lookupCode = draft.classCode.trim();
+  const classLookupDone = classLookup && classLookup.code === lookupCode ? classLookup : null;
+  const classPreview = classLookupDone?.preview ?? null;
+  const classLookupError = classLookupDone?.error ?? null;
+  const classLookupLoading = !!lookupCode && !classLookupDone; // chỉ hiển thị ở màn nhập mã lớp
 
-  // Kiểm tra tên đăng nhập (Câu 5b)
-  const [usernameStatus, setUsernameStatus] = useState<
-    "idle" | "checking" | "available" | "taken" | "invalid"
-  >("idle");
-  const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
-  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  // Kiểm tra tên đăng nhập (Câu 5b): kiểm tra định dạng ngay khi render, kết quả server lưu kèm tên đã kiểm
+  const [usernameCheck, setUsernameCheck] = useState<{
+    username: string;
+    status: "available" | "taken" | "idle";
+    message: string | null;
+    suggestions: string[];
+  } | null>(null);
+  const normalizedUsername = normalizeUsername(draft.username);
+  const usernameLocalError = validateUsername(normalizedUsername);
+  const nameSuggestions = useMemo(() => suggestUsernames(usernameBaseFromName(draft.name), 3), [draft.name]);
+  const usernameCheckDone =
+    usernameCheck && usernameCheck.username === normalizedUsername ? usernameCheck : null;
+  const usernameStatus: "idle" | "checking" | "available" | "taken" | "invalid" = usernameLocalError
+    ? "invalid"
+    : usernameCheckDone?.status ?? "checking";
+  const usernameMessage = usernameLocalError ?? usernameCheckDone?.message ?? null;
+  const usernameSuggestions = usernameLocalError ? nameSuggestions : usernameCheckDone?.suggestions ?? [];
 
   // Dữ liệu sau khi hoàn tất
   const [completedData, setCompletedData] = useState<{
@@ -168,38 +186,33 @@ export default function StudentRegisterPage() {
   useEffect(() => {
     if (step !== "classCode") return;
     const code = draft.classCode.trim();
-    if (!code) {
-      setClassPreview(null);
-      setClassLookupError(null);
-      return;
-    }
+    if (!code) return;
 
     let cancelled = false;
     const timer = window.setTimeout(async () => {
-      setClassLookupLoading(true);
-      setClassLookupError(null);
       try {
         const res = await fetch(`/api/classes/lookup/${encodeURIComponent(code)}`);
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (res.ok && data.success && data.class) {
-          setClassPreview(data.class);
-          setClassLookupError(null);
+          setClassLookup({ code, preview: data.class, error: null });
           setMood("happy");
         } else {
-          setClassPreview(null);
-          setClassLookupError(
-            data.error || "Mình chưa tìm thấy lớp với mã này. Bạn kiểm tra lại hoặc bỏ qua nhé."
-          );
+          setClassLookup({
+            code,
+            preview: null,
+            error: data.error || "Mình chưa tìm thấy lớp với mã này. Bạn kiểm tra lại hoặc bỏ qua nhé.",
+          });
           setMood("oops");
         }
       } catch {
         if (!cancelled) {
-          setClassPreview(null);
-          setClassLookupError("Không kiểm tra được mã lớp lúc này. Bạn có thể thử lại hoặc bỏ qua.");
+          setClassLookup({
+            code,
+            preview: null,
+            error: "Không kiểm tra được mã lớp lúc này. Bạn có thể thử lại hoặc bỏ qua.",
+          });
         }
-      } finally {
-        if (!cancelled) setClassLookupLoading(false);
       }
     }, 150);
 
@@ -209,24 +222,16 @@ export default function StudentRegisterPage() {
     };
   }, [step, draft.classCode]);
 
-  // Kiểm tra tên đăng nhập khi ở màn username (chờ 400ms)
+  // Kiểm tra tên đăng nhập với server khi ở màn username (chờ 400ms); lỗi định dạng đã tính lúc render
   useEffect(() => {
     if (step !== "username") return;
-    const raw = draft.username;
-    const normalized = normalizeUsername(raw);
-    const localErr = validateUsername(normalized);
-    if (localErr) {
-      setUsernameStatus("invalid");
-      setUsernameMessage(localErr);
-      setUsernameSuggestions(suggestUsernames(usernameBaseFromName(draft.name), 3));
-      setMood("oops");
-      return;
+    const normalized = normalizeUsername(draft.username);
+    if (validateUsername(normalized)) {
+      const t = window.setTimeout(() => setMood("oops"), 0);
+      return () => window.clearTimeout(t);
     }
 
     let cancelled = false;
-    setUsernameStatus("checking");
-    setUsernameMessage(null);
-
     const timer = window.setTimeout(async () => {
       try {
         const res = await fetch(
@@ -235,26 +240,23 @@ export default function StudentRegisterPage() {
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (res.ok && data.available) {
-          setUsernameStatus("available");
-          setUsernameMessage("Tên này dùng được");
-          setUsernameSuggestions([]);
+          setUsernameCheck({ username: normalized, status: "available", message: "Tên này dùng được", suggestions: [] });
           setMood("happy");
         } else {
-          setUsernameStatus("taken");
-          setUsernameMessage(
-            data.error || "Tên đăng nhập này đã được đặt trước, bạn chọn tên khác nhé."
-          );
-          setUsernameSuggestions(
-            Array.isArray(data.suggestions) && data.suggestions.length > 0
-              ? data.suggestions
-              : suggestUsernames(normalized, 3)
-          );
+          setUsernameCheck({
+            username: normalized,
+            status: "taken",
+            message: data.error || "Tên đăng nhập này đã được đặt trước, bạn chọn tên khác nhé.",
+            suggestions:
+              Array.isArray(data.suggestions) && data.suggestions.length > 0
+                ? data.suggestions
+                : suggestUsernames(normalized, 3),
+          });
           setMood("oops");
         }
       } catch {
         if (!cancelled) {
-          setUsernameStatus("idle");
-          setUsernameMessage(null);
+          setUsernameCheck({ username: normalized, status: "idle", message: null, suggestions: [] });
         }
       }
     }, 400);
@@ -263,7 +265,7 @@ export default function StudentRegisterPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [step, draft.username, draft.name]);
+  }, [step, draft.username]);
 
   const goToStep = (nextStep: StudentStep, nextMood: MascotMood = "think") => {
     setErrorMsg(null);
@@ -495,7 +497,12 @@ export default function StudentRegisterPage() {
     }
 
     if (Array.isArray(res.suggestions) && res.suggestions.length > 0) {
-      setUsernameSuggestions(res.suggestions);
+      setUsernameCheck({
+        username: normalizedUsername,
+        status: "taken",
+        message: res.error || "Tên đăng nhập này đã có bạn khác dùng rồi.",
+        suggestions: res.suggestions,
+      });
     }
 
     if (res.field) {

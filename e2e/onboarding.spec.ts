@@ -11,7 +11,7 @@ test.describe("Đăng ký học sinh kiểu phỏng vấn", () => {
     await page.goto("/register");
     await page.getByRole("button", { name: "Bắt đầu" }).click();
 
-    await page.getByLabel("Tên của bạn", { exact: true }).fill("Bé Na E2E");
+    await page.getByLabel("Tên của bạn", { exact: true }).fill("Trần Thị Na");
     await page.getByLabel("Tên của bạn", { exact: true }).press("Enter");
     // từ câu 2 mascot gọi theo tên
     await expect(page.getByText(/Na/).first()).toBeVisible();

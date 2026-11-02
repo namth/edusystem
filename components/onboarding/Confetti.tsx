@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 const PIECES = [
   { left: "8%", delay: "0s", bg: "bg-brand-500", rotate: "rotate-12" },
@@ -16,19 +16,10 @@ const PIECES = [
 ];
 
 export default function Confetti() {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-      setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    }
-  }, []);
-
-  if (reduced) return null;
-
+  // Ẩn hẳn khi người dùng bật giảm chuyển động (motion-reduce:hidden)
   return (
     <div
-      className="pointer-events-none fixed inset-0 overflow-hidden z-40"
+      className="pointer-events-none fixed inset-0 overflow-hidden z-40 motion-reduce:hidden"
       aria-hidden="true"
     >
       {PIECES.map((p, idx) => (
