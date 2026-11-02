@@ -14,6 +14,7 @@ if (typeof (globalThis as any).Path2D === "undefined") {
 import mammoth from "mammoth";
 import { Portkey } from "portkey-ai";
 import OpenAI from "openai";
+import { recordAiUsage } from "@/lib/ai-usage";
 import { getAiIngestionModelConfig, AiModelConfig } from "./ai-model-resolver";
 
 export interface ParsedQuestionOption {
@@ -159,7 +160,17 @@ export async function extractImageOcrText(
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return text;
+      if (text) {
+        const usage = data.usageMetadata;
+        await recordAiUsage({
+          provider: "google",
+          model,
+          promptTokens: usage?.promptTokenCount ?? 0,
+          completionTokens: usage?.candidatesTokenCount ?? 0,
+          totalTokens: usage?.totalTokenCount ?? ((usage?.promptTokenCount ?? 0) + (usage?.candidatesTokenCount ?? 0)),
+        });
+        return text;
+      }
       if (data.candidates?.[0]?.finishReason) {
         console.warn(`Gemini Vision OCR finishReason: ${data.candidates[0].finishReason}`);
       }
@@ -176,8 +187,9 @@ export async function extractImageOcrText(
         config: process.env.PORTKEY_CONFIG_ID || "pc-gemini-f72e00",
       });
 
+      const sentModel = modelConfig.model || "gemini-2.5-flash";
       const response = await portkey.chat.completions.create({
-        model: modelConfig.model || "gemini-2.5-flash",
+        model: sentModel,
         messages: [
           {
             role: "user",
@@ -192,7 +204,21 @@ export async function extractImageOcrText(
       });
 
       const content = response.choices?.[0]?.message?.content;
-      if (typeof content === "string") return content;
+      if (typeof content === "string") {
+        const promptTokens = response.usage?.prompt_tokens ?? 0;
+        const completionTokens = response.usage?.completion_tokens ?? 0;
+        const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+        const usedModel = (response as any).model || sentModel;
+
+        await recordAiUsage({
+          provider: "portkey",
+          model: usedModel,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        });
+        return content;
+      }
     } catch (err) {
       console.warn("Portkey Vision OCR failed, falling back to OpenAI if available:", err);
     }
@@ -201,8 +227,9 @@ export async function extractImageOcrText(
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (openaiApiKey) {
     const openai = new OpenAI({ apiKey: openaiApiKey });
+    const sentModel = "gpt-4o";
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: sentModel,
       messages: [
         {
           role: "user",
@@ -214,7 +241,22 @@ export async function extractImageOcrText(
       ],
       max_tokens: 4096,
     });
-    return response.choices?.[0]?.message?.content || "";
+    const content = response.choices?.[0]?.message?.content || "";
+    if (content) {
+      const promptTokens = response.usage?.prompt_tokens ?? 0;
+      const completionTokens = response.usage?.completion_tokens ?? 0;
+      const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+      const usedModel = (response as any).model || sentModel;
+
+      await recordAiUsage({
+        provider: "openai",
+        model: usedModel,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+      });
+      return content;
+    }
   }
 
   throw new Error("No AI Vision provider configured to process scanned images.");
@@ -326,6 +368,14 @@ CRITICAL INSTRUCTIONS:
           const data = await response.json();
           const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawContent) {
+            const usage = data.usageMetadata;
+            await recordAiUsage({
+              provider: "google",
+              model,
+              promptTokens: usage?.promptTokenCount ?? 0,
+              completionTokens: usage?.candidatesTokenCount ?? 0,
+              totalTokens: usage?.totalTokenCount ?? ((usage?.promptTokenCount ?? 0) + (usage?.candidatesTokenCount ?? 0)),
+            });
             const parsed = JSON.parse(cleanJsonText(rawContent));
             return normalizeStructuredResult(parsed);
           }
@@ -344,8 +394,9 @@ CRITICAL INSTRUCTIONS:
         config: process.env.PORTKEY_CONFIG_ID || "pc-gemini-f72e00",
       });
 
+      const sentModel = config.model || "gemini-2.5-flash";
       const response = await portkey.chat.completions.create({
-        model: config.model || "gemini-2.5-flash",
+        model: sentModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -357,6 +408,19 @@ CRITICAL INSTRUCTIONS:
 
       const rawContent = response.choices?.[0]?.message?.content;
       if (rawContent) {
+        const promptTokens = response.usage?.prompt_tokens ?? 0;
+        const completionTokens = response.usage?.completion_tokens ?? 0;
+        const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+        const usedModel = (response as any).model || sentModel;
+
+        await recordAiUsage({
+          provider: "portkey",
+          model: usedModel,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        });
+
         const rawJson = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
         const parsed = JSON.parse(cleanJsonText(rawJson));
         return normalizeStructuredResult(parsed);
@@ -369,8 +433,9 @@ CRITICAL INSTRUCTIONS:
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (openaiApiKey) {
     const openai = new OpenAI({ apiKey: openaiApiKey });
+    const sentModel = "gpt-4o-mini";
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: sentModel,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -380,6 +445,19 @@ CRITICAL INSTRUCTIONS:
     });
     const rawContent = response.choices?.[0]?.message?.content;
     if (rawContent) {
+      const promptTokens = response.usage?.prompt_tokens ?? 0;
+      const completionTokens = response.usage?.completion_tokens ?? 0;
+      const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+      const usedModel = (response as any).model || sentModel;
+
+      await recordAiUsage({
+        provider: "openai",
+        model: usedModel,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+      });
+
       const rawJson = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
       const parsed = JSON.parse(cleanJsonText(rawJson));
       return normalizeStructuredResult(parsed);
