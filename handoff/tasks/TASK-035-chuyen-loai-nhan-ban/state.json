@@ -1,17 +1,38 @@
 {
   "id": "TASK-035",
   "title": "Chuyển qua lại bài học ↔ đề thi (chọn nhiều) và nhân bản bài học/đề thi có đặt tên mới",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "3cd36581-3113-44cb-9f02-c844eba9091e",
   "history": [
     {
       "at": "2026-11-02T11:42:53",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T13:24:17",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T13:25:34",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-02T13:57:09",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-02T14:08:39",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
   ],
   "locked_files": [
     "handoff/tasks/TASK-035-chuyen-loai-nhan-ban/verify.sh",
     "tests/library-convert-duplicate.test.ts"
-  ]
+  ],
+  "via": "agy"
 }

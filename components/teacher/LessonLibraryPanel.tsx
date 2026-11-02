@@ -17,7 +17,11 @@ import {
   Loader2,
   X,
   ExternalLink,
+  Copy,
+  ArrowRightLeft,
+  CheckCircle2,
 } from "lucide-react";
+import DuplicateDialog from "@/components/teacher/DuplicateDialog";
 
 interface LessonItem {
   id: string;
@@ -43,6 +47,33 @@ interface UsageConflict {
   curriculum_item_id: string;
 }
 
+interface ConvertSkippedItem {
+  id: string;
+  title: string;
+  reasonText: string;
+}
+
+interface ConvertSummary {
+  converted: number;
+  total: number;
+  skipped: ConvertSkippedItem[];
+}
+
+function formatLessonConvertReason(item: any): string {
+  switch (item.reason) {
+    case "IN_USE": {
+      const u = item.usages || {};
+      return `đang dùng: ${Number(u.curriculum || 0)} mục lộ trình, ${Number(u.attempts || 0)} lượt làm`;
+    }
+    case "FORBIDDEN":
+      return "không phải của bạn";
+    case "NOT_FOUND":
+      return "không còn tồn tại";
+    default:
+      return "không thể chuyển";
+  }
+}
+
 export default function LessonLibraryPanel() {
   const [lessons, setLessons] = useState<LessonItem[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
@@ -58,6 +89,17 @@ export default function LessonLibraryPanel() {
   // Deletion and conflict states
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [conflictUsages, setConflictUsages] = useState<UsageConflict[] | null>(null);
+
+  // Selection & conversion states
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmConvertOpen, setConfirmConvertOpen] = useState(false);
+  const [convertDuration, setConvertDuration] = useState<number>(30);
+  const [isConverting, setIsConverting] = useState(false);
+  const [convertSummary, setConvertSummary] = useState<ConvertSummary | null>(null);
+
+  // Duplication states
+  const [duplicateTarget, setDuplicateTarget] = useState<LessonItem | null>(null);
+  const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/subjects")
@@ -141,11 +183,78 @@ export default function LessonLibraryPanel() {
 
       // Success: Remove locally
       setLessons((prev) => prev.filter((item) => item.id !== id));
+      setSelectedIds((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
       console.error("Delete lesson error:", err);
       alert(err.message || "Lỗi kết nối khi xóa bài học.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const allDisplayedSelected =
+    lessons.length > 0 && lessons.every((l) => selectedIds.includes(l.id));
+
+  const toggleSelectAllDisplayed = () => {
+    if (allDisplayedSelected) {
+      const displayedSet = new Set(lessons.map((l) => l.id));
+      setSelectedIds((prev) => prev.filter((id) => !displayedSet.has(id)));
+    } else {
+      const next = new Set(selectedIds);
+      for (const l of lessons) next.add(l.id);
+      setSelectedIds(Array.from(next));
+    }
+  };
+
+  const handleConvertSelected = async () => {
+    if (selectedIds.length === 0) return;
+    const dur = Math.max(1, Math.floor(Number(convertDuration) || 30));
+    setIsConverting(true);
+    try {
+      const titleMap = new Map(lessons.map((l) => [l.id, l.title]));
+      const res = await fetch("/api/teacher/library/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: "lesson",
+          ids: selectedIds,
+          duration_minutes: dur,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        alert(json?.error || "Lỗi chuyển sang đề thi.");
+        return;
+      }
+
+      const results: any[] = Array.isArray(json.results) ? json.results : [];
+      const converted = results.filter((r) => r.ok).length;
+      const skipped: ConvertSkippedItem[] = results
+        .filter((r) => !r.ok)
+        .map((r) => ({
+          id: r.id,
+          title: titleMap.get(r.id) || r.id,
+          reasonText: formatLessonConvertReason(r),
+        }));
+
+      setConfirmConvertOpen(false);
+      setConvertSummary({
+        converted,
+        total: results.length,
+        skipped,
+      });
+      setSelectedIds([]);
+      await fetchLessons();
+    } catch (err: any) {
+      alert(err.message || "Lỗi kết nối khi chuyển loại.");
+    } finally {
+      setIsConverting(false);
     }
   };
 
@@ -176,26 +285,57 @@ export default function LessonLibraryPanel() {
         </Link>
       </div>
 
+      {/* Notice toast */}
+      {noticeMessage && (
+        <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{noticeMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNoticeMessage(null)}
+            className="text-emerald-700 hover:text-emerald-900"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Filters & Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-line shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tiêu đề bài học..."
-            className="w-full pl-9 pr-3.5 py-2 bg-surface-alt border border-line rounded-xl text-xs text-ink placeholder-ink-subtle focus:outline-none focus:border-brand-600 transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {lessons.length > 0 && (
+            <label className="inline-flex items-center space-x-2 text-xs font-bold text-ink cursor-pointer shrink-0 select-none">
+              <input
+                type="checkbox"
+                checked={allDisplayedSelected}
+                onChange={toggleSelectAllDisplayed}
+                className="w-4 h-4 rounded border-line text-brand-600 focus:ring-brand-600"
+              />
+              <span>Chọn tất cả</span>
+            </label>
           )}
+
+          {/* Search Input */}
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo tiêu đề bài học..."
+              className="w-full pl-9 pr-3.5 py-2 bg-surface-alt border border-line rounded-xl text-xs text-ink placeholder-ink-subtle focus:outline-none focus:border-brand-600 transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Subject & Skill Filter */}
@@ -237,6 +377,32 @@ export default function LessonLibraryPanel() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="sticky top-4 z-30 bg-brand-50 border border-brand-200 rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 text-xs font-bold text-brand-700">
+            <span>Đã chọn {selectedIds.length}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setConfirmConvertOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span>Chuyển sang Đề thi</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="px-3.5 py-2 bg-white hover:bg-surface-alt text-ink rounded-xl text-xs font-bold border border-line transition-all"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 4 UI States */}
 
@@ -309,90 +475,227 @@ export default function LessonLibraryPanel() {
       {/* 4. Data State */}
       {!isLoading && !errorMessage && lessons.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {lessons.map((lesson) => (
-            <div
-              key={lesson.id}
-              className="bg-white rounded-2xl border border-line hover:border-brand-600 transition-all p-5 shadow-2xs hover:shadow-md flex flex-col justify-between group"
-            >
-              <div>
-                {/* Top Meta: Skills & Actions */}
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {lesson.skills && lesson.skills.length > 0 ? (
-                      lesson.skills.map((sk) => (
-                        <span
-                          key={sk}
-                          className="px-2 py-0.5 rounded-md bg-brand-50 text-brand-600 border border-line/50 text-[10px] font-bold"
-                        >
-                          {sk}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium">
-                        Chưa có khối
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-1 shrink-0">
-                    <Link
-                      href={`/teacher/lessons/${lesson.id}`}
-                      className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
-                      title="Chỉnh sửa bài học"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
-                      disabled={deletingId === lesson.id}
-                      className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200 disabled:opacity-40"
-                      title="Xóa bài học"
-                    >
-                      {deletingId === lesson.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          {lessons.map((lesson) => {
+            const isChecked = selectedIds.includes(lesson.id);
+            return (
+              <div
+                key={lesson.id}
+                className={`bg-white rounded-2xl border transition-all p-5 shadow-2xs hover:shadow-md flex flex-col justify-between group ${
+                  isChecked ? "border-brand-600 ring-1 ring-brand-600" : "border-line hover:border-brand-600"
+                }`}
+              >
+                <div>
+                  {/* Top Meta: Checkbox, Skills & Actions */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center flex-wrap gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleSelectOne(lesson.id)}
+                        className="w-4 h-4 rounded border-line text-brand-600 focus:ring-brand-600 mr-1 cursor-pointer"
+                        aria-label={`Chọn bài học ${lesson.title}`}
+                      />
+                      {lesson.skills && lesson.skills.length > 0 ? (
+                        lesson.skills.map((sk) => (
+                          <span
+                            key={sk}
+                            className="px-2 py-0.5 rounded-md bg-brand-50 text-brand-600 border border-line/50 text-[10px] font-bold"
+                          >
+                            {sk}
+                          </span>
+                        ))
                       ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium">
+                          Chưa có khối
+                        </span>
                       )}
-                    </button>
+                    </div>
+
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setDuplicateTarget(lesson)}
+                        className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
+                        title="Nhân bản"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <Link
+                        href={`/teacher/lessons/${lesson.id}`}
+                        className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
+                        title="Chỉnh sửa bài học"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
+                        disabled={deletingId === lesson.id}
+                        className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200 disabled:opacity-40"
+                        title="Xóa bài học"
+                      >
+                        {deletingId === lesson.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Title & Description */}
+                  <Link href={`/teacher/lessons/${lesson.id}`} className="block">
+                    <h2 className="text-sm font-bold text-ink group-hover:text-brand-600 transition-colors line-clamp-2">
+                      {lesson.title}
+                    </h2>
+                    {lesson.description && (
+                      <p className="text-xs text-ink-muted mt-1 line-clamp-2 leading-relaxed">
+                        {lesson.description}
+                      </p>
+                    )}
+                  </Link>
+                </div>
+
+                {/* Footer Info */}
+                <div className="pt-4 mt-4 border-t border-line/40 flex flex-col space-y-2 text-[11px] text-ink-muted">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center space-x-1 font-semibold text-brand-600">
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>{lesson.block_count} khối</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <GraduationCap className="w-3.5 h-3.5 text-ink-subtle" />
+                      <span>Dùng trong {lesson.usage_count} khóa</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1 text-ink-subtle text-[10px]">
+                    <Calendar className="w-3 h-3" />
+                    <span>
+                      Cập nhật: {new Date(lesson.updated_at).toLocaleString("vi-VN")}
+                    </span>
                   </div>
                 </div>
-
-                {/* Title & Description */}
-                <Link href={`/teacher/lessons/${lesson.id}`} className="block">
-                  <h2 className="text-sm font-bold text-ink group-hover:text-brand-600 transition-colors line-clamp-2">
-                    {lesson.title}
-                  </h2>
-                  {lesson.description && (
-                    <p className="text-xs text-ink-muted mt-1 line-clamp-2 leading-relaxed">
-                      {lesson.description}
-                    </p>
-                  )}
-                </Link>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* Footer Info */}
-              <div className="pt-4 mt-4 border-t border-line/40 flex flex-col space-y-2 text-[11px] text-ink-muted">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center space-x-1 font-semibold text-brand-600">
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>{lesson.block_count} khối</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <GraduationCap className="w-3.5 h-3.5 text-ink-subtle" />
-                    <span>Dùng trong {lesson.usage_count} khóa</span>
-                  </span>
-                </div>
+      {/* Duplicate Dialog */}
+      <DuplicateDialog
+        open={Boolean(duplicateTarget)}
+        kind="lesson"
+        sourceId={duplicateTarget?.id}
+        sourceTitle={duplicateTarget?.title || ""}
+        endpoint={duplicateTarget ? `/api/teacher/lessons/${duplicateTarget.id}/duplicate` : undefined}
+        onClose={() => setDuplicateTarget(null)}
+        onDone={async (newLesson) => {
+          setDuplicateTarget(null);
+          setNoticeMessage(`Đã tạo bản sao "${newLesson?.title || "(bản sao)"}"`);
+          await fetchLessons();
+        }}
+      />
 
-                <div className="flex items-center space-x-1 text-ink-subtle text-[10px]">
-                  <Calendar className="w-3 h-3" />
-                  <span>
-                    Cập nhật: {new Date(lesson.updated_at).toLocaleString("vi-VN")}
-                  </span>
-                </div>
+      {/* Confirm Convert Dialog */}
+      {confirmConvertOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-line space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+                <ArrowRightLeft className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-ink">
+                  Chuyển {selectedIds.length} bài học sang Kho Đề Thi?
+                </h3>
+                <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                  Bản gốc sẽ chuyển hẳn sang Kho Đề Thi (không còn trong Kho Bài Học). Các mục đang dùng trong lộ trình hoặc đã có lượt làm sẽ được bỏ qua.
+                </p>
               </div>
             </div>
-          ))}
+
+            <div>
+              <label className="block text-xs font-bold text-ink mb-1.5">
+                Thời gian làm bài (phút)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={convertDuration}
+                onChange={(e) => setConvertDuration(Math.max(1, Number(e.target.value) || 30))}
+                disabled={isConverting}
+                className="w-full px-3.5 py-2 bg-surface-alt border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-brand-600"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmConvertOpen(false)}
+                disabled={isConverting}
+                className="px-4 py-2 bg-surface-alt hover:bg-line/50 text-ink rounded-xl text-xs font-bold border border-line transition-all disabled:opacity-40"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConvertSelected}
+                disabled={isConverting}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+              >
+                {isConverting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Chuyển sang Đề thi</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert Summary Dialog */}
+      {convertSummary && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-line space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-ink">
+                  Đã chuyển {convertSummary.converted} / {convertSummary.total}
+                </h3>
+                <p className="text-xs text-ink-muted mt-1">
+                  {convertSummary.skipped.length === 0
+                    ? "Toàn bộ bài học đã chọn được chuyển sang Kho Đề Thi."
+                    : "Các mục dưới đây được bỏ qua và giữ nguyên:"}
+                </p>
+              </div>
+            </div>
+
+            {convertSummary.skipped.length > 0 && (
+              <div className="max-h-56 overflow-y-auto space-y-2 p-3 rounded-xl bg-surface-alt border border-line">
+                {convertSummary.skipped.map((item) => (
+                  <div
+                    key={item.id}
+                    className="text-xs p-2.5 rounded-lg bg-white border border-line/60 space-y-0.5"
+                  >
+                    <div className="font-bold text-ink truncate">{item.title}</div>
+                    <div className="text-rose-600">{item.reasonText}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setConvertSummary(null)}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
