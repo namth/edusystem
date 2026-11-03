@@ -1,0 +1,40 @@
+{
+  "id": "TASK-043",
+  "title": "Trang tổng quan admin & sắp lại menu",
+  "status": "accepted",
+  "conversation_id": "528fbc73-a98e-41bf-a776-91f4c1f9f9a9",
+  "history": [
+    {
+      "at": "2026-11-03T08:57:17",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-03T08:59:19",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-03T08:59:37",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-03T09:18:36",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-03T09:28:38",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-043-tong-quan-admin/verify.sh",
+    "tests/admin-dashboard.test.ts",
+    "tests/landing.test.ts",
+    "tests/onboarding-ui.test.ts"
+  ],
+  "via": "agy"
+}

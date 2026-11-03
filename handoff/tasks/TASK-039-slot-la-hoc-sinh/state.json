@@ -1,0 +1,43 @@
+{
+  "id": "TASK-039",
+  "title": "Slot = học sinh: bỏ trừ slot khi chấm AI, chặn ghi danh vượt slot",
+  "status": "accepted",
+  "conversation_id": "630e92ff-b003-429b-a5f1-f11fccc04208",
+  "history": [
+    {
+      "at": "2026-11-02T22:56:21",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T23:05:59",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T23:06:19",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-03T00:13:23",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-03T00:18:03",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-039-slot-la-hoc-sinh/verify.sh",
+    "tests/student-slots.test.ts",
+    "tests/exam-attempts-api.test.ts",
+    "tests/student-lessons-api.test.ts",
+    "tests/notifications-api.test.ts",
+    "tests/teacher-classes-api.test.ts",
+    "tests/student-api.test.ts"
+  ],
+  "via": "agy"
+}

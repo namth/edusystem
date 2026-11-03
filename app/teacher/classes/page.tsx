@@ -263,8 +263,8 @@ export default function TeacherClassesPage() {
             onClick={() => setShowCreateModal(true)}
             className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2 shrink-0 cursor-pointer font-headline"
           >
-            <PlusCircle className="w-4 h-4 text-accent-400" />
-            <span>+ Tạo Lớp Học Mới</span>
+            <PlusCircle className="w-4 h-4 text-white" />
+            <span>Tạo Lớp Học Mới</span>
           </button>
         </div>
 
@@ -360,7 +360,7 @@ export default function TeacherClassesPage() {
                     href={`/teacher/classes/${cls.id}`}
                     className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs font-headline"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-accent-400" />
+                    <BookOpen className="w-3.5 h-3.5 text-white" />
                     <span>Vào Lớp Học</span>
                   </Link>
 
@@ -468,7 +468,7 @@ export default function TeacherClassesPage() {
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Xác Nhận Tạo Lớp</span>
                   </button>
                 </div>
@@ -575,7 +575,7 @@ export default function TeacherClassesPage() {
                     disabled={isEditingSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
                   >
-                    {isEditingSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isEditingSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Cập Nhật Thông Tin</span>
                   </button>
                 </div>

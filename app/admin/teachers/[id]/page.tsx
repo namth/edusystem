@@ -26,6 +26,8 @@ import {
   ClipboardList,
   ShieldCheck,
   ShieldAlert,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react";
 
 interface TeacherProfileData {
@@ -150,6 +152,62 @@ export default function AdminTeacherDetailPage() {
   const [qualification, setQualification] = useState("");
   const [slotLimit, setSlotLimit] = useState(250);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Tạo đơn mua slot
+  const [requestedSlots, setRequestedSlots] = useState<number>(50);
+  const [customTotalCost, setCustomTotalCost] = useState<string>("");
+  const [orderNote, setOrderNote] = useState<string>("");
+  const [isCreatingOrder, setIsCreatingOrder] = useState<boolean>(false);
+  const [createOrderSuccess, setCreateOrderSuccess] = useState<{ id: string; code: string } | null>(null);
+  const [createOrderError, setCreateOrderError] = useState<string | null>(null);
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingOrder(true);
+    setCreateOrderError(null);
+    setCreateOrderSuccess(null);
+    try {
+      const payload: {
+        teacher_id: string;
+        requested_slots: number;
+        total_cost?: number;
+        note?: string;
+      } = {
+        teacher_id: teacherId,
+        requested_slots: Number(requestedSlots),
+      };
+      if (customTotalCost.trim() !== "") {
+        payload.total_cost = Number(customTotalCost.trim());
+      }
+      if (orderNote.trim()) {
+        payload.note = orderNote.trim();
+      }
+
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.order) {
+        setCreateOrderError(data.error || "Không thể tạo đơn mua slot.");
+        return;
+      }
+
+      setCreateOrderSuccess({
+        id: data.order.id,
+        code: data.order.code,
+      });
+      setOrderNote("");
+      setCustomTotalCost("");
+    } catch (err: any) {
+      console.error(err);
+      setCreateOrderError(err.message || "Lỗi kết nối khi tạo đơn mua slot.");
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  };
 
   const fetchTeacherData = async () => {
     if (!teacherId) return;
@@ -614,6 +672,98 @@ export default function AdminTeacherDetailPage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Khối Tạo đơn mua slot */}
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <div className="border-b border-line/40 pb-3">
+                <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
+                  <CreditCard className="w-5 h-5 text-brand-600" />
+                  <span>Tạo đơn mua slot</span>
+                </h2>
+                <p className="text-[11px] text-ink-subtle mt-0.5">
+                  Tạo đơn mua slot và sinh mã thanh toán VietQR cho giáo viên.
+                </p>
+              </div>
+
+              {createOrderSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-1">
+                  <div className="flex items-center space-x-1.5 font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Đã tạo đơn {createOrderSuccess.code} thành công!</span>
+                  </div>
+                  <p>
+                    <Link
+                      href={`/admin/orders/${createOrderSuccess.id}`}
+                      className="text-brand-600 font-bold underline hover:text-brand-700"
+                    >
+                      Xem chi tiết đơn {createOrderSuccess.code} &rarr;
+                    </Link>
+                  </p>
+                </div>
+              )}
+
+              {createOrderError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{createOrderError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateOrder} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-ink mb-1">Số slot mua (*)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    required
+                    value={requestedSlots}
+                    onChange={(e) => setRequestedSlots(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl font-bold text-brand-600 focus:outline-none focus:border-brand-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-ink mb-1">
+                    Giá tiền VND (để trống = giá chuẩn)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="Mặc định tính theo đơn giá chuẩn"
+                    value={customTotalCost}
+                    onChange={(e) => setCustomTotalCost(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl focus:outline-none focus:border-brand-600"
+                  />
+                  <p className="text-[10px] text-ink-subtle mt-0.5">
+                    Nếu chỉnh sửa giá khác giá chuẩn, bắt buộc phải có ghi chú.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-ink mb-1">Ghi chú đơn hàng</label>
+                  <textarea
+                    rows={2}
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Ghi chú (bắt buộc nếu tuỳ chỉnh giá)..."
+                    className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl focus:outline-none focus:border-brand-600"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isCreatingOrder}
+                  className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  {isCreatingOrder ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    <span>Tạo đơn mua slot</span>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
 

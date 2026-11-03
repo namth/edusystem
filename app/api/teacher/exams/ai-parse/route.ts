@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { parseDocumentFile } from "@/lib/document-parser";
+import { withAiUsageContext } from "@/lib/ai-usage";
 
 export const maxDuration = 60; // 60 seconds max execution for AI parsing
 
@@ -39,7 +40,10 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const parseResult = await parseDocumentFile(buffer, file.name, file.type, targetSkill);
+    const parseResult = await withAiUsageContext(
+      { purpose: "EXAM_IMPORT", teacherId: auth.user.userId },
+      () => parseDocumentFile(buffer, file.name, file.type, targetSkill)
+    );
 
     // Business Rule BR-INGEST-03: Max 50 questions per extraction batch
     if (parseResult.structuredData.questions.length > 50) {

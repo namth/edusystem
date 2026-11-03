@@ -1641,7 +1641,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Save className="w-4 h-4 text-accent-400" />
+                <Save className="w-4 h-4 text-white" />
               )}
               <span>
                 {saveLabel ||
@@ -1997,7 +1997,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               </select>
                             </div>
                             <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
-                              <Plus className="w-4 h-4 text-accent-400" />
+                              <Plus className="w-4 h-4 text-white" />
                               <span>{editingSubQId ? "Cập Nhật Câu Hỏi Con" : "Thêm Câu Hỏi Con"}</span>
                             </button>
                           </div>
@@ -2643,7 +2643,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               disabled={!srOriginalSentence.trim() || !srCorrectAnswer.trim()}
                               className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                              {editingSrId ? "Cập Nhật Câu Viết Lại Này" : "+ Thêm Câu Viết Lại Này"}
+                              {editingSrId ? "Cập Nhật Câu Viết Lại Này" : "Thêm Câu Viết Lại Này"}
                             </button>
                           </div>
                         </div>
@@ -2669,7 +2669,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                       onClick={handleAddOrUpdateQuestion}
                       className="flex-1 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline cursor-pointer"
                     >
-                      <Plus className="w-4 h-4 text-accent-400" />
+                      <Plus className="w-4 h-4 text-white" />
                       <span>
                         {editingQuestionNumber
                           ? `Cập Nhật Câu Hỏi Số ${editingQuestionNumber}`

@@ -57,6 +57,10 @@ beforeEach(async () => {
     INSERT INTO slot_requests (id,teacher_id,teacher_name,teacher_email,requested_slots,total_cost,status) VALUES
       ('r1','t1','Cô Lan','lan@x.vn',50,500000,'PENDING'), ('r2','t1','Cô Lan','lan@x.vn',20,200000,'APPROVED');
   `);
+  // FEAT-013 (TASK-041): đơn hàng mở rộng slot_requests; route cũ đi qua lib/slot-orders
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-005-system-settings.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-010-notifications.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-016-slot-orders.sql", "utf8"));
 });
 
 const users = () => import("@/app/api/admin/users/route");

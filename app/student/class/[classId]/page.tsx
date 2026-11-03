@@ -385,7 +385,7 @@ export default function StudentClassDetailPage() {
                           className="w-full md:w-auto px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 font-headline uppercase tracking-wider"
                         >
                           <span>Vào Làm Bài Thi Ngay</span>
-                          <ArrowRight className="w-4 h-4 text-accent-400" />
+                          <ArrowRight className="w-4 h-4 text-white" />
                         </Link>
                       ) : (
                         <span className="text-xs font-mono text-ink-subtle italic">

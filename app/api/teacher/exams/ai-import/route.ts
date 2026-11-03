@@ -241,32 +241,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Record usage in `ai_usage_logs` (non-blocking for exam creation)
-    // SAVEPOINT: lỗi ghi log không được làm hỏng cả giao dịch tạo đề
-    await client.query("SAVEPOINT usage_log");
-    try {
-      const logId = `log_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      const completionTokens = createdQuestionIds.length * 150;
-      await client.query(
-        `INSERT INTO ai_usage_logs (
-          id, teacher_id, model, prompt_tokens, completion_tokens, total_tokens, cost_usd, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`,
-        [
-          logId,
-          authUser.userId,
-          "gemini-flash-lite-latest",
-          1200,
-          completionTokens,
-          1200 + completionTokens,
-          0.005,
-        ]
-      );
-      await client.query("RELEASE SAVEPOINT usage_log");
-    } catch (logErr) {
-      await client.query("ROLLBACK TO SAVEPOINT usage_log");
-      console.warn("AI usage log insert skipped:", logErr);
-    }
-
     // Commit Transaction
     await client.query("COMMIT");
 

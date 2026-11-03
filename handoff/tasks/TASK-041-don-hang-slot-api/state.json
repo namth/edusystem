@@ -1,0 +1,71 @@
+{
+  "id": "TASK-041",
+  "title": "Đơn hàng mua slot & VietQR — migration, thư viện, API",
+  "status": "accepted",
+  "conversation_id": "d4c9570f-472e-46f4-97cc-746e524f74dc",
+  "history": [
+    {
+      "at": "2026-11-02T23:09:16",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-02T23:34:55",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-02T23:35:07",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-02T23:49:46",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-02T23:57:59",
+      "status": "changes_requested",
+      "note": "Claude yêu cầu sửa"
+    },
+    {
+      "at": "2026-11-02T23:58:14",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-03T00:15:41",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-03T00:21:26",
+      "status": "changes_requested",
+      "note": "Claude yêu cầu sửa"
+    },
+    {
+      "at": "2026-11-03T00:21:39",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-03T00:42:15",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-03T00:44:08",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-041-don-hang-slot-api/verify.sh",
+    "tests/slot-orders-api.test.ts",
+    "tests/admin-api.test.ts",
+    "tests/profile-slots-grading.test.ts",
+    "tests/teacher-trial.test.ts"
+  ],
+  "via": "agy"
+}

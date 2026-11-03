@@ -86,7 +86,7 @@ describe("Trang chủ / là landing (Server Component)", () => {
   it("đã đăng nhập → chuyển hướng theo vai trò", async () => {
     const Page = (await import("@/app/page")).default as any;
     await loginAs("ADMIN");
-    expect(await redirectTarget(() => Page())).toBe("/admin/requests");
+    expect(await redirectTarget(() => Page())).toBe("/admin");
     await loginAs("TEACHER");
     expect(await redirectTarget(() => Page())).toBe("/teacher/classes");
     await loginAs("STUDENT");
@@ -216,12 +216,12 @@ describe("API admin xem / cập nhật leads", () => {
 });
 
 describe("Giao diện admin + trang đăng nhập", () => {
-  it("trang /admin/leads (client) gọi API, menu admin có mục Khách hàng tiềm năng", () => {
+  it("trang /admin/leads (client) gọi API, menu admin có mục Liên hệ từ website", () => {
     const s = read("app/admin/leads/page.tsx");
     expect(s.trimStart().startsWith('"use client"')).toBe(true);
     expect(s).toContain("/api/admin/leads");
     expect(s).toMatch(/method:\s*"PATCH"/);
-    expect(read("components/AdminLayout.tsx")).toMatch(/href:\s*"\/admin\/leads"[^}]*Khách hàng tiềm năng|Khách hàng tiềm năng[^}]*\/admin\/leads/);
+    expect(read("components/AdminLayout.tsx")).toMatch(/href:\s*"\/admin\/leads"[^}]*Liên Hệ Từ Website|Liên Hệ Từ Website[^}]*\/admin\/leads/);
   });
 
   it("trang đăng nhập / đăng ký bỏ nội dung riêng IELTS và số liệu bịa", () => {

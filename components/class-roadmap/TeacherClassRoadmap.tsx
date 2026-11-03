@@ -529,7 +529,7 @@ export default function TeacherClassRoadmap({ classId }: TeacherClassRoadmapProp
               {savingSettings ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Save className="w-4 h-4 text-accent-400" />
+                <Save className="w-4 h-4 text-white" />
               )}
               <span>Lưu cài đặt</span>
             </button>

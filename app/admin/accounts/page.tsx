@@ -223,8 +223,8 @@ export default function AdminAccountsPage() {
             onClick={() => setShowCreateModal(true)}
             className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow transition-all flex items-center space-x-2 shrink-0"
           >
-            <UserPlus className="w-4 h-4 text-accent-400" />
-            <span>+ Thêm Tài Khoản Mới</span>
+            <UserPlus className="w-4 h-4 text-white" />
+            <span>Thêm Tài Khoản Mới</span>
           </button>
         </div>
 
@@ -440,7 +440,7 @@ export default function AdminAccountsPage() {
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium shadow flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-accent-400" />}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                     <span>Khởi Tạo Tài Khoản</span>
                   </button>
                 </div>

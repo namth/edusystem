@@ -54,7 +54,7 @@ describe("safeNextPath — chống chuyển hướng ra ngoài", () => {
       expect(safeNextPath(bad as any, "STUDENT"), String(bad)).toBe("/student/dashboard");
     }
     expect(safeNextPath(null, "TEACHER")).toBe("/teacher/classes");
-    expect(safeNextPath(null, "ADMIN")).toBe("/admin/requests");
+    expect(safeNextPath(null, "ADMIN")).toBe("/admin");
   });
 });
 

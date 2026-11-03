@@ -43,7 +43,7 @@ export async function PATCH(
 
   if (res.rowCount === 0 || !res.rows[0]) {
     return NextResponse.json(
-      { success: false, error: "Không tìm thấy khách hàng tiềm năng." },
+      { success: false, error: "Không tìm thấy liên hệ." },
       { status: 404 }
     );
   }

@@ -188,22 +188,22 @@ describe("POST /api/student/lessons/[lessonId]/attempts — nộp & chấm", () 
     expect(attempt.student_id).toBe("s1");
   });
 
-  it("có tự luận + còn slot: GRADING, score_percent null, trừ đúng 1 slot GV, đẩy sự kiện LESSON_GRADING_REQUESTED", async () => {
+  it("có tự luận: GRADING, score_percent null, KHÔNG trừ slot GV (DEC-031), đẩy sự kiện LESSON_GRADING_REQUESTED", async () => {
     await h.pg!.db.exec(`UPDATE classes SET unlock_mode='ALL_OPEN' WHERE id='c1'`);
     await loginAs("STUDENT", "s1");
     const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC: { s1: "B", s2: "C" }, qEssay: "My family...", qShort: { a1: "x" } } })).json();
     expect(attempt).toMatchObject({ status: "GRADING", objective_earned: 2, objective_max: 2, ai_max: 2, ai_earned: null, score_percent: null });
-    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(4);
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(5);
     expect(h.events).toEqual([["stream:learning:grading", "LESSON_GRADING_REQUESTED", { attemptId: attempt.id }]]);
   });
 
-  it("có tự luận + hết slot: AI_SKIPPED, ai_earned 0, tính điểm ngay, không đẩy sự kiện (BR-L11)", async () => {
+  it("có tự luận + GV slot_limit = 0: vẫn GRADING và đẩy sự kiện chấm, slot không đổi (DEC-031 thay BR-L11)", async () => {
     await h.pg!.db.exec(`UPDATE classes SET unlock_mode='ALL_OPEN' WHERE id='c1'; UPDATE users SET slot_limit=0 WHERE id='t1';`);
     await loginAs("STUDENT", "s1");
     const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC: { s1: "B", s2: "C" } } })).json();
-    expect(attempt).toMatchObject({ status: "AI_SKIPPED", ai_earned: 0, score_percent: 50 });
+    expect(attempt).toMatchObject({ status: "GRADING", ai_earned: null, score_percent: null });
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(0);
-    expect(h.events).toEqual([]);
+    expect(h.events).toEqual([["stream:learning:grading", "LESSON_GRADING_REQUESTED", { attemptId: attempt.id }]]);
   });
 
   it("bài khoá / ngoài khóa / không ghi danh → 403 và không lưu (TC-L06)", async () => {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasValidInternalToken } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { withAiUsageContext } from "@/lib/ai-usage";
 import { gradeOpenAnswer } from "@/lib/lesson-ai-grading";
 import { computeScorePercent, type GradeResult } from "@/lib/grading";
 
@@ -51,116 +52,134 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, skipped: true });
   }
 
-  const answers =
-    typeof attempt.answers === "string" ? JSON.parse(attempt.answers) : attempt.answers || {};
-  const results: GradeResult[] =
-    typeof attempt.results === "string" ? JSON.parse(attempt.results) : attempt.results || [];
-
-  const lessonRes = await queryPg("SELECT question_ids FROM lessons WHERE id = $1", [
-    attempt.lesson_id,
-  ]);
-  if (lessonRes.rows.length === 0) {
-    return NextResponse.json({ success: false, error: "Không tìm thấy bài học." }, { status: 404 });
+  let teacherId: string | null = null;
+  if (attempt.class_id) {
+    const classRes = await queryPg("SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1", [
+      attempt.class_id,
+    ]);
+    teacherId = classRes.rows[0]?.teacher_id || null;
   }
 
-  const questionIds: string[] = Array.isArray(lessonRes.rows[0].question_ids)
-    ? lessonRes.rows[0].question_ids
-    : typeof lessonRes.rows[0].question_ids === "string"
-    ? JSON.parse(lessonRes.rows[0].question_ids)
-    : [];
+  return await withAiUsageContext(
+    {
+      purpose: "LESSON_GRADING",
+      lessonAttemptId: attempt.id,
+      studentId: attempt.student_id,
+      teacherId,
+    },
+    async () => {
+      const answers =
+        typeof attempt.answers === "string" ? JSON.parse(attempt.answers) : attempt.answers || {};
+      const results: GradeResult[] =
+        typeof attempt.results === "string" ? JSON.parse(attempt.results) : attempt.results || [];
 
-  const qMap = new Map<string, any>();
-  if (questionIds.length > 0) {
-    const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-    for (const row of qRes.rows) {
-      qMap.set(row.id, {
-        ...row,
-        content: typeof row.content === "string" ? JSON.parse(row.content) : row.content,
-      });
-    }
-  }
+      const lessonRes = await queryPg("SELECT question_ids FROM lessons WHERE id = $1", [
+        attempt.lesson_id,
+      ]);
+      if (lessonRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: "Không tìm thấy bài học." }, { status: 404 });
+      }
 
-  let totalAiEarned = 0;
+      const questionIds: string[] = Array.isArray(lessonRes.rows[0].question_ids)
+        ? lessonRes.rows[0].question_ids
+        : typeof lessonRes.rows[0].question_ids === "string"
+        ? JSON.parse(lessonRes.rows[0].question_ids)
+        : [];
 
-  for (const r of results) {
-    if (r.kind === "AI") {
-      const q = qMap.get(r.question_id);
-      let questionEarned = 0;
-
-      if (r.category === "WRITING_ESSAY") {
-        const item = r.items[0];
-        const essayAnswer =
-          typeof answers?.[r.question_id] === "string"
-            ? answers[r.question_id]
-            : answers?.[r.question_id]
-            ? String(answers[r.question_id])
-            : "";
-
-        const band = await callGradeWithRetry({
-          category: r.category,
-          prompt: q?.prompt || "",
-          answer: essayAnswer,
-          sample_answer: q?.content?.sample_answer || null,
-        });
-
-        const clampedBand = Math.max(0, Math.min(9, band));
-        const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
-        if (item) {
-          item.correct = clampedBand >= 5;
-          (item as any).band = clampedBand;
-        }
-        questionEarned += itemEarned;
-      } else if (r.category === "WRITING_SHORT_ANSWER") {
-        const subQuestions: any[] = Array.isArray(q?.content?.sub_questions)
-          ? q.content.sub_questions
-          : [];
-        const subMap = new Map(subQuestions.map((s: any) => [String(s.id), s]));
-
-        for (const item of r.items) {
-          const subId = String(item.key);
-          const sub = subMap.get(subId);
-          const subAnswer =
-            typeof answers?.[r.question_id]?.[subId] === "string"
-              ? answers[r.question_id][subId]
-              : answers?.[r.question_id]?.[subId]
-              ? String(answers[r.question_id][subId])
-              : "";
-
-          const band = await callGradeWithRetry({
-            category: r.category,
-            prompt: q?.prompt || "",
-            answer: subAnswer,
-            sample_answer: sub?.sample_answer || null,
+      const qMap = new Map<string, any>();
+      if (questionIds.length > 0) {
+        const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
+        for (const row of qRes.rows) {
+          qMap.set(row.id, {
+            ...row,
+            content: typeof row.content === "string" ? JSON.parse(row.content) : row.content,
           });
-
-          const clampedBand = Math.max(0, Math.min(9, band));
-          const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
-          item.correct = clampedBand >= 5;
-          (item as any).band = clampedBand;
-          questionEarned += itemEarned;
         }
       }
 
-      r.earned = questionEarned;
-      totalAiEarned += questionEarned;
+      let totalAiEarned = 0;
+
+      for (const r of results) {
+        if (r.kind === "AI") {
+          const q = qMap.get(r.question_id);
+          let questionEarned = 0;
+
+          if (r.category === "WRITING_ESSAY") {
+            const item = r.items[0];
+            const essayAnswer =
+              typeof answers?.[r.question_id] === "string"
+                ? answers[r.question_id]
+                : answers?.[r.question_id]
+                ? String(answers[r.question_id])
+                : "";
+
+            const band = await callGradeWithRetry({
+              category: r.category,
+              prompt: q?.prompt || "",
+              answer: essayAnswer,
+              sample_answer: q?.content?.sample_answer || null,
+            });
+
+            const clampedBand = Math.max(0, Math.min(9, band));
+            const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
+            if (item) {
+              item.correct = clampedBand >= 5;
+              (item as any).band = clampedBand;
+            }
+            questionEarned += itemEarned;
+          } else if (r.category === "WRITING_SHORT_ANSWER") {
+            const subQuestions: any[] = Array.isArray(q?.content?.sub_questions)
+              ? q.content.sub_questions
+              : [];
+            const subMap = new Map(subQuestions.map((s: any) => [String(s.id), s]));
+
+            for (const item of r.items) {
+              const subId = String(item.key);
+              const sub = subMap.get(subId);
+              const subAnswer =
+                typeof answers?.[r.question_id]?.[subId] === "string"
+                  ? answers[r.question_id][subId]
+                  : answers?.[r.question_id]?.[subId]
+                  ? String(answers[r.question_id][subId])
+                  : "";
+
+              const band = await callGradeWithRetry({
+                category: r.category,
+                prompt: q?.prompt || "",
+                answer: subAnswer,
+                sample_answer: sub?.sample_answer || null,
+              });
+
+              const clampedBand = Math.max(0, Math.min(9, band));
+              const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
+              item.correct = clampedBand >= 5;
+              (item as any).band = clampedBand;
+              questionEarned += itemEarned;
+            }
+          }
+
+          r.earned = questionEarned;
+          totalAiEarned += questionEarned;
+        }
+      }
+
+      const objEarned = Number(attempt.objective_earned);
+      const objMax = Number(attempt.objective_max);
+      const aiMax = Number(attempt.ai_max);
+      const score_percent = computeScorePercent(objEarned, objMax, totalAiEarned, aiMax);
+
+      await queryPg(
+        `UPDATE lesson_attempts
+         SET results = $1,
+             ai_earned = $2,
+             score_percent = $3,
+             status = 'GRADED',
+             graded_at = NOW()
+         WHERE id = $4`,
+        [JSON.stringify(results), totalAiEarned, score_percent, attempt.id]
+      );
+
+      return NextResponse.json({ success: true });
     }
-  }
-
-  const objEarned = Number(attempt.objective_earned);
-  const objMax = Number(attempt.objective_max);
-  const aiMax = Number(attempt.ai_max);
-  const score_percent = computeScorePercent(objEarned, objMax, totalAiEarned, aiMax);
-
-  await queryPg(
-    `UPDATE lesson_attempts
-     SET results = $1,
-         ai_earned = $2,
-         score_percent = $3,
-         status = 'GRADED',
-         graded_at = NOW()
-     WHERE id = $4`,
-    [JSON.stringify(results), totalAiEarned, score_percent, attempt.id]
   );
-
-  return NextResponse.json({ success: true });
 }

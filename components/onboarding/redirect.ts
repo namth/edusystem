@@ -1,5 +1,5 @@
 export function roleHomePath(role?: string | null): string {
-  if (role === "ADMIN") return "/admin/requests";
+  if (role === "ADMIN") return "/admin";
   if (role === "TEACHER") return "/teacher/classes";
   return "/student/dashboard";
 }

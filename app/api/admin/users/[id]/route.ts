@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { queryPg, getPgPool } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
+import { assertStudentSlotAvailable } from "@/lib/student-slots";
 
 export async function GET(
   req: Request,
@@ -199,6 +200,24 @@ export async function PUT(
       );
       const existingSet = new Set(existingEnr.rows.map((r: any) => r.class_id));
       newlyAddedClassIds = uniqueClassIds.filter((cid) => !existingSet.has(cid));
+
+      if (newlyAddedClassIds.length > 0) {
+        const classRows = await queryPg(
+          `SELECT id, teacher_id FROM classes WHERE id = ANY($1);`,
+          [newlyAddedClassIds]
+        );
+        for (const row of classRows.rows) {
+          if (row.teacher_id) {
+            const slotCheck = await assertStudentSlotAvailable(row.teacher_id, cleanId);
+            if (!slotCheck.ok) {
+              return NextResponse.json(
+                { success: false, error: slotCheck.error },
+                { status: 409 }
+              );
+            }
+          }
+        }
+      }
     }
 
     const pool = getPgPool();

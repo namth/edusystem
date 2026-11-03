@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
-  QrCode,
+  LayoutDashboard,
+  Receipt,
   Scale,
-  Award,
   UserCheck,
+  Inbox,
   GraduationCap,
   Users,
   LogOut,
@@ -36,19 +37,35 @@ export default function AdminLayout({
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
+
+  useEffect(() => {
+    let unmounted = false;
+    fetch("/api/admin/orders?status=PENDING")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!unmounted && data?.counts?.PENDING) {
+          setPendingOrdersCount(Number(data.counts.PENDING) || 0);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      unmounted = true;
+    };
+  }, []);
 
   const handleLogout = () => {
     void logout(); // logout() tự tải lại trang /login sau khi xoá phiên
   };
 
   const navItems = [
-    { href: "/admin/requests", label: "Phê Duyệt Thanh Toán", icon: QrCode },
-    { href: "/admin/leads", label: "Khách hàng tiềm năng", icon: UserCheck },
-    { href: "/admin/scoring-standards", label: "Chuẩn Chấm Điểm", icon: Scale },
-    { href: "/admin/rubrics", label: "Quản Lý Tiêu Chí Chấm Điểm", icon: Award },
+    { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
+    { href: "/admin/orders", label: "Đơn hàng", icon: Receipt },
     { href: "/admin/teachers", label: "Quản Lý Giáo Viên", icon: UserCheck },
     { href: "/admin/students", label: "Quản Lý Học Sinh", icon: GraduationCap },
     { href: "/admin/accounts", label: "Quản Lý Tài Khoản", icon: Users },
+    { href: "/admin/scoring-standards", label: "Chuẩn Chấm Điểm", icon: Scale },
+    { href: "/admin/leads", label: "Liên Hệ Từ Website", icon: Inbox },
     { href: "/admin/settings", label: "Cấu Hình AI & Hệ Thống", icon: Settings },
   ];
 
@@ -73,8 +90,9 @@ export default function AdminLayout({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
-                pathname === item.href ||
-                (item.href !== "/admin/requests" && pathname.startsWith(item.href));
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === item.href || pathname.startsWith(item.href);
               return (
                 <li key={item.href}>
                   <Link
@@ -87,6 +105,11 @@ export default function AdminLayout({
                   >
                     <Icon className="w-5 h-5 mr-3 text-brand-600 shrink-0" />
                     <span>{item.label}</span>
+                    {item.href === "/admin/orders" && pendingOrdersCount > 0 && (
+                      <span className="ml-auto bg-amber-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {pendingOrdersCount}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

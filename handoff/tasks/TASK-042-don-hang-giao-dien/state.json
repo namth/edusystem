@@ -1,0 +1,40 @@
+{
+  "id": "TASK-042",
+  "title": "Đơn hàng mua slot — giao diện & trang thanh toán VietQR",
+  "status": "accepted",
+  "conversation_id": "549d4e09-8d5d-445b-b56f-8b795eb96e1b",
+  "history": [
+    {
+      "at": "2026-11-03T08:57:17",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-03T08:59:19",
+      "status": "assigned",
+      "note": "giao qua agy (model mặc định)"
+    },
+    {
+      "at": "2026-11-03T08:59:33",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-03T09:12:23",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-03T09:16:08",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-042-don-hang-giao-dien/verify.sh",
+    "tests/orders-ui.test.ts",
+    "tests/design-rules.test.ts",
+    "tests/teacher-trial.test.ts"
+  ],
+  "via": "agy"
+}

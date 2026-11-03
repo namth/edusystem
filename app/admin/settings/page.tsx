@@ -10,10 +10,11 @@ import {
   AlertTriangle,
   RefreshCw,
   Sliders,
-  ShieldCheck,
-  Zap,
   Info,
-  Server
+  DollarSign,
+  Plus,
+  Trash2,
+  Tag,
 } from "lucide-react";
 
 interface ModelOption {
@@ -22,6 +23,12 @@ interface ModelOption {
   provider: "google" | "openai" | "portkey";
   desc: string;
   badge?: string;
+}
+
+interface ModelPriceRow {
+  model: string;
+  input_per_1m: number;
+  output_per_1m: number;
 }
 
 const PRESET_MODELS: ModelOption[] = [
@@ -63,6 +70,14 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Bảng giá model AI
+  const [usdVndRate, setUsdVndRate] = useState<number>(26000);
+  const [pricingRows, setPricingRows] = useState<ModelPriceRow[]>([]);
+  const [unpricedModels, setUnpricedModels] = useState<string[]>([]);
+  const [isPricingLoading, setIsPricingLoading] = useState(true);
+  const [isPricingSaving, setIsPricingSaving] = useState(false);
+  const [pricingMessage, setPricingMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // Fetch current config on load
   const loadConfig = async () => {
     setIsLoading(true);
@@ -83,8 +98,34 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const loadPricing = async () => {
+    setIsPricingLoading(true);
+    setPricingMessage(null);
+    try {
+      const res = await fetch("/api/admin/settings/ai-pricing");
+      const data = await res.json();
+      if (data.success && data.pricing) {
+        setUsdVndRate(data.pricing.usd_vnd_rate || 26000);
+        const rows: ModelPriceRow[] = Object.entries(data.pricing.models || {}).map(
+          ([model, p]: [string, any]) => ({
+            model,
+            input_per_1m: p.input_per_1m,
+            output_per_1m: p.output_per_1m,
+          })
+        );
+        setPricingRows(rows);
+        setUnpricedModels(Array.isArray(data.unpriced_models) ? data.unpriced_models : []);
+      }
+    } catch (err: any) {
+      console.warn("Load pricing error:", err);
+    } finally {
+      setIsPricingLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadConfig();
+    loadPricing();
   }, []);
 
   const handleSelectModel = (preset: ModelOption) => {
@@ -128,6 +169,76 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleAddPricingRow = (initialModel = "") => {
+    setPricingRows((prev) => [
+      ...prev,
+      { model: initialModel, input_per_1m: 0, output_per_1m: 0 },
+    ]);
+  };
+
+  const handleRemovePricingRow = (index: number) => {
+    setPricingRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRowChange = (index: number, field: keyof ModelPriceRow, value: any) => {
+    setPricingRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const handleSelectUnpriced = (modelName: string) => {
+    handleAddPricingRow(modelName);
+    setUnpricedModels((prev) => prev.filter((m) => m !== modelName));
+  };
+
+  const handleSavePricing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPricingSaving(true);
+    setPricingMessage(null);
+
+    try {
+      const modelsMap: Record<string, { input_per_1m: number; output_per_1m: number }> = {};
+      for (const row of pricingRows) {
+        const trimmed = row.model.trim();
+        if (trimmed) {
+          modelsMap[trimmed] = {
+            input_per_1m: Number(row.input_per_1m) || 0,
+            output_per_1m: Number(row.output_per_1m) || 0,
+          };
+        }
+      }
+
+      const payload = {
+        usd_vnd_rate: Number(usdVndRate) || 26000,
+        models: modelsMap,
+      };
+
+      const res = await fetch("/api/admin/settings/ai-pricing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Không thể lưu bảng giá AI.");
+      }
+
+      setPricingMessage({
+        type: "success",
+        text: "Đã cập nhật thành công bảng giá model AI và tỷ giá USD→VND!",
+      });
+      await loadPricing();
+    } catch (err: any) {
+      setPricingMessage({
+        type: "error",
+        text: err.message || "Đã xảy ra lỗi khi lưu bảng giá.",
+      });
+    } finally {
+      setIsPricingSaving(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto space-y-6 font-sans text-ink">
@@ -146,11 +257,14 @@ export default function AdminSettingsPage() {
             </p>
           </div>
           <button
-            onClick={loadConfig}
-            disabled={isLoading}
+            onClick={() => {
+              loadConfig();
+              loadPricing();
+            }}
+            disabled={isLoading || isPricingLoading}
             className="px-3.5 py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer self-start md:self-auto"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading || isPricingLoading ? "animate-spin" : ""}`} />
             <span>Tải Lại Cấu Hình</span>
           </button>
         </div>
@@ -201,7 +315,6 @@ export default function AdminSettingsPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        {/* Radio circle with crisp white inner background */}
                         <input
                           type="radio"
                           name="ai_model"
@@ -309,12 +422,194 @@ export default function AdminSettingsPage() {
               {isSaving ? (
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Save className="w-4 h-4 text-accent-400" />
+                <Save className="w-4 h-4 text-white" />
               )}
               <span>Lưu Cấu Hình Mô Hình AI</span>
             </button>
           </div>
         </form>
+
+        {/* Khối Bảng Giá Model AI & Tỷ Giá */}
+        <div className="bg-white border border-line rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-brand-600 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-brand-600" />
+                <span>Bảng giá model AI & Tỷ giá</span>
+              </h2>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Cấu hình đơn giá token tính bằng USD / 1M token và tỷ giá USD→VND dùng để tính chi phí AI trong hệ thống.
+              </p>
+            </div>
+          </div>
+
+          {pricingMessage && (
+            <div
+              className={`p-4 rounded-xl border flex items-center space-x-3 shadow-xs animate-in fade-in ${
+                pricingMessage.type === "success"
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                  : "bg-rose-50 border-rose-300 text-rose-900"
+              }`}
+            >
+              {pricingMessage.type === "success" ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+              )}
+              <div className="text-xs font-semibold">{pricingMessage.text}</div>
+            </div>
+          )}
+
+          <form onSubmit={handleSavePricing} className="space-y-6">
+            {/* Tỷ giá USD -> VND */}
+            <div className="max-w-xs space-y-1.5">
+              <label className="block text-xs font-bold text-ink">
+                Tỷ giá USD→VND:
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="1000000"
+                  value={usdVndRate}
+                  onChange={(e) => setUsdVndRate(Number(e.target.value) || 0)}
+                  className="w-full p-2.5 rounded-xl border border-line bg-surface-alt text-xs font-semibold focus:outline-none focus:border-brand-600"
+                  placeholder="26000"
+                  required
+                />
+                <span className="text-xs font-bold text-ink-muted shrink-0">VND / USD</span>
+              </div>
+            </div>
+
+            {/* Gợi ý model chưa có giá */}
+            {unpricedModels.length > 0 && (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <Tag className="w-4 h-4 text-amber-700" />
+                  <span>Model đã gọi trong log nhưng chưa có giá (bấm để thêm vào bảng):</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {unpricedModels.map((m) => (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() => handleSelectUnpriced(m)}
+                      className="px-2.5 py-1 bg-white hover:bg-amber-100 border border-amber-400 rounded-lg text-xs font-semibold text-amber-900 transition cursor-pointer"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bảng model */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase text-brand-800 tracking-wider">
+                  Danh sách giá theo model
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAddPricingRow("")}
+                  className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm dòng model</span>
+                </button>
+              </div>
+
+              {pricingRows.length === 0 ? (
+                <div className="p-6 text-center text-xs text-ink-muted border border-dashed border-line rounded-xl bg-surface-alt">
+                  Chưa có model nào trong bảng giá. Hãy bấm nút &quot;Thêm dòng model&quot; để thiết lập.
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-line rounded-xl">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-surface-alt border-b border-line text-ink font-bold">
+                      <tr>
+                        <th className="p-3">Tên model</th>
+                        <th className="p-3">Giá Input / 1M token (USD)</th>
+                        <th className="p-3">Giá Output / 1M token (USD)</th>
+                        <th className="p-3 w-16 text-center">Xoá</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {pricingRows.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-surface-alt/50">
+                          <td className="p-2.5">
+                            <input
+                              type="text"
+                              value={row.model}
+                              onChange={(e) => handleRowChange(idx, "model", e.target.value)}
+                              placeholder="VD: gemini-2.5-flash"
+                              className="w-full p-2 rounded-lg border border-line bg-white text-xs font-semibold focus:outline-none focus:border-brand-600"
+                              required
+                            />
+                          </td>
+                          <td className="p-2.5">
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              max="10000"
+                              value={row.input_per_1m}
+                              onChange={(e) =>
+                                handleRowChange(idx, "input_per_1m", parseFloat(e.target.value) || 0)
+                              }
+                              className="w-full p-2 rounded-lg border border-line bg-white text-xs font-semibold focus:outline-none focus:border-brand-600"
+                              required
+                            />
+                          </td>
+                          <td className="p-2.5">
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              max="10000"
+                              value={row.output_per_1m}
+                              onChange={(e) =>
+                                handleRowChange(idx, "output_per_1m", parseFloat(e.target.value) || 0)
+                              }
+                              className="w-full p-2 rounded-lg border border-line bg-white text-xs font-semibold focus:outline-none focus:border-brand-600"
+                              required
+                            />
+                          </td>
+                          <td className="p-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePricingRow(idx)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                              title="Xoá dòng"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Nút lưu bảng giá */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={isPricingSaving}
+                className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isPricingSaving ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <Save className="w-4 h-4 text-white" />
+                )}
+                <span>Lưu Bảng Giá Model AI</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </AdminLayout>
   );

@@ -94,7 +94,7 @@ export default function AIExamImporterPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-accent-400" />
+                    <Sparkles className="w-4 h-4 text-white" />
                     <span>Bóc Tách Đề Thi 4 Kỹ Năng Bằng AI &rarr;</span>
                   </>
                 )}
@@ -147,7 +147,7 @@ export default function AIExamImporterPage() {
                   onClick={handlePublishExam}
                   className="w-full py-3.5 bg-ink-muted hover:bg-brand-600 text-white rounded-xl font-mono text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 font-headline"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-accent-400" />
+                  <CheckCircle2 className="w-4 h-4 text-white" />
                   <span>Lưu &amp; Xuất Bản Đề Thi Lên Hệ Thống</span>
                 </button>
               </div>

@@ -1,5 +1,6 @@
 import { Portkey } from "portkey-ai";
 import OpenAI from "openai";
+import { recordAiUsage } from "@/lib/ai-usage";
 import { EvaluationResult, ScoringRubric } from "@/types/scoring";
 export type { EvaluationResult, ScoringRubric };
 import { DEFAULT_IELTS_SPEAKING_RUBRIC, DEFAULT_IELTS_WRITING_RUBRIC, DEFAULT_INTERNAL_RUBRIC } from "./rubric-resolver";
@@ -53,13 +54,27 @@ async function createAICompletion(systemPrompt: string, userPrompt: string): Pro
         dangerouslyAllowBrowser: true,
       });
 
+      const sentModel = getPortkeyModel();
       const response = await portkey.chat.completions.create({
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        model: getPortkeyModel(),
+        model: sentModel,
         max_tokens: 1024,
+      });
+
+      const promptTokens = response.usage?.prompt_tokens ?? 0;
+      const completionTokens = response.usage?.completion_tokens ?? 0;
+      const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+      const usedModel = (response as any).model || sentModel;
+
+      await recordAiUsage({
+        provider: "portkey",
+        model: usedModel,
+        promptTokens,
+        completionTokens,
+        totalTokens,
       });
 
       const content = response.choices?.[0]?.message?.content;
@@ -74,13 +89,27 @@ async function createAICompletion(systemPrompt: string, userPrompt: string): Pro
   if (openaiApiKey) {
     try {
       const openai = new OpenAI({ apiKey: openaiApiKey });
+      const sentModel = "gpt-4o-mini";
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: sentModel,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+      });
+
+      const promptTokens = response.usage?.prompt_tokens ?? 0;
+      const completionTokens = response.usage?.completion_tokens ?? 0;
+      const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+      const usedModel = (response as any).model || sentModel;
+
+      await recordAiUsage({
+        provider: "openai",
+        model: usedModel,
+        promptTokens,
+        completionTokens,
+        totalTokens,
       });
 
       const content = response.choices?.[0]?.message?.content;
@@ -157,13 +186,27 @@ Return strictly JSON with format:
         });
       }
 
+      const sentModel = getPortkeyModel();
       const response = await portkey.chat.completions.create({
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        model: getPortkeyModel(),
+        model: sentModel,
         max_tokens: 1024,
+      });
+
+      const promptTokens = response.usage?.prompt_tokens ?? 0;
+      const completionTokens = response.usage?.completion_tokens ?? 0;
+      const totalTokens = response.usage?.total_tokens ?? (promptTokens + completionTokens);
+      const usedModel = (response as any).model || sentModel;
+
+      await recordAiUsage({
+        provider: "portkey",
+        model: usedModel,
+        promptTokens,
+        completionTokens,
+        totalTokens,
       });
 
       const content = response.choices?.[0]?.message?.content;

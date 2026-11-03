@@ -65,6 +65,7 @@ beforeEach(async () => {
   h.neo4jEnroll.length = 0;
   h.pg = await createFakePg(["db-migration-004-enrollments-assignments.sql"]);
   await h.pg.db.exec(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;   -- DEC-031: ghi danh kiểm slot học sinh
     INSERT INTO users (id,name,email,role) VALUES
       ('s1','HS Một','s1@x.vn','STUDENT'), ('s2','HS Hai','s2@x.vn','STUDENT'), ('s3','HS Ba','s3@x.vn','STUDENT'),
       ('t1','GV Một','t1@x.vn','TEACHER'), ('t2','GV Hai','t2@x.vn','TEACHER'), ('a1','Admin','a1@x.vn','ADMIN');

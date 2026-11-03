@@ -1,0 +1,4 @@
+fd4bc776ad73478d580ae0bc1c75ecd368e161e7c2bd651132940d8150919e9e  handoff/tasks/TASK-043-tong-quan-admin/verify.sh
+21226c7c57bf6b34be647f6b4dfced65dce6cf31e2180d258b31687f9b13542d  tests/admin-dashboard.test.ts
+2808fb47d192322f9c193dd7d8a4d0bef755a3e6aae455309896a558c8bd43ca  tests/landing.test.ts
+a4d0e590ad07b6079345ae886fd21141a8804729b02153bb20730976c2eacc15  tests/onboarding-ui.test.ts
