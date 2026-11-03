@@ -24,6 +24,11 @@ export default function UserProfilePage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailIsPlaceholder, setEmailIsPlaceholder] = useState(
+    Boolean(authUser?.emailIsPlaceholder)
+  );
+  const [realEmailInput, setRealEmailInput] = useState("");
+  const [isSavingRealEmail, setIsSavingRealEmail] = useState(false);
   const [phone, setPhone] = useState("");
   const [targetBand, setTargetBand] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(
@@ -53,6 +58,9 @@ export default function UserProfilePage() {
         if (data.user) {
           setName(data.user.name || "");
           setEmail(data.user.email || "");
+          setEmailIsPlaceholder(
+            Boolean(data.user.email_is_placeholder || data.user.emailIsPlaceholder)
+          );
           setPhone(data.user.phone || "");
           setTargetBand(data.user.target_band || "");
           if (data.user.role) {
@@ -104,6 +112,37 @@ export default function UserProfilePage() {
       setErrorMsg(err.message || "Lỗi hệ thống khi cập nhật hồ sơ.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveRealEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    if (!realEmailInput.trim()) {
+      setErrorMsg("Vui lòng nhập địa chỉ email thật của bạn.");
+      return;
+    }
+    setIsSavingRealEmail(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: realEmailInput.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || "Không thể cập nhật email.");
+      } else {
+        setEmail(data.user?.email || realEmailInput.trim());
+        setEmailIsPlaceholder(false);
+        setRealEmailInput("");
+        setSuccessMsg("Đã cập nhật sang email thật thành công!");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Lỗi kết nối khi lưu email.");
+    } finally {
+      setIsSavingRealEmail(false);
     }
   };
 
@@ -207,6 +246,32 @@ export default function UserProfilePage() {
 
           {/* Forms Section */}
           <div className="md:col-span-2 space-y-6">
+            {emailIsPlaceholder && (
+              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-200 shadow-sm space-y-4">
+                <p className="text-sm font-bold text-amber-900">
+                  Bạn đang dùng email tạm <span className="underline">{email}</span> — thêm email thật để lấy lại mật khẩu khi quên
+                </p>
+                <form onSubmit={handleSaveRealEmail} className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="email"
+                    required
+                    aria-label="Email thật"
+                    value={realEmailInput}
+                    onChange={(e) => setRealEmailInput(e.target.value)}
+                    placeholder="Nhập địa chỉ email thật của bạn..."
+                    className="flex-1 px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-sm font-semibold text-ink focus:outline-none focus:border-brand-600"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSavingRealEmail}
+                    className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingRealEmail ? "Đang lưu..." : "Lưu email thật"}
+                  </button>
+                </form>
+              </div>
+            )}
+
             {/* Edit Info Form */}
             <div className="bg-white p-8 rounded-3xl border border-line shadow-sm">
               <h2 className="text-lg font-bold text-ink mb-4 flex items-center space-x-2">

@@ -7,6 +7,7 @@ import {
 } from "@/lib/exam-scoring";
 import { type GradeResult } from "@/lib/grading";
 import { loadStudentRoadmap } from "@/lib/lesson-access";
+import { isTrialClass } from "@/lib/teacher-trial";
 
 export async function ensureAttemptsSchema(): Promise<void> {
   try {
@@ -189,11 +190,31 @@ export async function checkExamAccess(
   }
 
   // 3. Đếm số lượt đã nộp của học sinh cho đề ở lớp này
+  if (await isTrialClass(classId)) {
+    limit = 1;
+  }
+
   const usedRes = await queryPg(
     "SELECT COUNT(*)::int AS count FROM submissions WHERE student_id = $1 AND exam_id = $2 AND class_ref = $3 AND status <> 'IN_PROGRESS'",
     [studentId, examId, classId]
   );
   const used = Number(usedRes.rows[0]?.count || 0);
+
+  if (limit != null && used >= limit) {
+    const inProgressRes = await queryPg(
+      "SELECT 1 FROM submissions WHERE student_id = $1 AND exam_id = $2 AND class_ref = $3 AND status = 'IN_PROGRESS' LIMIT 1",
+      [studentId, examId, classId]
+    );
+    if (inProgressRes.rows.length === 0) {
+      return {
+        allowed: false,
+        status: 409,
+        error: "Đã vượt quá số lượt làm bài cho phép.",
+        limit,
+        used,
+      };
+    }
+  }
 
   return { allowed: true, limit, used };
 }

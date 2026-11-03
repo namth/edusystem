@@ -10,13 +10,22 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const roleParam = searchParams.get("role");
     const qParam = searchParams.get("q");
+    const teacherStatusParam = searchParams.get("teacherStatus");
 
     const role = roleParam?.trim() || "";
     const q = qParam?.trim() || "";
+    const teacherStatus = teacherStatusParam?.trim() || "";
 
     if (role && !["ADMIN", "TEACHER", "STUDENT"].includes(role)) {
       return NextResponse.json(
         { success: false, error: "Vai trò không hợp lệ." },
+        { status: 400 }
+      );
+    }
+
+    if (teacherStatus && !["TRIAL", "VERIFIED", "REJECTED"].includes(teacherStatus)) {
+      return NextResponse.json(
+        { success: false, error: "Trạng thái giáo viên không hợp lệ." },
         { status: 400 }
       );
     }
@@ -28,6 +37,11 @@ export async function GET(req: Request) {
     if (role) {
       conditions.push(`u.role = $${paramIndex++}`);
       params.push(role);
+    }
+
+    if (teacherStatus) {
+      conditions.push(`u.teacher_status = $${paramIndex++}`);
+      params.push(teacherStatus);
     }
 
     if (q) {
@@ -45,6 +59,7 @@ export async function GET(req: Request) {
         u.phone,
         u.target_band,
         u.status,
+        u.teacher_status,
         u.slot_limit,
         u.created_at,
         COALESCE(
@@ -90,6 +105,7 @@ export async function GET(req: Request) {
         phone: row.phone,
         target_band: row.target_band,
         status: row.status,
+        teacher_status: row.teacher_status ?? null,
         slot_limit:
           row.slot_limit !== null && row.slot_limit !== undefined
             ? Number(row.slot_limit)

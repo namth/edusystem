@@ -9,12 +9,12 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 | Vai trò | Mô tả |
 | :--- | :--- |
 | `ADMIN` | Quản trị tài khoản, giáo viên, học sinh, rubric, đơn đăng ký. Làm được mọi việc của `TEACHER`. |
-| `TEACHER` | Tạo/sửa khoá học, đề thi, giáo trình của mình; chấm bài; quản lý lớp. |
+| `TEACHER` | Tạo/sửa khoá học, đề thi, giáo trình của mình; chấm bài; quản lý lớp. Tự đăng ký thì ở chế độ dùng thử (`teacher_status = 'TRIAL'`, giới hạn DEC-027) đến khi admin xác minh. |
 | `STUDENT` | Làm bài, xem kết quả và tiến độ của chính mình. |
 
 ## 3. Bất biến (không được phá)
 1. **Xác thực:** phiên đăng nhập là JWT HS256 trong cookie httpOnly `auth_token` (`lib/jwt.ts`, `lib/auth.ts`). Không lưu token ở `localStorage`, không đọc vai trò từ body/query.
-2. **Mọi API route trong `app/api/` phải kiểm tra phiên trước khi chạm DB/AI/queue**, trừ các route công khai có chủ đích: `app/api/auth/*` (có giới hạn số lần thử), `app/api/classes/lookup/[ref]` (xem trước lớp qua link mời, chỉ trả trường công khai) và `app/api/leads` (form liên hệ landing, giới hạn theo IP). Không có phiên → `401`; sai vai trò → `403`. Thân lỗi: `{ success: false, error: string }`.
+2. **Mọi API route trong `app/api/` phải kiểm tra phiên trước khi chạm DB/AI/queue**, trừ các route công khai có chủ đích: `app/api/auth/*` (có giới hạn số lần thử; đăng ký công khai chỉ tạo `STUDENT` hoặc `TEACHER` dùng thử, vai trò theo route), `app/api/classes/lookup/[ref]` (xem trước lớp qua link mời, chỉ trả trường công khai) và `app/api/leads` (form liên hệ landing, giới hạn theo IP). Không có phiên → `401`; sai vai trò → `403`. Thân lỗi: `{ success: false, error: string }`.
 3. Danh tính người dùng lấy từ token (`userId`, `role`), **không bao giờ** từ `student_id`/`userId` client gửi lên khi người gọi là `STUDENT`.
 4. `TEACHER` chỉ thao tác trên khoá học/đề do mình tạo (`created_by`); `ADMIN` thao tác mọi thứ.
 5. Gọi nội bộ máy–máy (worker → API) xác thực bằng header `x-internal-token` khớp biến môi trường `INTERNAL_API_TOKEN` (không rỗng).
@@ -34,5 +34,6 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 - `docs/14-decisions.md` — quyết định đã chốt (DEC), thắng khi mâu thuẫn.
 - `docs/features/ai-exam-ingestion.md` — FEAT-009 AI Import DOCX/PDF/ảnh → đề thi.
 - `docs/features/lesson-library.md` — FEAT-010 Kho bài học & học theo lộ trình lớp (TASK-007 → TASK-013).
+- `docs/features/dang-ky-phong-van.md` — FEAT-012 Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử & xác minh (TASK-035 → TASK-037).
 - `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
 - `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

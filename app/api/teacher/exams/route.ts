@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/api-auth";
 import { syncCourseExam } from "@/lib/neo4j";
 import { pushRedisStreamEvent } from "@/lib/redis-queue";
 import { canUseSubject } from "@/lib/subjects";
+import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -189,6 +190,11 @@ export async function POST(req: Request) {
 
     const examId = "exam_" + crypto.randomUUID();
     const cleanDesc = description !== undefined && description !== null ? String(description) : null;
+
+    const trial = await assertTrialAllows(authUser.userId, "contents");
+    if (!trial.ok) {
+      return trialLimitResponse("contents", trial.error);
+    }
 
     const cols = ["id", "title", "description", "duration_minutes", "skills", "question_ids", "created_by"];
     const insertParams: any[] = [

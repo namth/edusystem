@@ -2,6 +2,9 @@
 
 /* Token màu thương hiệu KitoKit (lấy từ logo). Dùng qua class: bg-brand-600, text-ink, border-line…
    Bật dark mode sau này: định nghĩa lại các biến dưới đây trong một bộ chọn tối. */
+/* Quy tắc gradient (DEC-022, 02/11/2026): chỉ chuyển trong MỘT dải màu, từ đậm sang nhạt dần
+   (vd from-brand-700 via-brand-500 to-brand-300). Không pha xanh với cam (brand ↔ accent).
+   Kiểm bởi tests/design-rules.test.ts. */
 @theme {
   --color-brand-50: #eef4ff;
   --color-brand-100: #dce7ff;
@@ -277,4 +280,49 @@ body {
 .kk-grid-dark {
   background-image: linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
   background-size: 32px 32px;
+}
+
+/* ── Mascot Kito cảm xúc (FEAT-012) ─────────────────────────────────────────── */
+@keyframes mascot-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes mascot-think {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  35% { transform: rotate(-7deg) translateY(-3px); }
+  70% { transform: rotate(5deg) translateY(-2px); }
+}
+@keyframes mascot-happy {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-10px) scale(1.04); }
+  60% { transform: translateY(2px) scale(0.98); }
+}
+@keyframes mascot-oops {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-8px) rotate(-4deg); }
+  40% { transform: translateX(8px) rotate(4deg); }
+  60% { transform: translateX(-6px) rotate(-2deg); }
+  80% { transform: translateX(6px) rotate(2deg); }
+}
+@keyframes mascot-celebrate {
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+  25% { transform: translateY(-14px) scale(1.06) rotate(-5deg); }
+  50% { transform: translateY(0) scale(0.97) rotate(0deg); }
+  75% { transform: translateY(-12px) scale(1.05) rotate(5deg); }
+}
+
+.mascot-idle { animation: mascot-idle 3.2s ease-in-out infinite; }
+.mascot-think { animation: mascot-think 2.2s ease-in-out infinite; transform-origin: 50% 80%; }
+.mascot-happy { animation: mascot-happy 0.9s ease-in-out infinite; }
+.mascot-oops { animation: mascot-oops 0.55s ease-in-out 2; }
+.mascot-celebrate { animation: mascot-celebrate 0.9s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-idle,
+  .mascot-think,
+  .mascot-happy,
+  .mascot-oops,
+  .mascot-celebrate {
+    animation: none !important;
+  }
 }

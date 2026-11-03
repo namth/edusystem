@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getPgPool, queryPg } from "@/lib/db-pg";
+import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -15,6 +16,11 @@ export async function POST(req: Request) {
       { success: false, error: "Dữ liệu đề thi hoặc danh sách câu hỏi không hợp lệ." },
       { status: 400 }
     );
+  }
+
+  const trial = await assertTrialAllows(authUser.userId, "contents");
+  if (!trial.ok) {
+    return trialLimitResponse("contents", trial.error);
   }
 
   // TEACHER chỉ được gắn đề vào lộ trình khóa học do mình tạo (CONTEXT.md bất biến 4)

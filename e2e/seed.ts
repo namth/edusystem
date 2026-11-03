@@ -24,6 +24,8 @@ export async function seedE2E() {
     await db.query("DROP SCHEMA IF EXISTS public CASCADE;");
     await db.query(fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8"));
     await db.query("SET search_path TO public"); // pg_dump đặt search_path rỗng cho phiên
+    // FEAT-012: schema.sql dump trước migration 013 → áp thêm (ensureSchema cũng chạy, nhưng seed cần cột ngay)
+    await db.query(fs.readFileSync(path.join(__dirname, "..", "docs", "db-migration-013-onboarding.sql"), "utf8"));
     const pw = hashPassword(E2E_PASSWORD);
     await db.query(
       `INSERT INTO users (id,name,email,role,password,must_change_password,slot_limit) VALUES
@@ -35,6 +37,7 @@ export async function seedE2E() {
         ('e2e_s2','Học sinh Hai','student2@e2e.test','STUDENT',$1,FALSE,0)`,
       [pw]
     );
+    await db.query(`UPDATE users SET teacher_status = 'VERIFIED' WHERE role = 'TEACHER'`);
     await db.query(`
       INSERT INTO courses (id,title,description,created_by) VALUES
         ('e2e_co1','Khoá Starters E2E','Khoá của cô Lan','e2e_t1'),

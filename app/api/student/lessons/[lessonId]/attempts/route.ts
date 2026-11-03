@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { checkLessonAccess } from "@/lib/lesson-access";
+import { assertTrialAttemptAllowed, trialLimitResponse } from "@/lib/teacher-trial";
 import {
   gradeQuestion,
   summarizeResults,
@@ -56,6 +57,16 @@ export async function POST(
       { success: false, error: access.error },
       { status: access.status }
     );
+  }
+
+  const trialAttempt = await assertTrialAttemptAllowed({
+    studentId: user.userId,
+    classId,
+    kind: "lesson",
+    itemId: lessonId,
+  });
+  if (!trialAttempt.ok) {
+    return trialLimitResponse("attempts", trialAttempt.error);
   }
 
   const questionIds: string[] = access.lesson.question_ids;

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { isTrialTeacher, trialLimitResponse } from "@/lib/teacher-trial";
 
 export async function GET(req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -30,6 +31,13 @@ export async function GET(req?: Request) {
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
   if (auth.error) return auth.error;
+
+  if (await isTrialTeacher(auth.user.userId)) {
+    return trialLimitResponse(
+      "slots",
+      "Tài khoản dùng thử chưa thể gửi yêu cầu mua thêm slot. Vui lòng chờ KitoKit xác minh tài khoản."
+    );
+  }
 
   const body = await req.json().catch(() => ({}));
   const { requested_slots } = body;

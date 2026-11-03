@@ -11,12 +11,12 @@ test.describe("Xác thực", () => {
 
   test("học sinh đăng nhập qua form → vào dashboard; sai mật khẩu báo lỗi", async ({ page }) => {
     await page.goto("/login");
-    await page.getByPlaceholder("student.name@edu.vn").fill(ACC.student);
-    await page.getByPlaceholder("••••••••").fill("Sai@12345");
-    await page.getByPlaceholder("••••••••").press("Enter");
+    await page.getByPlaceholder("Email hoặc tên đăng nhập").fill(ACC.student);
+    await page.getByPlaceholder("Mật khẩu").fill("Sai@12345");
+    await page.getByPlaceholder("Mật khẩu").press("Enter");
     await expect(page.getByText(/không chính xác/i)).toBeVisible();
-    await page.getByPlaceholder("••••••••").fill(E2E_PASSWORD);
-    await page.getByPlaceholder("••••••••").press("Enter");
+    await page.getByPlaceholder("Mật khẩu").fill(E2E_PASSWORD);
+    await page.getByPlaceholder("Mật khẩu").press("Enter");
     await expect(page).toHaveURL(/\/student\/dashboard/);
   });
 
@@ -31,5 +31,22 @@ test.describe("Xác thực", () => {
       await page.goto(p);
       await expect(page, p).toHaveURL(/\/login/);
     }
+  });
+});
+
+test.describe("Đăng xuất bỏ hẳn phiên cũ", () => {
+  test("admin đăng xuất → về /login, vào /register và / không bị đưa ngược vào trang quản trị", async ({ page }) => {
+    await loginApi(page, ACC.admin);
+    await page.goto("/admin/requests");
+    await page.getByRole("button", { name: /Đăng Xuất Admin/i }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    // trang đăng nhập không tự chuyển vào trang quản trị của tài khoản cũ
+    await page.waitForTimeout(1500);
+    await expect(page).toHaveURL(/\/login$/);
+    expect((await page.context().cookies()).find((c) => c.name === "auth_token")?.value || "").toBe("");
+    await page.goto("/register");
+    await expect(page).toHaveURL(/\/register$/);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/admin/);
   });
 });

@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     // Query user directly from PostgreSQL public.users table
     const result = await queryPg(
-      `SELECT * FROM users WHERE LOWER(email) = $1 OR id = $1 LIMIT 1;`,
+      `SELECT * FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $1 OR id = $1 LIMIT 1;`,
       [cleanId]
     );
 
@@ -79,12 +79,14 @@ export async function POST(req: Request) {
       id: userRow.id,
       name: userRow.name || cleanId.split("@")[0],
       email: userRow.email || cleanId,
-      username: userRow.id,
+      username: userRow.username || userRow.id,
       role: userRow.role || "STUDENT",
       phone: userRow.phone || "",
       targetBand: userRow.target_band || "IELTS 6.5",
       assignedClasses: userRow.role === "TEACHER" ? ["cls_101", "cls_102"] : ["cls_101"],
       mustChangePassword: userRow.must_change_password === true,
+      teacherStatus: userRow.teacher_status ?? null,
+      emailIsPlaceholder: !!userRow.email_is_placeholder,
     };
 
     // Set Cryptographically Signed HS256 JWT HTTP-Only Auth Cookie
