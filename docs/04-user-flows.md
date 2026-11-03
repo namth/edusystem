@@ -3,7 +3,7 @@
 > Cập nhật: 2026-11-03 · Chi tiết từng bước và các nhánh lỗi nằm trong `docs/features/*`; file này tóm luồng chính theo code hiện tại.
 
 ## UF-01 Học sinh đăng ký & vào lớp (FEAT-012)
-1. `/register`: phỏng vấn từng câu (tên → có email không? → email hoặc tên đăng nhập → mật khẩu → cấp học / mục tiêu → mã lớp, có thể bỏ qua) → `POST /api/auth/register`.
+1. `/register`: phỏng vấn từng câu (email trùng được báo ngay khi gõ qua `GET /api/auth/email-available`; nháp lưu ở máy để tải lại không mất) (tên → có email không? → email hoặc tên đăng nhập → mật khẩu → cấp học / mục tiêu → mã lớp, có thể bỏ qua) → `POST /api/auth/register`.
 2. Không có email thì hệ thống tạo `username` và email tạm `<username>@kito.io.vn` (`email_is_placeholder = true`).
 3. Có mã lớp thì ghi danh luôn (`enrollStudentByCode`). Mã sai hoặc lớp đầy thì vẫn tạo tài khoản, trả `enrolled = null` kèm `enrollError`.
 4. Cookie `auth_token` được đặt, chuyển tới `/student/dashboard`.

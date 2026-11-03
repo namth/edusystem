@@ -59,7 +59,7 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 
 | Nhóm API / hành động | Khách | STUDENT | TEACHER | ADMIN |
 | :--- | :---: | :---: | :---: | :---: |
-| `auth/*` (login, register, register/teacher, forgot/reset, signup-options, username-available) | ✓ (giới hạn tần suất) | ✓ | ✓ | ✓ |
+| `auth/*` (login, register, register/teacher, forgot/reset, signup-options, username-available, email-available) | ✓ (giới hạn tần suất) | ✓ | ✓ | ✓ |
 | `auth/me`, `auth/logout`, `auth/change-password`, `profile` | — | ◐ | ◐ | ◐ |
 | `leads` POST (form landing) | ✓ (giới hạn theo IP) | ✓ | ✓ | ✓ |
 | `classes/lookup/[ref]` (xem trước lớp) | ✓ (trường công khai) | ✓ | ✓ | ✓ |

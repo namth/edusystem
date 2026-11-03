@@ -53,7 +53,7 @@ Cấu hình nghiệp vụ **không** đặt trong `.env`. Admin sửa trong app,
 6. Mật khẩu băm scrypt dạng `salt:hash`, không so sánh plaintext.
 7. Bí mật chỉ đọc từ biến môi trường, không có giá trị dự phòng viết cứng.
 8. Không lộ đáp án cho học sinh trước khi nộp (`sanitizeQuestionForStudent`, `lib/grading.ts`).
-9. Giới hạn tần suất (`lib/rate-limit.ts`) ở `auth/login`, `auth/register`, `auth/register/teacher`, `auth/forgot-password`, `auth/username-available`, `leads`.
+9. Giới hạn tần suất (`lib/rate-limit.ts`) ở `auth/login`, `auth/register`, `auth/register/teacher`, `auth/forgot-password`, `auth/username-available`, `auth/email-available`, `leads`.
 10. `next` sau khi đăng nhập chỉ nhận đường dẫn nội bộ (`safeNextPath`, chống open-redirect).
 11. Tiền và điểm do server tính. Client gửi `total_cost` hay `score` lên thì server bỏ qua.
 

@@ -29,6 +29,7 @@
 | POST | `/api/auth/register/teacher` | công khai | Tạo TEACHER `TRIAL` + `teacher_profiles`, báo admin | `onboarding-api` |
 | GET | `/api/auth/signup-options` | công khai | Môn / cấp học cho form đăng ký | `landing` |
 | GET | `/api/auth/username-available` | công khai | `?u=` | `onboarding-api` |
+| GET | `/api/auth/email-available` | công khai | `?e=` → `{ available, error? }`; báo email trùng ngay khi gõ ở form đăng ký; giới hạn theo IP | `onboarding-api` |
 | POST | `/api/auth/forgot-password`, `/api/auth/reset-password` | công khai | Token đặt lại | `secrets-password` |
 | GET / POST | `/api/auth/me`, `/api/auth/logout`, `/api/auth/change-password` | đã đăng nhập | Đổi xong cấp cookie mới, bỏ `mcp` | `change-password` |
 | GET / PUT | `/api/profile` | mọi vai trò | Không đổi được `password`, `email`, `role`, `slot_limit` | `profile-slots-grading` |
