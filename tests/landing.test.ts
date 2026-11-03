@@ -86,7 +86,7 @@ describe("Trang chủ / là landing (Server Component)", () => {
   it("đã đăng nhập → chuyển hướng theo vai trò", async () => {
     const Page = (await import("@/app/page")).default as any;
     await loginAs("ADMIN");
-    expect(await redirectTarget(() => Page())).toBe("/admin/requests");
+    expect(await redirectTarget(() => Page())).toBe("/admin");
     await loginAs("TEACHER");
     expect(await redirectTarget(() => Page())).toBe("/teacher/classes");
     await loginAs("STUDENT");

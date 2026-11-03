@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../**/*.ts",
+    "../../../**/*.tsx"
+  ],
+  "exclude": [
+    "../../../node_modules",
+    "../../../.next",
+    "../../../tests/admin-dashboard.test.ts",
+    "../../../tests/landing.test.ts",
+    "../../../tests/onboarding-ui.test.ts"
+  ]
+}

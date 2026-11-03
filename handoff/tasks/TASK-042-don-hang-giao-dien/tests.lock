@@ -1,0 +1,4 @@
+1230c17b0671369970abf51c11fef747e43ccf3cf286e930b4d7e26198136d56  handoff/tasks/TASK-042-don-hang-giao-dien/verify.sh
+6ccd0008258ad064565d3ecdcb4217052c4d95ca64f5e801ad49232ad2945394  tests/orders-ui.test.ts
+75fbec6388a1902c1f2b2062e66d09df9207d2730b3a5ee67855616e203c6df1  tests/design-rules.test.ts
+417986e20f812558cf28022f85d47ad1bdd045de12831c05d610a093340760b3  tests/teacher-trial.test.ts

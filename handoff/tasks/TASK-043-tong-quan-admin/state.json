@@ -1,0 +1,19 @@
+{
+  "id": "TASK-043",
+  "title": "Trang tổng quan admin & sắp lại menu",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-03T08:57:17",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-043-tong-quan-admin/verify.sh",
+    "tests/admin-dashboard.test.ts",
+    "tests/landing.test.ts",
+    "tests/onboarding-ui.test.ts"
+  ]
+}

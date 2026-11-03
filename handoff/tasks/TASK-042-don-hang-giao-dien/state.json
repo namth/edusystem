@@ -1,0 +1,19 @@
+{
+  "id": "TASK-042",
+  "title": "Đơn hàng mua slot — giao diện & trang thanh toán VietQR",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-03T08:57:17",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-042-don-hang-giao-dien/verify.sh",
+    "tests/orders-ui.test.ts",
+    "tests/design-rules.test.ts",
+    "tests/teacher-trial.test.ts"
+  ]
+}
