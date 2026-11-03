@@ -21,11 +21,11 @@ export default function LandingHeader() {
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/brand/kitokit-logo-horizontal.png"
+            src="/brand/kitokit-logo-ngang.png"
             alt="KitoKit"
-            width={140}
-            height={40}
-            className="h-9 w-auto object-contain"
+            width={194}
+            height={80}
+            className="h-14 w-auto object-contain"
             priority
           />
         </Link>

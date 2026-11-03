@@ -75,7 +75,7 @@ export default function AdminLayout({
       <nav className="h-screen w-64 fixed left-0 top-0 bg-surface-alt border-r border-line shadow-sm flex flex-col py-4 z-30 hidden md:flex">
         {/* Header */}
         <div className="px-6 py-4 mb-4 flex flex-col items-center border-b border-line-soft">
-          <img src="/brand/kitokit-mark.png" alt="KitoKit" className="h-14 w-14 object-contain mb-2" />
+          <img src="/brand/kitokit-logo-hinh.png" alt="KitoKit" className="h-14 w-auto object-contain mb-2" />
           <h2 className="font-headline text-lg font-bold text-brand-600 text-center">
             KitoKit
           </h2>

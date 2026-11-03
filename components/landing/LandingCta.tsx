@@ -25,7 +25,7 @@ export default function LandingCta() {
             </div>
           </div>
           <div className="md:col-span-4 flex justify-center">
-            <Image src="/brand/mascot/kito-an-mung-chien-thang.png" alt="" width={354} height={511} className="kk-float h-56 sm:h-72 w-auto drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]" />
+            <Image src="/brand/mascot-3d/kito-3d-vui-mung.png" alt="" width={358} height={505} className="kk-float h-56 sm:h-72 w-auto drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]" />
           </div>
         </div>
       </div>

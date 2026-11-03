@@ -62,7 +62,8 @@ describe("Trang chủ / là landing (Server Component)", () => {
     expect(s.trimStart().startsWith('"use client"')).toBe(false);
     expect(s).toMatch(/export const metadata/);
     const all = [s, ...fs.readdirSync("components/landing").filter((f) => f.endsWith(".tsx")).map((f) => read(path.join("components/landing", f)))].join("\n");
-    expect(all).toContain("/brand/kitokit-logo-horizontal.png");
+    expect(all).toContain("/brand/kitokit-logo-ngang.png");
+    expect(all).toContain("/brand/mascot-3d/");
     for (const id of ['id="tinh-nang"', 'id="hoc-sinh"', 'id="giao-vien"', 'id="faq"', 'id="lien-he"']) expect(all, id).toContain(id);
     // 02/11: bỏ mục liệt kê môn học (để mở rộng dần), tập trung giới thiệu tính năng
     expect(all).not.toContain('id="mon-hoc"');

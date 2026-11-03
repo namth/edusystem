@@ -247,11 +247,8 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
     <div className="bg-surface-alt min-h-screen flex flex-col academic-grid font-sans text-ink selection:bg-brand-600 selection:text-white">
       {/* Top Header */}
       <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-10 bg-white/80 backdrop-blur-md z-50 border-b border-line/30">
-        <div className="flex items-center gap-2.5">
-          <img src="/brand/kitokit-mark.png" alt="" className="w-9 h-9 object-contain" />
-          <span className="text-xl font-bold text-brand-600 tracking-tight">
-            KitoKit
-          </span>
+        <div className="flex items-center">
+          <img src="/brand/kitokit-logo-ngang.png" alt="KitoKit" className="h-11 w-auto object-contain" />
         </div>
         <Link href="/login" className="text-xs font-bold text-brand-600 hover:underline">
           Đăng nhập hệ thống &rarr;
@@ -301,9 +298,9 @@ export default function JoinClassPage({ params }: { params: Promise<{ classId: s
             <div className="relative w-full aspect-video max-w-[380px] rounded-3xl overflow-hidden shadow-md border border-line/40 float-anim">
               <div className="absolute inset-0 bg-gradient-to-tr from-brand-600/20 to-transparent z-10" />
               <img
-                src="/brand/kitokit-mark.png"
+                src="/brand/mascot-3d/kito-3d-vui-mung.png"
                 alt="KitoKit — Lớp học"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-white p-6"
               />
             </div>
           </div>

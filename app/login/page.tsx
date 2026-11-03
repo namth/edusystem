@@ -114,15 +114,8 @@ function LoginFormContent() {
         />
 
         <div className="flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <img
-              src="/brand/kitokit-mark-transparent.png"
-              alt="KitoKit"
-              className="w-10 h-10 object-contain"
-            />
-            <span className="font-display text-2xl font-extrabold tracking-tight text-white">
-              KitoKit
-            </span>
+          <Link href="/" className="inline-flex items-center">
+            <img src="/brand/kitokit-logo-ngang.png" alt="KitoKit" className="h-14 w-auto object-contain" />
           </Link>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-brand-100 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5 text-accent-400" />

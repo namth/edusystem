@@ -12,13 +12,13 @@ const MOOD_CLASS_MAP: Record<MascotMood, string> = {
   celebrate: "mascot-celebrate",
 };
 
-// Mỗi cảm xúc một biểu cảm (public/brand/mascot/); đứng yên dùng mascot gốc
+// Mỗi cảm xúc một biểu cảm mascot 3D (public/brand/mascot-3d/)
 const MOOD_IMAGE_MAP: Record<MascotMood, string> = {
-  idle: "/brand/kitokit-mark-transparent.png",
-  think: "/brand/mascot/kito-chu-tam-doc-sach.png",
-  happy: "/brand/mascot/kito-khen-ngon-cai.png",
-  oops: "/brand/mascot/kito-thac-mac.png",
-  celebrate: "/brand/mascot/kito-an-mung-chien-thang.png",
+  idle: "/brand/mascot-3d/kito-3d-khen-ngon-cai.png",
+  think: "/brand/mascot-3d/kito-3d-viet-bai.png",
+  happy: "/brand/mascot-3d/kito-3d-chien-thang.png",
+  oops: "/brand/mascot-3d/kito-3d-thac-mac.png",
+  celebrate: "/brand/mascot-3d/kito-3d-vui-mung.png",
 };
 
 interface MascotProps {
