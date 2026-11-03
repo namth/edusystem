@@ -1,6 +1,6 @@
 # FEAT-012: Đăng nhập mới, đăng ký kiểu phỏng vấn & giáo viên dùng thử
 
-> Trạng thái: SPEC_DRAFT (2026-11-02) · Quyết định: DEC-026 → DEC-029 (`docs/14-decisions.md`)
+> Trạng thái: DONE (TASK-035 → 037 đã nghiệm thu; đối chiếu code 2026-11-03) · Quyết định: DEC-026 → DEC-029 (`docs/14-decisions.md`)
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Hiện tại:

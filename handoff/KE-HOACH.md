@@ -82,7 +82,7 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ Deploy 31/10/2026 23:23 (build local, `scripts/deploy.sh`): migration 006–009 đã áp trên DB server, 4 chuẩn chấm đã seed. Còn thiếu `SLOT_UNIT_PRICE_VND` trong `.env` server (giá slot đang = 0)
 - ✅ TASK-027 hiển thị điểm theo chuẩn chấm (`lib/score-display.ts`) ở analytics, dashboard, trang lớp, admin; xoá `/api/events` (592 test xanh, build OK — chưa deploy)
 
-### Còn lại
+### Còn lại (danh sách 31/10 — đã lỗi thời; xem `docs/11-tasks.md` §3–4 cho việc còn lại thật, đối chiếu code 03/11)
 - Deploy bản có AI Import lên server và thử upload một file DOCX/PDF thật
 - `app/profile/page.tsx` → API pg
 - Khu giáo viên (classes, classes/[classId], slots, students/create, grading, flashcards) → API pg
