@@ -1,0 +1,8 @@
+{
+  "enabledMcpjsonServers": ["postgres-e2e"],
+  "permissions": {
+    "allow": [
+      "mcp__postgres-e2e"
+    ]
+  }
+}
