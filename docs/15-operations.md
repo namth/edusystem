@@ -66,7 +66,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-10-31 | build local | Code chuẩn đầu tiên, ghi đè server cũ; migration 006–009, seed 4 chuẩn chấm | — | người dùng |
 | 2026-11-01 | — | Đợt sửa media Cambridge (volume `/app/public/media`) | — | người dùng |
-| *(chưa)* | namth/edusystem#5 | FEAT-013 quản trị | 015 | — |
+| 2026-11-03 23:15 | `2a4a9b3` (PR #5–#9) | FEAT-013 quản trị, tài liệu chuẩn, logo + mascot 3D, cấu hình MCP. Sao lưu DB trước: `~/edusystem-backups/db-truoc-feat013-20261103-2309.dump`. Migration 014/016 tự áp qua `ensureSchema` (đã kiểm cột + 4 khoá `system_settings`). Postgres `timezone = UTC` (D4 đúng). Build lần 1 lỗi tải Google Fonts (mạng), build lại OK | 015: xem trước không đổi giá trị nào (3 GV VERIFIED đều 250 slot, chưa có đơn duyệt) — **chưa chạy** | người dùng |
 
 ## 7. Theo dõi & sự cố thường gặp
 | Triệu chứng | Kiểm | Xử lý |
@@ -74,5 +74,6 @@
 | Bài kẹt "đang chấm" (`GRADING`) | `docker logs edusystem-grading-worker-1`; Redis còn sống không | Khởi động lại worker. Bài thất bại sẽ tự chuyển `NEEDS_REVIEW` khi worker bỏ cuộc |
 | Ảnh / mp3 bài học 404 | `curl localhost:3645/media/ej/...` | Kiểm volume media trong compose; file mới thêm cần khởi động lại nextjs |
 | App không lên sau deploy | log `[env]` | Thiếu biến bắt buộc (`docs/10` §1) |
+| Build image lỗi `module-not-found` ở `next/font/google` | log build | Mạng tới Google Fonts chập chờn lúc build — chạy lại `deploy.sh` |
 | Chi phí AI hiện 0 | `/admin/settings`, mục `unpriced_models` | Thêm giá cho model |
 | QR không hiện | `/admin/orders`, tab Cấu hình thanh toán | Nhập BIN, STK, chủ tài khoản |
