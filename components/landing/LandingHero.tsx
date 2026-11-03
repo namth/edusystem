@@ -88,11 +88,11 @@ export default function LandingHero({ stats }: LandingHeroProps) {
                 <span className="absolute -top-1.5 left-1/2 w-3 h-3 rounded-full bg-accent-400 ring-4 ring-accent-400/30" />
               </div>
               <Image
-                src="/brand/kitokit-mark-transparent.png"
+                src="/brand/mascot-3d/kito-3d-khen-ngon-cai.png"
                 alt="Mascot KitoKit"
-                width={430}
-                height={400}
-                className="kk-float absolute inset-0 m-auto w-44 sm:w-56 h-auto drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)]"
+                width={363}
+                height={498}
+                className="kk-float absolute inset-0 m-auto h-56 sm:h-72 w-auto drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)]"
                 priority
               />
             </div>

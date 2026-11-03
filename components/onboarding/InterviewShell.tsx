@@ -42,15 +42,8 @@ export default function InterviewShell({
       <header className="w-full bg-white/90 backdrop-blur-md border-b border-line">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Link href="/" className="inline-flex items-center gap-2 shrink-0">
-              <img
-                src="/brand/kitokit-mark-transparent.png"
-                alt="KitoKit"
-                className="w-8 h-8 object-contain"
-              />
-              <span className="font-display text-lg font-extrabold text-brand-600">
-                KitoKit
-              </span>
+            <Link href="/" className="inline-flex items-center shrink-0">
+              <img src="/brand/kitokit-logo-ngang.png" alt="KitoKit" className="h-12 w-auto object-contain" />
             </Link>
           </div>
 

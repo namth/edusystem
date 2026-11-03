@@ -60,7 +60,7 @@ flowchart TD
 - **Mỗi màn chỉ có một câu hỏi.**
   - Câu chọn sẵn hiện dạng **chip lớn**. Câu chọn một: bấm chip là sang câu tiếp. Câu chọn nhiều: có nút "Tiếp".
   - Câu nhập chữ: có một ô nhập, Enter để tiếp, lỗi kiểm tra hiện ngay dưới ô và do mascot nói.
-- **Mascot:** dùng `public/brand/kitokit-mark-transparent.png`. Cảm xúc thể hiện bằng chuyển động:
+- **Mascot:** dùng bộ mascot 3D `public/brand/mascot-3d/` — mỗi cảm xúc một ảnh (đứng yên `kito-3d-khen-ngon-cai`, suy nghĩ `kito-3d-viet-bai`, hợp lệ `kito-3d-chien-thang`, lỗi `kito-3d-thac-mac`, hoàn tất `kito-3d-vui-mung`), kèm chuyển động:
   - nhún nhẹ khi đứng yên
   - nghiêng đầu khi đổi câu
   - gật khi câu trả lời hợp lệ

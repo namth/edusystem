@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "KitoKit — Học Vui, Thi Chắc",
     description: "Cổng bài học và luyện thi trực tuyến đa môn thông minh.",
-    images: ["/brand/kitokit-logo-full.webp"],
+    images: ["/brand/kitokit-logo-dung.png"],
   },
 };
 

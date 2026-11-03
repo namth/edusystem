@@ -86,12 +86,13 @@ describe("GET /api/auth/me trả trường FEAT-012", () => {
 });
 
 describe("Khung phỏng vấn components/onboarding", () => {
-  it("đủ các thành phần, mascot dùng ảnh nền trong suốt, có 5 cảm xúc", () => {
+  it("đủ các thành phần, mascot dùng bộ 3D nền trong suốt, có 5 cảm xúc", () => {
     for (const f of ["Mascot.tsx", "SpeechBubble.tsx", "InterviewShell.tsx", "ChoiceChips.tsx", "useInterviewDraft.ts", "Confetti.tsx", "redirect.ts"]) {
       expect(fs.existsSync(path.join(DIR, f)), f).toBe(true);
     }
     const m = read(path.join(DIR, "Mascot.tsx"));
-    expect(m).toContain("/brand/kitokit-mark-transparent.png");
+    expect(m).toContain("/brand/mascot-3d/");
+    for (const f of m.match(/\/brand\/[\w\-/]+\.png/g) ?? []) expect(fs.existsSync(path.join("public", f)), f).toBe(true);
     for (const mood of ["idle", "think", "happy", "oops", "celebrate"]) expect(m).toContain(mood);
   });
 
