@@ -1,6 +1,6 @@
 # FEAT-013: Tối ưu phân hệ quản trị — tổng quan, đơn hàng slot & VietQR, chi phí AI
 
-> Trạng thái: SPEC_DRAFT (2026-11-02) · Quyết định: DEC-030 → DEC-035 (`docs/14-decisions.md`)
+> Trạng thái: DONE (2026-11-03, TASK-038 → 043 đã merge, chưa deploy) · Quyết định: DEC-030 → DEC-035 (`docs/14-decisions.md`)
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Rà soát khu `/admin` ngày 02/11/2026 thấy:

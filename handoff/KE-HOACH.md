@@ -97,5 +97,6 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ Giao diện: bỏ dấu "+" ở nhãn nút, icon trên nền xanh đổi sang trắng (khoá `tests/design-rules.test.ts`). Đổi tên menu "Khách hàng tiềm năng" thành "Liên hệ từ website"
 - ✅ 03/11 đã merge TASK-038 ghi nhận token AI · TASK-039 slot = học sinh · TASK-040 gộp tiêu chí vào Chuẩn chấm · TASK-041 đơn hàng server + VietQR (965 test xanh, chưa deploy)
 - Deploy: chạy tay `docs/db-migration-015-student-slots.sql` một lần (trả lại slot đã bị trừ khi chấm AI); migration 014, 016 chạy cùng `ensureSchema`
-- Còn lại: TASK-042 giao diện đơn hàng · TASK-043 tổng quan & menu (chạy song song được)
+- ✅ 03/11 đã merge TASK-042 giao diện đơn hàng + VietQR · TASK-043 tổng quan `/admin` & menu (997 test xanh, `next build` OK, chưa deploy)
+- Khi deploy: kiểm `show timezone;` của Postgres là UTC (dashboard coi `ai_usage_logs.created_at` là UTC); nhập tài khoản nhận tiền + đơn giá slot ở /admin/orders → Cấu hình thanh toán; nhập bảng giá model ở /admin/settings
 
