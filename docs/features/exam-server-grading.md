@@ -1,6 +1,6 @@
 # FEAT-011: Chuẩn chấm theo loại đề & chấm đề thi phía server
 
-> Trạng thái: SPEC_APPROVED (2026-10-31) · Quyết định: DEC-014 → DEC-018 (`docs/14-decisions.md`)
+> Trạng thái: DONE (TASK-018 → 022, 027 → 030; đối chiếu code 2026-11-03 — BR-E07 đã thay bởi DEC-031) · Quyết định: DEC-014 → DEC-018 (`docs/14-decisions.md`)
 
 ## 1. Tổng quan & mục tiêu
 Trang làm đề hiện tải đáp án xuống trình duyệt, tự chấm câu khách quan (`auto_graded_score`, mặc định 7.0), gọi AI chấm Writing/Speaking đồng bộ khi nộp, đếm giờ ở trình duyệt; mọi đề chấm theo một thang cố định. FEAT-011:
@@ -72,7 +72,7 @@ aggregation = { method: "AVERAGE"|"SUM"|"WEIGHTED", round_step: number,
 - **BR-E04 Số lần**: theo lớp — `class_assignments.max_attempts` (nếu có) hoặc 1 cho mục lộ trình; đếm các lượt đã nộp (`status ≠ IN_PROGRESS`) của học sinh cho đề ở lớp đó.
 - **BR-E05 Giờ**: `deadline_at = started_at + duration_minutes`; nộp sau `deadline_at + 2 phút` → `is_late = true` (vẫn chấm). Lưu tạm sau hạn bị từ chối (409).
 - **BR-E06 Tổng**: chỉ các phần có điểm. `AVERAGE` trung bình, `SUM` cộng, `WEIGHTED` Σ(w·s)/Σw; làm tròn theo `round_step`. `passed` = có `pass_score` thì `total ≥ pass_score` và mọi `section_min` đạt; không có → null.
-- **BR-E07 AI**: có mục AI (Writing essay/short answer, Speaking) → trừ 1 slot giáo viên (lớp: `classes.teacher_id`; luyện tập: `exams.created_by`) bằng một UPDATE có điều kiện; có slot → `GRADING` + sự kiện `GRADING_REQUESTED { submissionId }`; hết slot → `NEEDS_REVIEW` (điểm phần AI để trống, tổng tính khi giáo viên chấm). Worker gọi AI theo rubric `rubric_id` của phần với thang phần, thử tối đa 3 lần, lỗi → điểm phần AI = min và ghi `last_grading_error`.
+- **BR-E07 AI** *(Thay bởi DEC-031 / `docs/12` BR-S06, 03/11/2026.)* Có mục AI (Writing essay / short answer, Speaking) → `GRADING`, đẩy `GRADING_REQUESTED` sau khi lưu trạng thái; đẩy lỗi → `NEEDS_REVIEW` + báo giáo viên. **Không trừ / hoàn slot.**
 - **BR-E08 Không lộ đáp án**: nội dung đề cho học sinh luôn qua `sanitizeQuestionForStudent`; đáp án chỉ có trong `results` sau khi nộp.
 
 Trạng thái `submissions.status`: `IN_PROGRESS → GRADED | GRADING | NEEDS_REVIEW`; `GRADING → GRADED`; `NEEDS_REVIEW → GRADED` (grade-override).

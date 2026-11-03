@@ -365,7 +365,7 @@ export function parseParentheses(rawText: string): { parsedText: string; answers
 }
 
 /**
- * Standardizes question content JSONB object per SYSTEM_ARCHITECTURE.md
+ * Standardizes question content JSONB object per docs/archive/SYSTEM_ARCHITECTURE.md (tài liệu cũ; chuẩn hiện tại: docs/06)
  */
 export function buildStandardQuestionContent(q: any): any {
   const category = q.category;

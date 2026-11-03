@@ -1,7 +1,7 @@
 # Đặc tả Tính năng: AI Exam & Curriculum Ingestion Engine (FEAT-009)
 
 > **Mã tính năng**: `FEAT-009`  
-> **Trạng thái**: SPEC_APPROVED  
+> **Trạng thái**: DONE (khôi phục 31/10/2026; chưa thử file thật trên server — `docs/11` N2)  
 > **Phân hệ**: Teacher Portal & Admin Settings  
 > **Tác giả**: Principal Solutions Architect & Lead Product Owner  
 > **Phiên bản**: 1.0 (2026-10-05)

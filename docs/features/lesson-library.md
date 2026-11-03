@@ -1,6 +1,6 @@
 # FEAT-010: Kho bài học & học theo lộ trình lớp
 
-> Trạng thái: SPEC_APPROVED (2026-10-31) · Quyết định: DEC-001 → DEC-013 (`docs/14-decisions.md`)
+> Trạng thái: DONE (TASK-006 → 016; đối chiếu code 2026-11-03 — BR-L11 đã thay bởi DEC-031) · Quyết định: DEC-001 → DEC-013 (`docs/14-decisions.md`)
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Hiện nút `LESSON` trong cây lộ trình chỉ là một tiêu đề, không có nội dung; học sinh không nhìn thấy lộ trình ở đâu.
@@ -156,7 +156,7 @@ Lỗi chung `{ success: false, error }`; 401 chưa đăng nhập, 403 sai vai tr
 - **BR-L08** `score_percent = (objective_earned + ai_earned) / (objective_max + ai_max) × 100`, làm tròn 1 chữ số; tổng max = 0 → 100.
 - **BR-L09** Đáp án (`correct_answer(s)`, `correct_text`, `pairs` ghép sẵn, `correct_english_word`, `sample_answer`, đáp án trong ngoặc của đoạn văn) **không bao giờ** có trong phản hồi cho học sinh trước khi nộp; kết quả sau nộp mới kèm đáp án (DEC-009).
 - **BR-L10** Làm lại không giới hạn; `best_percent` = max `score_percent` các lần `GRADED`/`AI_SKIPPED` (DEC-010).
-- **BR-L11** Mỗi lần nộp có câu AI trừ **1 slot** của giáo viên phụ trách lớp (`users.slot_limit`); hết slot → không chấm AI, `status = AI_SKIPPED`, `ai_earned = 0`, kết quả ghi "Chưa chấm (hết lượt AI)".
+- **BR-L11** *(Thay bởi DEC-031 / `docs/12` BR-S06, 03/11/2026.)* Mỗi lần nộp có câu AI → `status = GRADING`, đẩy `LESSON_GRADING_REQUESTED`; **không trừ slot**. Trạng thái `AI_SKIPPED` chỉ còn ở dữ liệu cũ.
 - **BR-L12** Học sinh chỉ nộp được bài học đang `OPEN` trong lớp đã ghi danh, và bài học phải thuộc lộ trình khóa của lớp.
 
 Máy trạng thái `lesson_attempts.status`:
