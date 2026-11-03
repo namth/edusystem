@@ -23,6 +23,7 @@ import {
 } from "@/lib/onboarding";
 import InterviewShell from "@/components/onboarding/InterviewShell";
 import StepActions from "@/components/onboarding/StepActions";
+import { useEmailAvailability, EmailAvailabilityHint } from "@/components/onboarding/useEmailAvailability";
 import ChoiceChips from "@/components/onboarding/ChoiceChips";
 import Mascot, { type MascotMood } from "@/components/onboarding/Mascot";
 import Confetti from "@/components/onboarding/Confetti";
@@ -106,6 +107,7 @@ export default function TeacherRegisterPage() {
   ]);
 
   const step: TeacherStep = draft.step || "intro";
+  const emailCheck = useEmailAvailability(draft.email, step === "email");
   // Danh xưng: câu ngay sau màn tên gọi "thầy/cô + tên riêng", các câu sau chỉ gọi "thầy"/"cô"
   const xung = draft.honorific === "THAY" ? "thầy" : draft.honorific === "CO" ? "cô" : "thầy cô";
   const Xung = xung.charAt(0).toUpperCase() + xung.slice(1);
@@ -246,6 +248,11 @@ export default function TeacherRegisterPage() {
   const handleEmailNext = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = draft.email.trim().toLowerCase();
+    if (emailCheck.status === "taken") {
+      setMood("oops");
+      setErrorMsg(emailCheck.message || "Email này đã được dùng để đăng ký.");
+      return;
+    }
     if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
       setMood("oops");
       setErrorMsg(`${Xung} vui lòng nhập địa chỉ email hợp lệ ạ.`);
@@ -695,6 +702,7 @@ export default function TeacherRegisterPage() {
             placeholder="thayco@truong.edu.vn"
             className="w-full px-4 py-3 rounded-2xl border border-line bg-surface-alt text-base font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-600"
           />
+          <EmailAvailabilityHint status={emailCheck.status} message={emailCheck.message} />
           <StepActions>
             <button
               type="submit"
