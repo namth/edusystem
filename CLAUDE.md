@@ -12,6 +12,6 @@ KitoKit — cổng bài học & đề thi đa môn, tiếng Anh có chấm AI (N
 
 ## Tài liệu (DEC-036)
 
-- **Giai đoạn hiện tại: code** (FEAT-009 → 013 đã xong). Một chuẩn duy nhất: `docs/01–14` + `docs/features/` + `docs/qa/` + `CONTEXT.md` — bản đồ ở `CONTEXT.md` §5.
+- **Giai đoạn hiện tại: code** (FEAT-009 → 013 đã xong). Một chuẩn duy nhất: `docs/01–15` + `docs/features/` + `docs/qa/` + `CONTEXT.md` — bản đồ ở `CONTEXT.md` §5.
 - Code lệch tài liệu → sửa tài liệu theo code; lỗi code ghi vào `docs/11` §4.
-- Tính năng lớn: `/grill-feature`, cập nhật chéo docs 02/03/04/06/07/11/12/13/14 + `CONTEXT.md` trong cùng PR. Đổi schema → migration mới + `docs/06`. Đổi API → `docs/07`.
+- Tính năng lớn: `/grill-feature`, cập nhật chéo docs 02/03/04/06/07/11/12/13/14 + `CONTEXT.md` trong cùng PR. Đổi schema → migration mới + `docs/06`. Đổi API → `docs/07`. Deploy / migration tay → `docs/15`. `tests/docs-sync.test.ts` phải xanh.

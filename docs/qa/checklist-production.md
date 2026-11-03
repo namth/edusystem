@@ -16,7 +16,7 @@ Ghi chú: người kiểm tự đăng nhập bằng tài khoản thử nghiệm 
 - [ ] `JWT_SECRET` và `INTERNAL_API_TOKEN` của production khác dev; `.env` production không nằm trong git.
 
 ## 1. Chung / Xác thực
-- [ ] `/` khi chưa đăng nhập hiện landing. Đã đăng nhập thì chuyển hướng theo vai trò: Admin → `/admin/requests`, GV → `/teacher/classes`, HS → `/student/dashboard`.
+- [ ] `/` khi chưa đăng nhập hiện landing. Đã đăng nhập thì chuyển hướng theo vai trò: Admin → `/admin`, GV → `/teacher/classes`, HS → `/student/dashboard`.
 - [ ] Đăng ký HS mới → vào dashboard.
 - [ ] Đăng nhập sai 10 lần → bị khoá tạm, có thông báo số phút chờ.
 - [ ] Tài khoản mật khẩu tạm:

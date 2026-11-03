@@ -13,7 +13,7 @@
 | `worker/` | `grading-worker.js` + Dockerfile riêng |
 | `tests/` | Vitest `*.test.ts`; `tests/helpers/pg-fake.ts` (PGlite) |
 | `e2e/` | Playwright + `schema.sql` + seed |
-| `docs/` | Bộ tài liệu chuẩn 01–14, `features/`, `qa/`, migration SQL |
+| `docs/` | Bộ tài liệu chuẩn 01–15, `features/`, `qa/`, `archive/` (cũ), migration SQL |
 | `handoff/` | Giao việc Claude ↔ Antigravity (`tasks/TASK-NNN-*`, `KE-HOACH.md`) |
 | `public/brand/` | Logo, mascot |
 | `stitch_english_mock_exam_portal/` | Mockup thiết kế, **chỉ tham khảo, không sửa** |
@@ -64,5 +64,6 @@ Quy tắc test:
 - **Commit:** Conventional Commits có phạm vi, mô tả tiếng Việt, ví dụ `feat(admin): …`, `fix(auth,onboarding): …`, `chore(handoff): …`, `docs: …`.
 - **Giao việc:** `/giao-viec` (brief + test + `verify.sh`), nghiệm thu bằng `/nghiem-thu` (`python3 scripts/handoff.py verify|accept|reject`).
 - **Tài liệu (DEC-036):**
-  - mỗi tính năng lớn đi qua `/grill-feature` và cập nhật chéo `docs/02, 03, 04, 06, 07, 12, 13, 11, 14` + `CONTEXT.md` trong cùng PR;
-  - code lệch tài liệu thì sửa tài liệu theo code.
+  - mỗi tính năng lớn đi qua `/grill-feature` và cập nhật chéo `docs/02, 03, 04, 06, 07, 10, 11, 12, 13, 14, 15` + `CONTEXT.md` trong cùng PR;
+  - code lệch tài liệu thì sửa tài liệu theo code;
+  - `tests/docs-sync.test.ts` đỏ khi route, trang, migration, bảng, biến môi trường, DEC hay TASK có trong code mà chưa có trong tài liệu. Sửa tài liệu cho test xanh, không nới test.

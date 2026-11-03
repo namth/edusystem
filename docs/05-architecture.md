@@ -53,7 +53,7 @@ grading-worker (container) ──XREADGROUP──▶ Redis
 | Container | `nextjs` (cổng 3645, có healthcheck `/login`), `redis` (redis:7-alpine), `grading-worker` |
 | PostgreSQL | Ngoài compose, kết nối qua `DATABASE_URL` |
 | Media | `${MEDIA_HOST_DIR:-../edusystem-media}` → `/app/public/media` (chỉ đọc). Volume phải nằm trong compose của repo, vì `deploy.sh` rsync `--delete` |
-| Deploy | `scripts/deploy.sh`: build image ở máy local (arm64), rsync mã nguồn, `docker save \| ssh docker load`, `docker compose up -d --no-build`. **Không build trên server.** Luôn hỏi người dùng trước khi deploy |
+| Deploy | Chi tiết ở `docs/15-operations.md`. `scripts/deploy.sh`: build image ở máy local (arm64), rsync mã nguồn, `docker save \| ssh docker load`, `docker compose up -d --no-build`. **Không build trên server.** Luôn hỏi người dùng trước khi deploy |
 | Migration | 001–014, 016 tự chạy qua `ensureSchema`. **015 chạy tay một lần** (`docs/db-migration-015-student-slots.sql`) |
 | E2E | `npm run e2e`: `docker-compose.e2e.yml` dựng Postgres riêng từ `e2e/schema.sql` + seed, rồi chạy Playwright |
 
@@ -63,6 +63,6 @@ grading-worker (container) ──XREADGROUP──▶ Redis
 | `lib/kafka.ts`, `lib/db-schema.ts` | Không route nào import |
 | `lib/db-init.js` | Script khởi tạo cũ, không ai gọi; có bảng `orders` (học sinh mua khoá, đã bỏ theo DEC-019) |
 | Bảng `exam_categories`, `lesson_exams`, `course_exams` (migration 002), `exams.scoring_rubric_id` (001) | Không code nào đọc |
-| `docs/ADR-001-ai-scoring-architecture.md`, `docs/ADR_AUTH.md`, `docs/SCORING.md` | Tài liệu tháng 07/2026, mô tả Supabase Auth và luồng chấm cũ. **Không còn đúng**: auth hiện là JWT HS256 tự quản, chấm theo FEAT-011. Chỉ giữ để tham khảo lịch sử |
+| `docs/archive/` (ADR-001, ADR_AUTH, SCORING, FEATURE_INDEX, SYSTEM_ARCHITECTURE, USERS, task, README cũ) | Tài liệu 07–10/2026, mô tả Supabase Auth và luồng chấm cũ. **Không còn đúng**: auth hiện là JWT HS256 tự quản, chấm theo FEAT-011. Đã chuyển vào lưu trữ ngày 03/11 (`docs/archive/LUU-Y.md`) |
 
 Việc dọn các thành phần trên được ghi ở `docs/11` §4.

@@ -20,6 +20,7 @@
 | Kho, chuyển đổi, nhân bản, flashcard, upload | `library-convert-duplicate`, `flashcards-uploads-api`, `subjects` |
 | Trang học sinh / landing | `student-pages`, `student-home`, `landing` |
 | Quy tắc giao diện (DEC-022, DEC-035) | `brand-tokens`, `design-rules` |
+| Tài liệu khớp code (DEC-036) | `docs-sync` |
 
 E2E (Playwright, `e2e/`): `auth`, `rbac`, `onboarding`, `student-exam`, `teacher`, `admin`, `responsive`.
 
@@ -44,7 +45,7 @@ Một task hoặc PR chỉ được coi là xong khi:
 1. `npx vitest run` xanh toàn bộ; test của task bị khoá trong `tests.lock` và không bị sửa (`python3 scripts/handoff.py verify <ID>`).
 2. `npx tsc --noEmit` sạch.
 3. `npx next build` thành công, với mọi thay đổi trang.
-4. Tài liệu đã cập nhật chéo theo DEC-036 (`docs/09` §5).
+4. Tài liệu đã cập nhật chéo theo DEC-036 (`docs/09` §5), `tests/docs-sync.test.ts` xanh.
 5. Thay đổi UI đi qua `docs/03` §3, có đủ 4 trạng thái.
 6. Trước khi deploy: chạy `npm run e2e` và đi checklist `docs/qa/checklist-production.md`.
 

@@ -88,6 +88,6 @@ npx vitest run && npx tsc --noEmit && npx next build
 | D4 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ | migration 014 | Migration mới đổi sang TIMESTAMPTZ, hoặc ghi rõ DB chạy UTC |
 | D5 | Thấp | `e2e/schema.sql` thiếu migration 011–016 | `e2e/` | N4 |
 | D6 | Thấp | Code / bảng di sản: `lib/kafka.ts`, `lib/db-schema.ts`, `lib/db-init.js`, bảng `exam_categories`, `lesson_exams`, `course_exams`, `orders` | `lib/`, DB | Xoá file; migration dọn bảng (hỏi người dùng) |
-| D7 | Thấp | Tài liệu ngoài chuẩn: `README.md` (mặc định create-next-app), `FEATURE_INDEX.md`, `SYSTEM_ARCHITECTURE.md`, `USERS.md`, `task.md`, `docs/ADR_AUTH.md`, `docs/ADR-001-…`, `docs/SCORING.md` (mô tả Supabase Auth / luồng chấm cũ) | gốc repo, `docs/` | Gộp phần còn đúng vào 01–14 rồi xoá hoặc chuyển vào `docs/archive/` |
+| D7 | ✅ 03/11 | ~~Tài liệu ngoài chuẩn~~ đã chuyển vào `docs/archive/`, README viết lại: `README.md` (mặc định create-next-app), `FEATURE_INDEX.md`, `SYSTEM_ARCHITECTURE.md`, `USERS.md`, `task.md`, `docs/ADR_AUTH.md`, `docs/ADR-001-…`, `docs/SCORING.md` (mô tả Supabase Auth / luồng chấm cũ) | gốc repo, `docs/` | Gộp phần còn đúng vào 01–14 rồi xoá hoặc chuyển vào `docs/archive/` |
 | D8 | Thấp | Rác: `scratch/`, `scratch_inspect_neo4j.cjs` | gốc repo | Xoá |
 | D9 | Thấp | File lớn: `components/question-builder/QuestionSetEditor.tsx` khoảng 2.860 dòng | — | Tách theo dạng câu hỏi khi có dịp |

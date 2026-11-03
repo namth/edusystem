@@ -56,6 +56,8 @@ Không có mã FEAT riêng nhưng đã có trong code: landing `/` và form liê
 | `docs/12` | Quy tắc nghiệp vụ BR-NN, máy trạng thái |
 | `docs/13` | Test & QA |
 | `docs/14` | Sổ quyết định DEC-NN |
+| `docs/15` | Vận hành: deploy, migration chạy tay, cấu hình sau deploy, sao lưu / rollback, nhật ký phát hành |
 | `docs/features/` | Đặc tả từng FEAT |
 | `docs/qa/` | Checklist & báo cáo QA |
+| `docs/archive/` | Tài liệu cũ, không còn là chuẩn |
 | `handoff/` | Giao việc Claude ↔ Antigravity, `KE-HOACH.md` tiến độ |

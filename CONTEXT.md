@@ -38,7 +38,8 @@ Chuẩn duy nhất (DEC-036) — code lệch tài liệu thì sửa tài liệu 
 - `docs/07-api-contracts.md` — mọi endpoint + vai trò + test khoá · `docs/08-integrations.md` — AI, Storage, Redis, Neo4j, VietQR, TTS
 - `docs/09-conventions.md` — thư mục, đặt tên, test, git · `docs/10-env-and-security.md` — `.env.example`, bất biến bảo mật, rủi ro mở
 - `docs/11-tasks.md` — milestone, TASK-NNN, tồn đọng D1–D9 · `docs/12-business-rules.md` — BR-A/T/S/O/L/E/G/N/D, máy trạng thái
-- `docs/13-test-cases-and-qa.md` — bản đồ test, ca bắt buộc, DoD
+- `docs/13-test-cases-and-qa.md` — bản đồ test, ca bắt buộc, DoD · `docs/15-operations.md` — deploy, migration tay, cấu hình sau deploy, rollback
+- `docs/archive/` — tài liệu cũ, không còn là chuẩn · `tests/docs-sync.test.ts` — đỏ khi code đổi mà docs chưa cập nhật
 - `docs/14-decisions.md` — quyết định đã chốt (DEC), thắng khi mâu thuẫn.
 - `docs/features/` — đặc tả từng FEAT:
 - `docs/features/ai-exam-ingestion.md` — FEAT-009 AI Import DOCX/PDF/ảnh → đề thi.

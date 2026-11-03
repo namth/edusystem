@@ -29,8 +29,8 @@
 | POST | `/api/auth/register/teacher` | công khai | Tạo TEACHER `TRIAL` + `teacher_profiles`, báo admin | `onboarding-api` |
 | GET | `/api/auth/signup-options` | công khai | Môn / cấp học cho form đăng ký | `landing` |
 | GET | `/api/auth/username-available` | công khai | `?u=` | `onboarding-api` |
-| POST | `/api/auth/forgot-password`, `/reset-password` | công khai | Token đặt lại | `secrets-password` |
-| GET / POST | `/api/auth/me`, `/logout`, `/change-password` | đã đăng nhập | Đổi xong cấp cookie mới, bỏ `mcp` | `change-password` |
+| POST | `/api/auth/forgot-password`, `/api/auth/reset-password` | công khai | Token đặt lại | `secrets-password` |
+| GET / POST | `/api/auth/me`, `/api/auth/logout`, `/api/auth/change-password` | đã đăng nhập | Đổi xong cấp cookie mới, bỏ `mcp` | `change-password` |
 | GET / PUT | `/api/profile` | mọi vai trò | Không đổi được `password`, `email`, `role`, `slot_limit` | `profile-slots-grading` |
 
 ### 2.2 Học sinh
@@ -54,17 +54,17 @@
 | :--- | :--- | :--- | :--- |
 | GET / POST | `/api/teacher/classes` | Tạo lớp (dùng thử: tối đa 1, `max_slots` ≤ 3) | `teacher-classes-api`, `teacher-trial` |
 | GET / PUT / DELETE | `/api/teacher/classes/[classId]` | | `teacher-classes-api` |
-| PUT | `…/[classId]/settings` | `unlock_mode`, `pass_percent`, `course_id` | `class-roadmap-api` |
-| POST | `…/[classId]/students` | Thêm học sinh có sẵn hoặc tạo mới; 409 nếu đủ chỗ / hết slot; 403 `TRIAL_LIMIT` | `teacher-classes-api`, `student-slots` |
-| GET | `…/[classId]/members`, `/progress`, `/roadmap` | | `class-roadmap-api` |
-| POST / DELETE | `…/[classId]/unlocks`, `/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
+| PUT | `/api/teacher/classes/[classId]/settings` | `unlock_mode`, `pass_percent`, `course_id` | `class-roadmap-api` |
+| POST | `/api/teacher/classes/[classId]/students` | Thêm học sinh có sẵn hoặc tạo mới; 409 nếu đủ chỗ / hết slot; 403 `TRIAL_LIMIT` | `teacher-classes-api`, `student-slots` |
+| GET | `/api/teacher/classes/[classId]/members`, `/api/teacher/classes/[classId]/progress`, `/api/teacher/classes/[classId]/roadmap` | | `class-roadmap-api` |
+| POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
-| GET / POST / PUT / DELETE | `/api/teacher/lessons[/id]`, `…/[id]/duplicate`, `…/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
-| GET / POST / PUT / DELETE | `/api/teacher/exams[/id]`, `…/[id]/duplicate` | | `exams-api`, `library-convert-duplicate` |
+| GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
+| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate` | | `exams-api`, `library-convert-duplicate` |
 | POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT` | `ai-import`, `ai-usage` |
 | POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch) | `ai-import` |
-| POST / PUT | `/api/teacher/questions[/id]` | | `lessons-api` |
-| GET / POST / PUT / DELETE | `/api/teacher/flashcards[/id]` | | `flashcards-uploads-api` |
+| POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |
+| GET / POST / PUT / DELETE | `/api/teacher/flashcards`, `/api/teacher/flashcards/[id]` | | `flashcards-uploads-api` |
 | POST | `/api/teacher/library/convert` | Bài học ↔ đề | `library-convert-duplicate` |
 | GET | `/api/teacher/submissions` | Bài nộp để chấm / duyệt | `profile-slots-grading` |
 | GET | `/api/teacher/trial-usage` | `{ status, limits, used, reviewNote }`; đã xác minh → `limits: null` | `teacher-trial` |
@@ -73,7 +73,7 @@
 | GET / POST / PUT / DELETE | `/api/exam/rubrics` | Bộ tiêu chí AI | `rubrics-pg` |
 | GET / POST | `/api/scoring-standards` | ADMIN / TEACHER đọc; tạo | `scoring-standards-api` |
 | PUT / DELETE | `/api/scoring-standards/[id]` | Chỉ ADMIN; chuẩn đang dùng → 409 | `scoring-standards-api` |
-| GET / POST / PUT / DELETE | `/api/subjects[/id]` | Môn của mình + hệ thống | `subjects` |
+| GET / POST / PUT / DELETE | `/api/subjects`, `/api/subjects/[id]` | Môn của mình + hệ thống | `subjects` |
 | GET | `/api/exams`, `/api/exams/[id]`, `/api/exams/[id]/content` | Học sinh chỉ thấy trường hiển thị (DEC-025) | `prod-hardening` |
 
 ### 2.4 Đơn hàng (FEAT-013)
@@ -87,7 +87,7 @@
 | POST | `/api/admin/orders/[id]/approve` | ADMIN | Giao dịch: PENDING → APPROVED, cộng `slot_limit`; đã xử lý → 409 |
 | POST | `/api/admin/orders/[id]/reject` | ADMIN | `{ reason }` bắt buộc (1–500 ký tự) |
 | GET / PUT | `/api/admin/settings/payment` | ADMIN | `{ payment_account, slot_pricing }`; BIN 6 số, STK 6–19 số, đơn giá nguyên 0–100.000.000 |
-| GET / PUT | `/api/admin/requests[/id]` | ADMIN | Route cũ, giữ để tương thích; đi qua `lib/slot-orders.ts` |
+| GET / PUT | `/api/admin/requests`, `/api/admin/requests/[id]` | ADMIN | Route cũ, giữ để tương thích; đi qua `lib/slot-orders.ts` |
 
 Test: `slot-orders-api`, `admin-api`.
 
@@ -101,7 +101,7 @@ Test: `slot-orders-api`, `admin-api`.
 | POST | `/api/admin/teachers/[id]/verify` | `{ decision: VERIFIED\|REJECTED, note? }` | `teacher-trial` |
 | POST | `/api/admin/create-user`, `/api/admin/delete-user` | Tạo kèm `classIds` (409 nếu hết slot, không tạo user) | `admin-api`, `student-slots` |
 | GET | `/api/admin/classes` | | `admin-api` |
-| GET / PATCH | `/api/admin/leads[/id]` | Đổi trạng thái `NEW` / `CONTACTED` / `DONE` | `landing` |
+| GET / PATCH | `/api/admin/leads`, `/api/admin/leads/[id]` | Đổi trạng thái `NEW` / `CONTACTED` / `DONE` | `landing` |
 | GET / PUT | `/api/admin/settings/ai-model` | Model AI nhập đề | `ai-import` |
 | GET / PUT | `/api/admin/settings/ai-pricing` | `{ pricing, unpriced_models }` | `ai-usage` |
 | POST | `/api/admin/parse-exam-text`, `/api/admin/test-portkey` | Công cụ AI (ghi log) | — |
