@@ -55,7 +55,7 @@ export default function ChangePasswordPage() {
         if (user?.role === "TEACHER") {
           router.push("/teacher/classes");
         } else if (user?.role === "ADMIN") {
-          router.push("/admin/requests");
+          router.push("/admin");
         } else {
           router.push("/student/dashboard");
         }

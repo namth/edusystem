@@ -63,7 +63,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/admin/requests"
+              href="/admin"
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
                 currentPortal === "admin"
                   ? "bg-brand-800 text-white shadow-sm font-semibold"

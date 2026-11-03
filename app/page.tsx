@@ -29,7 +29,7 @@ export default async function HomePage() {
 
   if (user) {
     if (user.role === "ADMIN") {
-      redirect("/admin/requests");
+      redirect("/admin");
     } else if (user.role === "TEACHER") {
       redirect("/teacher/classes");
     } else {
