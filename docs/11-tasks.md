@@ -15,7 +15,7 @@
 | M4 Chấm đề phía server (FEAT-011) | Chuẩn chấm, lượt thi, chấm AI nền, xem lại, thông báo | TASK-018 → 022, 027 → 030 | ✅ |
 | M5 Sẵn sàng production | Vá lỗi chặn, landing, đa môn, chuyển đổi / nhân bản | TASK-031 → 034, 035 (chuyển loại) | ✅ |
 | M6 Đăng ký & dùng thử (FEAT-012) | Đăng ký phỏng vấn, giáo viên dùng thử, xác minh | TASK-035 (đăng ký API), 036, 037 | ✅ |
-| M7 Quản trị (FEAT-013) | Token và chi phí AI, slot = học sinh, gộp tiêu chí, đơn hàng + VietQR, tổng quan | TASK-038 → 043 | ✅ merge vào nhánh, PR namth/edusystem#5, **chưa deploy** |
+| M7 Quản trị (FEAT-013) | Token và chi phí AI, slot = học sinh, gộp tiêu chí, đơn hàng + VietQR, tổng quan | TASK-038 → 043 | ✅ đã deploy 03/11 (`docs/15` §6) |
 
 ⚠️ Có 2 thư mục cùng mã TASK-035 (`TASK-035-chuyen-loai-nhan-ban`, `TASK-035-dang-ky-api`), do đánh số trùng khi hai task chạy song song. Không đổi tên để giữ lịch sử.
 
@@ -74,7 +74,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 ## 3. Việc tiếp theo (chưa giao)
 | # | Việc | Ghi chú |
 | :--- | :--- | :--- |
-| N1 | Deploy FEAT-013: chạy tay migration 015; kiểm Postgres `show timezone` = UTC; nhập cấu hình thanh toán và bảng giá model | Hỏi người dùng trước khi deploy |
+| N1 | Sau deploy FEAT-013: nhập cấu hình thanh toán (`/admin/orders`) và bảng giá model (`/admin/settings`); kiểm trình duyệt các trang mới. (Đã deploy, timezone UTC; migration 015 không cần — không đổi giá trị nào) | Người dùng |
 | N2 | Thử AI nhập đề với file DOCX/PDF thật trên server | Từ kế hoạch 31/10 |
 | N3 | Webhook ngân hàng tự duyệt đơn (SePay / Casso) | Gọi `approveOrder(id, "WEBHOOK", ref)` |
 | N4 | Dump lại `e2e/schema.sql` từ DB thật sau khi deploy | Bản hiện tại là ngày 01/11 |
@@ -85,7 +85,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 | D1 | Cao | Menu học sinh "Đề Thi & Bài Tập" trỏ cứng `/student/class/cls_101` | `components/StudentLayout.tsx` | Trỏ về lớp đầu tiên hoặc danh sách lớp |
 | D2 | TB | `users.password DEFAULT '123456'` trong DDL | `lib/db-pg.ts` `ensureSchema` | Migration mới bỏ DEFAULT (`ALTER COLUMN password DROP DEFAULT`) |
 | D3 | TB | 4 tài khoản học sinh trên server còn mật khẩu plaintext | DB server | Đặt lại mật khẩu |
-| D4 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ | migration 014 | Migration mới đổi sang TIMESTAMPTZ, hoặc ghi rõ DB chạy UTC |
+| D4 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ (server đã kiểm 03/11: Postgres chạy UTC → dashboard đúng) | migration 014 | Đổi sang TIMESTAMPTZ khi có dịp |
 | D5 | Thấp | `e2e/schema.sql` thiếu migration 011–016 | `e2e/` | N4 |
 | D6 | Thấp | Code / bảng di sản: `lib/kafka.ts`, `lib/db-schema.ts`, `lib/db-init.js`, bảng `exam_categories`, `lesson_exams`, `course_exams`, `orders` | `lib/`, DB | Xoá file; migration dọn bảng (hỏi người dùng) |
 | D7 | ✅ 03/11 | ~~Tài liệu ngoài chuẩn~~ đã chuyển vào `docs/archive/`, README viết lại: `README.md` (mặc định create-next-app), `FEATURE_INDEX.md`, `SYSTEM_ARCHITECTURE.md`, `USERS.md`, `task.md`, `docs/ADR_AUTH.md`, `docs/ADR-001-…`, `docs/SCORING.md` (mô tả Supabase Auth / luồng chấm cũ) | gốc repo, `docs/` | Gộp phần còn đúng vào 01–14 rồi xoá hoặc chuyển vào `docs/archive/` |
