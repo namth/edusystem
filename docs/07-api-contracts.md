@@ -67,17 +67,27 @@
 | POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |
 | GET / POST / PUT / DELETE | `/api/teacher/flashcards`, `/api/teacher/flashcards/[id]` | | `flashcards-uploads-api` |
 | POST | `/api/teacher/library/convert` | Bài học ↔ đề | `library-convert-duplicate` |
-| GET | `/api/teacher/submissions` | Bài nộp để chấm / duyệt. **Bỏ ở FEAT-014** (TASK-045) | `profile-slots-grading` |
 | GET | `/api/teacher/trial-usage` | `{ status, limits, used, reviewNote }`; đã xác minh → `limits: null` | `teacher-trial` |
 | GET / POST | `/api/teacher/slot-requests` | GET: `{ slot_requests, usage: { used, limit } }`. POST: `{ requested_slots }` → đơn (giá theo `slot_pricing`, bỏ qua `total_cost` client gửi); giáo viên dùng thử → 403 | `student-slots`, `slot-orders-api` |
-| PUT | `/api/exam/grade-override` | `{ submissionId, section_scores, feedback }` → `GRADED` + thông báo. **Bỏ ở FEAT-014** (TASK-045) | `exam-attempts-api` |
 | GET / POST / PUT / DELETE | `/api/exam/rubrics` | Bộ tiêu chí AI | `rubrics-pg` |
 | GET / POST | `/api/scoring-standards` | ADMIN / TEACHER đọc; tạo | `scoring-standards-api` |
 | PUT / DELETE | `/api/scoring-standards/[id]` | Chỉ ADMIN; chuẩn đang dùng → 409 | `scoring-standards-api` |
 | GET / POST / PUT / DELETE | `/api/subjects`, `/api/subjects/[id]` | Môn của mình + hệ thống | `subjects` |
 | GET | `/api/exams`, `/api/exams/[id]`, `/api/exams/[id]/content` | Học sinh chỉ thấy trường hiển thị (DEC-025) | `prod-hardening` |
 
-**Dự kiến FEAT-014 (TASK-045, chưa có trong code):** nhóm route giáo viên dưới tiền tố api/teacher/grading (classes, classes/[classId], …/summary, …/items/[kind]/[itemId], …/students/[studentId], …/finalize, …/reopen, attempts/[kind]/[attemptId]) và route học sinh api/student/classes/[classId]/gradebook. Hợp đồng đầy đủ ở `docs/features/cham-diem-bang-diem.md` §6. Khi route có trong code, TASK-045 chuyển chúng vào bảng này với đường dẫn đầy đủ (docs-sync chặn liệt kê route chưa tồn tại). `GET /api/teacher/classes/[classId]/members` sẽ chỉ tính bài nộp có `class_ref = classId`.
+**Chấm & Bảng điểm theo lớp (FEAT-014).** Hợp đồng đầy đủ ở `docs/features/cham-diem-bang-diem.md` §6. Mọi route dùng `requireRole(["ADMIN","TEACHER"])`; TEACHER không phải chủ lớp → 403, lớp không có → 404, `kind` ngoài `lesson|exam` → 400, bài không thuộc lớp → 404. `GET /api/teacher/classes/[classId]/members` chỉ tính bài nộp có `class_ref = classId`. Đã bỏ route GET api/teacher/submissions và PUT api/exam/grade-override.
+
+| Method | Route | Ghi chú | Test |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/teacher/grading/classes` | Lớp của giáo viên (ADMIN: mọi lớp) kèm `student_count`, `pending_review`, `needs_review` | `teacher-grading-api` |
+| GET | `/api/teacher/grading/classes/[classId]` | Hub lớp: các bài (lộ trình ∪ đề giao) + số liệu chấm | `teacher-grading-api` |
+| GET | `/api/teacher/grading/classes/[classId]/summary` | Học sinh × bài đã chốt (ảnh chụp), trung bình thang 10 | `teacher-grading-api` |
+| GET | `/api/teacher/grading/classes/[classId]/items/[kind]/[itemId]` | Bảng điểm một bài | `teacher-grading-api` |
+| PUT | `/api/teacher/grading/classes/[classId]/items/[kind]/[itemId]/students/[studentId]` | `{ chosen_attempt_id?, manual_score10?, note? }`; bài đã chốt → 409 `GRADEBOOK_FINALIZED` | `teacher-grading-api` |
+| POST | `/api/teacher/grading/classes/[classId]/items/[kind]/[itemId]/finalize` | `{ confirmUnreviewed? }`; 409 `GRADING_PENDING` / `UNREVIEWED` / `ALREADY_FINALIZED` | `teacher-grading-api` |
+| POST | `/api/teacher/grading/classes/[classId]/items/[kind]/[itemId]/reopen` | Mở chốt; chưa chốt → 409 | `teacher-grading-api` |
+| GET / PUT | `/api/teacher/grading/attempts/[kind]/[attemptId]` | GET: lượt + câu hỏi kèm đáp án. PUT: sửa điểm/nhận xét câu AI, tính lại điểm | `teacher-grading-api` |
+| GET | `/api/student/classes/[classId]/gradebook` | STUDENT: ảnh chụp điểm của chính mình ở bài đã chốt; chưa ghi danh → 403 | `teacher-grading-api` |
 
 ### 2.4 Đơn hàng (FEAT-013)
 | Method | Route | Vai trò | Ghi chú |

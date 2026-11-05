@@ -367,8 +367,13 @@ describe("POST /api/exam/grade-async — worker chấm AI theo thang phần", ()
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("PUT /api/exam/grade-override — giáo viên chấm/sửa điểm phần (TC-E08)", () => {
-  const override = async (body: unknown) => (await import("@/app/api/exam/grade-override/route")).PUT(req("PUT", "/x", body));
+describe("PUT /api/teacher/grading/attempts/exam/[attemptId] — giáo viên chấm/sửa điểm phần (TC-E08)", () => {
+  const editAttempt = async (attemptId: string, body: unknown) =>
+    // @ts-ignore
+    (await import("@/app/api/teacher/grading/attempts/[kind]/[attemptId]/route")).PUT(
+      req("PUT", "/x", body),
+      { params: Promise.resolve({ kind: "exam", attemptId }) }
+    );
 
   it("GV lớp chấm Writing/Speaking cho lượt NEEDS_REVIEW → tính lại tổng, GRADED", async () => {
     h.pushFail = true;                                       // không đẩy được sự kiện chấm → NEEDS_REVIEW
@@ -377,7 +382,13 @@ describe("PUT /api/exam/grade-override — giáo viên chấm/sửa điểm ph�
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
     await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
     await loginAs("TEACHER", "t1");
-    const res = await override({ submissionId: a.id, section_scores: { Writing: 7, Speaking: 8 }, feedback: "Tốt" });
+    const res = await editAttempt(a.id, {
+      items: [
+        { question_id: "w1", teacher_score: 7 },
+        { question_id: "sp1", teacher_score: 8 },
+      ],
+      feedback: "Tốt",
+    });
     expect(res.status).toBe(200);
     const row = (await rows(`SELECT status, total_score, teacher_feedback FROM submissions WHERE id=$1`, [a.id]))[0];
     expect(row.status).toBe("GRADED");
@@ -385,16 +396,22 @@ describe("PUT /api/exam/grade-override — giáo viên chấm/sửa điểm ph�
     expect(row.teacher_feedback).toBe("Tốt");
   });
 
-  it("điểm ngoài thang → 400; GV không liên quan → 403; STUDENT → 403", async () => {
+  it("điểm ngoài thang → 400; sửa câu khách quan → 400; GV không liên quan → 403; STUDENT → 403", async () => {
+    h.pushFail = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
     await loginAs("STUDENT", "s1");
-    const a = (await (await start("eObj")).json()).attempt;
-    await submit(a.id, {});
+    const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
+    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+
     await loginAs("TEACHER", "t1");
-    expect((await override({ submissionId: a.id, section_scores: { Reading: 12 } })).status).toBe(400);
+    expect((await editAttempt(a.id, { items: [{ question_id: "w1", teacher_score: 12 }] })).status).toBe(400);
+    expect((await editAttempt(a.id, { items: [{ question_id: "r1", teacher_score: 8 }] })).status).toBe(400);
+
     await loginAs("TEACHER", "t2");
-    expect((await override({ submissionId: a.id, section_scores: { Reading: 5 } })).status).toBe(403);
+    expect((await editAttempt(a.id, { items: [{ question_id: "w1", teacher_score: 5 }] })).status).toBe(403);
+
     await loginAs("STUDENT", "s1");
-    expect((await override({ submissionId: a.id, section_scores: { Reading: 5 } })).status).toBe(403);
+    expect((await editAttempt(a.id, { items: [{ question_id: "w1", teacher_score: 5 }] })).status).toBe(403);
   });
 });
 

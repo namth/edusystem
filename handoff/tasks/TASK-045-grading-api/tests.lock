@@ -1,0 +1,8 @@
+4218d4f3ddc7a356d596a59af3dc71bd21711c2694fd61fb21b36cc2b82b2202  handoff/tasks/TASK-045-grading-api/verify.sh
+a50dc3afc78beee537cd3d95bbd5395df26054181042ab1c1c7f5fd0689fe5dc  tests/teacher-grading-api.test.ts
+b4ebfde2590ce7885c59c37b95feed472975d8b9087f4c0fc509333e0d4576c9  tests/api-auth.test.ts
+f75b69614b0052aebe9ae464be7cb91ce6e2b5873f31e22ca71ab18dbea1fb09  tests/exam-attempts-api.test.ts
+9294e2cdba7527e1ccc0fd870828e36a63da392d94f65f821a93d18c823f2e47  tests/notifications-api.test.ts
+b9c26d7f5fe8644bcb912db1d309868d2794ab837c682472f824c60a10ae532f  tests/notifications-lib.test.ts
+153784843a9261a2def25db05903e92d51f42090bd57c08dce87f583a0c82036  tests/profile-slots-grading.test.ts
+9c64824ca8ac4c51ec8ad80e1bf9c6426b626d3dfeb0ce191162940a424686c5  tests/teacher-classes-api.test.ts

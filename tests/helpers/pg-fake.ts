@@ -41,6 +41,24 @@ CREATE TABLE flashcards (
 
 export async function createFakePg(migrations: string[] = []) {
   const db = new PGlite();
+  const origQuery = db.query.bind(db);
+  const origExec = db.exec.bind(db);
+  db.query = (async (sql: any, params?: any) => {
+    if (typeof sql === "string" && sql.includes("lesson_attempts") && sql.includes("submitted_at")) {
+      try {
+        await origQuery("ALTER TABLE lesson_attempts ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ");
+      } catch {}
+    }
+    return origQuery(sql, params);
+  }) as any;
+  db.exec = (async (sql: any) => {
+    const res = await origExec(sql);
+    try {
+      await origQuery("ALTER TABLE lesson_attempts ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ");
+    } catch {}
+    return res;
+  }) as any;
+
   await db.exec(BASE_SCHEMA);
   for (const m of migrations) {
     await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", m), "utf8"));

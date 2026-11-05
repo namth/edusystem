@@ -69,7 +69,6 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 | `subjects` | — | — | ◐ (môn của mình + hệ thống) | ✓ |
 | `exam/rubrics`, `scoring-standards` GET/POST | — | — | ✓ đọc / ◐ tạo | ✓ |
 | `scoring-standards/[id]` PUT/DELETE | — | — | — | ✓ |
-| `exam/grade-override` (bỏ ở FEAT-014) | — | — | ◐ (lớp/đề của mình) | ✓ |
 | `teacher/grading/*` (FEAT-014: bảng điểm, sửa điểm, chốt, tổng kết) | — | — | ◐ (chỉ lớp `teacher_id` = mình, DEC-038) | ✓ |
 | `student/classes/[classId]/gradebook` (FEAT-014) | — | ◐ (dòng của mình, bài đã chốt) | — | — |
 | `orders/[id]`, `report-paid`, `cancel` | — | — | ◐ (đơn khác → 404) | ✓ |
