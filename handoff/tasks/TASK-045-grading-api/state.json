@@ -1,0 +1,13 @@
+{
+  "id": "TASK-045",
+  "title": "API chấm & bảng điểm theo lớp, gradebook học sinh, bỏ API chấm cũ",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-06T00:19:59",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}
