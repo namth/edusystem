@@ -1,0 +1,3 @@
+2bba3123a3ab86d3c4620ff82de15f29734587e767c5440d5ba5d873b7c28db7  handoff/tasks/TASK-046-teacher-grading-ui/verify.sh
+058a657724d835e682a81ae190fb55b48684a453350d598828a10e517f7fe918  tests/teacher-grading-ui.test.ts
+06a0a97f8c8df57eb10fdfd42a33d71f1a43dff0912d9f1c80f314813f597205  tests/profile-slots-grading.test.ts
