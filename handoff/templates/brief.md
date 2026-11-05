@@ -2,6 +2,9 @@
 
 > Người giao: Claude (Trưởng phòng / Giám đốc sản phẩm) · Người thực hiện: Antigravity
 
+**Độ khó:** LOW <!-- LOW: nghiệm thu chéo đạt là xong · HIGH: Claude duyệt cuối (kèm blueprint ở mục 4) -->
+**Nhạy cảm:** không <!-- "có" nếu chạm phân quyền, tiền, migration, bảo mật → luôn chờ Claude duyệt cuối -->
+
 ## 1. Mục tiêu
 <!-- Một đoạn: làm gì, vì sao, giá trị cho người dùng. -->
 
