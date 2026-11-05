@@ -27,8 +27,8 @@ Làm toàn bộ phần server của FEAT-014 dựa trên lõi `lib/gradebook.ts`
 **Được tạo/sửa:**
 - `lib/gradebook-data.ts` (mới: các truy vấn DB; hàm thuần giữ nguyên ở `lib/gradebook.ts`)
 - `app/api/teacher/grading/` (mới, toàn bộ route ở §6 của đặc tả)
-- `app/api/student/classes/[classId]/gradebook/route.ts` (mới)
-- `app/api/teacher/classes/[classId]/members/route.ts`
+- `app/api/student/classes/` (mới: `[classId]/gradebook/route.ts`)
+- `app/api/teacher/classes/` (sửa: `[classId]/members/route.ts`)
 - `lib/notifications.ts`
 - `app/api/teacher/submissions/route.ts` (xoá)
 - `app/api/exam/grade-override/route.ts` (xoá)

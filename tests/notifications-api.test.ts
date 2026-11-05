@@ -50,6 +50,8 @@ beforeEach(async () => {
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-010-notifications.sql", "utf8"));
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,slot_limit) VALUES ('t2','GV2','t2@x.vn','TEACHER',0), ('s1','HS1','s1@x.vn','STUDENT',0), ('s2','HS2','s2@x.vn','STUDENT',0);
+    INSERT INTO classes (id,name,code,teacher_id) VALUES ('c1','Lớp t2','CLS111','t2');
+    INSERT INTO enrollments (id,student_id,class_id) VALUES ('en1','s1','c1');
     INSERT INTO questions (id,skill,category,prompt,content) VALUES ('w1','Writing','WRITING_ESSAY','Viết đoạn văn','{"min_words":50}');
     INSERT INTO exams (id,title,duration_minutes,question_ids,created_by,scoring_standard_id) VALUES ('eFree','Đề AI luyện tập',20,'["w1"]','t2','std_ielts');
   `);
@@ -108,7 +110,7 @@ describe("POST /api/notifications/read", () => {
 });
 
 describe("Giáo viên chấm tay xong → học sinh nhận thông báo", () => {
-  it("lượt NEEDS_REVIEW được GV chấm qua grade-override → GRADED + thông báo EXAM_GRADED cho học sinh", async () => {
+  it("lượt NEEDS_REVIEW được GV chấm qua API chấm lượt mới → GRADED + thông báo EXAM_GRADED cho học sinh", async () => {
     await loginAs("STUDENT", "s1");
     const start = (await import("@/app/api/student/exams/[examId]/attempts/route")).POST;
     const submit = (await import("@/app/api/student/exam-attempts/[id]/submit/route")).POST;
@@ -116,11 +118,18 @@ describe("Giáo viên chấm tay xong → học sinh nhận thông báo", () => 
     await submit(req("POST", "/x", { answers: { w1: "Essay" } }), { params: Promise.resolve({ id: a.id }) });
     // DEC-031: chấm AI không phụ thuộc slot → bài vào GRADING; giả lập AI lỗi để GV chấm tay
     expect((await rows(`SELECT status FROM submissions WHERE id=$1`, [a.id]))[0].status).toBe("GRADING");
-    await h.pg.db.query(`UPDATE submissions SET status='NEEDS_REVIEW' WHERE id=$1`, [a.id]);
+    await h.pg.db.query(`UPDATE submissions SET status='NEEDS_REVIEW', class_ref='c1' WHERE id=$1`, [a.id]);
 
     await loginAs("TEACHER", "t2");
-    const override = (await import("@/app/api/exam/grade-override/route")).PUT;
-    const res = await override(req("PUT", "/x", { submissionId: a.id, section_scores: { Writing: 7 }, feedback: "Khá" }));
+    // @ts-ignore
+    const editAttempt = (await import("@/app/api/teacher/grading/attempts/[kind]/[attemptId]/route")).PUT;
+    const res = await editAttempt(
+      req("PUT", "/x", {
+        items: [{ question_id: "w1", teacher_score: 7, teacher_feedback: "Khá" }],
+        feedback: "Khá",
+      }),
+      { params: Promise.resolve({ kind: "exam", attemptId: a.id }) }
+    );
     expect(res.status).toBe(200);
     const n = await rows(`SELECT user_id, type, link, body FROM notifications WHERE ref_id=$1 AND type='EXAM_GRADED'`, [a.id]);
     expect(n).toHaveLength(1);

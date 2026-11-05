@@ -201,6 +201,22 @@ export function applyExamTeacherEdits(
     }
   }
 
+  for (const r of out) {
+    if (!r) continue;
+    const sec = (snapshot?.sections || []).find((s) => s.skill === r.skill) || { min: 0, max: 9, step: 0.5 };
+    const sMin = Number(sec.min ?? 0);
+    const sMax = Number(sec.max ?? 9);
+    if (r.max === undefined || r.max === null) {
+      r.max = 1;
+      if (typeof r.score === "number") {
+        const ratio = sMax > sMin ? Math.max(0, Math.min(1, (r.score - sMin) / (sMax - sMin))) : 0;
+        r.earned = ratio;
+      } else {
+        r.earned = 0;
+      }
+    }
+  }
+
   const sectionScores = tallyAndScoreSections(snapshot, out) as Record<string, any>;
   const aiResults = out.filter((r) => r && r.kind === "AI");
   const allAiScored = aiResults.every((r) => typeof r.score === "number" && !Number.isNaN(r.score));

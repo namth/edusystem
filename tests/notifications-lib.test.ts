@@ -77,8 +77,8 @@ describe("notifyNeedsReview", () => {
     await notifyNeedsReview("sub1"); // không ở NEEDS_REVIEW → bỏ qua
     const r = await rows(`SELECT user_id, ref_id, type, body, link FROM notifications ORDER BY ref_id`);
     expect(r).toEqual([
-      expect.objectContaining({ user_id: "t2", ref_id: "sub2", type: "EXAM_NEEDS_REVIEW", link: "/teacher/grading" }),
-      expect.objectContaining({ user_id: "t1", ref_id: "sub3", type: "EXAM_NEEDS_REVIEW" }),
+      expect.objectContaining({ user_id: "t2", ref_id: "sub2", type: "EXAM_NEEDS_REVIEW", link: "/teacher/grading/c1/exam/e1" }),
+      expect.objectContaining({ user_id: "t1", ref_id: "sub3", type: "EXAM_NEEDS_REVIEW", link: "/teacher/grading" }),
     ]);
     expect(r[0].body).toContain("Học Sinh A");
   });

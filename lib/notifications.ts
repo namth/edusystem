@@ -8,6 +8,7 @@ export type NotificationType =
   | "EXAM_GRADED"
   | "EXAM_NEEDS_REVIEW"
   | "LESSON_NEEDS_REVIEW"
+  | "GRADEBOOK_FINALIZED"
   | "TEACHER_SIGNUP"
   | "TEACHER_VERIFIED"
   | "ORDER_CREATED"
@@ -104,7 +105,7 @@ export async function notifyNeedsReview(submissionId: string): Promise<void> {
       type: "EXAM_NEEDS_REVIEW",
       title: `Bài “${sub.exam_title || sub.exam_id}” cần chấm tay`,
       body: `Học sinh: ${st.rows[0]?.name || sub.student_id}`,
-      link: "/teacher/grading",
+      link: sub.class_ref ? `/teacher/grading/${sub.class_ref}/exam/${sub.exam_id}` : "/teacher/grading",
       refId: sub.id,
     });
   } catch (err) {
@@ -137,6 +138,44 @@ export async function notifyLessonNeedsReview(attemptId: string): Promise<void> 
     });
   } catch (err) {
     console.error("notifyLessonNeedsReview error:", err);
+  }
+}
+
+/** Học sinh có điểm trong bảng điểm vừa chốt (FEAT-014). Chốt lại thì cập nhật cùng dòng. Trả số thông báo đã gửi. */
+export async function notifyGradebookFinalized(gradeItemId: string): Promise<number> {
+  try {
+    const itemRes = await queryPg(
+      `SELECT i.id, i.class_id, i.item_kind, i.item_id,
+              CASE WHEN i.item_kind = 'LESSON' THEN l.title ELSE e.title END AS title
+       FROM class_grade_items i
+       LEFT JOIN lessons l ON i.item_kind = 'LESSON' AND l.id = i.item_id
+       LEFT JOIN exams e ON i.item_kind = 'EXAM' AND e.id = i.item_id
+       WHERE i.id = $1 LIMIT 1`,
+      [gradeItemId]
+    );
+    const item = itemRes.rows[0];
+    if (!item) return 0;
+    const grades = await queryPg(
+      `SELECT student_id FROM class_grades
+       WHERE class_id = $1 AND item_kind = $2 AND item_id = $3 AND score10 IS NOT NULL`,
+      [item.class_id, item.item_kind, item.item_id]
+    );
+    let sent = 0;
+    for (const g of grades.rows) {
+      await createNotification({
+        userId: g.student_id,
+        type: "GRADEBOOK_FINALIZED",
+        title: `Bảng điểm “${item.title || item.item_id}” đã được chốt`,
+        body: "Giáo viên đã chốt điểm chính thức. Xem trong tab Bảng điểm của lớp.",
+        link: `/student/class/${item.class_id}?tab=gradebook`,
+        refId: item.id,
+      });
+      sent++;
+    }
+    return sent;
+  } catch (err) {
+    console.error("notifyGradebookFinalized error:", err);
+    return 0;
   }
 }
 

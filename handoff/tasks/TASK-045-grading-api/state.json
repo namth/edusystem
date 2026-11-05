@@ -1,13 +1,89 @@
 {
   "id": "TASK-045",
   "title": "API chấm & bảng điểm theo lớp, gradebook học sinh, bỏ API chấm cũ",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "a6fcd23f-a28e-443d-ba07-605ff2e57214",
   "history": [
     {
       "at": "2026-11-06T00:19:59",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-06T01:12:14",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T01:12:17",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T01:25:15",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (7 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-06T01:25:40",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T01:25:58",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T01:33:22",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T01:57:34",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-06T01:57:41",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T01:57:49",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T02:08:28",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "a6fcd23f-a28e-443d-ba07-605ff2e57214"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "139fc509-f2f7-485b-8de2-d209220d401a"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "81546628-2f71-4769-85d2-859d7987b98c"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-045-grading-api/verify.sh",
+    "tests/teacher-grading-api.test.ts",
+    "tests/api-auth.test.ts",
+    "tests/exam-attempts-api.test.ts",
+    "tests/notifications-api.test.ts",
+    "tests/notifications-lib.test.ts",
+    "tests/profile-slots-grading.test.ts",
+    "tests/teacher-classes-api.test.ts"
+  ],
+  "review_fingerprint": "653274281be0973b6ca668500d5632f301333e62f409b1d5d88b094ee1d5d892"
 }
