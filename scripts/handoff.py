@@ -348,7 +348,9 @@ def last_tool_call(conversation_id: str | None, home: Path | None = None) -> str
 
 def is_quota(result: dict) -> bool:
     text = json.dumps(result, ensure_ascii=False)
-    return "RESOURCE_EXHAUSTED" in text or "quota" in text.lower()
+    # Model không có ở tài khoản này (mỗi tài khoản agy có danh sách model riêng) cũng chuyển sang model dự phòng
+    return ("RESOURCE_EXHAUSTED" in text or "quota" in text.lower()
+            or "not recognized as a known model" in text)
 
 
 ROLE_DONE = {"coder": ("submitted",), "tester": ("tests_ready",),

@@ -119,6 +119,21 @@ async function processMessage(redis, streamName, messageId, fields) {
         console.error(`❌ [Grading Worker] Give-up call failed for ${payload.submissionId}:`, giveUpErr);
       }
     }
+    // Bài học: chuyển NEEDS_REVIEW để giáo viên chấm tay (DEC-041)
+    if (eventType === "LESSON_GRADING_REQUESTED" && payload.attemptId) {
+      try {
+        await fetch(`${APP_URL}/api/lessons/grade-async`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-token": process.env.INTERNAL_API_TOKEN || "",
+          },
+          body: JSON.stringify({ attemptId: payload.attemptId, giveUp: true }),
+        });
+      } catch (giveUpErr) {
+        console.error(`❌ [Grading Worker] Give-up call failed for ${payload.attemptId}:`, giveUpErr);
+      }
+    }
     await redis.xack(streamName, GROUP, messageId);
     deliveryCounts.delete(messageId);
   }
