@@ -21,6 +21,9 @@ export interface GradeItem {
   given: unknown;
   expected: unknown;
   band?: number;
+  score?: number;
+  teacher_score?: number | null;
+  teacher_feedback?: string | null;
 }
 
 export interface GradeResult {
@@ -152,11 +155,22 @@ export default function LessonPlayer({
                       const firstItem = qResult.items?.[0];
                       const hasBand =
                         firstItem && typeof firstItem.band === "number";
+                      const hasTeacherReview =
+                        firstItem &&
+                        (firstItem.teacher_score !== undefined && firstItem.teacher_score !== null ||
+                          Boolean(firstItem.teacher_feedback));
                       return hasBand ? (
-                        <span className="inline-flex items-center gap-1 rounded-xl bg-purple-100 border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-800">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Band {firstItem.band}/9
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded-xl bg-purple-100 border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-800">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Band {firstItem.band}/9
+                          </span>
+                          {hasTeacherReview && (
+                            <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                              Giáo viên chấm
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-xl bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-extrabold text-amber-800 animate-pulse">
                           <Sparkles className="w-3.5 h-3.5" />
@@ -965,7 +979,7 @@ export default function LessonPlayer({
                       }`}
                     />
 
-                    <div className="flex items-center justify-between text-xs font-semibold">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold">
                       <span
                         className={
                           minWords > 0 && words >= minWords
@@ -978,17 +992,30 @@ export default function LessonPlayer({
                       </span>
 
                       {itemResult && (
-                        <span>
-                          {typeof itemResult.band === "number" ? (
-                            <span className="font-bold text-purple-700">
-                              Band {itemResult.band}/9
-                            </span>
-                          ) : (
-                            <span className="font-bold text-amber-700">
-                              AI đang chấm…
-                            </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {typeof itemResult.band === "number" ? (
+                              <span className="font-bold text-purple-700">
+                                Band {itemResult.band}/9
+                              </span>
+                            ) : (
+                              <span className="font-bold text-amber-700">
+                                AI đang chấm…
+                              </span>
+                            )}
+                            {(itemResult.teacher_score !== undefined && itemResult.teacher_score !== null || itemResult.teacher_feedback) && (
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Giáo viên chấm
+                              </span>
+                            )}
+                          </div>
+                          {itemResult.teacher_feedback && (
+                            <div className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5">
+                              <span className="font-bold block">Nhận xét của giáo viên:</span>
+                              <span className="whitespace-pre-wrap">{itemResult.teacher_feedback}</span>
+                            </div>
                           )}
-                        </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1049,15 +1076,28 @@ export default function LessonPlayer({
                           />
 
                           {itemResult && (
-                            <div className="text-xs font-bold">
-                              {typeof itemResult.band === "number" ? (
-                                <span className="text-purple-700">
-                                  Band {itemResult.band}/9
-                                </span>
-                              ) : (
-                                <span className="text-amber-700">
-                                  AI đang chấm…
-                                </span>
+                            <div className="text-xs space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap font-bold">
+                                {typeof itemResult.band === "number" ? (
+                                  <span className="text-purple-700">
+                                    Band {itemResult.band}/9
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-700">
+                                    AI đang chấm…
+                                  </span>
+                                )}
+                                {(itemResult.teacher_score !== undefined && itemResult.teacher_score !== null || itemResult.teacher_feedback) && (
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    Giáo viên chấm
+                                  </span>
+                                )}
+                              </div>
+                              {itemResult.teacher_feedback && (
+                                <div className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2">
+                                  <span className="font-bold block">Nhận xét của giáo viên:</span>
+                                  <span className="whitespace-pre-wrap">{itemResult.teacher_feedback}</span>
+                                </div>
                               )}
                             </div>
                           )}
@@ -1095,17 +1135,30 @@ export default function LessonPlayer({
                         <p className="text-xs text-ink-subtle italic">Không có bản ghi âm.</p>
                       )}
                       {qResult.items?.[0] && (
-                        <div className="text-xs font-bold mt-1">
-                          {(qResult.items[0] as any).score !== undefined ? (
-                            <span className="text-purple-700">
-                              Điểm AI: {(qResult.items[0] as any).score}
-                            </span>
-                          ) : typeof qResult.items[0].band === "number" ? (
-                            <span className="text-purple-700">
-                              Band AI: {qResult.items[0].band}/9
-                            </span>
-                          ) : (
-                            <span className="text-amber-700">AI đang chấm…</span>
+                        <div className="text-xs space-y-1 mt-1">
+                          <div className="flex items-center gap-2 flex-wrap font-bold">
+                            {(qResult.items[0] as any).score !== undefined ? (
+                              <span className="text-purple-700">
+                                Điểm: {(qResult.items[0] as any).score}
+                              </span>
+                            ) : typeof qResult.items[0].band === "number" ? (
+                              <span className="text-purple-700">
+                                Band: {qResult.items[0].band}/9
+                              </span>
+                            ) : (
+                              <span className="text-amber-700">AI đang chấm…</span>
+                            )}
+                            {((qResult.items[0] as any).teacher_score !== undefined && (qResult.items[0] as any).teacher_score !== null || (qResult.items[0] as any).teacher_feedback) && (
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Giáo viên chấm
+                              </span>
+                            )}
+                          </div>
+                          {(qResult.items[0] as any).teacher_feedback && (
+                            <div className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2">
+                              <span className="font-bold block">Nhận xét của giáo viên:</span>
+                              <span className="whitespace-pre-wrap">{(qResult.items[0] as any).teacher_feedback}</span>
+                            </div>
                           )}
                         </div>
                       )}

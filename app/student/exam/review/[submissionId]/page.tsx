@@ -179,8 +179,8 @@ export default function ExamSubmissionReviewPage() {
   const normalizedResults = rawResults.map((r: any) => {
     if (r && r.kind === "AI" && typeof r.score === "number") {
       const items = Array.isArray(r.items) && r.items.length > 0
-        ? r.items.map((it: any, idx: number) => (idx === 0 ? { ...it, band: r.score, score: r.score } : it))
-        : [{ key: "ai", correct: true, given: "", expected: "", band: r.score, score: r.score }];
+        ? r.items.map((it: any, idx: number) => (idx === 0 ? { ...it, band: r.score, score: r.score, teacher_score: r.teacher_score, teacher_feedback: r.teacher_feedback } : it))
+        : [{ key: "ai", correct: true, given: "", expected: "", band: r.score, score: r.score, teacher_score: r.teacher_score, teacher_feedback: r.teacher_feedback }];
       return { ...r, items };
     }
     return r;
@@ -385,8 +385,11 @@ export default function ExamSubmissionReviewPage() {
             {questions.map((q, idx) => {
               const qResult = resultByQuestionId.get(String(q.id));
               const isAiQuestion = qResult?.kind === "AI";
-              const hasAiScore = isAiQuestion && typeof qResult?.score === "number";
-              const aiFeedback = isAiQuestion && qResult?.feedback ? String(qResult.feedback) : null;
+              const effectiveScore = isAiQuestion && typeof qResult?.score === "number" ? qResult.score : null;
+              const hasTeacherScore = isAiQuestion && qResult?.teacher_score !== undefined && qResult?.teacher_score !== null;
+              const teacherFeedback = isAiQuestion && qResult?.teacher_feedback ? String(qResult.teacher_feedback) : null;
+              const aiFeedbackRaw = isAiQuestion ? (qResult?.ai_feedback ?? qResult?.feedback) : null;
+              const aiFeedback = aiFeedbackRaw ? String(aiFeedbackRaw) : null;
 
               return (
                 <div key={q.id || idx} className="space-y-2">
@@ -401,23 +404,50 @@ export default function ExamSubmissionReviewPage() {
                     startNumber={idx + 1}
                   />
 
-                  {isAiQuestion && (hasAiScore || aiFeedback) && (
-                    <div className="rounded-2xl border border-purple-200 bg-purple-50/70 p-4 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-800">
-                          <Sparkles className="w-4 h-4 text-purple-700" />
-                          <span>Đánh giá &amp; Nhận xét từ AI</span>
+                  {isAiQuestion && (effectiveScore !== null || aiFeedback || hasTeacherScore || teacherFeedback) && (
+                    <div className="space-y-2">
+                      {/* Box điểm & nhận xét của Giáo viên */}
+                      {(hasTeacherScore || teacherFeedback) && (
+                        <div className="rounded-2xl border border-emerald-300 bg-emerald-50/70 p-4 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-800">
+                              <UserCheck className="w-4 h-4 text-emerald-700" />
+                              <span>Giáo viên chấm</span>
+                            </div>
+                            {hasTeacherScore && (
+                              <span className="inline-flex items-center rounded-xl bg-white border border-emerald-300 px-3 py-1 text-xs font-extrabold text-emerald-900">
+                                Điểm: {qResult.teacher_score}
+                              </span>
+                            )}
+                          </div>
+                          {teacherFeedback && (
+                            <p className="text-xs text-ink leading-relaxed bg-white p-3 rounded-xl border border-emerald-200 whitespace-pre-wrap">
+                              {teacherFeedback}
+                            </p>
+                          )}
                         </div>
-                        {hasAiScore && (
-                          <span className="inline-flex items-center rounded-xl bg-white border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-900">
-                            Điểm: {qResult.score}
-                          </span>
-                        )}
-                      </div>
-                      {aiFeedback && (
-                        <p className="text-xs text-ink leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
-                          {aiFeedback}
-                        </p>
+                      )}
+
+                      {/* Box điểm & nhận xét từ AI */}
+                      {(effectiveScore !== null || aiFeedback) && (
+                        <div className="rounded-2xl border border-purple-200 bg-purple-50/70 p-4 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-800">
+                              <Sparkles className="w-4 h-4 text-purple-700" />
+                              <span>Nhận xét AI</span>
+                            </div>
+                            {effectiveScore !== null && (
+                              <span className="inline-flex items-center rounded-xl bg-white border border-purple-300 px-3 py-1 text-xs font-extrabold text-purple-900">
+                                Điểm hiệu lực: {qResult.score}
+                              </span>
+                            )}
+                          </div>
+                          {aiFeedback && (
+                            <p className="text-xs text-ink leading-relaxed bg-white p-3 rounded-xl border border-purple-200 whitespace-pre-wrap">
+                              {aiFeedback}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

@@ -39,9 +39,10 @@ interface AttemptItem {
   ai_earned: number | null;
   ai_max: number;
   score_percent: number | null;
-  status: "GRADED" | "GRADING" | "AI_SKIPPED";
+  status: "GRADED" | "GRADING" | "AI_SKIPPED" | "NEEDS_REVIEW";
   created_at: string;
   graded_at: string | null;
+  teacher_feedback?: string | null;
 }
 
 function StudentLessonContent() {
@@ -423,6 +424,8 @@ function StudentLessonContent() {
                 className={`rounded-2xl border p-5 ${
                   currentAttempt.status === "GRADING"
                     ? "border-amber-300 bg-amber-50"
+                    : currentAttempt.status === "NEEDS_REVIEW"
+                    ? "border-amber-300 bg-amber-50"
                     : currentAttempt.status === "AI_SKIPPED"
                     ? "border-blue-300 bg-blue-50"
                     : currentAttempt.score_percent !== null && currentAttempt.score_percent >= 70
@@ -440,6 +443,13 @@ function StudentLessonContent() {
                             Đang chấm phần tự luận…
                           </span>
                         </>
+                      ) : currentAttempt.status === "NEEDS_REVIEW" ? (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-amber-700" />
+                          <span className="text-amber-900 font-headline">
+                            Đang chờ giáo viên chấm phần tự luận
+                          </span>
+                        </>
                       ) : (
                         <>
                           <Award className="w-4 h-4 text-brand-600" />
@@ -454,6 +464,12 @@ function StudentLessonContent() {
                       {new Date(currentAttempt.created_at).toLocaleString("vi-VN")}
                     </p>
 
+                    {currentAttempt.status === "NEEDS_REVIEW" && (
+                      <p className="text-xs font-semibold text-amber-800 mt-1">
+                        Đang chờ giáo viên chấm phần tự luận. Điểm chính thức sẽ được cập nhật sau khi giáo viên duyệt.
+                      </p>
+                    )}
+
                     {currentAttempt.status === "AI_SKIPPED" && (
                       <p className="text-xs font-semibold text-blue-800 mt-1">
                         Phần tự luận chưa được chấm (giáo viên hết lượt AI).
@@ -466,6 +482,10 @@ function StudentLessonContent() {
                       <span className="text-sm font-bold text-amber-800 animate-pulse">
                         Đang đợi AI phản hồi…
                       </span>
+                    ) : currentAttempt.status === "NEEDS_REVIEW" ? (
+                      <span className="text-sm font-bold text-amber-800">
+                        Đang chờ giáo viên chấm phần tự luận
+                      </span>
                     ) : (
                       <span className="font-extrabold text-3xl text-brand-600 font-headline">
                         {currentAttempt.score_percent != null
@@ -475,6 +495,18 @@ function StudentLessonContent() {
                     )}
                   </div>
                 </div>
+
+                {/* Nhận xét của giáo viên nếu attempt có teacher_feedback */}
+                {currentAttempt.teacher_feedback && (
+                  <div className="mt-4 pt-4 border-t border-line-soft">
+                    <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs uppercase tracking-wide mb-1">
+                      <span>Nhận xét từ giáo viên:</span>
+                    </div>
+                    <p className="text-xs text-ink whitespace-pre-wrap bg-white p-3 rounded-xl border border-emerald-200">
+                      {currentAttempt.teacher_feedback}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -531,6 +563,10 @@ function StudentLessonContent() {
                           <span className="text-amber-700 font-bold">
                             Đang chấm AI…
                           </span>
+                        ) : att.status === "NEEDS_REVIEW" ? (
+                          <span className="text-amber-700 font-bold">
+                            Đang chờ giáo viên chấm phần tự luận
+                          </span>
                         ) : att.status === "AI_SKIPPED" ? (
                           <span className="text-blue-700 font-bold">
                             AI_SKIPPED (Hết lượt AI)
@@ -549,6 +585,8 @@ function StudentLessonContent() {
                           ? `${att.score_percent}%`
                           : att.status === "GRADING"
                           ? "Đang chấm..."
+                          : att.status === "NEEDS_REVIEW"
+                          ? "Chờ chấm"
                           : "—"}
                       </span>
                       <ChevronRight className="w-4 h-4 text-line" />
