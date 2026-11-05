@@ -72,6 +72,7 @@ beforeEach(async () => {
     );
   `);
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-006-lessons.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-017-gradebook.sql", "utf8")); // FEAT-014
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,slot_limit) VALUES
       ('t1','GV','t1@x.vn','TEACHER',5), ('s1','HS1','s1@x.vn','STUDENT',0), ('s2','HS2','s2@x.vn','STUDENT',0), ('s9','Ngoài','s9@x.vn','STUDENT',0);
