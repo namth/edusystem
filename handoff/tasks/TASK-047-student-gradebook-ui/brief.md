@@ -55,6 +55,7 @@ Phần học sinh của FEAT-014, gồm 3 việc:
 - [ ] Không có link tới `/teacher` hay `/admin` trong file đã sửa
 
 ## 6. Ràng buộc & bẫy cần tránh
+- Chế độ chạy ngầm chỉ cho chạy lệnh `python3` (grep/sed/find/ls/git/npx bị từ chối): đọc file bằng công cụ đọc file, kiểm tra bằng `python3 scripts/handoff.py verify <ID> --quiet`.
 - Học sinh không bao giờ thấy dòng của học sinh khác. Chỉ dùng dữ liệu API trả về, không tự gọi API giáo viên.
 - Token màu theo DEC-022, nút theo DEC-035.
 - Không phá các tab cũ (`roadmap`, `pending`, `graded`, `practice`) và test `class-roadmap-ui`, `student-pages`.

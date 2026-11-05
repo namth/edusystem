@@ -77,6 +77,7 @@ Dựng giao diện giáo viên của FEAT-014 trên các API của TASK-045 (đ�
 - [ ] Menu ghi "Chấm & Bảng điểm"
 
 ## 6. Ràng buộc & bẫy cần tránh
+- Chế độ chạy ngầm chỉ cho chạy lệnh `python3` (grep/sed/find/ls/git/npx bị từ chối): đọc file bằng công cụ đọc file, kiểm tra bằng `python3 scripts/handoff.py verify <ID> --quiet`.
 - Chỉ dùng token màu `brand-*`, `accent-*`, `ink`, `line`, `surface-*` (DEC-022). Nhãn nút không có dấu `+` ở đầu (DEC-035). Test `design-rules` và `brand-tokens` phải xanh.
 - Không tự tính điểm ở client: điểm, thang 10 và trung bình đều lấy từ API.
 - Không sửa API. API thiếu trường thì ghi câu hỏi vào report.
