@@ -9,5 +9,9 @@
       "status": "draft",
       "note": "Claude tạo task"
     }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-044-gradebook-loi/verify.sh",
+    "tests/student-lessons-api.test.ts"
   ]
 }
