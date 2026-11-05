@@ -46,6 +46,6 @@ Chuẩn duy nhất (DEC-036) — code lệch tài liệu thì sửa tài liệu 
 - `docs/features/lesson-library.md` — FEAT-010 Kho bài học & học theo lộ trình lớp (TASK-007 → TASK-013).
 - `docs/features/dang-ky-phong-van.md` — FEAT-012 Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử & xác minh (TASK-035 → TASK-037).
 - `docs/features/quan-tri-he-thong.md` — FEAT-013 Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh (TASK-038 → TASK-043).
-- `docs/features/cham-diem-bang-diem.md` — FEAT-014 Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết thang 10 (TASK-044 → TASK-047, SPEC_APPROVED).
+- `docs/features/cham-diem-bang-diem.md` — FEAT-014 Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết thang 10 (TASK-044 → TASK-047, DONE 06/11).
 - `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
 - `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

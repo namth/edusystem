@@ -38,7 +38,7 @@ Trang chuyển hướng: `/admin/requests` → `/admin/orders`, `/admin/rubrics`
 | Quản Lý Flashcards | `/teacher/flashcards` | Thư viện thẻ dùng chung, upload ảnh/audio |
 | Tạo Acc Học Sinh | `/teacher/students/create` | Tạo tài khoản học sinh (kèm lớp) |
 | Slot học sinh & đơn hàng | `/teacher/slots`, `/teacher/orders/[id]` | Xem slot đang dùng / tổng, tạo đơn, trang thanh toán VietQR, báo đã chuyển khoản |
-| Duyệt Điểm AI → **Chấm & Bảng điểm** (FEAT-014, đang làm) | `/teacher/grading`, `/teacher/grading/[classId]/[kind]/[itemId]` | Hiện tại: xem và sửa điểm bài đã nộp (`grade-override`), chấm tay bài `NEEDS_REVIEW`. Sau FEAT-014: chọn lớp → bài (bài học / đề) → bảng điểm học sinh × điểm, sửa điểm & nhận xét từng câu AI, chốt bảng điểm, tổng kết lớp thang 10 (DEC-037 → DEC-041) |
+| Chấm & Bảng điểm (FEAT-014) | `/teacher/grading`, `/teacher/grading/[classId]/[kind]/[itemId]` | Chọn lớp → bài (bài học / đề) → bảng điểm học sinh × điểm, sửa điểm & nhận xét từng câu AI, chốt bảng điểm, tổng kết lớp thang 10 (DEC-037 → DEC-041) |
 
 Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị giới hạn theo DEC-027.
 

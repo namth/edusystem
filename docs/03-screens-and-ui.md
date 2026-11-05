@@ -43,8 +43,8 @@
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
 | SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn | CODE-ONLY | DONE |
 | SCR-30 | `/teacher/orders/[id]` | Trang thanh toán VietQR, báo đã chuyển khoản, huỷ | CODE-ONLY | DONE |
-| SCR-31 | `/teacher/grading` | Hub chấm điểm & bảng điểm theo lớp: chọn lớp, lọc bài, bảng bài và tổng kết lớp (`?class=`, `?tab=summary`) | APPROVED (FEAT-014) | DONE |
-| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | APPROVED (FEAT-014) | DONE |
+| SCR-31 | `/teacher/grading` | Hub chấm điểm & bảng điểm theo lớp: chọn lớp, lọc bài, bảng bài và tổng kết lớp (`?class=`, `?tab=summary`) | CODE-ONLY | DONE (FEAT-014) |
+| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | CODE-ONLY | DONE (FEAT-014) |
 
 ### Quản trị
 | SCR | Đường dẫn | Mô tả | Design | Code |
@@ -79,8 +79,8 @@
   Tham số `next` chỉ được nhận đường dẫn nội bộ (`safeNextPath`).
 - Liên kết trong thông báo:
   - học sinh: `/student/exam/review/<id>`;
-  - giáo viên: `/teacher/grading`, `/teacher/orders/<id>` (FEAT-014: `/teacher/grading/<classId>/<kind>/<itemId>`);
-  - học sinh sau FEAT-014 thêm: `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
+  - giáo viên: `/teacher/grading/<classId>/<kind>/<itemId>` (`EXAM_NEEDS_REVIEW` của bài lớp, `LESSON_NEEDS_REVIEW`), `/teacher/grading` (bài luyện tự do), `/teacher/orders/<id>`;
+  - học sinh (chốt bảng điểm): `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
   - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`.
 
 ## 3. Quy tắc giao diện (bắt buộc, có test)

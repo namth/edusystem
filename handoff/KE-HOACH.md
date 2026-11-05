@@ -101,7 +101,7 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - Khi deploy: kiểm `show timezone;` của Postgres là UTC (dashboard coi `ai_usage_logs.created_at` là UTC); nhập tài khoản nhận tiền + đơn giá slot ở /admin/orders → Cấu hình thanh toán; nhập bảng giá model ở /admin/settings
 
 
-### FEAT-014 Chấm & Bảng điểm theo lớp (`docs/features/cham-diem-bang-diem.md`, DEC-037…041) — SPEC_APPROVED 06/11
+### FEAT-014 Chấm & Bảng điểm theo lớp (`docs/features/cham-diem-bang-diem.md`, DEC-037…041) — ✅ DONE 06/11 (044–047 accepted, chưa deploy)
 | Task | Độ khó | KL | Phụ thuộc | Máy |
 | :--- | :--- | :--- | :--- | :--- |
 | TASK-044 Lõi: migration 017, `lib/gradebook.ts`, AI giữ bản gốc, bài học NEEDS_REVIEW | HIGH, nhạy cảm | M | — | máy chính (agy1 code, agy2 kiểm) |

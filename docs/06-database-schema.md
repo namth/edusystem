@@ -27,7 +27,7 @@
 | 014 | `…-014-ai-usage.sql` | `ai_usage_logs` chính thức + `purpose`, `provider`, `lesson_attempt_id`; `system_settings.ai_pricing` | ensureSchema |
 | 015 | `…-015-student-slots.sql` | Trả lại slot đã bị trừ khi chấm AI (DEC-031) | **Chạy tay một lần** |
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
-| 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema (TASK-044, chưa có trong code) |
+| 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền

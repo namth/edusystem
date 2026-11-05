@@ -79,7 +79,7 @@
 ## 7. Chấm AI (G): DEC-021, DEC-034
 - **BR-G01** Mỗi mục AI thử tối đa 3 lần. Vẫn lỗi thì `NEEDS_REVIEW`: giữ điểm các phần đã chấm, `total_score = null`, **không** cho điểm thấp nhất.
 - **BR-G02** Worker bỏ cuộc (`giveUp`) thì `NEEDS_REVIEW` một lần; gọi lại không đổi gì thêm.
-- **BR-G03** *(sẽ thay bởi BR-B06/BR-B07, DEC-038)* Giáo viên lớp (hoặc người tạo đề luyện tập) và ADMIN sửa điểm được qua `grade-override`, xong thì bài `GRADED`.
+- **BR-G03** *(thay bởi BR-B06/BR-B07, DEC-038; `grade-override` đã bỏ)* Giáo viên lớp (hoặc người tạo đề luyện tập) và ADMIN sửa điểm được qua `grade-override`, xong thì bài `GRADED`.
 - **BR-G04** Mỗi lần gọi model thành công ghi đúng 1 dòng `ai_usage_logs` với token thật. Không có usage thì ghi 0. Lời gọi lỗi thì không ghi. Lỗi khi ghi log không làm hỏng việc chấm.
 - **BR-G05** `cost_usd = in × giá_in / 1e6 + out × giá_out / 1e6`, theo giá của model. Khớp tên model theo thứ tự: chính xác → phần sau dấu `/` cuối → không phân biệt hoa thường. Model chưa có giá thì chi phí = 0.
 
@@ -96,7 +96,7 @@
 - **BR-D04** Chi phí VND = `usdToVnd(Σ cost_usd đã lưu, ai_pricing.usd_vnd_rate)`, làm tròn số nguyên. Doanh thu = Σ `total_cost` các đơn `APPROVED` có `decided_at` trong kỳ.
 - **BR-D05** Top giáo viên: tối đa 10 người, sắp theo chi phí giảm dần, tính mọi `purpose`.
 
-## 9b. Bảng điểm (B): FEAT-014, DEC-037 → DEC-041 (đặc tả đã duyệt, chưa code)
+## 9b. Bảng điểm (B): FEAT-014, DEC-037 → DEC-041; `lib/gradebook.ts`, `lib/gradebook-data.ts`
 Chi tiết đầy đủ ở `docs/features/cham-diem-bang-diem.md` §7. Tóm tắt:
 - **BR-B01** Bài của lớp = mục `LESSON`/`EXAM` trong lộ trình khoá của lớp ∪ `class_assignments`, gộp trùng.
 - **BR-B02** Lượt của bài trong lớp: đề theo `class_ref`, bài học theo `class_id`; bài luyện tự do không vào hub.

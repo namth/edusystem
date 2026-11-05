@@ -1,4 +1,4 @@
-> Trạng thái: SPEC_APPROVED (2026-11-06) · DEC-037 → DEC-041 · TASK-044 → TASK-047
+> Trạng thái: DONE (2026-11-06) · DEC-037 → DEC-041 · TASK-044 → TASK-047
 
 # FEAT-014: Chấm & Bảng điểm theo lớp
 
