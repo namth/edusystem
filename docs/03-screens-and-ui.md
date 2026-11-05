@@ -21,7 +21,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-10 | `/student/dashboard` | Trang chủ học sinh: lớp, việc cần làm, vào lớp bằng mã | CODE-ONLY | DONE |
-| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
+| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; FEAT-014 thêm tab Bảng điểm (`?tab=gradebook`, TASK-047) | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
 | SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu, làm lại | CODE-ONLY | DONE |
 | SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm | CODE-ONLY | DONE |
 | SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, phần "đang chấm" | CODE-ONLY | DONE |
@@ -33,7 +33,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
-| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, giao đề, lộ trình lớp, mở khoá, tiến độ | CODE-ONLY | DONE |
+| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, giao đề, lộ trình lớp, mở khoá, tiến độ. FEAT-014: bỏ tab "Sổ điểm" (đang lỗi, `docs/11` D10), thêm nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE (sửa ở TASK-046) |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
 | SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
 | SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
@@ -43,7 +43,8 @@
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
 | SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn | CODE-ONLY | DONE |
 | SCR-30 | `/teacher/orders/[id]` | Trang thanh toán VietQR, báo đã chuyển khoản, huỷ | CODE-ONLY | DONE |
-| SCR-31 | `/teacher/grading` | Duyệt / sửa điểm AI, chấm tay `NEEDS_REVIEW` | CODE-ONLY | DONE |
+| SCR-31 | `/teacher/grading` | Hiện tại: duyệt / sửa điểm AI, chấm tay `NEEDS_REVIEW`. FEAT-014 viết lại thành hub chọn lớp → bài + tab Tổng kết lớp (`?class=`, `?tab=summary`) | SPEC_ONLY | TODO (FEAT-014) |
+| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | SPEC_ONLY | TODO |
 
 ### Quản trị
 | SCR | Đường dẫn | Mô tả | Design | Code |
@@ -78,7 +79,8 @@
   Tham số `next` chỉ được nhận đường dẫn nội bộ (`safeNextPath`).
 - Liên kết trong thông báo:
   - học sinh: `/student/exam/review/<id>`;
-  - giáo viên: `/teacher/grading`, `/teacher/orders/<id>`;
+  - giáo viên: `/teacher/grading`, `/teacher/orders/<id>` (FEAT-014: `/teacher/grading/<classId>/<kind>/<itemId>`);
+  - học sinh sau FEAT-014 thêm: `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
   - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`.
 
 ## 3. Quy tắc giao diện (bắt buộc, có test)

@@ -27,6 +27,7 @@
 | 014 | `…-014-ai-usage.sql` | `ai_usage_logs` chính thức + `purpose`, `provider`, `lesson_attempt_id`; `system_settings.ai_pricing` | ensureSchema |
 | 015 | `…-015-student-slots.sql` | Trả lại slot đã bị trừ khi chấm AI (DEC-031) | **Chạy tay một lần** |
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
+| 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema (TASK-044, chưa có trong code) |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền
@@ -63,7 +64,7 @@
 - **`enrollments`** (004): `id`, `student_id`, `class_id`, `created_at`; UNIQUE (`student_id`, `class_id`).
 - **`class_assignments`** (004): `id`, `class_id`, `exam_id`, `due_date`, `max_attempts` (mặc định 1), `created_at`.
 - **`class_unlocks`** (006): `class_id`, `curriculum_item_id`, `student_id` (NULL = cả lớp), `due_date`, `unlocked_by`, `unlocked_at`; UNIQUE (`class_id`, `curriculum_item_id`, `COALESCE(student_id,'')`).
-- **`lesson_attempts`** (006): `id`, `lesson_id`, `class_id`, `student_id`, `answers`, `results` (GradeResult[]), `objective_earned`, `objective_max`, `ai_earned` (NULL khi chưa chấm AI), `ai_max`, `score_percent`, `status` (`GRADING`/`GRADED`; `AI_SKIPPED` chỉ còn ở dữ liệu cũ), `created_at`, `graded_at`.
+- **`lesson_attempts`** (006): `id`, `lesson_id`, `class_id`, `student_id`, `answers`, `results` (GradeResult[]), `objective_earned`, `objective_max`, `ai_earned` (NULL khi chưa chấm AI), `ai_max`, `score_percent`, `status` (`GRADING`/`GRADED`; `AI_SKIPPED` chỉ còn ở dữ liệu cũ; FEAT-014 thêm `NEEDS_REVIEW`), `created_at`, `graded_at`. Migration 017: `reviewed_at`, `reviewed_by`, `teacher_feedback`, `last_grading_error`.
 - **`submissions`** (lượt thi đề):
 
   | Nhóm cột | Cột |
@@ -71,12 +72,16 @@
   | Định danh | `id`, `exam_id`, `student_id`, `class_ref` (id lớp dạng chuỗi) |
   | Thời gian | `started_at`, `deadline_at`, `submitted_at`, `graded_at`, `is_late` |
   | Bài làm & điểm | `answers`, `results`, `section_scores` JSONB `{ Reading: { score, earned, max } }`, `total_score`, `passed`, `standard_snapshot` (chụp lúc bắt đầu thi) |
-  | Trạng thái chấm | `status` (`IN_PROGRESS`/`GRADING`/`NEEDS_REVIEW`/`GRADED`), `grading_attempts`, `last_grading_error`, `teacher_review`, `teacher_feedback` |
+  | Trạng thái chấm | `status` (`IN_PROGRESS`/`GRADING`/`NEEDS_REVIEW`/`GRADED`), `grading_attempts`, `last_grading_error`, `teacher_review` (cũ), `teacher_feedback`, `reviewed_at`, `reviewed_by` (017) |
   | Cũ, không dùng | `ai_score`, `final_score`, `overall_band`, `class_id` UUID, `candidate_*` |
+
+- **`results[]` mục AI** (FEAT-014, khoá JSON, không cần migration): `ai_score`, `ai_feedback` (bản gốc AI, không ghi đè), `teacher_score`, `teacher_feedback`, `teacher_by`, `teacher_at`; `score = teacher_score ?? ai_score`. Đề: ở cấp câu; bài học: ở từng `items[]`. Dữ liệu cũ thiếu `ai_score` → coi `score` / `band` là bản AI.
+- **`class_grade_items`** (017): `id` (`cgi_…`), `class_id`, `item_kind` (`LESSON`/`EXAM`), `item_id`, `finalized_at` (NULL = đang mở), `finalized_by`, `reopened_at`, `created_at`; UNIQUE (`class_id`, `item_kind`, `item_id`).
+- **`class_grades`** (017): `id` (`cgr_…`), `class_id`, `item_kind`, `item_id`, `student_id`, `chosen_attempt_id` (NULL = lượt cao nhất), `manual_score10`, `note`; ảnh chụp lúc chốt `attempt_id`, `raw_score`, `raw_max`, `score10`, `passed`, `finalized_at`; `updated_at`; UNIQUE (`class_id`, `item_kind`, `item_id`, `student_id`), index (`student_id`, `class_id`).
 
 ### 2.6 Thông báo, liên hệ, cấu hình
 - **`notifications`** (010): `id`, `user_id`, `type`, `title`, `body`, `link`, `ref_id`, `read_at`, `created_at`. Chấm lại thì cập nhật cùng thông báo (khoá `user_id` + `type` + `ref_id`). Các loại thông báo:
-  - `EXAM_GRADED`, `EXAM_NEEDS_REVIEW`;
+  - `EXAM_GRADED`, `EXAM_NEEDS_REVIEW`; FEAT-014 thêm `GRADEBOOK_FINALIZED`, `LESSON_NEEDS_REVIEW`;
   - `TEACHER_SIGNUP`, `TEACHER_VERIFIED`;
   - `ORDER_CREATED`, `ORDER_APPROVED`, `ORDER_REJECTED`, `ORDER_PAID_REPORTED`.
 - **`leads`** (011): `id`, `name`, `phone`, `email`, `role`, `message`, `status` (`NEW`/`CONTACTED`/`DONE`), `source`, `ip`, `created_at`.
@@ -110,6 +115,7 @@ classes 1─n class_assignments n─1 exams ; classes 1─n class_unlocks n─1 
 exams.question_ids / lessons.question_ids ─▶ questions ; questions(flashcard) ─▶ flashcards
 exams n─1 scoring_standards(sections[].rubric_id) ─▶ scoring_rubrics ; courses.default_scoring_standard_id
 submissions n─1 exams, users(STUDENT), classes(class_ref) ; lesson_attempts n─1 lessons, classes, users
+classes 1─n class_grade_items (LESSON|EXAM) ; classes 1─n class_grades n─1 users(STUDENT) ─▶ submissions | lesson_attempts
 users(TEACHER) 1─n slot_requests ; ai_usage_logs ─▶ submissions | lesson_attempts | users
 users 1─n notifications ; users(TEACHER) 1─1 teacher_profiles ; subjects 1─n courses|exams|lessons
 ```

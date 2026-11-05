@@ -16,6 +16,7 @@
 | M5 Sẵn sàng production | Vá lỗi chặn, landing, đa môn, chuyển đổi / nhân bản | TASK-031 → 034, 035 (chuyển loại) | ✅ |
 | M6 Đăng ký & dùng thử (FEAT-012) | Đăng ký phỏng vấn, giáo viên dùng thử, xác minh | TASK-035 (đăng ký API), 036, 037 | ✅ |
 | M7 Quản trị (FEAT-013) | Token và chi phí AI, slot = học sinh, gộp tiêu chí, đơn hàng + VietQR, tổng quan | TASK-038 → 043 | ✅ đã deploy 03/11 (`docs/15` §6) |
+| M8 Chấm & Bảng điểm (FEAT-014) | Migration 017, lõi bảng điểm, API chấm theo lớp, UI giáo viên, tab Bảng điểm học sinh | TASK-044 → 047 | 🟡 đặc tả đã duyệt 06/11 |
 
 ⚠️ Có 2 thư mục cùng mã TASK-035 (`TASK-035-chuyen-loai-nhan-ban`, `TASK-035-dang-ky-api`), do đánh số trùng khi hai task chạy song song. Không đổi tên để giữ lịch sử.
 
@@ -66,6 +67,15 @@
 | 042 | Đơn hàng mua slot (giao diện) |
 | 043 | Tổng quan admin & sắp lại menu |
 
+**FEAT-014 (đang làm, chi tiết + DoD ở `docs/features/cham-diem-bang-diem.md` §9):**
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 044 | Migration 017 + `lib/gradebook.ts` + grade-async ghi `ai_score`, bài học `NEEDS_REVIEW` | — | TC-B03, 04, 06, 07, 12, 13 |
+| 045 | API `/teacher/grading/**`, gradebook học sinh, thông báo, sửa `members`, bỏ API cũ | 044 | TC-B01, 02, 05, 08–11, 14, 15; docs/07 cập nhật |
+| 046 | UI giáo viên: hub, bảng điểm bài + ngăn chấm, tổng kết; trang lớp bỏ Sổ điểm | 045 | TC-B16 |
+| 047 | UI học sinh: tab Bảng điểm, hiển thị điểm/nhận xét giáo viên | 045 | test UI học sinh |
+
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
 npx vitest run && npx tsc --noEmit && npx next build
@@ -90,4 +100,5 @@ npx vitest run && npx tsc --noEmit && npx next build
 | D6 | Thấp | Code / bảng di sản: `lib/kafka.ts`, `lib/db-schema.ts`, `lib/db-init.js`, bảng `exam_categories`, `lesson_exams`, `course_exams`, `orders` | `lib/`, DB | Xoá file; migration dọn bảng (hỏi người dùng) |
 | D7 | ✅ 03/11 | ~~Tài liệu ngoài chuẩn~~ đã chuyển vào `docs/archive/`, README viết lại: `README.md` (mặc định create-next-app), `FEATURE_INDEX.md`, `SYSTEM_ARCHITECTURE.md`, `USERS.md`, `task.md`, `docs/ADR_AUTH.md`, `docs/ADR-001-…`, `docs/SCORING.md` (mô tả Supabase Auth / luồng chấm cũ) | gốc repo, `docs/` | Gộp phần còn đúng vào 01–14 rồi xoá hoặc chuyển vào `docs/archive/` |
 | D8 | Thấp | Rác: `scratch/`, `scratch_inspect_neo4j.cjs` | gốc repo | Xoá |
+| D10 | Cao | Tab "Sổ điểm" trang lớp gọi `grade-override` thiếu `section_scores` → luôn 400, đọc cột cũ (`final_score`, `ai_score`); `members` tính điểm từ bài nộp mọi lớp; AI bài học lỗi → 0 điểm; người tạo đề thấy bài lớp khác | `app/teacher/classes/[classId]/page.tsx`, `app/api/teacher/classes/[classId]/members/route.ts`, `app/api/lessons/grade-async/route.ts`, `app/api/teacher/submissions/route.ts` | Sửa trong FEAT-014 (TASK-044 → 046) |
 | D9 | Thấp | File lớn: `components/question-builder/QuestionSetEditor.tsx` khoảng 2.860 dòng | — | Tách theo dạng câu hỏi khi có dịp |

@@ -38,7 +38,7 @@ Trang chuyển hướng: `/admin/requests` → `/admin/orders`, `/admin/rubrics`
 | Quản Lý Flashcards | `/teacher/flashcards` | Thư viện thẻ dùng chung, upload ảnh/audio |
 | Tạo Acc Học Sinh | `/teacher/students/create` | Tạo tài khoản học sinh (kèm lớp) |
 | Slot học sinh & đơn hàng | `/teacher/slots`, `/teacher/orders/[id]` | Xem slot đang dùng / tổng, tạo đơn, trang thanh toán VietQR, báo đã chuyển khoản |
-| Duyệt Điểm AI | `/teacher/grading` | Xem và sửa điểm bài đã nộp (`grade-override`), chấm tay bài `NEEDS_REVIEW` |
+| Duyệt Điểm AI → **Chấm & Bảng điểm** (FEAT-014, đang làm) | `/teacher/grading`, `/teacher/grading/[classId]/[kind]/[itemId]` | Hiện tại: xem và sửa điểm bài đã nộp (`grade-override`), chấm tay bài `NEEDS_REVIEW`. Sau FEAT-014: chọn lớp → bài (bài học / đề) → bảng điểm học sinh × điểm, sửa điểm & nhận xét từng câu AI, chốt bảng điểm, tổng kết lớp thang 10 (DEC-037 → DEC-041) |
 
 Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị giới hạn theo DEC-027.
 
@@ -46,7 +46,7 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 | Menu | Đường dẫn | Tính năng |
 | :--- | :--- | :--- |
 | Dashboard / Lớp Học Của Tôi | `/student/dashboard` | Lớp đang học, vào lớp bằng mã, việc cần làm |
-| Đề Thi & Bài Tập | `/student/class/[classId]` | Tab lộ trình, đề được giao, kết quả |
+| Đề Thi & Bài Tập | `/student/class/[classId]` | Tab lộ trình, đề được giao, kết quả; tab **Bảng điểm** (bài đã chốt, FEAT-014) |
 | — | `/student/lesson/[lessonId]` | Làm bài học, xem kết quả từng câu |
 | — | `/student/exam/[examId]`, `/student/exam/review/[submissionId]` | Làm đề (giờ theo server, ghi âm Speaking), xem lại |
 | Analytics & Báo Cáo | `/student/analytics` | Biểu đồ điểm theo chuẩn |
@@ -69,7 +69,9 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 | `subjects` | — | — | ◐ (môn của mình + hệ thống) | ✓ |
 | `exam/rubrics`, `scoring-standards` GET/POST | — | — | ✓ đọc / ◐ tạo | ✓ |
 | `scoring-standards/[id]` PUT/DELETE | — | — | — | ✓ |
-| `exam/grade-override` | — | — | ◐ (lớp/đề của mình) | ✓ |
+| `exam/grade-override` (bỏ ở FEAT-014) | — | — | ◐ (lớp/đề của mình) | ✓ |
+| `teacher/grading/*` (FEAT-014: bảng điểm, sửa điểm, chốt, tổng kết) | — | — | ◐ (chỉ lớp `teacher_id` = mình, DEC-038) | ✓ |
+| `student/classes/[classId]/gradebook` (FEAT-014) | — | ◐ (dòng của mình, bài đã chốt) | — | — |
 | `orders/[id]`, `report-paid`, `cancel` | — | — | ◐ (đơn khác → 404) | ✓ |
 | `notifications`, `notifications/read` | — | ◐ | ◐ | ◐ |
 | `uploads` | — | ✓ | ✓ | ✓ |
