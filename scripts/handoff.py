@@ -169,7 +169,8 @@ def brief_scope(task: Path) -> list[str]:
 
 
 def in_patterns(path: str, pats: list[str]) -> bool:
-    return any(path.startswith(p) if p.endswith("/") else fnmatch.fnmatch(path, p) for p in pats)
+    # Khớp chính xác trước: đường dẫn Next.js có `[param]` mà fnmatch hiểu là lớp ký tự
+    return any(path.startswith(p) if p.endswith("/") else (path == p or fnmatch.fnmatch(path, p)) for p in pats)
 
 
 def locked_files(task: Path) -> list[str]:
