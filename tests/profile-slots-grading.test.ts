@@ -120,10 +120,9 @@ describe("Trang không còn Supabase trình duyệt; trang chấm bài dùng h�
     expect(s).toContain("/api/profile");
     expect(s).toContain("/api/auth/change-password");
   });
-  it("trang chấm bài: /api/teacher/submissions + grade-override với section_scores", () => {
+  it("trang chấm bài: chuyển sang hub /api/teacher/grading/classes theo FEAT-014", () => {
     const s = fs.readFileSync("app/teacher/grading/page.tsx", "utf8");
-    expect(s).toContain("/api/teacher/submissions");
-    expect(s).toContain("section_scores");
+    expect(s).toContain("/api/teacher/grading/classes");
     expect(s).not.toContain("overriddenScore");
     expect(s).not.toContain("teacher_01");
   });

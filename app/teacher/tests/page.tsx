@@ -993,7 +993,7 @@ export default function TeacherTestManagerPage() {
 
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/admin/tests/import"
+              href="/teacher/library"
               className="px-4 py-2.5 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
             >
               <Sparkles className="w-4 h-4 text-brand-600" />

@@ -21,8 +21,6 @@ import {
   Edit3,
   Eye,
   Trash2,
-  Volume2,
-  Send,
   Route,
   AlertCircle,
   RefreshCw,
@@ -67,12 +65,11 @@ export default function TeacherClassDetailPage() {
   const classId = (params?.classId || "cls_101") as string;
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"gradebook" | "students" | "roadmap">("gradebook");
+  const [activeTab, setActiveTab] = useState<"assignments" | "students" | "roadmap">("assignments");
   const [cls, setCls] = useState<ClassDetail | null>(null);
   const [students, setStudents] = useState<StudentInClass[]>([]);
   const [assignedExams, setAssignedExams] = useState<AssignedExamItem[]>([]);
   const [allExamsRepo, setAllExamsRepo] = useState<any[]>([]);
-  const [submissionsMap, setSubmissionsMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -93,14 +90,6 @@ export default function TeacherClassDetailPage() {
 
   // Exam Preview Modal State
   const [previewExam, setPreviewExam] = useState<any | null>(null);
-
-  // Live Submission Review Modal State
-  const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null);
-  const [reviewStudentName, setReviewStudentName] = useState("");
-  const [reviewExamTitle, setReviewExamTitle] = useState("");
-  const [overrideScore, setOverrideScore] = useState<number>(7.5);
-  const [teacherNote, setTeacherNote] = useState("");
-  const [isSavingReview, setIsSavingReview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchClassData = async () => {
@@ -307,47 +296,6 @@ export default function TeacherClassDetailPage() {
     }
   };
 
-  const openSubmissionReviewModal = (student: StudentInClass, exam: AssignedExamItem, sub: any) => {
-    setReviewStudentName(student.name);
-    setReviewExamTitle(exam.title);
-    setSelectedSubmission(sub);
-    setOverrideScore(Number(sub?.final_score || sub?.score || sub?.ai_score || 7.5));
-    setTeacherNote(sub?.teacher_review?.teacher_note || sub?.ai_feedback?.teacher_note || "");
-  };
-
-  const handleSaveTeacherReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSubmission) return;
-
-    setIsSavingReview(true);
-    try {
-      const res = await fetch("/api/exam/grade-override", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          submissionId: selectedSubmission.id,
-          feedback: teacherNote.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert("Lỗi lưu nhận xét: " + (data.error || "Không thể cập nhật"));
-        return;
-      }
-
-      setSuccessMsg("Đã phê duyệt & lưu điểm cho học viên thành công!");
-      setSelectedSubmission(null);
-      fetchClassData();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err: any) {
-      console.error(err);
-      alert("Lỗi lưu nhận xét: " + err.message);
-    } finally {
-      setIsSavingReview(false);
-    }
-  };
-
   const copyInviteLink = () => {
     if (!cls) return;
     navigator.clipboard.writeText(`http://localhost:3000/login?code=${cls.code}`);
@@ -389,6 +337,14 @@ export default function TeacherClassDetailPage() {
           </div>
 
           <div className="flex items-center space-x-2 shrink-0">
+            <Link
+              href={`/teacher/grading?class=${classId}`}
+              className="px-4 py-2 bg-brand-50 border border-brand-300 hover:bg-brand-100 text-brand-600 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
+            >
+              <Award className="w-4 h-4 text-brand-600" />
+              <span>Mở bảng điểm</span>
+            </Link>
+
             <button
               onClick={copyInviteLink}
               className="px-4 py-2 bg-white border border-line hover:bg-surface-alt text-brand-600 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
@@ -467,15 +423,15 @@ export default function TeacherClassDetailPage() {
         {/* Tab Navigation Controls */}
         <div className="flex space-x-2 border-b border-line/40">
           <button
-            onClick={() => setActiveTab("gradebook")}
+            onClick={() => setActiveTab("assignments")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-              activeTab === "gradebook"
+              activeTab === "assignments"
                 ? "bg-brand-600 text-white shadow-sm"
                 : "bg-white text-ink-muted hover:bg-surface-alt border-t border-x border-line"
             }`}
           >
-            <Award className="w-4 h-4" />
-            <span>1. Sổ Điểm Bài Thi &amp; Quản Lý Bài Tập (Gradebook Matrix)</span>
+            <FileText className="w-4 h-4" />
+            <span>1. Đề giao ({assignedExams.length})</span>
           </button>
 
           <button
@@ -503,135 +459,113 @@ export default function TeacherClassDetailPage() {
           </button>
         </div>
 
-        {/* TAB 1: GRADEBOOK MATRIX WITH EXAM ACTION CONTROLS */}
-        {activeTab === "gradebook" && (
+        {/* TAB 1: ASSIGNED EXAMS */}
+        {activeTab === "assignments" && (
           <div className="bg-white rounded-3xl border border-line shadow-sm overflow-hidden p-6 space-y-6">
-            <div className="flex justify-between items-center border-b border-line/40 pb-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-line/40 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-brand-600 flex items-center space-x-2 font-headline">
-                  <Award className="w-5 h-5 text-brand-600" />
-                  <span>Ma Trận Sổ Điểm Lớp Học (Class Gradebook Matrix)</span>
+                  <FileText className="w-5 h-5 text-brand-600" />
+                  <span>Danh Sách Đề Giao Cho Lớp</span>
                 </h2>
                 <p className="text-xs text-ink-muted mt-0.5">
-                  Dữ liệu bài tập &amp; học viên được đồng bộ trực tiếp qua API PostgreSQL.
+                  Quản lý các đề thi được giao cho lớp. Xem điểm và chấm bài tại{" "}
+                  <Link href={`/teacher/grading?class=${classId}`} className="text-brand-600 font-bold hover:underline">
+                    Mở bảng điểm
+                  </Link>
+                  .
                 </p>
               </div>
 
-              <button
-                onClick={() => setShowAssignModal(true)}
-                className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all flex items-center space-x-1.5 font-headline cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4 text-white" />
-                <span>Giao Bài Thi Mới</span>
-              </button>
+              <div className="flex items-center space-x-2 shrink-0">
+                <Link
+                  href={`/teacher/grading?class=${classId}`}
+                  className="px-4 py-2 bg-brand-50 border border-brand-300 hover:bg-brand-100 text-brand-600 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer font-headline"
+                >
+                  <Award className="w-4 h-4 text-brand-600" />
+                  <span>Mở bảng điểm</span>
+                </Link>
+
+                <button
+                  onClick={() => setShowAssignModal(true)}
+                  className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all flex items-center space-x-1.5 font-headline cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-white" />
+                  <span>Giao Bài Thi Mới</span>
+                </button>
+              </div>
             </div>
 
             {assignedExams.length === 0 ? (
               <div className="p-12 text-center bg-surface-alt rounded-2xl border border-line space-y-3">
                 <FileText className="w-12 h-12 text-brand-600 mx-auto opacity-40" />
-                <p className="text-xs text-ink-muted">Lớp học này chưa được giao bài thi nào. Nhấp nút <strong>"Giao Bài Thi Mới"</strong> ở trên để giao bài vào CSDL.</p>
+                <p className="text-xs text-ink-muted">
+                  Lớp học này chưa được giao bài thi nào. Nhấp nút <strong>"Giao Bài Thi Mới"</strong> ở trên để giao bài.
+                </p>
               </div>
             ) : (
-              /* Matrix Table */
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-surface-alt border-b border-line text-ink-muted">
-                      <th className="p-3.5 font-bold border-r border-line/40 min-w-[200px]">Học Viên</th>
-                      {assignedExams.map((ex) => (
-                        <th key={ex.assignment_id} className="p-3.5 font-bold text-center border-r border-line/40 min-w-[220px]">
-                          <div className="font-headline text-xs font-bold text-ink truncate max-w-[200px] mx-auto">
-                            {ex.title}
+                      <th className="p-3.5 font-bold">Tên Đề Thi</th>
+                      <th className="p-3.5 font-bold">Kỹ Năng</th>
+                      <th className="p-3.5 font-bold">Thời Gian</th>
+                      <th className="p-3.5 font-bold">Hạn Nộp</th>
+                      <th className="p-3.5 font-bold">Số Lần Làm</th>
+                      <th className="p-3.5 font-bold text-right">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line/30">
+                    {assignedExams.map((ex) => (
+                      <tr key={ex.assignment_id} className="hover:bg-surface-alt transition-colors">
+                        <td className="p-3.5 font-bold text-ink">
+                          <div className="text-sm font-headline text-brand-600">{ex.title}</div>
+                          <div className="text-[10px] text-ink-subtle font-mono">ID: {ex.exam_id}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex flex-wrap gap-1">
+                            {ex.skills.map((s) => (
+                              <span key={s} className="px-2 py-0.5 bg-brand-50 text-brand-600 rounded text-[10px] font-mono font-medium">
+                                {s}
+                              </span>
+                            ))}
                           </div>
-                          <div className="text-[10px] font-mono text-ink-subtle mt-0.5">
-                            Hạn: {ex.due_date} ({ex.duration_minutes} phút)
-                          </div>
-
-                          {/* 1-Click Action Controls for Assigned Exams */}
-                          <div className="flex items-center justify-center space-x-1 mt-2 pt-2 border-t border-line/40">
+                        </td>
+                        <td className="p-3.5 font-mono text-ink-muted">{ex.duration_minutes} phút</td>
+                        <td className="p-3.5 font-mono text-ink-muted">{ex.due_date}</td>
+                        <td className="p-3.5 font-mono text-ink-muted">{ex.max_attempts} lần</td>
+                        <td className="p-3.5 text-right">
+                          <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => openPreviewExamModal(ex.exam_id)}
-                              className="px-2 py-1 bg-white border border-line hover:bg-brand-50 text-brand-600 rounded text-[10px] font-bold flex items-center space-x-1 transition-all cursor-pointer"
+                              className="px-2.5 py-1.5 bg-white border border-line hover:bg-brand-50 text-brand-600 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all cursor-pointer"
                               title="Xem Nhanh Nội Dung Đề Thi"
                             >
-                              <Eye className="w-3 h-3" />
+                              <Eye className="w-3.5 h-3.5" />
                               <span>Xem Đề</span>
                             </button>
 
                             <Link
                               href={`/teacher/tests/create?editId=${ex.exam_id}`}
-                              className="px-2 py-1 bg-white border border-line hover:bg-brand-50 text-brand-600 rounded text-[10px] font-bold flex items-center space-x-1 transition-all cursor-pointer"
+                              className="px-2.5 py-1.5 bg-white border border-line hover:bg-brand-50 text-brand-600 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all cursor-pointer"
                               title="Sửa Đề Thi Trong Exam Builder"
                             >
-                              <Edit3 className="w-3 h-3" />
+                              <Edit3 className="w-3.5 h-3.5" />
                               <span>Sửa Đề</span>
                             </Link>
 
                             <button
                               onClick={() => handleUnassignExam(ex.assignment_id, ex.title)}
-                              className="p-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-[10px] transition-all cursor-pointer"
+                              className="p-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs transition-all cursor-pointer"
                               title="Hủy Giao Đề Thi Khỏi Lớp"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line/30">
-                    {students.length === 0 ? (
-                      <tr>
-                        <td colSpan={assignedExams.length + 1} className="p-8 text-center text-xs text-ink-subtle">
-                          Chưa có học sinh nào được gán vào lớp học này. Vui lòng chuyển sang Tab "Danh Sách Học Viên" để thêm.
                         </td>
                       </tr>
-                    ) : (
-                      students.map((st) => (
-                        <tr key={st.id} className="hover:bg-surface-alt transition-colors">
-                          <td className="p-3.5 border-r border-line/40">
-                            <div className="font-bold text-ink">{st.name}</div>
-                            <div className="text-[10px] font-mono text-ink-subtle">{st.email}</div>
-                          </td>
-
-                          {assignedExams.map((ex) => {
-                            const subKey = `${st.id}_${ex.exam_id}`;
-                            const sub = submissionsMap[subKey];
-
-                            return (
-                              <td key={ex.assignment_id} className="p-3.5 text-center border-r border-line/40">
-                                {sub ? (
-                                  <div className="space-y-1">
-                                    <span className={`inline-block px-2.5 py-1 rounded-full font-mono text-[11px] font-bold ${
-                                      sub.status === "TEACHER_REVIEWED"
-                                        ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
-                                        : "bg-purple-100 text-purple-900 border border-purple-300"
-                                    }`}>
-                                      Band {sub.score || sub.final_score || sub.ai_score || 7.5}
-                                    </span>
-
-                                    <button
-                                      onClick={() => openSubmissionReviewModal(st, ex, sub)}
-                                      className="block w-full text-[10px] text-brand-600 font-bold hover:underline cursor-pointer"
-                                    >
-                                      Review &amp; Duyệt &rarr;
-                                    </button>
-                                  </div>
-                                ) : st.latest_total !== null && st.latest_total !== undefined ? (
-                                  <span className="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-[11px] font-bold">
-                                    Band {st.latest_total}
-                                  </span>
-                                ) : (
-                                  <span className="inline-block px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-mono text-[10px]">
-                                    Chưa Nộp Bài
-                                  </span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -918,124 +852,6 @@ export default function TeacherClassDetailPage() {
                   <Edit3 className="w-4 h-4 text-white" />
                   <span>Mở Trình Sửa Đề Thi trong Exam Builder &rarr;</span>
                 </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal 4: Live Submission Review & Teacher Grading Modal */}
-        {selectedSubmission && (
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl border border-line space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-line/40 pb-4">
-                <div>
-                  <div className="text-[10px] text-brand-600 uppercase font-mono font-bold tracking-wider mb-1">
-                    Cổng Chấm Điểm Lớp Học &bull; Teacher Review
-                  </div>
-                  <h2 className="text-xl font-bold text-ink font-headline">
-                    Bài Làm: {reviewStudentName} - {reviewExamTitle}
-                  </h2>
-                </div>
-                <button onClick={() => setSelectedSubmission(null)} className="text-ink-subtle cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Student Answers Content View */}
-              <div className="space-y-4 text-xs">
-                <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-3">
-                  <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider block font-mono">
-                    Nội dung bài nộp tự luận / âm thanh:
-                  </span>
-                  
-                  {selectedSubmission.answers?.speaking_audio_url ? (
-                    <div className="space-y-2 p-3 bg-white rounded-xl border border-line">
-                      <div className="flex items-center space-x-2 text-brand-600 font-bold">
-                        <Volume2 className="w-4 h-4 text-brand-600" />
-                        <span>Bài thu âm micro học viên:</span>
-                      </div>
-                      <audio controls src={selectedSubmission.answers.speaking_audio_url} className="w-full h-9" />
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-white rounded-xl border border-line font-serif leading-relaxed text-ink max-h-40 overflow-y-auto whitespace-pre-wrap">
-                      {selectedSubmission.answers?.essay_text || selectedSubmission.answers?.writing_essay || "Học viên đã nộp câu trả lời tự luận trực tuyến."}
-                    </div>
-                  )}
-                </div>
-
-                {/* AI Rubric Score Breakdown */}
-                {selectedSubmission.ai_feedback && (
-                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-purple-900 uppercase font-mono">⚡ Kết Quả AI Evaluation:</span>
-                      <span className="text-sm font-bold text-purple-900 font-mono">Band {selectedSubmission.ai_feedback.overallBand || selectedSubmission.ai_score || 7.5}</span>
-                    </div>
-                    <p className="text-xs text-purple-950 leading-relaxed">
-                      {selectedSubmission.ai_feedback.summary || selectedSubmission.ai_feedback.feedback || "Bài làm thể hiện khả năng sử dụng ngữ pháp & từ vựng tốt."}
-                    </p>
-                  </div>
-                )}
-
-                {/* Teacher Override Form */}
-                <form onSubmit={handleSaveTeacherReview} className="space-y-4 pt-2 border-t border-line/40">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
-                        Chấm Điểm Band Score (*)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        max="9"
-                        required
-                        value={overrideScore}
-                        onChange={(e) => setOverrideScore(Number(e.target.value))}
-                        className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs font-bold text-brand-600 font-mono focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-ink-muted mb-1">
-                        Trạng Thái Phê Duyệt
-                      </label>
-                      <span className="px-3 py-3 block bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold font-mono">
-                        🟢 TEACHER_REVIEWED (Đã duyệt)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
-                      Nhận Xét &amp; Góp Ý Của Giáo Viên
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="Nhập lời khen hoặc hướng dẫn sửa bài chi tiết cho học viên..."
-                      value={teacherNote}
-                      onChange={(e) => setTeacherNote(e.target.value)}
-                      className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-brand-600"
-                    />
-                  </div>
-
-                  <div className="pt-2 flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSubmission(null)}
-                      className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium hover:bg-surface-alt cursor-pointer"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSavingReview}
-                      className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer font-headline"
-                    >
-                      {isSavingReview ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
-                      <span>Phê Duyệt &amp; Lưu Điểm</span>
-                    </button>
-                  </div>
-                </form>
               </div>
             </div>
           </div>

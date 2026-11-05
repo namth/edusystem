@@ -42,7 +42,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     { href: "/teacher/flashcards", label: "Quản Lý Flashcards", icon: Bookmark },
     { href: "/teacher/students/create", label: "Tạo Acc Học Sinh", icon: UserPlus },
     { href: "/teacher/slots", label: "Slot học sinh & đơn hàng", icon: CreditCard },
-    { href: "/teacher/grading", label: "Duyệt Điểm AI", icon: CheckSquare },
+    { href: "/teacher/grading", label: "Chấm & Bảng điểm", icon: CheckSquare },
   ];
 
   return (

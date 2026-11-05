@@ -33,7 +33,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
-| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, giao đề, lộ trình lớp, mở khoá, tiến độ. FEAT-014: bỏ tab "Sổ điểm" (đang lỗi, `docs/11` D10), thêm nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE (sửa ở TASK-046) |
+| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
 | SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
 | SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
@@ -43,8 +43,8 @@
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
 | SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn | CODE-ONLY | DONE |
 | SCR-30 | `/teacher/orders/[id]` | Trang thanh toán VietQR, báo đã chuyển khoản, huỷ | CODE-ONLY | DONE |
-| SCR-31 | `/teacher/grading` | Hiện tại: duyệt / sửa điểm AI, chấm tay `NEEDS_REVIEW`. FEAT-014 viết lại thành hub chọn lớp → bài + tab Tổng kết lớp (`?class=`, `?tab=summary`) | SPEC_ONLY | TODO (FEAT-014) |
-| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | SPEC_ONLY | TODO |
+| SCR-31 | `/teacher/grading` | Hub chấm điểm & bảng điểm theo lớp: chọn lớp, lọc bài, bảng bài và tổng kết lớp (`?class=`, `?tab=summary`) | APPROVED (FEAT-014) | DONE |
+| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | APPROVED (FEAT-014) | DONE |
 
 ### Quản trị
 | SCR | Đường dẫn | Mô tả | Design | Code |
