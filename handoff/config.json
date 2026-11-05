@@ -2,7 +2,8 @@
   "protected_paths": [
     "stitch_english_mock_exam_portal/"
   ],
-  "agy_model": null,
+  "test_paths": ["tests/", "e2e/"],
+  "agy_model": "claude-sonnet-5-5-medium",
   "agy_fallback_models": ["gemini-3.8-flash-high"],
   "agy_timeout": "60m"
 }

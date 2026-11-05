@@ -8,8 +8,8 @@ KitoKit — cổng bài học & đề thi đa môn, tiếng Anh có chấm AI (N
 - **Antigravity (Gemini) = Kỹ sư thực thi:** viết code sản phẩm theo `brief.md`. Luật ở `.agents/rules/`, quy trình là skill `.agents/skills/thuc-hien-task/`, hook khoá test ở `.agents/hooks.json`. Claude gọi nó qua Antigravity CLI `agy` (chạy ngầm), dự phòng `antigravity-ide chat` hoặc clipboard.
 - Giao thức & vòng đời task: `handoff/README.md`, công cụ `scripts/handoff.py` (`doctor` để kiểm tra), cấu hình riêng dự án ở `handoff/config.json`.
 - Hạng mục code sản phẩm → mặc định giao qua `/giao-viec`, nghiệm thu qua `/nghiem-thu`. Claude chỉ tự code khi người dùng yêu cầu rõ, hoặc với việc nhỏ (sửa docs, script nội bộ, test).
-- **Tiết kiệm token Claude, tận dụng tối đa Antigravity:** Antigravity viết toàn bộ code sản phẩm (task khó kèm blueprint trong brief); Claude chỉ lập kế hoạch (`handoff/templates/plan.md`), viết brief + test, quyết định nghiệm thu. Chạy lệnh/đọc log/tìm file giao subagent `dieu-phoi` (Haiku); giao song song 2 task mỗi tài khoản (`scripts/agy-worktree.sh`); Claude chỉ tự viết code lõi khi Antigravity cầu cứu sau 2 lần sửa. Chi tiết: `handoff/README.md`.
-- Test trong `tests.lock` thuộc về Claude; Antigravity không được sửa.
+- **Tiết kiệm token Claude, tận dụng tối đa Antigravity:** các tài khoản Antigravity ngang hàng — một tài khoản code, tài khoản khác viết test trước và nghiệm thu chéo sau (`handoff.py auto <ID>`, model `claude-sonnet-5-5-medium` → hết thì `gemini-3.8-flash-high`). Claude chỉ lập kế hoạch (`handoff/templates/plan.md`), viết brief (Độ khó/Nhạy cảm, phạm vi, tiêu chí), đọc kết quả; task HIGH/nhạy cảm thì duyệt cuối. Chạy lệnh/đọc log/tìm file giao subagent `dieu-phoi` (Haiku); Claude chỉ tự viết code lõi khi Antigravity cầu cứu. Chi tiết: `handoff/README.md`.
+- Test trong `tests.lock` (của Claude hoặc tài khoản kiểm chéo) — người code không được sửa.
 
 ## Tài liệu (DEC-036)
 

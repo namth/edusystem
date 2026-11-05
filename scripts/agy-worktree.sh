@@ -4,7 +4,10 @@
 #   AGY_HOST=macbook — chạy task trên máy thợ qua SSH (repo ~/agy-farm/learningsystem, agy HOME=~/.agy-worker)
 #
 #   scripts/agy-worktree.sh new      TASK-008            # tạo worktree từ HEAD (cây làm việc phải sạch)
-#   scripts/agy-worktree.sh dispatch TASK-008 --agy-model <slug>
+#   scripts/agy-worktree.sh auto     TASK-008 [--coder agy1 --checker agy2]   # test chéo → code → nghiệm thu chéo
+#   scripts/agy-worktree.sh tests|review TASK-008 [--as agyN]                 # từng bước của chuỗi chéo
+#   scripts/agy-worktree.sh scope    TASK-008            # so file đã đổi với brief mục 3
+#   scripts/agy-worktree.sh dispatch TASK-008 [--as agyN] --agy-model <slug>
 #   scripts/agy-worktree.sh resume   TASK-008 --note "..."
 #   scripts/agy-worktree.sh verify   TASK-008
 #   scripts/agy-worktree.sh accept   TASK-008
@@ -70,21 +73,23 @@ case "$cmd" in
       echo "Worktree: $(wt_path)  (nhánh $(branch))"
     fi
     ;;
-  dispatch|resume)
+  dispatch|resume|tests|review|auto|reject)
+    # tests/review = viết test chéo / nghiệm thu chéo; auto = cả chuỗi (chọn tài khoản bằng --coder/--checker/--as)
     need_id; shift 2
+    sub="$cmd"; [ "$cmd" = "tests" ] && sub="dispatch-tests"; [ "$cmd" = "review" ] && sub="dispatch-review"
     if [ -n "$HOST" ]; then
       args=""; for a in "$@"; do args="$args $(printf '%q' "$a")"; done
       echo "Máy thợ $HOST (agy HOME=$REMOTE_AGY_HOME) — worktree $(rwt_path)"
-      rsh "cd $(rwt_path) && HOME=$REMOTE_AGY_HOME python3 scripts/handoff.py $cmd $id$args"
+      rsh "cd $(rwt_path) && HOME=$REMOTE_AGY_HOME python3 scripts/handoff.py $sub $id$args"
     else
       [ -d "$(wt_path)" ] || die "chưa có worktree cho $id — chạy: $0 new $id"
       h="$(account_home)"
       [ -d "$h/.gemini/antigravity-cli" ] || die "tài khoản agy ${AGY_ACCOUNT:-1} chưa đăng nhập ($h/.gemini/antigravity-cli không có)"
       echo "Tài khoản agy ${AGY_ACCOUNT:-1} (HOME=$h) — worktree $(wt_path)"
-      cd "$(wt_path)" && HOME="$h" python3 scripts/handoff.py "$cmd" "$id" "$@"
+      cd "$(wt_path)" && HOME="$h" python3 scripts/handoff.py "$sub" "$id" "$@"
     fi
     ;;
-  verify|accept|list-task)
+  verify|accept|scope|list-task)
     need_id
     sub="$cmd"; [ "$cmd" = "list-task" ] && sub="list"
     extra=""; [ "$cmd" = "verify" ] && extra="--quiet" # in tóm tắt, log đầy đủ ra file (tiết kiệm token trưởng phòng)
@@ -137,6 +142,6 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     if [ -n "$HOST" ]; then echo "── máy thợ $HOST"; rsh "cd $REMOTE_REPO && git worktree list"; fi
     ;;
   *)
-    sed -n '2,15p' "$0"; exit 1
+    sed -n '2,16p' "$0"; exit 1
     ;;
 esac
