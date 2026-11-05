@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useDismissable } from "@/components/useDismissable";
 import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard,
@@ -23,6 +24,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  // Menu hồ sơ tự đóng khi bấm ra ngoài / nhấn Esc
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const closeUserDropdown = useCallback(() => setShowUserDropdown(false), []);
+  useDismissable(userMenuRef, showUserDropdown, closeUserDropdown);
 
   const handleLogout = () => {
     void logout(); // logout() tự tải lại trang /login sau khi xoá phiên
@@ -41,9 +46,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       <nav className="h-screen w-64 fixed left-0 top-0 bg-surface-alt border-r border-line shadow-sm flex flex-col py-4 z-30 hidden md:flex">
         {/* Header */}
         <div className="px-6 py-4 mb-4 flex flex-col items-center border-b border-line-soft">
-          <img src="/brand/kitokit-logo-hinh.png" alt="KitoKit" className="h-14 w-auto object-contain mb-2" />
-          <h2 className="font-headline text-xl font-bold text-brand-600 text-center">
-            KitoKit          </h2>
+          <img src="/brand/kitokit-logo-dung.png" alt="KitoKit" className="h-28 w-auto object-contain mb-1" />
           <p className="text-xs text-ink-muted text-center font-medium">
             Học sinh
           </p>
@@ -73,17 +76,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             })}
           </ul>
         </div>
-
-        {/* Footer Actions */}
-        <div className="px-4 mt-auto space-y-2">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl text-red-700 bg-red-100/40 hover:bg-red-100 transition-colors text-sm font-medium"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            <span>Đăng Xuất</span>
-          </button>
-        </div>
       </nav>
 
       {/* Main Content Area Wrapper */}
@@ -91,9 +83,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         {/* Stitch TopAppBar */}
         <header className="flex justify-between items-center w-full px-8 h-16 bg-white shadow-sm border-b border-line z-20 sticky top-0">
           <div className="flex items-center gap-6">
-            <div className="font-headline text-xl font-bold text-brand-600 hidden md:block">
-              KitoKit · Học sinh
-            </div>
 
             {/* Search Bar */}
             <div className="hidden md:flex items-center bg-surface-alt hover:bg-brand-100 transition-colors rounded-full px-4 py-2 border border-line w-64 focus-within:border-brand-600">
@@ -111,9 +100,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <NotificationBell />
 
             {/* TopBar Interactive User Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                onClick={() => setShowUserDropdown((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={showUserDropdown}
                 className="flex items-center space-x-3 p-1.5 rounded-xl hover:bg-surface-alt transition-all border border-transparent hover:border-line"
               >
                 <div className="h-9 w-9 rounded-full overflow-hidden border border-line bg-brand-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">

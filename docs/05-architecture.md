@@ -19,7 +19,7 @@
 ## 2. Sơ đồ thành phần
 ```text
 Trình duyệt ──HTTPS──▶ Next.js (container nextjs, cổng 3645→3000)
-   │                     ├─ middleware.ts: chặn /admin /teacher /student theo JWT cookie
+   │                     ├─ middleware.ts: chặn /admin /teacher /student theo JWT cookie; phân hệ tách biệt — TEACHER/ADMIN vào /student/* bị đưa về trang chủ vai trò mình
    │                     ├─ app/api/**: requireRole → queryPg (PostgreSQL)
    │                     │              ├─ đồng bộ phụ Neo4j (lỗi chỉ log)
    │                     │              ├─ XADD stream:learning:grading (Redis)

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyJwtToken } from "@/lib/jwt";
+import { roleHomePath } from "@/components/onboarding/redirect";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -39,6 +40,11 @@ export async function middleware(req: NextRequest) {
     if (!pathname.startsWith("/student/landing")) {
       if (!userRole) {
         return NextResponse.redirect(new URL("/login", req.url));
+      }
+      // Phân hệ tách biệt (bảo mật): giáo viên / quản trị không được vào trang học sinh → về trang chủ của vai trò mình
+      if (userRole !== "STUDENT") {
+        const home = userRole === "ADMIN" || userRole === "TEACHER" ? roleHomePath(userRole) : "/login";
+        return NextResponse.redirect(new URL(home, req.url));
       }
     }
   }

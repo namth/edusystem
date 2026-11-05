@@ -49,7 +49,7 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | SCR-L1 | Kho Bài Học | `/teacher/lessons` | Menu giáo viên mới "Kho Bài Học". Danh sách (tiêu đề, kỹ năng, số khối, số khóa đang dùng, cập nhật lúc), tìm theo tiêu đề, lọc kỹ năng, nút "Tạo bài học". |
 | SCR-L2 | Soạn bài học | `/teacher/lessons/[id]` (`new` để tạo) | Tiêu đề, mô tả, kỹ năng (tự suy ra từ khối); danh sách khối (lên/xuống, sửa, xoá); "+ Thêm khối" mở trình soạn câu hỏi dùng chung; "Xem trước như học sinh". |
-| SCR-L3 | Xem trước bài học | modal trong SCR-L2 | Dùng đúng trình làm bài của học sinh; nộp thử chấm nhưng không lưu. |
+| SCR-L3 | Xem trước như học sinh (bài học & đề thi) | modal `components/teacher/StudentPreviewModal.tsx` — mở từ trang soạn bài, trang sửa đề, nút con mắt ở thẻ bài học / đề trong kho và ở mục lộ trình | Dùng đúng trình làm bài của học sinh (đề thi chia theo kỹ năng); nộp thử chấm nhưng không lưu. Không bao giờ mở trang `/student/...`. |
 | SCR-L4 | Bộ chọn bài học trong lộ trình | modal trong `/teacher/tests` | Chọn bài học của mình (tìm kiếm); lối tắt "Tạo bài học mới" mở SCR-L2 ở tab mới. |
 | SCR-L5 | Cài đặt lộ trình lớp | tab "Lộ trình" trong `/teacher/classes/[classId]` | Chọn khóa học, `unlock_mode`, `pass_percent`; cây lộ trình với công tắc mở/khoá + hạn (chỉ `MANUAL`); bảng tiến độ học sinh × mục. |
 | SCR-L6 | Lộ trình học sinh | tab "Lộ trình" trong `/student/class/[classId]` | Thanh % tiến độ; cây unit → bài/đề; biểu tượng khoá / mở / hoàn thành + điểm cao nhất + hạn. |
