@@ -19,7 +19,7 @@ Lệnh:
                                       agent làm xong (Claude chạy nền) rồi in kết quả.
   start <id>                          Antigravity: nhận việc
   submit <id>                         Antigravity: tự kiểm rồi nộp
-  verify <id>                         Claude: kiểm khoá test + chạy verify.sh
+  verify <id> [--quiet]               kiểm khoá test + chạy verify.sh (--quiet: chỉ in tóm tắt, log ra file)
   accept <id> / reject <id>           Claude: nghiệm thu / trả về (reject gửi review.md cho Antigravity)
   resume <id> [--note "..."] [--agy-model SLUG]
                                       Claude: nhắn agent làm tiếp trong cùng hội thoại agy khi nó dừng giữa chừng
@@ -29,6 +29,7 @@ Lệnh:
 Cấu hình riêng của dự án: handoff/config.json
   protected_paths  thư mục/file agent thực thi không được sửa (hook .agents/hooks.json chặn)
   agy_model        slug model mặc định cho agy (xem `agy models`); null = mặc định của agy
+  agy_fallback_models  model dự phòng, thử lần lượt khi model đang dùng hết hạn mức (429)
   agy_timeout      thời gian tối đa một lần chạy agy (vd "60m")
 """
 from __future__ import annotations
@@ -42,6 +43,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -55,7 +57,7 @@ AGY_SETTINGS = Path.home() / ".gemini" / "antigravity-cli" / "settings.json"
 
 def load_config() -> dict:
     path = ROOT / "handoff" / "config.json"
-    cfg = {"protected_paths": [], "agy_model": None, "agy_timeout": "60m"}
+    cfg = {"protected_paths": [], "agy_model": None, "agy_fallback_models": [], "agy_timeout": "60m"}
     if path.exists():
         cfg.update(json.loads(path.read_text(encoding="utf-8")))
     return cfg
@@ -116,10 +118,36 @@ def check_lock(task: Path) -> list[str]:
     return problems
 
 
-def run_verify(task: Path) -> int:
+FAIL_LINE = re.compile(r"FAIL|✗|×|✘|Error|error TS|AssertionError|Expected|Received|expected|not ok|Traceback|exit [1-9]")
+
+
+def verify_log(task: Path) -> Path:
+    """Log đầy đủ của lần verify gần nhất — nằm ngoài repo để không lọt vào commit."""
+    d = Path(tempfile.gettempdir()) / "handoff-verify"
+    d.mkdir(exist_ok=True)
+    return d / f"{ROOT.name}-{task.name}.log"
+
+
+def run_verify(task: Path, quiet: bool = False) -> int:
+    """quiet: không in toàn bộ output. Đạt → 3 dòng cuối; trượt → các dòng báo lỗi (tối đa 40) + 10 dòng cuối.
+    Log đầy đủ ghi ra verify_log() để chỉ mở khi thật cần."""
     script = task / "verify.sh"
     print(f"$ bash {script.relative_to(ROOT)}", flush=True)
-    return subprocess.run(["bash", str(script)], cwd=ROOT).returncode
+    if not quiet:
+        return subprocess.run(["bash", str(script)], cwd=ROOT).returncode
+    proc = subprocess.run(["bash", str(script)], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    log = verify_log(task)
+    log.write_text(proc.stdout, encoding="utf-8")
+    lines = [l for l in proc.stdout.rstrip().splitlines() if l.strip()]
+    tail = lines[-3:] if proc.returncode == 0 else lines[-10:]
+    if proc.returncode:
+        fails = list(dict.fromkeys(l.strip()[:200] for l in lines[:-10] if FAIL_LINE.search(l)))
+        if fails:
+            print("Dòng báo lỗi:" + (f" (40/{len(fails)})" if len(fails) > 40 else ""))
+            print("\n".join("  " + l for l in fails[:40]))
+    print(f"… {len(lines)} dòng, log đầy đủ: {log}" if len(lines) > len(tail) else f"log: {log}")
+    print("\n".join(tail))
+    return proc.returncode
 
 
 def agentapi(*args: str) -> str | None:
@@ -176,6 +204,33 @@ def last_tool_call(conversation_id: str | None) -> str | None:
     return None if last is None else f"{last.get('name')} {json.dumps(last.get('args'), ensure_ascii=False)[:600]}"
 
 
+def is_quota(result: dict) -> bool:
+    text = json.dumps(result, ensure_ascii=False)
+    return "RESOURCE_EXHAUSTED" in text or "quota" in text.lower()
+
+
+def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | None = None) -> None:
+    """Chạy agy cho một task; model hết hạn mức mà task chưa nộp → tự chuyển sang model dự phòng
+    (handoff/config.json → agy_fallback_models) trong cùng hội thoại, rồi in báo cáo."""
+    models = list(dict.fromkeys([model, *CONFIG.get("agy_fallback_models", [])]))
+    for i, m in enumerate(models):
+        result = agy_run(prompt, conversation_id=conversation_id, model=m)
+        state = load_state(task)
+        conversation_id = result.get("conversation_id") or conversation_id
+        state["conversation_id"], state["via"] = conversation_id, "agy"
+        save_state(task, state)
+        if not is_quota(result) or state["status"] == "submitted" or i == len(models) - 1:
+            break
+        nxt = models[i + 1]
+        print(f"Model {m or 'mặc định'} hết hạn mức → chuyển sang {nxt or 'mặc định'}.", flush=True)
+        state["history"].append({"at": now(), "status": state["status"], "note": f"đổi model agy: {m} → {nxt} (hết hạn mức)"})
+        save_state(task, state)
+        if conversation_id:
+            prompt = (f"Tiếp tục {state['id']} theo yêu cầu ban đầu của hội thoại này, từ chỗ đang dừng, "
+                      "theo skill /thuc-hien-task, tới khi `submit` thành công.")
+    report_agy(task, result)
+
+
 def report_agy(task: Path, result: dict) -> None:
     state = load_state(task)
     print(f"agy: status={result.get('status')} exit={result['exit_code']} "
@@ -185,10 +240,14 @@ def report_agy(task: Path, result: dict) -> None:
         print(f"  [stderr] {n}")
     if result.get("error"):
         print(f"  [lỗi] {result['error']}")
-    if "RESOURCE_EXHAUSTED" in json.dumps(result, ensure_ascii=False) or "quota" in str(result.get("error", "")).lower():
-        print("HẾT HẠN MỨC MODEL: không thử lại cùng model. Hạn mức tính theo từng model — "
-              "có thể làm tiếp bằng model khác: resume/reject <ID> --agy-model <slug> (xem `agy models`).")
-    print("\n--- Trả lời cuối của agent ---\n" + str(result.get("response", ""))[-3000:])
+    if is_quota(result):
+        if state["status"] == "submitted":
+            print("(Lỗi hạn mức xảy ra sau khi task đã nộp — không ảnh hưởng kết quả.)")
+        else:
+            print("HẾT HẠN MỨC MODEL (cả model dự phòng): không thử lại cùng model. Hạn mức tính theo từng model — "
+                  "làm tiếp bằng model khác: resume/reject <ID> --agy-model <slug> (xem `agy models`), "
+                  "hoặc thêm vào agy_fallback_models trong handoff/config.json.")
+    print("\n--- Trả lời cuối của agent ---\n" + str(result.get("response", ""))[-1500:])
     print(f"\nTrạng thái task sau khi agent dừng: {state['status']}")
     if state["status"] != "submitted":
         print("CẢNH BÁO: agent dừng nhưng task chưa nộp — xem lỗi/thao tác bị từ chối ở trên.")
@@ -269,12 +328,7 @@ def cmd_dispatch(a) -> None:
     )
     if a.via in ("auto", "agy") and Path(AGY).exists():
         save_state(task, state, "assigned", f"giao qua agy ({a.agy_model or 'model mặc định'})")
-        result = agy_run(prompt, model=a.agy_model)
-        state = load_state(task)
-        state["conversation_id"] = result.get("conversation_id")
-        state["via"] = "agy"
-        save_state(task, state)
-        report_agy(task, result)
+        agy_task(task, prompt, a.agy_model)
         return
     if a.via == "agy":
         die(f"chưa cài agy ({AGY}) — xem handoff/README.md")
@@ -329,7 +383,7 @@ def cmd_verify(a) -> None:
     problems = check_lock(task)
     for p in problems:
         print(f"KHOÁ TEST: {p}")
-    code = run_verify(task)
+    code = run_verify(task, quiet=a.quiet)
     print(f"\nKẾT QUẢ: khoá test {'OK' if not problems else 'VI PHẠM'}, verify.sh exit {code}")
     sys.exit(1 if problems or code else 0)
 
@@ -337,7 +391,7 @@ def cmd_verify(a) -> None:
 def cmd_accept(a) -> None:
     task = find_task(a.id)
     state = load_state(task)
-    if check_lock(task) or run_verify(task) != 0:
+    if check_lock(task) or run_verify(task, quiet=True) != 0:
         die("chưa đạt — chạy `verify` để xem chi tiết")
     save_state(task, state, "accepted", "Claude nghiệm thu")
     print(f"{state['id']} -> accepted")
@@ -356,7 +410,7 @@ def cmd_reject(a) -> None:
            f"chạy `python3 scripts/handoff.py start {state['id']}`, sửa theo từng mục, "
            "cập nhật report.md (thêm mục 'Vòng sửa') rồi `submit` lại.")
     if state.get("via") == "agy" and state.get("conversation_id") and Path(AGY).exists():
-        report_agy(task, agy_run(msg, conversation_id=state["conversation_id"], model=a.agy_model))
+        agy_task(task, msg, a.agy_model, state["conversation_id"])
         return
     out = agentapi("send-message", state["conversation_id"], msg) if state.get("conversation_id") else None
     if out is None:
@@ -377,7 +431,7 @@ def cmd_resume(a) -> None:
         die("task không được giao qua agy — dùng dispatch để giao lại")
     msg = (f"Tiếp tục {state['id']} từ chỗ đang dừng, theo skill /thuc-hien-task, tới khi `submit` thành công. "
            + (a.note or ""))
-    report_agy(task, agy_run(msg, conversation_id=state["conversation_id"], model=a.agy_model))
+    agy_task(task, msg, a.agy_model, state["conversation_id"])
 
 
 def cmd_list(a) -> None:
@@ -437,8 +491,10 @@ def main() -> None:
                    help="auto: agy → agentapi (trong terminal Antigravity) → antigravity-ide chat → clipboard")
     d.add_argument("--agy-model", default=os.environ.get("AGY_MODEL") or CONFIG["agy_model"],
                    help="slug model cho agy (xem `agy models`); mặc định: biến AGY_MODEL, rồi handoff/config.json")
-    for name in ("start", "submit", "verify", "accept"):
+    for name in ("start", "submit", "accept"):
         sub.add_parser(name).add_argument("id")
+    v = sub.add_parser("verify"); v.add_argument("id")
+    v.add_argument("--quiet", action="store_true", help="chỉ in tóm tắt, log đầy đủ ra file (cho trưởng phòng nghiệm thu)")
     default_model = os.environ.get("AGY_MODEL") or CONFIG["agy_model"]
     rj = sub.add_parser("reject"); rj.add_argument("id")
     rj.add_argument("--agy-model", default=default_model, help="đổi model khi model mặc định hết hạn mức")

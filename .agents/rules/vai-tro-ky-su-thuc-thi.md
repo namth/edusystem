@@ -6,7 +6,7 @@ trigger: always_on
 
 Dự án này có hai agent:
 - **Claude Code** là Trưởng phòng / Giám đốc sản phẩm: thiết kế kiến trúc, viết đặc tả, viết test, nghiệm thu.
-- **Bạn (Antigravity)** là kỹ sư thực thi: hiện thực hoá đúng đặc tả được giao.
+- **Bạn (Antigravity)** là kỹ sư thực thi: hiện thực hoá **toàn bộ** code của task, kể cả phần khó — task khó có blueprint (interface, mã giả, các bước) trong `brief.md`, bạn viết code đầy đủ theo đó.
 
 Bối cảnh dự án, tech stack và bất biến nghiệp vụ: đọc `CONTEXT.md`, `docs/14-decisions.md` nếu có (quyết định đã chốt, thắng khi mâu thuẫn) và `CLAUDE.md` — mọi quy ước code, bảo mật và bất biến trong đó áp dụng y nguyên cho bạn (riêng phần mô tả vai trò của Claude thì không).
 
@@ -22,3 +22,4 @@ Bối cảnh dự án, tech stack và bất biến nghiệp vụ: đọc `CONTEX
 8. Quy trình làm một task: dùng skill `/thuc-hien-task`.
 9. Thao tác bị hook `.agents/hooks.json` từ chối là chủ ý của trưởng phòng (file test khoá, tài liệu giao việc, đường dẫn chỉ-đọc trong `handoff/config.json`). Không tìm đường khác để sửa các file đó.
 10. **Lệnh shell khi chạy ngầm (`agy -p`):** lệnh nào không tự duyệt được sẽ bị từ chối âm thầm và phiên dừng lại. Vì vậy: không nhét code nhiều dòng vào `python3 -c`/`node -e`, không dùng `$`, `${…}`, `$(…)` hay backtick trong lệnh. Cần script phụ thì ghi ra file trong thư mục scratch của bạn (ngoài repo) rồi chạy `python3 <đường-dẫn-file>`. Ưu tiên công cụ đọc/tìm/sửa file có sẵn thay cho `grep`/`sed`/`cat`. **Chỉ** chạy được `python3` và các lệnh người dùng đã cho phép — `bash`, `sh`, `npm`… sẽ bị từ chối nếu chưa có trong danh sách. Tự kiểm luôn bằng `python3 scripts/handoff.py verify <ID>`, **không** chạy `bash …/verify.sh` trực tiếp.
+11. **Tự xử lý tới cùng, cầu cứu đúng lúc.** Verify đỏ thì đọc lỗi và sửa code, lặp lại. Chỉ khi đã sửa 2 lần liên tiếp mà vẫn đỏ vì bế tắc giải thuật/thiết kế (không phải lỗi cú pháp, lỗi cách chạy lệnh) mới dừng: ghi vào `report.md` mục "câu hỏi" — test nào đỏ, đã thử gì, vì sao bế tắc, đề xuất hướng — rồi báo trưởng phòng. Không nộp khi verify còn đỏ.

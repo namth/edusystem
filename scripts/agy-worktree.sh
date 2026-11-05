@@ -87,10 +87,11 @@ case "$cmd" in
   verify|accept|list-task)
     need_id
     sub="$cmd"; [ "$cmd" = "list-task" ] && sub="list"
+    extra=""; [ "$cmd" = "verify" ] && extra="--quiet" # in tóm tắt, log đầy đủ ra file (tiết kiệm token trưởng phòng)
     if [ -n "$HOST" ]; then
-      rsh "cd $(rwt_path) && python3 scripts/handoff.py $sub $( [ "$sub" = list ] || echo "$id" )"
+      rsh "cd $(rwt_path) && python3 scripts/handoff.py $sub $( [ "$sub" = list ] || echo "$id" ) $extra"
     else
-      cd "$(wt_path)" && python3 scripts/handoff.py "$sub" $( [ "$sub" = list ] || echo "$id" )
+      cd "$(wt_path)" && python3 scripts/handoff.py "$sub" $( [ "$sub" = list ] || echo "$id" ) $extra
     fi
     ;;
   status)

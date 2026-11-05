@@ -25,12 +25,23 @@ draft ──dispatch──▶ assigned ──start──▶ in_progress ──su
 3. **Báo cáo trung thực.** Output verify dán nguyên văn; việc chưa xong ghi rõ.
 4. **Docs do trưởng phòng giữ.** Antigravity không sửa `docs/` trừ khi brief cho phép.
 
+## Tiết kiệm công trưởng phòng, tận dụng tối đa Antigravity
+
+Antigravity viết **toàn bộ** code sản phẩm, kể cả phần khó. Claude chỉ làm phần cần suy nghĩ: lập kế hoạch, đặc tả, test, quyết định nghiệm thu.
+
+- **Kế hoạch theo ma trận** (`handoff/templates/plan.md`) cho việc nhiều task: mỗi task có độ khó `HIGH/LOW` và khối lượng `S/M/L`. Task `L` phải chẻ nhỏ. Task `HIGH` thì brief kèm **blueprint** (interface/kiểu dữ liệu, mã giả, các bước), không kèm code hoàn chỉnh.
+- **Chạy song song**: mỗi tài khoản Antigravity chạy 2 task cùng lúc, mỗi task một worktree. Giao các task độc lập (khác file) cùng lúc thay vì chờ từng task.
+- **Cầu cứu**: Antigravity tự sửa tới khi verify xanh; sau 2 lần sửa liên tiếp vẫn đỏ vì bế tắc giải thuật (không phải lỗi cách chạy lệnh) thì ghi phân tích vào `report.md` mục "câu hỏi" và dừng. Lúc đó Claude mới can thiệp: bổ sung blueprint, hoặc tự viết đoạn lõi.
+- **Việc cơ học không tốn mô hình mạnh**: `verify --quiet` chỉ in tóm tắt (log đầy đủ ghi ra file). Chạy lệnh, đọc log dài, kéo kết quả từ máy thợ, tìm file → giao cho subagent `dieu-phoi` (Haiku), chỉ nhận về bản tóm tắt. Quyết định duyệt đạt/trả về luôn do Claude.
+- `dispatch`/`reject` qua `agy` chạy nền, xong thì Claude được báo — không thăm dò trạng thái.
+
 ## Cấu hình riêng của dự án — `handoff/config.json`
 
 | Khoá | Ý nghĩa |
 | :--- | :--- |
 | `protected_paths` | Thư mục/file agent thực thi **không bao giờ** được sửa (mã cũ, vendor, dữ liệu gốc…). Hook chặn theo tiền tố đường dẫn, vd `"legacy/"`. |
 | `agy_model` | Slug model mặc định cho `agy` (xem `agy models`); `null` = mặc định của agy. |
+| `agy_fallback_models` | Model dự phòng, vd `["gemini-3.8-flash-high", "gemini-3.8-flash-low"]`. Model đang dùng hết hạn mức (429) mà task chưa nộp → script tự chuyển sang model kế tiếp trong cùng hội thoại. |
 | `agy_timeout` | Thời gian tối đa một lần chạy `agy`, vd `"60m"`. |
 
 Luôn được bảo vệ, không cần khai báo: file trong `tests.lock`, `brief.md`/`state.json`/`review.md`/`tests.lock` của mọi task, `scripts/handoff.py`, `scripts/agy_guard.py`, `.agents/`, `handoff/config.json`, mọi `.env*`.
@@ -77,5 +88,6 @@ python3 scripts/handoff.py doctor
 ```bash
 python3 scripts/handoff.py list                 # bảng trạng thái
 python3 scripts/handoff.py verify TASK-001      # kiểm khoá test + chạy verify.sh
+python3 scripts/handoff.py verify TASK-001 --quiet  # chỉ in tóm tắt, log đầy đủ ra file (trưởng phòng nghiệm thu)
 python3 scripts/handoff.py doctor               # kiểm tra bộ phối hợp & agy
 ```
