@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import StudentLayout from "@/components/StudentLayout";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   Clock,
@@ -19,6 +19,7 @@ import {
   Route,
 } from "lucide-react";
 import StudentRoadmap from "@/components/class-roadmap/StudentRoadmap";
+import ClassGradebook from "@/components/student/ClassGradebook";
 import { submissionScore, formatScore, SubmissionScoreResult } from "@/lib/score-display";
 
 interface UserClass {
@@ -59,10 +60,29 @@ interface PracticeExam {
 }
 
 export default function StudentClassDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <StudentLayout>
+          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-line max-w-7xl mx-auto my-8">
+            <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-2" />
+            <p className="font-mono text-xs text-ink-muted">Đang nạp hệ thống bài tập &amp; sổ điểm LMS...</p>
+          </div>
+        </StudentLayout>
+      }
+    >
+      <StudentClassDetailContent />
+    </Suspense>
+  );
+}
+
+function StudentClassDetailContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const classId = (params?.classId || "") as string;
 
-  const [activeTab, setActiveTab] = useState<"roadmap" | "pending" | "graded" | "practice">("roadmap");
+  const [activeTab, setActiveTab] = useState<"roadmap" | "pending" | "graded" | "practice" | "gradebook">("roadmap");
   const [classDetail, setClassDetail] = useState<UserClass | null>(null);
   const [assignedExams, setAssignedExams] = useState<AssignedExam[]>([]);
   const [gradedSubmissions, setGradedSubmissions] = useState<GradedSubmission[]>([]);
@@ -71,6 +91,25 @@ export default function StudentClassDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "gradebook") {
+      setActiveTab("gradebook");
+    } else if (
+      tabParam === "roadmap" ||
+      tabParam === "pending" ||
+      tabParam === "graded" ||
+      tabParam === "practice"
+    ) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const switchTab = (nextTab: "roadmap" | "pending" | "graded" | "practice" | "gradebook") => {
+    setActiveTab(nextTab);
+    router.replace(`/student/class/${classId}?tab=${nextTab}`);
+  };
 
   const fetchClassData = async () => {
     if (!classId) return;
@@ -263,9 +302,9 @@ export default function StudentClassDetailPage() {
         </div>
 
         {/* Modern LMS Tabs Navigation */}
-        <div className="flex border-b border-line space-x-2">
+        <div className="flex border-b border-line space-x-2 overflow-x-auto">
           <button
-            onClick={() => setActiveTab("roadmap")}
+            onClick={() => switchTab("roadmap")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
               activeTab === "roadmap"
                 ? "bg-brand-600 text-white shadow-sm"
@@ -277,7 +316,22 @@ export default function StudentClassDetailPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("pending")}
+            onClick={() => {
+              setActiveTab("gradebook");
+              router.replace(`/student/class/${classId}?tab=gradebook`);
+            }}
+            className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeTab === "gradebook"
+                ? "bg-brand-600 text-white shadow-sm"
+                : "bg-white text-ink-muted hover:bg-surface-alt border-t border-x border-line"
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            <span>Bảng điểm</span>
+          </button>
+
+          <button
+            onClick={() => switchTab("pending")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
               activeTab === "pending"
                 ? "bg-brand-600 text-white shadow-sm"
@@ -289,7 +343,7 @@ export default function StudentClassDetailPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("graded")}
+            onClick={() => switchTab("graded")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
               activeTab === "graded"
                 ? "bg-brand-600 text-white shadow-sm"
@@ -301,7 +355,7 @@ export default function StudentClassDetailPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("practice")}
+            onClick={() => switchTab("practice")}
             className={`px-5 py-3 rounded-t-2xl font-headline text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
               activeTab === "practice"
                 ? "bg-brand-600 text-white shadow-sm"
@@ -317,6 +371,9 @@ export default function StudentClassDetailPage() {
         {activeTab === "roadmap" && (
           <StudentRoadmap classId={classId} />
         )}
+
+        {/* TAB GRADEBOOK */}
+        {activeTab === "gradebook" && <ClassGradebook classId={classId} />}
 
         {/* TAB 1: PENDING ASSIGNMENTS */}
         {activeTab === "pending" && (
