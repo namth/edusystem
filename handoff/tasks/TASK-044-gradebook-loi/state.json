@@ -1,0 +1,13 @@
+{
+  "id": "TASK-044",
+  "title": "Lõi bảng điểm: migration 017, lib/gradebook.ts, AI chấm giữ bản gốc, bài học NEEDS_REVIEW",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-06T00:18:20",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}
