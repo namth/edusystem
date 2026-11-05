@@ -7,6 +7,7 @@ import { submissionScore } from "@/lib/score-display";
 export type NotificationType =
   | "EXAM_GRADED"
   | "EXAM_NEEDS_REVIEW"
+  | "LESSON_NEEDS_REVIEW"
   | "TEACHER_SIGNUP"
   | "TEACHER_VERIFIED"
   | "ORDER_CREATED"
@@ -108,6 +109,34 @@ export async function notifyNeedsReview(submissionId: string): Promise<void> {
     });
   } catch (err) {
     console.error("notifyNeedsReview error:", err);
+  }
+}
+
+/** Giáo viên của lớp: bài học có mục AI lỗi, cần chấm tay (FEAT-014, DEC-041). */
+export async function notifyLessonNeedsReview(attemptId: string): Promise<void> {
+  try {
+    const res = await queryPg(
+      `SELECT a.id, a.student_id, a.lesson_id, a.class_id, l.title AS lesson_title
+       FROM lesson_attempts a LEFT JOIN lessons l ON l.id = a.lesson_id
+       WHERE a.id = $1 LIMIT 1`,
+      [attemptId]
+    );
+    const att = res.rows[0];
+    if (!att || !att.class_id) return;
+    const c = await queryPg("SELECT teacher_id FROM classes WHERE id = $1 LIMIT 1", [att.class_id]);
+    const teacherId = c.rows[0]?.teacher_id || null;
+    if (!teacherId) return;
+    const st = await queryPg("SELECT name FROM users WHERE id = $1 LIMIT 1", [att.student_id]);
+    await createNotification({
+      userId: teacherId,
+      type: "LESSON_NEEDS_REVIEW",
+      title: `Bài học “${att.lesson_title || att.lesson_id}” cần chấm tay`,
+      body: `Học sinh: ${st.rows[0]?.name || att.student_id}`,
+      link: `/teacher/grading/${att.class_id}/lesson/${att.lesson_id}`,
+      refId: att.id,
+    });
+  } catch (err) {
+    console.error("notifyLessonNeedsReview error:", err);
   }
 }
 

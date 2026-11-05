@@ -4,6 +4,7 @@ import { queryPg } from "@/lib/db-pg";
 import { withAiUsageContext } from "@/lib/ai-usage";
 import { gradeOpenAnswer } from "@/lib/lesson-ai-grading";
 import { computeScorePercent, type GradeResult } from "@/lib/grading";
+import { notifyLessonNeedsReview } from "@/lib/notifications";
 
 async function callGradeWithRetry(input: {
   category: string;
@@ -22,7 +23,7 @@ async function callGradeWithRetry(input: {
       }
     }
   }
-  return 0;
+  throw lastError instanceof Error ? lastError : new Error(String(lastError ?? "AI grading failed"));
 }
 
 export async function POST(req: Request) {
@@ -50,6 +51,20 @@ export async function POST(req: Request) {
   const attempt = attemptRes.rows[0];
   if (attempt.status !== "GRADING") {
     return NextResponse.json({ success: true, skipped: true });
+  }
+
+  // Worker đã giao quá số lần cho phép mà vẫn lỗi → chuyển giáo viên chấm tay (chỉ một lần)
+  if (body?.giveUp === true && hasValidInternalToken(req)) {
+    const moved = await queryPg(
+      `UPDATE lesson_attempts
+       SET status = 'NEEDS_REVIEW', ai_earned = NULL, score_percent = NULL,
+           last_grading_error = COALESCE(last_grading_error, $2)
+       WHERE id = $1 AND status = 'GRADING'
+       RETURNING id`,
+      [attempt.id, "Worker chấm AI thất bại sau nhiều lần thử"]
+    );
+    if (moved.rows.length > 0) await notifyLessonNeedsReview(attempt.id);
+    return NextResponse.json({ success: true, attemptId: attempt.id, status: "NEEDS_REVIEW", gaveUp: true });
   }
 
   let teacherId: string | null = null;
@@ -98,6 +113,22 @@ export async function POST(req: Request) {
       }
 
       let totalAiEarned = 0;
+      let gradingError: string | null = null;
+
+      // Ghi điểm AI một mục; giữ bản gốc ai_score nếu đã có (DEC-039)
+      const setItemBand = (item: any, band: number) => {
+        const clampedBand = Math.max(0, Math.min(9, band));
+        item.correct = clampedBand >= 5;
+        item.band = clampedBand;
+        if (item.ai_score === undefined || item.ai_score === null) item.ai_score = clampedBand;
+        return Math.max(0, Math.min(1, clampedBand / 9));
+      };
+      // Mục lỗi: bỏ trống band/ai_score, không cho 0 điểm (DEC-041)
+      const clearItemBand = (item: any) => {
+        delete item.band;
+        delete item.ai_score;
+        delete item.correct;
+      };
 
       for (const r of results) {
         if (r.kind === "AI") {
@@ -113,20 +144,19 @@ export async function POST(req: Request) {
                 ? String(answers[r.question_id])
                 : "";
 
-            const band = await callGradeWithRetry({
-              category: r.category,
-              prompt: q?.prompt || "",
-              answer: essayAnswer,
-              sample_answer: q?.content?.sample_answer || null,
-            });
-
-            const clampedBand = Math.max(0, Math.min(9, band));
-            const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
-            if (item) {
-              item.correct = clampedBand >= 5;
-              (item as any).band = clampedBand;
+            try {
+              const band = await callGradeWithRetry({
+                category: r.category,
+                prompt: q?.prompt || "",
+                answer: essayAnswer,
+                sample_answer: q?.content?.sample_answer || null,
+              });
+              if (item) questionEarned += setItemBand(item, band);
+              else questionEarned += Math.max(0, Math.min(1, Math.max(0, Math.min(9, band)) / 9));
+            } catch (err: any) {
+              gradingError = err?.message || String(err);
+              if (item) clearItemBand(item);
             }
-            questionEarned += itemEarned;
           } else if (r.category === "WRITING_SHORT_ANSWER") {
             const subQuestions: any[] = Array.isArray(q?.content?.sub_questions)
               ? q.content.sub_questions
@@ -143,24 +173,39 @@ export async function POST(req: Request) {
                   ? String(answers[r.question_id][subId])
                   : "";
 
-              const band = await callGradeWithRetry({
-                category: r.category,
-                prompt: q?.prompt || "",
-                answer: subAnswer,
-                sample_answer: sub?.sample_answer || null,
-              });
-
-              const clampedBand = Math.max(0, Math.min(9, band));
-              const itemEarned = Math.max(0, Math.min(1, clampedBand / 9));
-              item.correct = clampedBand >= 5;
-              (item as any).band = clampedBand;
-              questionEarned += itemEarned;
+              try {
+                const band = await callGradeWithRetry({
+                  category: r.category,
+                  prompt: q?.prompt || "",
+                  answer: subAnswer,
+                  sample_answer: sub?.sample_answer || null,
+                });
+                questionEarned += setItemBand(item, band);
+              } catch (err: any) {
+                gradingError = err?.message || String(err);
+                clearItemBand(item);
+              }
             }
           }
 
           r.earned = questionEarned;
           totalAiEarned += questionEarned;
         }
+      }
+
+      if (gradingError) {
+        await queryPg(
+          `UPDATE lesson_attempts
+           SET results = $1,
+               ai_earned = NULL,
+               score_percent = NULL,
+               status = 'NEEDS_REVIEW',
+               last_grading_error = $2
+           WHERE id = $3`,
+          [JSON.stringify(results), gradingError, attempt.id]
+        );
+        await notifyLessonNeedsReview(attempt.id);
+        return NextResponse.json({ success: true, status: "NEEDS_REVIEW" });
       }
 
       const objEarned = Number(attempt.objective_earned);
