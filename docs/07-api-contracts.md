@@ -61,7 +61,7 @@
 | POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
 | GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
-| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate` | | `exams-api`, `library-convert-duplicate` |
+| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học) | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
 | POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT` | `ai-import`, `ai-usage` |
 | POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch) | `ai-import` |
 | POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |

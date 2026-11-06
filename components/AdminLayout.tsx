@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useDismissable } from "@/components/useDismissable";
 import {
   LayoutDashboard,
   Receipt,
@@ -37,6 +38,10 @@ export default function AdminLayout({
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  // Menu hồ sơ tự đóng khi bấm ra ngoài / nhấn Esc
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const closeUserDropdown = useCallback(() => setShowUserDropdown(false), []);
+  useDismissable(userMenuRef, showUserDropdown, closeUserDropdown);
   const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
 
   useEffect(() => {
@@ -75,10 +80,7 @@ export default function AdminLayout({
       <nav className="h-screen w-64 fixed left-0 top-0 bg-surface-alt border-r border-line shadow-sm flex flex-col py-4 z-30 hidden md:flex">
         {/* Header */}
         <div className="px-6 py-4 mb-4 flex flex-col items-center border-b border-line-soft">
-          <img src="/brand/kitokit-logo-hinh.png" alt="KitoKit" className="h-14 w-auto object-contain mb-2" />
-          <h2 className="font-headline text-lg font-bold text-brand-600 text-center">
-            KitoKit
-          </h2>
+          <img src="/brand/kitokit-logo-dung.png" alt="KitoKit" className="h-28 w-auto object-contain mb-1" />
           <p className="text-xs text-ink-muted text-center font-medium">
             Quản trị hệ thống
           </p>
@@ -116,17 +118,6 @@ export default function AdminLayout({
             })}
           </ul>
         </div>
-
-        {/* Footer Logout */}
-        <div className="px-4 mt-auto">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl text-red-700 bg-red-100/40 hover:bg-red-100 transition-colors text-sm font-medium"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            <span>Đăng Xuất Admin</span>
-          </button>
-        </div>
       </nav>
 
       {/* Main Content Area */}
@@ -134,9 +125,6 @@ export default function AdminLayout({
         {/* Stitch TopAppBar */}
         <header className="flex justify-between items-center w-full px-8 h-16 bg-white shadow-sm border-b border-line z-20 sticky top-0">
           <div className="flex items-center gap-6">
-            <div className="font-headline text-xl font-bold text-brand-600 hidden md:block">
-              KitoKit · Quản trị
-            </div>
 
             {/* Context-Aware Integrated TopBar Search Bar */}
             {onSearchChange ? (
@@ -159,9 +147,11 @@ export default function AdminLayout({
             </button>
 
             {/* TopBar Interactive User Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                onClick={() => setShowUserDropdown((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={showUserDropdown}
                 className="flex items-center space-x-3 p-1.5 rounded-xl hover:bg-surface-alt transition-all border border-transparent hover:border-line"
               >
                 <div className="h-9 w-9 rounded-full overflow-hidden border border-line bg-brand-800 text-white flex items-center justify-center font-bold text-xs shadow-sm">

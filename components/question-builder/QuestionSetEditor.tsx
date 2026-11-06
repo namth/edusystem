@@ -112,6 +112,8 @@ export interface QuestionSetEditorProps {
   isLoading?: boolean;
   saveLabel?: string;
   onSave: (payload: QuestionSetSavePayload) => Promise<{ ok: boolean; error?: string }>;
+  /** Mở sẵn chế độ "Upload đề thi / bài tập" (AI) — dùng cho /teacher/tests/create?mode=ai */
+  initialCreationMode?: "manual" | "ai-ingest";
   aiIngestProps?: {
     initialDestinationType?: "standalone" | "curriculum";
     initialCourseId?: string;
@@ -133,11 +135,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     saveLabel,
     onSave,
     aiIngestProps,
+    initialCreationMode,
   } = props;
 
   const isExamMode = mode === "EXAM";
 
-  const [creationMode, setCreationMode] = useState<"manual" | "ai-ingest">("manual");
+  const [creationMode, setCreationMode] = useState<"manual" | "ai-ingest">(initialCreationMode || "manual");
   const [testTitle, setTestTitle] = useState(initialTitle);
   const [selectedCourseId, setSelectedCourseId] = useState<string>(initialCourseId || "");
   const [scoringStandards, setScoringStandards] = useState<any[]>([]);

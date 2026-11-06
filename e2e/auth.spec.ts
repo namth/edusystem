@@ -38,7 +38,9 @@ test.describe("Đăng xuất bỏ hẳn phiên cũ", () => {
   test("admin đăng xuất → về /login, vào /register và / không bị đưa ngược vào trang quản trị", async ({ page }) => {
     await loginApi(page, ACC.admin);
     await page.goto("/admin/requests");
-    await page.getByRole("button", { name: /Đăng Xuất Admin/i }).click();
+    // Nút đăng xuất chỉ còn trong menu hồ sơ trên topbar (sidebar đã bỏ)
+    await page.locator('header button[aria-haspopup="menu"]').click();
+    await page.getByRole("button", { name: /Đăng Xuất/i }).click();
     await expect(page).toHaveURL(/\/login$/);
     // trang đăng nhập không tự chuyển vào trang quản trị của tài khoản cũ
     await page.waitForTimeout(1500);
