@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
 import Link from "next/link";
+import StudentPreviewModal, { type StudentPreviewKind } from "@/components/teacher/StudentPreviewModal";
 import { isNoopGap, computeDrop, type DndItem } from "@/lib/curriculum-dnd";
 import { 
   PlusCircle, 
-  Sparkles, 
   Clock, 
   Trash2, 
   Eye, 
@@ -91,6 +91,12 @@ function readSavedCourseId(): string | null {
 export default function TeacherTestManagerPage() {
   // Rỗng tới khi nạp xong khóa học của chính giáo viên (không mặc định một khóa cố định)
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  // Xem trước như học sinh (SCR-L3) — modal trong phân hệ giáo viên, không mở trang học sinh
+  const [previewTarget, setPreviewTarget] = useState<{ kind: StudentPreviewKind; id: string; title: string } | null>(null);
+  const openPreview = (node: CurriculumItem) => {
+    if (node.exam_id) setPreviewTarget({ kind: "exam", id: node.exam_id, title: node.exam?.title || node.title });
+    else if (node.type === "LESSON" && node.lesson_id) setPreviewTarget({ kind: "lesson", id: node.lesson_id, title: node.title });
+  };
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([{ id: "english", name: "Tiếng Anh" }]);
   const [scoringStandards, setScoringStandards] = useState<any[]>([]);
@@ -992,13 +998,6 @@ export default function TeacherTestManagerPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link
-              href="/teacher/library"
-              className="px-4 py-2.5 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
-            >
-              <Sparkles className="w-4 h-4 text-brand-600" />
-              <span>AI Exam Importer</span>
-            </Link>
 
             <Link
               href="/teacher/tests/create"
@@ -1358,17 +1357,17 @@ export default function TeacherTestManagerPage() {
                                   </button>
                                 )}
 
-                                {/* Preview Exam in New Tab */}
-                                {rootNode.exam_id && (
-                                  <Link
-                                    href={`/student/exam/${rootNode.exam_id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all border border-line/40"
-                                    title="Xem thử"
+                                {/* Xem trước như học sinh (đề thi hoặc bài học) */}
+                                {(rootNode.exam_id || (rootNode.type === "LESSON" && rootNode.lesson_id)) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPreview(rootNode)}
+                                    className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-all border border-line/40 cursor-pointer"
+                                    title="Xem trước như học sinh"
+                                    aria-label={`Xem trước như học sinh: ${rootNode.title}`}
                                   >
                                     <Eye className="w-4 h-4" />
-                                  </Link>
+                                  </button>
                                 )}
 
                                 {/* Edit Lesson in New Tab */}
@@ -1516,17 +1515,17 @@ export default function TeacherTestManagerPage() {
                                               <ArrowDown className="w-3.5 h-3.5" />
                                             </button>
 
-                                            {/* Preview Exam in New Tab */}
-                                            {child.exam_id && (
-                                              <Link
-                                                href={`/student/exam/${child.exam_id}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-1 text-brand-600 hover:bg-brand-50 rounded border border-line/30"
-                                                title="Xem thử"
+                                            {/* Xem trước như học sinh (đề thi hoặc bài học) */}
+                                            {(child.exam_id || (child.type === "LESSON" && child.lesson_id)) && (
+                                              <button
+                                                type="button"
+                                                onClick={() => openPreview(child)}
+                                                className="p-1 text-brand-600 hover:bg-brand-50 rounded border border-line/30 cursor-pointer"
+                                                title="Xem trước như học sinh"
+                                                aria-label={`Xem trước như học sinh: ${child.title}`}
                                               >
                                                 <Eye className="w-3.5 h-3.5" />
-                                              </Link>
+                                              </button>
                                             )}
 
                                             {/* Edit Lesson in New Tab */}
@@ -2013,6 +2012,14 @@ export default function TeacherTestManagerPage() {
             </form>
           </div>
         </div>
+      )}
+      {previewTarget && (
+        <StudentPreviewModal
+          kind={previewTarget.kind}
+          id={previewTarget.id}
+          fallbackTitle={previewTarget.title}
+          onClose={() => setPreviewTarget(null)}
+        />
       )}
     </TeacherLayout>
   );

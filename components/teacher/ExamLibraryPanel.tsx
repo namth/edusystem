@@ -23,6 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import DuplicateDialog from "@/components/teacher/DuplicateDialog";
+import StudentPreviewModal from "@/components/teacher/StudentPreviewModal";
 
 interface ExamItem {
   id: string;
@@ -98,6 +99,7 @@ export default function ExamLibraryPanel() {
 
   // Duplication states
   const [duplicateTarget, setDuplicateTarget] = useState<ExamItem | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<ExamItem | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -268,7 +270,7 @@ export default function ExamLibraryPanel() {
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
-            href="/admin/tests/import"
+            href="/teacher/tests/create?mode=ai"
             className="inline-flex items-center justify-center px-4 py-2.5 bg-brand-50 text-brand-600 hover:bg-brand-100 border border-line rounded-xl text-xs font-bold shadow-2xs transition-all space-x-1.5"
           >
             <Sparkles className="w-4 h-4 text-brand-600" />
@@ -491,15 +493,15 @@ export default function ExamLibraryPanel() {
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
-                      <Link
-                        href={`/student/exam/${exam.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTarget(exam)}
                         className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
-                        title="Xem thử đề thi"
+                        title="Xem trước như học sinh"
+                        aria-label={`Xem trước như học sinh: ${exam.title}`}
                       >
                         <Eye className="w-3.5 h-3.5" />
-                      </Link>
+                      </button>
                       <Link
                         href={`/teacher/tests/create?editId=${exam.id}`}
                         className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
@@ -566,6 +568,16 @@ export default function ExamLibraryPanel() {
             );
           })}
         </div>
+      )}
+
+      {/* Xem trước như học sinh (SCR-L3) */}
+      {previewTarget && (
+        <StudentPreviewModal
+          kind="exam"
+          id={previewTarget.id}
+          fallbackTitle={previewTarget.title}
+          onClose={() => setPreviewTarget(null)}
+        />
       )}
 
       {/* Duplicate Dialog */}

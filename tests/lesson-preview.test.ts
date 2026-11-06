@@ -94,9 +94,12 @@ describe("POST /api/teacher/lessons/[id]/preview — chấm thử, KHÔNG lưu",
 
 describe("Nút Xem trước trong trang soạn bài", () => {
   it("app/teacher/lessons/[id]/page.tsx dùng LessonPlayer và gọi /preview", () => {
+    // Modal tách thành component dùng chung (bài học + đề thi): components/teacher/StudentPreviewModal.tsx
     const s = fs.readFileSync("app/teacher/lessons/[id]/page.tsx", "utf8");
-    expect(s).toContain("@/components/lesson-player/LessonPlayer");
-    expect(s).toContain("/preview");
-    expect(s).toMatch(/Xem trước/);
+    expect(s).toContain("@/components/teacher/StudentPreviewModal");
+    const m = fs.readFileSync("components/teacher/StudentPreviewModal.tsx", "utf8");
+    expect(m).toContain("@/components/lesson-player/LessonPlayer");
+    expect(m).toContain("/preview");
+    expect(m).toMatch(/Xem trước/);
   });
 });

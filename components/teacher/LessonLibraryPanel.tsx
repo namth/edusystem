@@ -18,10 +18,12 @@ import {
   X,
   ExternalLink,
   Copy,
+  Eye,
   ArrowRightLeft,
   CheckCircle2,
 } from "lucide-react";
 import DuplicateDialog from "@/components/teacher/DuplicateDialog";
+import StudentPreviewModal from "@/components/teacher/StudentPreviewModal";
 
 interface LessonItem {
   id: string;
@@ -99,6 +101,7 @@ export default function LessonLibraryPanel() {
 
   // Duplication states
   const [duplicateTarget, setDuplicateTarget] = useState<LessonItem | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<LessonItem | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -520,6 +523,15 @@ export default function LessonLibraryPanel() {
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTarget(lesson)}
+                        className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
+                        title="Xem trước như học sinh"
+                        aria-label={`Xem trước như học sinh: ${lesson.title}`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                       <Link
                         href={`/teacher/lessons/${lesson.id}`}
                         className="p-1.5 text-ink-muted hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-transparent hover:border-line/50"
@@ -580,6 +592,16 @@ export default function LessonLibraryPanel() {
             );
           })}
         </div>
+      )}
+
+      {/* Xem trước như học sinh (SCR-L3) */}
+      {previewTarget && (
+        <StudentPreviewModal
+          kind="lesson"
+          id={previewTarget.id}
+          fallbackTitle={previewTarget.title}
+          onClose={() => setPreviewTarget(null)}
+        />
       )}
 
       {/* Duplicate Dialog */}

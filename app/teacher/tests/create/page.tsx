@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TeacherLayout from "@/components/TeacherLayout";
 import QuestionSetEditor, { QuestionSetSavePayload } from "@/components/question-builder/QuestionSetEditor";
+import { StudentPreviewButton } from "@/components/teacher/StudentPreviewModal";
 import { Loader2, AlertCircle, RefreshCw, ArrowLeft, Edit3 } from "lucide-react";
 
 function TeacherTestCreateContent() {
@@ -106,12 +107,16 @@ function TeacherTestCreateContent() {
                 Chế độ Chỉnh Sửa Bộ Đề: <strong className="text-brand-600">{initialData.title || editId}</strong> (ID: {editId})
               </span>
             </div>
-            <Link
-              href="/teacher/tests/create"
-              className="text-xs font-bold text-amber-800 hover:underline bg-white px-3 py-1 rounded-lg border border-amber-200"
-            >
-              + Soạn Bộ Đề Mới Khác
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Xem trước như học sinh (SCR-L3) — nạp qua /api/teacher/exams/[id]/preview, không sang phân hệ học sinh */}
+              {!isLoading && <StudentPreviewButton kind="exam" id={editId} title={initialData.title} />}
+              <Link
+                href="/teacher/tests/create"
+                className="text-xs font-bold text-amber-800 hover:underline bg-white px-3 py-1 rounded-lg border border-amber-200"
+              >
+                + Soạn Bộ Đề Mới Khác
+              </Link>
+            </div>
           </div>
         )}
 
@@ -151,6 +156,7 @@ function TeacherTestCreateContent() {
             initialFlashcards={initialData.flashcards}
             isLoading={isLoading}
             onSave={handleSave}
+            initialCreationMode={!editId && modeParam === "ai" ? "ai-ingest" : "manual"}
             aiIngestProps={{
               initialDestinationType: sourceParam === "course" || courseIdParam ? "curriculum" : "standalone",
               initialCourseId: courseIdParam || undefined,
