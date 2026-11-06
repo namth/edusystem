@@ -1,0 +1,63 @@
+{
+  "id": "TASK-047",
+  "title": "UI học sinh: tab Bảng điểm, điểm/nhận xét giáo viên, bài học chờ chấm",
+  "status": "accepted",
+  "conversation_id": "2cb53fc7-9e23-48d8-8da4-6b82c07c9cd8",
+  "history": [
+    {
+      "at": "2026-11-06T00:21:03",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-06T02:08:49",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy1"
+    },
+    {
+      "at": "2026-11-06T02:09:06",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T02:24:22",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-06T02:24:27",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T02:24:31",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T02:24:44",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T02:51:47",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "2cb53fc7-9e23-48d8-8da4-6b82c07c9cd8"
+    },
+    "tester": {
+      "account": "agy1",
+      "conversation_id": "38ac19f7-da4a-40fa-840d-91178a186ea2"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-047-student-gradebook-ui/verify.sh",
+    "tests/student-gradebook-ui.test.ts"
+  ]
+}

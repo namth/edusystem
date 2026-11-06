@@ -46,7 +46,7 @@ Mỗi bước không đạt đều trả 409.
    - Không có mục AI: bài `GRADED`, báo điểm tại chỗ.
    - Có Writing / Speaking: bài `GRADING`, đẩy `GRADING_REQUESTED` vào `stream:learning:grading`.
 4. Worker gọi `POST /api/exam/grade-async` để chấm từng mục AI theo tiêu chí của chuẩn, tính điểm tổng, chuyển bài sang `GRADED` và gửi thông báo `EXAM_GRADED` cho học sinh.
-5. AI lỗi 3 lần, hoặc worker bỏ cuộc (`giveUp`), thì bài chuyển `NEEDS_REVIEW` và giáo viên nhận thông báo `EXAM_NEEDS_REVIEW`. Giáo viên chấm tay ở `/teacher/grading` (`PUT /api/exam/grade-override`); xong thì bài `GRADED` và học sinh nhận thông báo.
+5. AI lỗi 3 lần, hoặc worker bỏ cuộc (`giveUp`), thì bài chuyển `NEEDS_REVIEW` và giáo viên nhận thông báo `EXAM_NEEDS_REVIEW`. Giáo viên chấm tay theo UF-11 (`/teacher/grading/[classId]/exam/[examId]`); chấm đủ mục AI thì bài `GRADED` và học sinh nhận thông báo.
 6. Chấm AI **không trừ slot** (DEC-031).
 
 ## UF-06 Giáo viên mua slot học sinh (FEAT-013)
@@ -74,3 +74,11 @@ Mỗi bước không đạt đều trả 409.
 ## UF-10 Quên mật khẩu / mật khẩu tạm
 1. `/forgot-password` gọi `POST /api/auth/forgot-password`, có giới hạn tần suất; server tạo `reset_token`. Người dùng đặt mật khẩu mới ở `/reset-password`.
 2. Tài khoản do admin hoặc giáo viên tạo có cờ `must_change_password`. Khi đăng nhập, token mang cờ `mcp`, middleware chuyển về `/change-password`; đổi xong được cấp cookie mới.
+
+## UF-11 Giáo viên chấm & chốt bảng điểm (FEAT-014)
+1. `/teacher/grading` → chọn lớp → danh sách bài của lớp (lộ trình ∪ đề giao, BR-B01) kèm số đã nộp, chờ duyệt, cần chấm tay.
+2. Bấm bài → `/teacher/grading/[classId]/[kind]/[itemId]`: bảng học sinh × điểm. Bài toàn khách quan đã có điểm ngay; bài AI hiện điểm AI (học sinh cũng đã thấy, DEC-021) và cờ "Chưa xem".
+3. Bấm học sinh → ngăn chấm: xem bài làm từng câu, sửa điểm / nhận xét từng câu AI, nhận xét chung → "Lưu & đánh dấu đã duyệt". Điểm tính lại, học sinh nhận cập nhật `EXAM_GRADED`.
+4. Tuỳ chọn: chọn lượt khác thay lượt cao nhất, hoặc nhập tay điểm thang 10 cho học sinh chưa nộp.
+5. "Chốt bảng điểm": chặn khi còn `GRADING` / `NEEDS_REVIEW`; còn bài chưa xem thì hỏi xác nhận. Chốt xong điểm được chụp lại, học sinh nhận `GRADEBOOK_FINALIZED` và xem ở tab Bảng điểm của lớp. "Mở chốt" để sửa tiếp.
+6. Tab "Tổng kết lớp": học sinh × bài đã chốt, trung bình thang 10.

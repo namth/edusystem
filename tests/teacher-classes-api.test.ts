@@ -35,6 +35,7 @@ beforeEach(async () => {
   await h.pg.db.exec(`
     ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;   -- DEC-031: ghi danh kiểm slot học sinh
+    ALTER TABLE submissions ADD COLUMN IF NOT EXISTS class_ref VARCHAR(50);
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
     CREATE TABLE class_unlocks (class_id VARCHAR(50), curriculum_item_id VARCHAR(50), student_id VARCHAR(50), unlocked_by VARCHAR(50));
     INSERT INTO users (id,name,email,role,password) VALUES ('t1','GV1','t1@x.vn','TEACHER','x'), ('t2','GV2','t2@x.vn','TEACHER','x'),
@@ -42,7 +43,7 @@ beforeEach(async () => {
     INSERT INTO classes (id,name,code,teacher_id,max_slots) VALUES ('c1','Lớp t1','AAA111','t1',2), ('c2','Lớp t2','BBB222','t2',30);
     INSERT INTO enrollments (id,student_id,class_id) VALUES ('en1','s1','c1');
     INSERT INTO exams (id,title,created_by) VALUES ('e1','Đề t1','t1'), ('e2','Đề t2','t2'), ('e0','Đề chung',NULL);
-    INSERT INTO submissions (id,exam_id,student_id,answers,status,created_at) VALUES ('sb1','e1','s1','{}','GRADED','2026-10-01');
+    INSERT INTO submissions (id,exam_id,student_id,answers,status,created_at,class_ref) VALUES ('sb1','e1','s1','{}','GRADED','2026-10-01','c1');
   `);
 });
 

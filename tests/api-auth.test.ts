@@ -119,7 +119,10 @@ const CASES: Case[] = [
   { name: "teacher/courses PUT", load: () => import("@/app/api/teacher/courses/route"), method: "PUT", url: "/api/teacher/courses", body: { id: "crs_x", title: "K" }, allowed: ["ADMIN", "TEACHER"] },
   { name: "teacher/courses DELETE", load: () => import("@/app/api/teacher/courses/route"), method: "DELETE", url: "/api/teacher/courses?id=crs_x", allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/grade-async POST", load: () => import("@/app/api/exam/grade-async/route"), method: "POST", url: "/api/exam/grade-async", body: { submissionId: "sub_1" }, allowed: ["ADMIN", "TEACHER"] },
-  { name: "exam/grade-override PUT", load: () => import("@/app/api/exam/grade-override/route"), method: "PUT", url: "/api/exam/grade-override", body: { submissionId: "sub_1", finalScore: 7 }, allowed: ["ADMIN", "TEACHER"] },
+  // @ts-ignore
+  { name: "teacher/grading/classes GET", load: () => import("@/app/api/teacher/grading/classes/route"), method: "GET", url: "/api/teacher/grading/classes", allowed: ["ADMIN", "TEACHER"] },
+  // @ts-ignore
+  { name: "student/classes/[classId]/gradebook GET", load: () => import("@/app/api/student/classes/[classId]/gradebook/route"), method: "GET", url: "/api/student/classes/c1/gradebook", ctx: { params: Promise.resolve({ classId: "c1" }) }, allowed: ["STUDENT"] },
   { name: "exam/rubrics GET", load: () => import("@/app/api/exam/rubrics/route"), method: "GET", url: "/api/exam/rubrics", allowed: ["ADMIN", "TEACHER"] },
   { name: "exam/rubrics POST", load: () => import("@/app/api/exam/rubrics/route"), method: "POST", url: "/api/exam/rubrics", body: { name: "R" }, allowed: ["ADMIN"] },
   { name: "exam/rubrics PUT", load: () => import("@/app/api/exam/rubrics/route"), method: "PUT", url: "/api/exam/rubrics", body: { id: "r1", name: "R" }, allowed: ["ADMIN"] },

@@ -100,3 +100,12 @@ Nguồn: đọc code ở commit `6034e88`, đối chiếu `FEATURE_INDEX.md` (25
 - ✅ 03/11 đã merge TASK-042 giao diện đơn hàng + VietQR · TASK-043 tổng quan `/admin` & menu (997 test xanh, `next build` OK, chưa deploy)
 - Khi deploy: kiểm `show timezone;` của Postgres là UTC (dashboard coi `ai_usage_logs.created_at` là UTC); nhập tài khoản nhận tiền + đơn giá slot ở /admin/orders → Cấu hình thanh toán; nhập bảng giá model ở /admin/settings
 
+
+### FEAT-014 Chấm & Bảng điểm theo lớp (`docs/features/cham-diem-bang-diem.md`, DEC-037…041) — ✅ DONE 06/11 (044–047 accepted, chưa deploy)
+| Task | Độ khó | KL | Phụ thuộc | Máy |
+| :--- | :--- | :--- | :--- | :--- |
+| TASK-044 Lõi: migration 017, `lib/gradebook.ts`, AI giữ bản gốc, bài học NEEDS_REVIEW | HIGH, nhạy cảm | M | — | máy chính (agy1 code, agy2 kiểm) |
+| TASK-045 API `/api/teacher/grading/**`, gradebook học sinh, bỏ API cũ | HIGH, nhạy cảm | L→M (chỉ server) | 044 | máy chính |
+| TASK-046 UI giáo viên (hub, bảng điểm, ngăn chấm, tổng kết) | HIGH | M | 045 | máy chính ∥ |
+| TASK-047 UI học sinh (tab Bảng điểm, nhận xét GV) | LOW | S | 045 | macbook ∥ 046 |
+- Deploy: migration 017 chạy cùng `ensureSchema`, không có bước tay.

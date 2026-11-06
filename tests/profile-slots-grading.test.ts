@@ -40,7 +40,7 @@ beforeEach(async () => {
     INSERT INTO users (id,name,email,role,phone,password,target_band) VALUES
       ('t1','GV1','t1@x.vn','TEACHER','0901','salt:hash',NULL), ('t2','GV2','t2@x.vn','TEACHER',NULL,'salt:hash',NULL),
       ('s1','HS1','s1@x.vn','STUDENT',NULL,'salt:hash','6.5'), ('s2','HS2','s2@x.vn','STUDENT',NULL,'salt:hash',NULL);
-    INSERT INTO classes (id,name,code,teacher_id) VALUES ('c1','Lớp','AAA','t1');
+    INSERT INTO classes (id,name,code,teacher_id) VALUES ('c1','Lớp','AAA','t1'), ('c2','Lớp 2','BBB','t2');
     INSERT INTO exams (id,title,created_by) VALUES ('e1','Đề t1','t1'), ('e2','Đề t2','t2');
     INSERT INTO submissions (id,exam_id,student_id,answers,status,class_ref,total_score,section_scores,created_at) VALUES
       ('sb1','e1','s1','{}','NEEDS_REVIEW','c1',NULL,'{"Reading":{"score":7}}','2026-10-03'),
@@ -89,16 +89,19 @@ describe("/api/teacher/slot-requests — mua slot", () => {
   });
 });
 
-describe("GET /api/teacher/submissions — danh sách bài nộp để chấm", () => {
-  const get = async (q = "") => (await import("@/app/api/teacher/submissions/route")).GET(req("GET", `/x${q}`));
-  it("TEACHER thấy bài của đề mình tạo hoặc lớp mình dạy, kèm tên đề/học sinh; lọc status; STUDENT 403", async () => {
+describe("GET /api/teacher/grading/classes — hub danh sách lớp để chấm", () => {
+  // @ts-ignore
+  const get = async () => (await import("@/app/api/teacher/grading/classes/route")).GET(req("GET", "/api/teacher/grading/classes"));
+  it("TEACHER chỉ thấy lớp mình dạy kèm needs_review; ADMIN thấy tất cả; STUDENT 403; chưa đăng nhập 401", async () => {
+    expect((await get()).status).toBe(401);
     await loginAs("TEACHER", "t1");
     const json = await (await get()).json();
-    expect(json.submissions.map((s: any) => s.id)).toEqual(["sb1", "sb2"]);
-    expect(json.submissions[0]).toMatchObject({ exam_title: "Đề t1", student_name: "HS1", status: "NEEDS_REVIEW" });
-    expect((await (await get("?status=NEEDS_REVIEW")).json()).submissions.map((s: any) => s.id)).toEqual(["sb1"]);
+    expect(json.classes.map((c: any) => c.id)).toEqual(["c1"]);
+    expect(json.classes[0]).toMatchObject({ id: "c1", needs_review: 1 });
+
     await loginAs("ADMIN", "a1");
-    expect((await (await get()).json()).submissions).toHaveLength(3);
+    expect((await (await get()).json()).classes).toHaveLength(2);
+
     await loginAs("STUDENT", "s1");
     expect((await get()).status).toBe(403);
   });
@@ -117,10 +120,9 @@ describe("Trang không còn Supabase trình duyệt; trang chấm bài dùng h�
     expect(s).toContain("/api/profile");
     expect(s).toContain("/api/auth/change-password");
   });
-  it("trang chấm bài: /api/teacher/submissions + grade-override với section_scores", () => {
+  it("trang chấm bài: chuyển sang hub /api/teacher/grading/classes theo FEAT-014", () => {
     const s = fs.readFileSync("app/teacher/grading/page.tsx", "utf8");
-    expect(s).toContain("/api/teacher/submissions");
-    expect(s).toContain("section_scores");
+    expect(s).toContain("/api/teacher/grading/classes");
     expect(s).not.toContain("overriddenScore");
     expect(s).not.toContain("teacher_01");
   });

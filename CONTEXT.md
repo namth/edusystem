@@ -34,10 +34,10 @@ Neo4j (quan hệ khoá học–đề–lớp), Redis Streams + `worker/grading-w
 Chuẩn duy nhất (DEC-036) — code lệch tài liệu thì sửa tài liệu theo code.
 - `docs/01-overview.md` — sản phẩm, vai trò, phạm vi · `docs/02-modules-and-features.md` — phân hệ, menu, ma trận phân quyền
 - `docs/03-screens-and-ui.md` — SCR-NN, điều hướng, quy tắc UI · `docs/04-user-flows.md` — UF-NN
-- `docs/05-architecture.md` — stack, hàng đợi chấm, hạ tầng, deploy · `docs/06-database-schema.md` — bảng, migration 001–016
+- `docs/05-architecture.md` — stack, hàng đợi chấm, hạ tầng, deploy · `docs/06-database-schema.md` — bảng, migration 001–017
 - `docs/07-api-contracts.md` — mọi endpoint + vai trò + test khoá · `docs/08-integrations.md` — AI, Storage, Redis, Neo4j, VietQR, TTS
 - `docs/09-conventions.md` — thư mục, đặt tên, test, git · `docs/10-env-and-security.md` — `.env.example`, bất biến bảo mật, rủi ro mở
-- `docs/11-tasks.md` — milestone, TASK-NNN, tồn đọng D1–D9 · `docs/12-business-rules.md` — BR-A/T/S/O/L/E/G/N/D, máy trạng thái
+- `docs/11-tasks.md` — milestone, TASK-NNN, tồn đọng D1–D10 · `docs/12-business-rules.md` — BR-A/T/S/O/L/E/G/N/D/B, máy trạng thái
 - `docs/13-test-cases-and-qa.md` — bản đồ test, ca bắt buộc, DoD · `docs/15-operations.md` — deploy, migration tay, cấu hình sau deploy, rollback
 - `docs/archive/` — tài liệu cũ, không còn là chuẩn · `tests/docs-sync.test.ts` — đỏ khi code đổi mà docs chưa cập nhật
 - `docs/14-decisions.md` — quyết định đã chốt (DEC), thắng khi mâu thuẫn.
@@ -46,5 +46,6 @@ Chuẩn duy nhất (DEC-036) — code lệch tài liệu thì sửa tài liệu 
 - `docs/features/lesson-library.md` — FEAT-010 Kho bài học & học theo lộ trình lớp (TASK-007 → TASK-013).
 - `docs/features/dang-ky-phong-van.md` — FEAT-012 Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử & xác minh (TASK-035 → TASK-037).
 - `docs/features/quan-tri-he-thong.md` — FEAT-013 Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh (TASK-038 → TASK-043).
+- `docs/features/cham-diem-bang-diem.md` — FEAT-014 Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết thang 10 (TASK-044 → TASK-047, DONE 06/11).
 - `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
 - `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

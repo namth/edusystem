@@ -1,0 +1,69 @@
+{
+  "id": "TASK-046",
+  "title": "UI giáo viên: hub Chấm & Bảng điểm, bảng điểm từng bài, ngăn chấm, tổng kết lớp",
+  "status": "accepted",
+  "conversation_id": "701503f5-5467-48db-bfe4-481925782d46",
+  "history": [
+    {
+      "at": "2026-11-06T00:21:03",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-06T02:08:49",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T02:08:53",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T02:24:27",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-06T02:24:44",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T02:24:57",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T02:25:23",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T02:40:39",
+      "status": "in_progress",
+      "note": "đổi model agy: gemini-4-argon-high → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T03:07:36",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "701503f5-5467-48db-bfe4-481925782d46"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "6fe915a2-f224-4782-846b-275714d2b0dd"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-046-teacher-grading-ui/verify.sh",
+    "tests/teacher-grading-ui.test.ts",
+    "tests/profile-slots-grading.test.ts"
+  ]
+}

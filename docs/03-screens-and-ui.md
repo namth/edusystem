@@ -21,10 +21,10 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-10 | `/student/dashboard` | Trang chủ học sinh: lớp, việc cần làm, vào lớp bằng mã | CODE-ONLY | DONE |
-| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
-| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu, làm lại | CODE-ONLY | DONE |
+| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; tab Bảng điểm (`?tab=gradebook`) xem điểm chính thức các bài đã chốt | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
+| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại | CODE-ONLY | DONE |
 | SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm | CODE-ONLY | DONE |
-| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, phần "đang chấm" | CODE-ONLY | DONE |
+| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm" | CODE-ONLY | DONE |
 | SCR-15 | `/student/analytics` | Biểu đồ điểm | CODE-ONLY | DONE |
 | SCR-16 | `/student/landing` | Trang chờ (đổi mật khẩu / chưa có lớp) | CODE-ONLY | DONE |
 | — | `/student` | Chuyển hướng | — | REDIRECT |
@@ -33,7 +33,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
-| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, giao đề, lộ trình lớp, mở khoá, tiến độ | CODE-ONLY | DONE |
+| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
 | SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
 | SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
@@ -43,7 +43,8 @@
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
 | SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn | CODE-ONLY | DONE |
 | SCR-30 | `/teacher/orders/[id]` | Trang thanh toán VietQR, báo đã chuyển khoản, huỷ | CODE-ONLY | DONE |
-| SCR-31 | `/teacher/grading` | Duyệt / sửa điểm AI, chấm tay `NEEDS_REVIEW` | CODE-ONLY | DONE |
+| SCR-31 | `/teacher/grading` | Hub chấm điểm & bảng điểm theo lớp: chọn lớp, lọc bài, bảng bài và tổng kết lớp (`?class=`, `?tab=summary`) | CODE-ONLY | DONE (FEAT-014) |
+| SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | CODE-ONLY | DONE (FEAT-014) |
 
 ### Quản trị
 | SCR | Đường dẫn | Mô tả | Design | Code |
@@ -78,7 +79,8 @@
   Tham số `next` chỉ được nhận đường dẫn nội bộ (`safeNextPath`).
 - Liên kết trong thông báo:
   - học sinh: `/student/exam/review/<id>`;
-  - giáo viên: `/teacher/grading`, `/teacher/orders/<id>`;
+  - giáo viên: `/teacher/grading/<classId>/<kind>/<itemId>` (`EXAM_NEEDS_REVIEW` của bài lớp, `LESSON_NEEDS_REVIEW`), `/teacher/grading` (bài luyện tự do), `/teacher/orders/<id>`;
+  - học sinh (chốt bảng điểm): `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
   - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`.
 
 ## 3. Quy tắc giao diện (bắt buộc, có test)

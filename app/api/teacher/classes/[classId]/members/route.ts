@@ -34,7 +34,7 @@ export async function GET(
       `
       SELECT 
         u.id, u.name, u.email, u.phone, u.status,
-        (SELECT COUNT(*)::int FROM submissions s WHERE s.student_id = u.id) AS submission_count
+        (SELECT COUNT(*)::int FROM submissions s WHERE s.student_id = u.id AND s.class_ref = e.class_id) AS submission_count
       FROM enrollments e
       JOIN users u ON u.id = e.student_id
       WHERE e.class_id = $1
@@ -49,8 +49,8 @@ export async function GET(
 
     if (studentIds.length > 0) {
       const subRes = await queryPg(
-        `SELECT s.* FROM submissions s WHERE s.student_id = ANY($1::text[]) ORDER BY s.created_at DESC`,
-        [studentIds]
+        `SELECT s.* FROM submissions s WHERE s.student_id = ANY($1::text[]) AND s.class_ref = $2 ORDER BY s.created_at DESC`,
+        [studentIds, classId]
       );
       for (const row of subRes.rows) {
         if (latestTotalMap[row.student_id] === undefined) {

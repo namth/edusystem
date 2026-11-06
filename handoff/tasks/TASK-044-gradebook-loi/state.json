@@ -1,0 +1,113 @@
+{
+  "id": "TASK-044",
+  "title": "Lõi bảng điểm: migration 017, lib/gradebook.ts, AI chấm giữ bản gốc, bài học NEEDS_REVIEW",
+  "status": "accepted",
+  "conversation_id": "42a17aa7-277d-44b0-8eae-999641dff1d2",
+  "history": [
+    {
+      "at": "2026-11-06T00:18:20",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-06T00:19:51",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T00:20:12",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T00:40:00",
+      "status": "draft",
+      "note": "Claude: đưa về draft để tài khoản kiểm chéo viết tests/gradebook*.test.ts (auto đã bỏ qua vì tests.lock có sẵn); code của agy1 giữ nguyên"
+    },
+    {
+      "at": "2026-11-06T00:32:21",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T00:32:39",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T01:05:00",
+      "status": "draft",
+      "note": "Claude: tạm gỡ tests.lock để agy2 viết test chéo; khoá lại verify.sh + student-lessons-api sau"
+    },
+    {
+      "at": "2026-11-06T00:36:05",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T00:38:01",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T00:58:23",
+      "status": "tests_ready",
+      "note": "test xanh: Code của agy1 đã có trước khi test chéo được viết"
+    },
+    {
+      "at": "2026-11-06T00:58:37",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-06T00:58:54",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-06T01:03:38",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-06T01:03:46",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-06T01:03:50",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-06T01:08:38",
+      "status": "review_passed",
+      "note": "nghiệm thu chéo đạt bởi agy2 — chờ trưởng phòng (HIGH/nhạy cảm)"
+    },
+    {
+      "at": "2026-11-06T01:11:40",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "locked_files": [
+    "handoff/tasks/TASK-044-gradebook-loi/verify.sh",
+    "tests/gradebook.test.ts"
+  ],
+  "agents": {
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "551ce8dd-6f8c-48c6-b0b1-a53ede7fea34"
+    },
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "42a17aa7-277d-44b0-8eae-999641dff1d2"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "5c36b328-916d-43fa-a3ff-2f4193a0e7db"
+    }
+  },
+  "via": "agy",
+  "review_fingerprint": "27444133f8093f79866178b63fe8e79f5abe3abeda647d6294e9992df47b8b87"
+}

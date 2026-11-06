@@ -167,6 +167,11 @@ export async function POST(req: Request) {
           } else if (gradedScore !== undefined) {
             r.score = gradedScore;
             r.feedback = gradedFeedback;
+            // Bản gốc AI (DEC-039): không ghi đè nếu đã có
+            if (r.ai_score === undefined || r.ai_score === null) {
+              r.ai_score = gradedScore;
+              r.ai_feedback = gradedFeedback;
+            }
           }
         }
       }

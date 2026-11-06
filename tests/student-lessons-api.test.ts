@@ -72,6 +72,7 @@ beforeEach(async () => {
     );
   `);
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-006-lessons.sql", "utf8"));
+  await h.pg.db.exec(fs.readFileSync("docs/db-migration-017-gradebook.sql", "utf8")); // FEAT-014
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,slot_limit) VALUES
       ('t1','GV','t1@x.vn','TEACHER',5), ('s1','HS1','s1@x.vn','STUDENT',0), ('s2','HS2','s2@x.vn','STUDENT',0), ('s9','Ngoài','s9@x.vn','STUDENT',0);
@@ -295,16 +296,18 @@ describe("POST /api/lessons/grade-async — worker chấm AI (TC-L07)", () => {
     expect(h.aiCalls.length).toBe(calls);
   });
 
-  it("AI lỗi liên tục → thử tối đa 3 lần mỗi mục rồi GRADED với điểm AI 0", async () => {
+  // DEC-041 / BR-B12 (FEAT-014): AI lỗi không còn cho 0 điểm mà chuyển NEEDS_REVIEW
+  it("AI lỗi liên tục → thử tối đa 3 lần mỗi mục rồi NEEDS_REVIEW, không cho 0 điểm", async () => {
     const attempt = await submitAI();
     h.aiBand = new Error("AI down");
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
     await grade({ attemptId: attempt.id });
-    const row = (await rows(`SELECT status, ai_earned, score_percent FROM lesson_attempts WHERE id='${attempt.id}'`))[0];
-    expect(row.status).toBe("GRADED");
-    expect(Number(row.ai_earned)).toBe(0);
-    expect(Number(row.score_percent)).toBe(50);
+    const row = (await rows(`SELECT status, ai_earned, score_percent, last_grading_error FROM lesson_attempts WHERE id='${attempt.id}'`))[0];
+    expect(row.status).toBe("NEEDS_REVIEW");
+    expect(row.ai_earned).toBeNull();
+    expect(row.score_percent).toBeNull();
+    expect(String(row.last_grading_error || "")).not.toBe("");
     expect(h.aiCalls.length).toBe(6);                            // 2 mục × 3 lần
   });
 

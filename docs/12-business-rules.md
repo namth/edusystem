@@ -2,7 +2,7 @@
 
 > Cập nhật: 2026-11-03.
 > - Gom từ `docs/features/*` và DEC, đối chiếu với code. **Code là sự thật.** Quy tắc đã đổi được ghi rõ là "thay".
-> - Mã quy tắc: `BR-<miền><NN>`. Miền A = tài khoản, T = dùng thử, S = slot, O = đơn hàng, L = bài học, E = đề thi, G = chấm AI, N = thông báo, D = tổng quan.
+> - Mã quy tắc: `BR-<miền><NN>`. Miền A = tài khoản, T = dùng thử, S = slot, O = đơn hàng, L = bài học, E = đề thi, G = chấm AI, N = thông báo, D = tổng quan, B = bảng điểm (FEAT-014).
 
 ## 1. Tài khoản & đăng nhập (A)
 - **BR-A01** Đăng nhập bằng email **hoặc** tên đăng nhập (`identifier`). Sai thông tin thì trả một thông điệp chung, có giới hạn tần suất.
@@ -79,7 +79,7 @@
 ## 7. Chấm AI (G): DEC-021, DEC-034
 - **BR-G01** Mỗi mục AI thử tối đa 3 lần. Vẫn lỗi thì `NEEDS_REVIEW`: giữ điểm các phần đã chấm, `total_score = null`, **không** cho điểm thấp nhất.
 - **BR-G02** Worker bỏ cuộc (`giveUp`) thì `NEEDS_REVIEW` một lần; gọi lại không đổi gì thêm.
-- **BR-G03** Giáo viên lớp (hoặc người tạo đề luyện tập) và ADMIN sửa điểm được qua `grade-override`, xong thì bài `GRADED`.
+- **BR-G03** *(thay bởi BR-B06/BR-B07, DEC-038; `grade-override` đã bỏ)* Giáo viên lớp (hoặc người tạo đề luyện tập) và ADMIN sửa điểm được qua `grade-override`, xong thì bài `GRADED`.
 - **BR-G04** Mỗi lần gọi model thành công ghi đúng 1 dòng `ai_usage_logs` với token thật. Không có usage thì ghi 0. Lời gọi lỗi thì không ghi. Lỗi khi ghi log không làm hỏng việc chấm.
 - **BR-G05** `cost_usd = in × giá_in / 1e6 + out × giá_out / 1e6`, theo giá của model. Khớp tên model theo thứ tự: chính xác → phần sau dấu `/` cuối → không phân biệt hoa thường. Model chưa có giá thì chi phí = 0.
 
@@ -96,12 +96,30 @@
 - **BR-D04** Chi phí VND = `usdToVnd(Σ cost_usd đã lưu, ai_pricing.usd_vnd_rate)`, làm tròn số nguyên. Doanh thu = Σ `total_cost` các đơn `APPROVED` có `decided_at` trong kỳ.
 - **BR-D05** Top giáo viên: tối đa 10 người, sắp theo chi phí giảm dần, tính mọi `purpose`.
 
+## 9b. Bảng điểm (B): FEAT-014, DEC-037 → DEC-041; `lib/gradebook.ts`, `lib/gradebook-data.ts`
+Chi tiết đầy đủ ở `docs/features/cham-diem-bang-diem.md` §7. Tóm tắt:
+- **BR-B01** Bài của lớp = mục `LESSON`/`EXAM` trong lộ trình khoá của lớp ∪ `class_assignments`, gộp trùng.
+- **BR-B02** Lượt của bài trong lớp: đề theo `class_ref`, bài học theo `class_id`; bài luyện tự do không vào hub.
+- **BR-B03** Ô điểm: `manual_score10` > `chosen_attempt_id` > lượt `GRADED` cao nhất (hoà → lượt sớm).
+- **BR-B04** Thang 10 = `score_percent / 10` (bài học) hoặc `submissionScore().percent / 10` (đề), làm tròn 0.1.
+- **BR-B05** "Chờ duyệt" = lượt `GRADED` có mục AI và `reviewed_at IS NULL`.
+- **BR-B06** Chỉ sửa mục AI, trong thang của phần (đề) hoặc band 0–9 bước 0.5 (bài học); `ai_score`/`ai_feedback` không bao giờ bị ghi đè.
+- **BR-B07** Lưu sửa → tính lại điểm, đặt `reviewed_at`; `NEEDS_REVIEW` → `GRADED` khi mọi mục AI có điểm; đề gọi `notifyExamGraded`.
+- **BR-B08** Chốt: còn `GRADING`/`NEEDS_REVIEW` → 409; còn chờ duyệt mà chưa xác nhận → 409; chốt thì chụp ảnh điểm mọi học sinh trong một giao dịch.
+- **BR-B09** Đã chốt: khoá ô và lượt nộp trước mốc; lượt sau mốc chấm được nhưng không đổi ảnh chụp; mở chốt thì học sinh không thấy bài.
+- **BR-B10** Trung bình = TB cộng `score10` không rỗng của các bài đã chốt, làm tròn 0.1.
+- **BR-B11** Học sinh chỉ thấy dòng của mình, bài đã chốt.
+- **BR-B12** AI chấm bài học lỗi 3 lần / `giveUp` → `NEEDS_REVIEW`, không cho 0.
+- **BR-B13** AI chấm xong ghi `ai_score`, `ai_feedback` cùng `score`.
+
 ## 10. Máy trạng thái
 ```text
 submissions.status      IN_PROGRESS ─submit─▶ GRADED (toàn câu khách quan)
                         IN_PROGRESS ─submit─▶ GRADING ─grade-async OK─▶ GRADED
                                                       ├─AI lỗi 3 lần / giveUp / đẩy sự kiện lỗi─▶ NEEDS_REVIEW ─grade-override─▶ GRADED
 lesson_attempts.status  (nộp) ─▶ GRADED | GRADING ─lessons/grade-async─▶ GRADED      (AI_SKIPPED: chỉ dữ liệu cũ)
+                        FEAT-014: GRADING ─AI lỗi 3 lần / giveUp─▶ NEEDS_REVIEW ─GV chấm đủ mục AI─▶ GRADED
+class_grade_items       (mở) ─finalize─▶ đã chốt (finalized_at) ─reopen─▶ (mở)          (FEAT-014)
 slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─reject(reason)─▶ REJECTED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
