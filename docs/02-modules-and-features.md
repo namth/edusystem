@@ -17,6 +17,7 @@
 | Menu | Đường dẫn | Tính năng | FEAT / DEC |
 | :--- | :--- | :--- | :--- |
 | Tổng quan | `/admin` | Số tổng, số theo tháng (giờ VN), biểu đồ theo ngày, top giáo viên dùng AI | FEAT-013, DEC-034 |
+| Chi phí AI | `/admin/ai-usage` | Token & chi phí AI theo giáo viên trong tháng, chia theo mục đích, so doanh thu, xuất CSV (TASK-050) |
 | Đơn hàng (kèm số đơn chờ) | `/admin/orders`, `/admin/orders/[id]` | Lọc, duyệt, từ chối, huỷ đơn mua slot; tab cấu hình thanh toán (ngân hàng, STK, đơn giá) | FEAT-013, DEC-032/033 |
 | Quản Lý Giáo Viên | `/admin/teachers`, `/admin/teachers/[id]` | Danh sách, lọc chờ xác minh, xác minh / từ chối, sửa `slot_limit`, tạo đơn mua slot, nhật ký AI | DEC-028, FEAT-013 |
 | Quản Lý Học Sinh | `/admin/students`, `/admin/students/[id]` | Danh sách, chi tiết, lớp đang học, điểm | — |

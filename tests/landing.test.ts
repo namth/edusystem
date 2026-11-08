@@ -112,9 +112,10 @@ describe("Landing — icon động & bản quyền INOVA", () => {
     expect(css).toMatch(/prefers-reduced-motion/);
   });
 
-  it("footer ghi bản quyền thuộc Công ty Công nghệ INOVA, liên kết inova.io.vn", () => {
+  it("footer ghi bản quyền thuộc pháp nhân INOVA (lấy từ BRAND), liên kết inova.io.vn", () => {
     const f = read("components/landing/LandingFooter.tsx");
-    expect(f).toMatch(/Công ty Công nghệ INOVA/);
+    expect(f).toMatch(/Bản quyền thuộc về/);
+    expect(f).toContain("BRAND.company.fullName");
     expect(f).toContain("https://inova.io.vn");
   });
 });

@@ -171,7 +171,7 @@ describe("Menu admin & điều hướng", () => {
   it("thứ tự menu đúng đặc tả §4", () => {
     const s = read("components/AdminLayout.tsx");
     const hrefs = [...s.matchAll(/href:\s*"(\/admin[^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(["/admin", "/admin/orders", "/admin/teachers", "/admin/students", "/admin/accounts", "/admin/scoring-standards", "/admin/leads", "/admin/settings"]);
+    expect(hrefs).toEqual(["/admin", "/admin/ai-usage", "/admin/orders", "/admin/teachers", "/admin/students", "/admin/accounts", "/admin/scoring-standards", "/admin/leads", "/admin/settings"]);
     for (const k of ["Tổng quan", "Đơn hàng", "Liên Hệ Từ Website", "Chuẩn Chấm Điểm"]) expect(s, k).toMatch(new RegExp(k, "i"));
     expect(s).toMatch(/LayoutDashboard/);
     expect(s).toMatch(/Receipt/);
