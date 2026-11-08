@@ -57,41 +57,12 @@ export async function POST(
     );
   }
 
-  let access = await checkLessonAccess(classId, lessonId, user.userId);
+  const access = await checkLessonAccess(classId, lessonId, user.userId);
   if (!access.ok) {
-    // Nếu lớp không có course/roadmap nhưng học sinh đã ghi danh vào lớp và bài học tồn tại
-    const enrollRes = await queryPg(
-      "SELECT 1 FROM enrollments WHERE class_id = $1 AND student_id = $2",
-      [classId, user.userId]
+    return NextResponse.json(
+      { success: false, error: access.error },
+      { status: access.status }
     );
-    const lRes = await queryPg(
-      "SELECT id, title, description, question_ids FROM lessons WHERE id = $1",
-      [lessonId]
-    );
-    if (enrollRes.rows.length > 0 && lRes.rows.length > 0) {
-      const lRow = lRes.rows[0];
-      const qIds: string[] = Array.isArray(lRow.question_ids)
-        ? lRow.question_ids
-        : typeof lRow.question_ids === "string"
-        ? JSON.parse(lRow.question_ids)
-        : [];
-      access = {
-        ok: true,
-        klass: {} as any,
-        item: {} as any,
-        lesson: {
-          id: lRow.id,
-          title: lRow.title,
-          description: lRow.description ?? null,
-          question_ids: qIds,
-        },
-      };
-    } else {
-      return NextResponse.json(
-        { success: false, error: access.error },
-        { status: access.status }
-      );
-    }
   }
 
   const trialAttempt = await assertTrialAttemptAllowed({

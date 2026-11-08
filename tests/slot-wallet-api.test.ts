@@ -292,6 +292,12 @@ beforeEach(async () => {
       ('c_ended',  'Lớp Kết Thúc',  'END01', 't1', 30, '${past40Str}', NULL, NULL, 'ENDED', 1),
       ('c_t2',     'Lớp Thầy Minh', 'TM001', 't2', 30, '${todayStr}', '${next30Str}', NULL, 'ACTIVE', 0);
 
+    -- Lộ trình chứa bài học lsn_test, mở toàn bộ, để kiểm khoá lớp mà không nới quyền truy cập bài (checkLessonAccess)
+    INSERT INTO courses (id, title, created_by) VALUES ('crs_w', 'Khoá ví', 't1');
+    INSERT INTO curriculum_items (id, course_id, teacher_id, parent_id, title, type, lesson_id, order_index)
+      VALUES ('ci_w1', 'crs_w', 't1', NULL, 'Bài test', 'LESSON', 'lsn_test', 1);
+    UPDATE classes SET course_id = 'crs_w', unlock_mode = 'ALL_OPEN' WHERE id IN ('c_active', 'c_grace', 'c_locked', 'c_ended');
+
     INSERT INTO enrollments (id, class_id, student_id)
     VALUES
       ('en_act_s1', 'c_active', 's1'),

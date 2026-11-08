@@ -22,11 +22,16 @@
 
 ## 2. Danh mục endpoint
 
-> **FEAT-015:** lõi ví (TASK-052) đã có: route cron bên dưới; mọi đường ghi danh trừ ví qua `chargeEnrollment` (hết slot → 409, lớp LOCKED/ENDED → 409); `approveOrder` cộng `slot_balance` + dòng `PURCHASE`. API ví, `billing`, `end`, `slot-adjust` thêm khi TASK-053 xong — xem `docs/features/vi-slot-hoc-sinh-thang.md` §6.
+> **FEAT-015:** lõi ví (TASK-052) đã có: route cron bên dưới; mọi đường ghi danh trừ ví qua `chargeEnrollment` (hết slot → 409, lớp LOCKED/ENDED → 409); `approveOrder` cộng `slot_balance` + dòng `PURCHASE`. API ví, `billing`, `end`, `slot-adjust` (TASK-053) ở bảng dưới; nộp bài/mở lượt lớp LOCKED/ENDED → 403 `CLASS_LOCKED`, grade-async → `NEEDS_REVIEW`. Đặc tả: `docs/features/vi-slot-hoc-sinh-thang.md` §6.
 
 | Method | Path | Quyền | Mô tả | Test |
 | :--- | :--- | :--- | :--- | :--- |
 | POST | `/api/cron/slot-billing` | `Authorization: Bearer <CRON_SECRET>` (so sánh hằng thời gian) | Chạy `runBillingCycle()`: trừ kỳ theo sĩ số, ân hạn 7 ngày, khoá lớp; trả `{ charged, grace, locked, skipped }`. Sai/thiếu secret → 401. Worker gọi hằng giờ | `slot-wallet` |
+| GET | `/api/teacher/slot-wallet` | TEACHER | `{ balance, unit_price_vnd, total_next_needed, classes[{ id, name, billing_status, start_date, next_charge_at, grace_until, student_count, enough_for_next }], ledger[], next_cursor }`; `?cursor=&class_id=` (20 dòng/trang) | `slot-wallet-api` |
+| PUT | `/api/teacher/classes/[classId]/billing` | TEACHER chủ lớp, ADMIN | `{ start_date: YYYY-MM-DD }`; đã có dòng CYCLE → 409; quá 30 ngày trước / 90 ngày tới → 400; lớp người khác → 404 | `slot-wallet-api` |
+| POST | `/api/teacher/classes/[classId]/end` | TEACHER chủ lớp, ADMIN | `billing_status = ENDED`, `ended_at`; đã ENDED → 409; lớp người khác → 404 | `slot-wallet-api` |
+| GET | `/api/admin/teachers/[id]/slot-wallet` | ADMIN | Như bản giáo viên | `slot-wallet-api` |
+| POST | `/api/admin/teachers/[id]/slot-adjust` | ADMIN | `{ delta: int ≠ 0, |delta| ≤ 100000, note 1–500 }`; trừ làm âm → 409; cộng thì trừ ngay các lớp GRACE/LOCKED (BR-W07) | `slot-wallet-api` |
 ### 2.1 Xác thực & hồ sơ
 | Method | Route | Vai trò | Ghi chú | Test |
 | :--- | :--- | :--- | :--- | :--- |
@@ -119,7 +124,7 @@ Test: `slot-orders-api`, `admin-api`.
 | GET | `/api/admin/users?role=&teacherStatus=` | | `admin-api`, `teacher-trial` |
 | GET / PUT | `/api/admin/users/[id]` | Sửa thông tin, `class_ids` (409 nếu hết slot) | `admin-api`, `student-slots` |
 | POST | `/api/admin/users/[id]/reset-password` | Cấp mật khẩu tạm 10 ký tự, `must_change_password = true`, xoá `reset_token`; trả `{ temp_password }` một lần, `Cache-Control: no-store`. Tự cấp cho mình → 400; 20 lần/giờ/người gọi (429) | `reset-password` |
-| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI (50 dòng), `ai_totals` (SUM toàn bộ log), `students_used` (BR-S01), `slot_limit` | `admin-api` |
+| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI (50 dòng), `ai_totals` (SUM toàn bộ log), `students_used`, `slot_balance`; PUT bỏ qua `slot_limit` (FEAT-015) | `admin-api` |
 | GET | `/api/admin/ai-usage?month=YYYY-MM[&format=csv]` | Báo cáo theo giáo viên: token, `cost_vnd`, `by_purpose`, `revenue_vnd` (đơn APPROVED trong tháng), `margin_vnd`, dòng `unattributed`; CSV có BOM. Tháng sai → 400 | `ai-usage-report` |
 | POST | `/api/admin/teachers/[id]/verify` | `{ decision: VERIFIED\|REJECTED, note? }` | `teacher-trial` |
 | POST | `/api/admin/create-user`, `/api/admin/delete-user` | Tạo kèm `classIds` (409 nếu hết slot, không tạo user) | `admin-api`, `student-slots` |
