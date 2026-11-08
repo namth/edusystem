@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { queryPg } from "@/lib/db-pg";
+import { queryPg, getPgPool } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass, syncTeacherManagesClass } from "@/lib/neo4j";
 import { requireRole } from "@/lib/api-auth";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
-import { assertStudentSlotAvailable } from "@/lib/student-slots";
+import { chargeEnrollment } from "@/lib/slot-wallet";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -41,26 +41,6 @@ export async function POST(req: Request) {
       if (!trial.ok) {
         return trialLimitResponse("students", trial.error);
       }
-
-      const classRows = await queryPg(
-        `SELECT id, teacher_id FROM classes WHERE id = ANY($1);`,
-        [classIds]
-      );
-      const teacherIds = new Set<string>();
-      for (const row of classRows.rows) {
-        if (row.teacher_id) {
-          teacherIds.add(row.teacher_id);
-        }
-      }
-      for (const tId of teacherIds) {
-        const slotCheck = await assertStudentSlotAvailable(tId);
-        if (!slotCheck.ok) {
-          return NextResponse.json(
-            { success: false, error: slotCheck.error },
-            { status: 409 }
-          );
-        }
-      }
     }
 
     const emailToUse = email.trim().toLowerCase();
@@ -74,15 +54,19 @@ export async function POST(req: Request) {
 
     const newUserId = `usr_${roleToUse.toLowerCase()}_${Date.now().toString().slice(-6)}_${Math.random().toString(36).slice(2, 7)}`;
 
-    // 1. Direct PostgreSQL Insert into public.users table with salted scrypt password hash
+    const pool = getPgPool();
+    const client = await pool.connect();
+
     try {
+      await client.query("BEGIN");
+
       const insertSql = `
         INSERT INTO users (id, name, email, password, role, phone, target_band, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
         RETURNING id, name, email, role, phone, target_band, created_at;
       `;
 
-      await queryPg(insertSql, [
+      await client.query(insertSql, [
         newUserId,
         nameToUse,
         emailToUse,
@@ -91,7 +75,29 @@ export async function POST(req: Request) {
         phoneToUse,
         targetBandToUse,
       ]);
+
+      if (Array.isArray(classIds) && classIds.length > 0) {
+        for (const cId of classIds) {
+          const chargeRes = await chargeEnrollment(client, { classId: cId, studentId: newUserId });
+          if (!chargeRes.ok) {
+            await client.query("ROLLBACK");
+            return NextResponse.json(
+              { success: false, error: chargeRes.error },
+              { status: chargeRes.status }
+            );
+          }
+
+          const enrId = `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
+          await client.query(
+            `INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;`,
+            [enrId, newUserId, cId]
+          );
+        }
+      }
+
+      await client.query("COMMIT");
     } catch (dbErr: any) {
+      await client.query("ROLLBACK").catch(() => {});
       console.error("PostgreSQL Insert Error:", dbErr);
       if (dbErr.code === "23505" || dbErr.message?.includes("unique constraint") || dbErr.message?.includes("already exists")) {
         return NextResponse.json(
@@ -103,17 +109,12 @@ export async function POST(req: Request) {
         { success: false, error: `Lỗi CSDL PostgreSQL: ${dbErr.message}` },
         { status: 500 }
       );
+    } finally {
+      client.release();
     }
 
-    // 2. Insert Enrollments if classIds provided
     if (Array.isArray(classIds) && classIds.length > 0) {
       for (const cId of classIds) {
-        const enrId = `enr_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
-        await queryPg(
-          `INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;`,
-          [enrId, newUserId, cId]
-        );
-        // Sync Polyglot Neo4j Graph DB
         try {
           await syncStudentEnrolledInClass(newUserId, cId);
         } catch (graphErr) {

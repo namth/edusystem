@@ -1,13 +1,94 @@
 {
   "id": "TASK-052",
   "title": "Lõi ví slot học sinh-tháng: migration 018, lib/slot-wallet, cron, ghi danh trừ ví",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "a7d50722-6032-473c-8acb-c3c755e8d1d3",
   "history": [
     {
       "at": "2026-11-08T12:19:10",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T13:28:19",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T13:28:31",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:56:43",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T13:57:01",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T13:57:19",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:57:48",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T14:10:20",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T14:30:11",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T14:37:16",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T14:37:34",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T14:37:44",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T14:44:30",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "a7d50722-6032-473c-8acb-c3c755e8d1d3"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "187914af-9251-4b00-82c1-cee2bb716242"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "9ac6433e-26e8-49ec-8efb-7688de43b169"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-052-slot-wallet-core/verify.sh",
+    "handoff/tasks/TASK-052-slot-wallet-core/verify.sh",
+    "tests/slot-wallet.test.ts"
+  ],
+  "review_fingerprint": "f43bd50e2e1edac521d0ae7e8ae54dace3a89eca396a7909162b7f5d24ca49d2"
 }

@@ -37,6 +37,10 @@ CREATE TABLE flashcards (
   id VARCHAR(50) PRIMARY KEY, vietnamese_name VARCHAR(255), correct_english_word VARCHAR(255),
   options JSONB, image_url TEXT, audio_url TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS lessons (
+  id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 `;
 
 export async function createFakePg(migrations: string[] = []) {
