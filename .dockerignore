@@ -15,3 +15,7 @@ docs
 scratch
 *.zip
 /public/media
+
+.claude
+.agents
+
