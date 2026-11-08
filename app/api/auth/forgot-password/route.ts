@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { checkRateLimit, recordRateLimitHit } from "@/lib/rate-limit";
 import crypto from "crypto";
+import { appBaseUrl, sendEmail } from "@/lib/mailer";
+import { resetPasswordEmail } from "@/lib/email-templates";
 
 const FORGOT_WINDOW_MS = 15 * 60 * 1000;
 const FORGOT_MAX_REQUESTS = 5;
@@ -71,6 +73,11 @@ export async function POST(req: Request) {
       `UPDATE users SET reset_token = $1, reset_token_expires = NOW() + INTERVAL '15 minutes' WHERE id = $2;`,
       [resetToken, userRow.id]
     );
+
+    // Gửi email link đặt lại (nếu đã cấu hình Resend). Gửi nền, KHÔNG await: nếu chờ thì thời gian
+    // phản hồi lộ ra email có tồn tại hay không (BR-A06). sendEmail không ném lỗi, không log token/link.
+    const url = `${appBaseUrl()}/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
+    void sendEmail({ to: userRow.email, ...resetPasswordEmail({ name: userRow.name, url }) }).catch(() => {});
 
     // Chỉ môi trường dev/e2e, bật rõ bằng ALLOW_DEV_RESET_LINK=1, mới nhận link trong response.
     if (devResetLinkAllowed()) {

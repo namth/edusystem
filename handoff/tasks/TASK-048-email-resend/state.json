@@ -1,13 +1,89 @@
 {
   "id": "TASK-048",
   "title": "Gửi email qua Resend: quên mật khẩu, đơn hàng, thông báo admin",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "21be7d3b-cf55-43ab-a69a-afa2f479382a",
   "history": [
     {
       "at": "2026-11-08T11:53:37",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T11:55:51",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T11:56:00",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:12:04",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:25:27",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T12:25:45",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T12:26:00",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T12:32:04",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:32:53",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T12:33:03",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T12:33:06",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:35:11",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "21be7d3b-cf55-43ab-a69a-afa2f479382a"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "a378425d-1f86-4915-9cb5-bf22ff873dd5"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "14f63ebd-dcda-4d5c-96f1-4a07f9e86b83"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-048-email-resend/verify.sh",
+    "handoff/tasks/TASK-048-email-resend/verify.sh",
+    "tests/mailer.test.ts"
+  ],
+  "review_fingerprint": "23d85ef657e26f28ead567aa52fe77caafa1969c75e8ce666ba6b14c0d6085c2"
 }
