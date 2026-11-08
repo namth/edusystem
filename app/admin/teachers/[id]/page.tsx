@@ -131,6 +131,8 @@ export default function AdminTeacherDetailPage() {
   const [profile, setProfile] = useState<TeacherProfileData | null>(null);
   const [classes, setClasses] = useState<ManagedClass[]>([]);
   const [aiLogs, setAiLogs] = useState<AILogRecord[]>([]);
+  const [aiTotals, setAiTotals] = useState({ requests: 0, total_tokens: 0, cost_vnd: 0 });
+  const [studentsUsed, setStudentsUsed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -150,7 +152,7 @@ export default function AdminTeacherDetailPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [qualification, setQualification] = useState("");
-  const [slotLimit, setSlotLimit] = useState(250);
+  const [slotLimit, setSlotLimit] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Tạo đơn mua slot
@@ -235,10 +237,12 @@ export default function AdminTeacherDetailPage() {
       setEmail(tObj.email);
       setPhone(tObj.phone || "");
       setQualification(tObj.target_band || "");
-      setSlotLimit(tObj.slot_limit || 250);
+      setSlotLimit(tObj.slot_limit ?? 0);
 
       setClasses(data.classes || []);
       setAiLogs(data.aiLogs || []);
+      setAiTotals(data.ai_totals || { requests: 0, total_tokens: 0, cost_vnd: 0 });
+      setStudentsUsed(Number(data.students_used) || 0);
     } catch (e: any) {
       console.error(e);
       setErrorMsg("Đã xảy ra lỗi khi nạp thông tin giảng viên.");
@@ -285,14 +289,15 @@ export default function AdminTeacherDetailPage() {
     }
   };
 
-  // Compute 100% REAL totals from PostgreSQL ai_usage_logs
-  const totalRealTokens = aiLogs.reduce((sum, log) => sum + log.total_tokens, 0);
-  const totalRealRequests = aiLogs.length;
-  const totalRealCostUsd = aiLogs.reduce((sum, log) => sum + log.cost_usd, 0);
+  // Tổng AI và slot đã dùng do server tính (SQL SUM toàn bộ log, BR-S01)
+  const totalRealTokens = aiTotals.total_tokens;
+  const totalRealRequests = aiTotals.requests;
+  const totalCostVnd = aiTotals.cost_vnd;
 
-  const usedSlotsCount = classes.reduce((sum, c) => sum + c.student_count, 0);
-  const totalSlotLimit = teacher?.slot_limit || 250;
+  const usedSlotsCount = studentsUsed;
+  const totalSlotLimit = teacher?.slot_limit ?? 0;
   const remainingSlots = Math.max(0, totalSlotLimit - usedSlotsCount);
+  const slotUsagePct = totalSlotLimit > 0 ? (usedSlotsCount / totalSlotLimit) * 100 : 0;
 
   // Real Portkey Gateway Live Test Call via Server API Route
   const handleTestPortkeyLive = async () => {
@@ -663,12 +668,12 @@ export default function AdminTeacherDetailPage() {
               <div>
                 <div className="flex justify-between text-xs text-ink-muted mb-1 font-medium">
                   <span>Tỷ lệ sử dụng slot:</span>
-                  <span>{Math.round((usedSlotsCount / totalSlotLimit) * 100)}%</span>
+                  <span>{Math.round(slotUsagePct)}%</span>
                 </div>
                 <div className="w-full bg-surface-alt h-2.5 rounded-full overflow-hidden border border-line">
                   <div
                     className="bg-brand-600 h-full rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (usedSlotsCount / totalSlotLimit) * 100)}%` }}
+                    style={{ width: `${Math.min(100, slotUsagePct)}%` }}
                   />
                 </div>
               </div>
@@ -801,7 +806,7 @@ export default function AdminTeacherDetailPage() {
 
                 <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-1">
                   <span className="text-xs text-ink-muted font-medium block">Tổng Chi Phí Ước Tính:</span>
-                  <span className="text-xl font-bold text-ink block">${totalRealCostUsd.toFixed(4)} USD</span>
+                  <span className="text-xl font-bold text-ink block">{totalCostVnd.toLocaleString("vi-VN")} đ</span>
                   <span className="text-[10px] text-emerald-700 block font-bold">&check; Portkey Metadata Tracked</span>
                 </div>
               </div>

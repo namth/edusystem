@@ -52,6 +52,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-40 | `/admin` | Tổng quan: thẻ số liệu, chọn tháng, biểu đồ, top giáo viên | CODE-ONLY | DONE |
+| SCR-54 | `/admin/ai-usage` | Chi phí AI theo giáo viên: chọn tháng, thẻ tổng (token, chi phí, doanh thu, chênh lệch), bảng giáo viên kèm theo mục đích, tìm kiếm, xuất CSV (TASK-050) | CODE-ONLY | DONE |
 | SCR-41 | `/admin/orders` | Đơn hàng (lọc, duyệt / từ chối / huỷ) + tab Cấu hình thanh toán | CODE-ONLY | DONE |
 | SCR-42 | `/admin/orders/[id]` | Trang thanh toán + duyệt / từ chối | CODE-ONLY | DONE |
 | SCR-43 | `/admin/teachers` | Danh sách giáo viên, lọc chờ xác minh (`?status=TRIAL`) | CODE-ONLY | DONE |

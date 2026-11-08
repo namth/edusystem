@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { getAiPricing } from "@/lib/ai-usage";
+import { usdToVnd } from "@/lib/ai-pricing";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN"]);
@@ -63,7 +65,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       phone: teacherRow.phone || "",
       target_band: teacherRow.target_band || "",
       created_at: new Date(teacherRow.created_at).toLocaleDateString("vi-VN"),
-      slot_limit: teacherRow.slot_limit || 250,
+      slot_limit: Number(teacherRow.slot_limit ?? 0),
       teacher_status: teacherStatus,
       profile,
     };
@@ -87,9 +89,35 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       student_count: headcountMap[c.id] || 0,
     }));
 
+    // Số học sinh đã dùng theo BR-S01 (DISTINCT học sinh qua mọi lớp của giáo viên)
+    const usedRes = await queryPg(
+      `SELECT COUNT(DISTINCT e.student_id)::int AS used
+       FROM enrollments e
+       JOIN classes c ON e.class_id = c.id
+       WHERE c.teacher_id = $1;`,
+      [cleanId]
+    );
+    const students_used = Number(usedRes.rows[0]?.used) || 0;
+
     // 4. Fetch real AI Usage logs
     let aiLogs: any[] = [];
+    let ai_totals = { requests: 0, total_tokens: 0, cost_vnd: 0 };
     try {
+      const pricing = await getAiPricing();
+      const totRes = await queryPg(
+        `SELECT COUNT(*)::int AS requests,
+                COALESCE(SUM(total_tokens), 0) AS total_tokens,
+                COALESCE(SUM(cost_usd), 0) AS cost_usd
+         FROM ai_usage_logs
+         WHERE teacher_id = $1 OR teacher_id = $2;`,
+        [cleanId, teacherRow.email]
+      );
+      const tr = totRes.rows[0] || {};
+      ai_totals = {
+        requests: Number(tr.requests) || 0,
+        total_tokens: Number(tr.total_tokens) || 0,
+        cost_vnd: usdToVnd(Number(tr.cost_usd) || 0, pricing.usd_vnd_rate),
+      };
       const logsRes = await queryPg(
         `SELECT * FROM ai_usage_logs WHERE teacher_id = $1 OR teacher_id = $2 ORDER BY created_at DESC LIMIT 50;`,
         [cleanId, teacherRow.email]
@@ -117,6 +145,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       profile,
       classes: managedClasses,
       aiLogs,
+      ai_totals,
+      students_used,
     });
   } catch (err: any) {
     console.error("API /api/admin/teachers/[id] GET Error:", err);

@@ -115,7 +115,8 @@ Test: `slot-orders-api`, `admin-api`.
 | GET | `/api/admin/users?role=&teacherStatus=` | | `admin-api`, `teacher-trial` |
 | GET / PUT | `/api/admin/users/[id]` | Sửa thông tin, `class_ids` (409 nếu hết slot) | `admin-api`, `student-slots` |
 | POST | `/api/admin/users/[id]/reset-password` | Cấp mật khẩu tạm 10 ký tự, `must_change_password = true`, xoá `reset_token`; trả `{ temp_password }` một lần, `Cache-Control: no-store`. Tự cấp cho mình → 400; 20 lần/giờ/người gọi (429) | `reset-password` |
-| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI, `slot_limit` | `admin-api` |
+| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI (50 dòng), `ai_totals` (SUM toàn bộ log), `students_used` (BR-S01), `slot_limit` | `admin-api` |
+| GET | `/api/admin/ai-usage?month=YYYY-MM[&format=csv]` | Báo cáo theo giáo viên: token, `cost_vnd`, `by_purpose`, `revenue_vnd` (đơn APPROVED trong tháng), `margin_vnd`, dòng `unattributed`; CSV có BOM. Tháng sai → 400 | `ai-usage-report` |
 | POST | `/api/admin/teachers/[id]/verify` | `{ decision: VERIFIED\|REJECTED, note? }` | `teacher-trial` |
 | POST | `/api/admin/create-user`, `/api/admin/delete-user` | Tạo kèm `classIds` (409 nếu hết slot, không tạo user) | `admin-api`, `student-slots` |
 | GET | `/api/admin/classes` | | `admin-api` |
