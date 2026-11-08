@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasValidInternalToken } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen } from "@/lib/class-billing";
 import { withAiUsageContext } from "@/lib/ai-usage";
 import { gradeOpenAnswer } from "@/lib/lesson-ai-grading";
 import { computeScorePercent, type GradeResult } from "@/lib/grading";
@@ -51,6 +52,28 @@ export async function POST(req: Request) {
   const attempt = attemptRes.rows[0];
   if (attempt.status !== "GRADING") {
     return NextResponse.json({ success: true, skipped: true });
+  }
+
+  if (attempt.class_id) {
+    const classCheck = await assertClassOpen(attempt.class_id);
+    if (!classCheck.ok) {
+      await queryPg(
+        `UPDATE lesson_attempts
+         SET status = 'NEEDS_REVIEW',
+             ai_earned = NULL,
+             score_percent = NULL,
+             last_grading_error = 'CLASS_LOCKED'
+         WHERE id = $1`,
+        [attempt.id]
+      );
+      await notifyLessonNeedsReview(attempt.id);
+      return NextResponse.json({
+        success: true,
+        attemptId: attempt.id,
+        status: "NEEDS_REVIEW",
+        last_grading_error: "CLASS_LOCKED",
+      });
+    }
   }
 
   // Worker đã giao quá số lần cho phép mà vẫn lỗi → chuyển giáo viên chấm tay (chỉ một lần)

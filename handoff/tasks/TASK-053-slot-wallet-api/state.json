@@ -1,13 +1,99 @@
 {
   "id": "TASK-053",
   "title": "Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví slot, ngày khai giảng, kết thúc lớp, admin cộng/trừ",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "97ef54a6-500c-4fdb-ba4a-c80a79b71459",
   "history": [
     {
       "at": "2026-11-08T12:21:56",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T15:03:04",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T15:03:22",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:14:06",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T15:14:23",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T15:14:31",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:14:44",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T15:23:20",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:33:24",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:37:06",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T15:37:39",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T15:37:53",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:40:49",
+      "status": "review_passed",
+      "note": "nghiệm thu chéo đạt bởi agy1 — chờ trưởng phòng (HIGH/nhạy cảm)"
+    },
+    {
+      "at": "2026-11-08T15:41:32",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "97ef54a6-500c-4fdb-ba4a-c80a79b71459"
+    },
+    "tester": {
+      "account": "agy1",
+      "conversation_id": "93219e62-e994-4f42-b270-be66d9fbd1c3"
+    },
+    "reviewer": {
+      "account": "agy1",
+      "conversation_id": "d94eae2e-2f88-4106-89e5-9878c6eae674"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-053-slot-wallet-api/verify.sh",
+    "handoff/tasks/TASK-053-slot-wallet-api/verify.sh",
+    "tests/slot-wallet-api.test.ts"
+  ],
+  "review_fingerprint": "80d003395225476edc1181803d43e2b70b34343545aba431f08da12257b6aa39"
 }
