@@ -5,7 +5,7 @@ import { BRAND } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Điều khoản dịch vụ",
   description:
-    "Điều khoản dịch vụ và quy chế hoạt động của Nền tảng học tập & khảo thí trực tuyến KitoKit thuộc Công ty Cổ phần Công nghệ và Giáo dục INOVA.",
+    "Điều khoản dịch vụ và quy chế hoạt động của Nền tảng học tập & khảo thí trực tuyến KitoKit thuộc CÔNG TY TNHH CÔNG NGHỆ INOVA.",
 };
 
 export default function TermsOfServicePage() {

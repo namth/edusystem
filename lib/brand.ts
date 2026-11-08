@@ -11,8 +11,6 @@ export const BRAND = {
     taxCode: "0109882536", // Mã số doanh nghiệp / MST chính thức
     licenseDate: "10/01/2022",
     licensePlace: "Sở Kế hoạch và Đầu tư Thành phố Hà Nội",
-    representative: "Nguyễn Thị Thu Trang",
-    position: "Giám đốc",
     address: "Số 5 hẻm 95/81/62 Vũ Xuân Thiều, Phường Phúc Lợi, Quận Long Biên, Thành phố Hà Nội, Việt Nam",
     officeAddress: "Số 5 hẻm 95/81/62 Vũ Xuân Thiều, Phường Phúc Lợi, Quận Long Biên, TP. Hà Nội",
     hotline: "0366 096 339",
@@ -20,6 +18,6 @@ export const BRAND = {
     email: "inovavietnam@gmail.com",
     contactEmail: "inovavietnam@gmail.com",
     workingHours: "08:00 - 18:00 từ Thứ Hai đến Thứ Bảy",
-    website: "https://kitokit.edu.vn",
+    website: "https://kito.io.vn",
   },
 } as const;

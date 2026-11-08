@@ -11,7 +11,8 @@ export default function LandingHeader() {
   const navLinks = [
     { href: "#tinh-nang", label: "Tính năng" },
     { href: "#hoc-sinh", label: "Học sinh" },
-    { href: "#giao-vien", label: "Thầy cô & Trung tâm" },
+    { href: "/for-teachers", label: "Dành cho Giáo viên" },
+    { href: "/guideline/index.html", label: "Cẩm nang sử dụng" },
     { href: "#faq", label: "Hỏi đáp" },
   ];
 

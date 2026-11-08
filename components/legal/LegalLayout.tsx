@@ -100,7 +100,7 @@ export default function LegalLayout({
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-100 text-accent-700 text-xs font-bold mb-4">
               <Shield className="w-3.5 h-3.5" />
-              <span>Quy chế hoạt động & Tuân thủ Bộ Công Thương</span>
+              <span>Quy chế hoạt động & Chính sách pháp lý</span>
             </div>
             <h1 className="font-display text-2xl sm:text-4xl font-extrabold text-ink tracking-tight">
               {title}
@@ -155,7 +155,7 @@ export default function LegalLayout({
             {/* Quick Contact Card */}
             <div className="bg-gradient-to-br from-brand-900 to-brand-800 text-white rounded-3xl p-6 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                <Phone className="w-5 h-5 text-accent-300" />
+                <Phone className="w-5 h-5 text-white" />
               </div>
               <h3 className="font-bold text-base text-white">Bạn cần giải đáp thắc mắc?</h3>
               <p className="mt-1 text-xs text-brand-200 leading-relaxed">
@@ -164,7 +164,7 @@ export default function LegalLayout({
 
               <div className="mt-5 space-y-3 pt-4 border-t border-white/10 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <Phone className="w-4 h-4 text-accent-400 shrink-0" />
+                  <Phone className="w-4 h-4 text-brand-200 shrink-0" />
                   <div>
                     <span className="block text-brand-300 text-[11px]">Hotline hỗ trợ:</span>
                     <a href={`tel:${BRAND.company.hotline.replace(/\s+/g, "")}`} className="font-bold text-white hover:text-accent-300 transition-colors">
@@ -174,7 +174,7 @@ export default function LegalLayout({
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-accent-400 shrink-0" />
+                  <Mail className="w-4 h-4 text-brand-200 shrink-0" />
                   <div>
                     <span className="block text-brand-300 text-[11px]">Email hỗ trợ khách hàng:</span>
                     <a href={`mailto:${BRAND.company.email}`} className="font-bold text-white hover:text-accent-300 transition-colors">
@@ -184,7 +184,7 @@ export default function LegalLayout({
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-accent-400 shrink-0" />
+                  <Clock className="w-4 h-4 text-brand-200 shrink-0" />
                   <div>
                     <span className="block text-brand-300 text-[11px]">Thời gian làm việc:</span>
                     <span className="font-medium text-brand-100">{BRAND.company.workingHours}</span>
@@ -207,19 +207,11 @@ export default function LegalLayout({
                   <strong className="text-ink font-semibold">Mã số thuế:</strong> {BRAND.company.taxCode}
                 </p>
                 <p>
-                  <strong className="text-ink font-semibold">Đại diện pháp luật:</strong> {BRAND.company.representative} ({BRAND.company.position})
+                  <strong className="text-ink font-semibold">Nơi cấp:</strong> {BRAND.company.licensePlace}
                 </p>
                 <p>
                   <strong className="text-ink font-semibold">Trụ sở:</strong> {BRAND.company.address}
                 </p>
-              </div>
-
-              {/* BCT Notification Badge Mock */}
-              <div className="pt-3 border-t border-line/60 flex items-center justify-between">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Hồ sơ thông báo Bộ Công Thương</span>
-                </div>
               </div>
             </div>
           </aside>
