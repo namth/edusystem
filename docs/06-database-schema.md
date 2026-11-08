@@ -28,6 +28,8 @@
 | 015 | `…-015-student-slots.sql` | Trả lại slot đã bị trừ khi chấm AI (DEC-031) | **Chạy tay một lần** |
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
 | 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema |
+| 018 | `…-018-slot-wallet.sql` *(FEAT-015, chưa có)* | `slot_ledger`; `users.slot_balance`; cột tính phí ở `classes` (`start_date`, `ended_at`, `billing_status`, `grace_until`, `next_charge_at`, `billing_period`) | ensureSchema |
+| 018b | `…-018b-slot-wallet-data.sql` *(FEAT-015, chưa có)* | Chuyển dữ liệu: số dư = slot đã mua, lớp cũ khai giảng = ngày deploy (DEC-047) | **Chạy tay một lần** |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền
@@ -37,7 +39,7 @@
 | :--- | :--- |
 | Định danh | `id` PK, `name`, `email` UNIQUE, `password` (scrypt `salt:hash`), `role` (`ADMIN`/`TEACHER`/`STUDENT`), `phone`, `target_band` |
 | Trạng thái | `status` (`ACTIVE`/`INACTIVE`/`SUSPENDED`), `must_change_password`, `reset_token`, `reset_token_expires`, `last_login_at`, `created_at`, `updated_at` |
-| Slot | `slot_limit` INT DEFAULT 250. Với TEACHER là số học sinh khác nhau tối đa (DEC-031) |
+| Slot | `slot_limit` INT DEFAULT 250. Với TEACHER là số học sinh khác nhau tối đa (DEC-031) · FEAT-015: thay bằng `slot_balance` + `slot_ledger` (DEC-042); `slot_limit` giữ cột nhưng thôi đọc. |
 | Migration 013 | `username` (4–30 ký tự `a-z0-9._`, duy nhất không phân biệt hoa thường), `email_is_placeholder`, `grade_level`, `learning_goals` JSONB, `teacher_status` (`TRIAL`/`VERIFIED`/`REJECTED`/NULL; NULL coi như đã xác minh) |
 
 ⚠️ `ensureSchema` khai báo `password … DEFAULT '123456'`. Mặc định này trái bất biến 6 (xem `docs/11` §4). Code tạo user luôn tự băm mật khẩu, không dựa vào giá trị mặc định này.

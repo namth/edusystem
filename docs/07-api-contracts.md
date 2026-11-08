@@ -21,6 +21,8 @@
 - **Tiền:** số nguyên VND, do server tính. **Điểm:** do server tính.
 
 ## 2. Danh mục endpoint
+
+> **FEAT-015 (SPEC_APPROVED, chưa code):** API ví slot, tính phí theo kỳ, cron, cộng/trừ tay của admin và các thay đổi ở đường ghi danh/nộp bài — xem `docs/features/vi-slot-hoc-sinh-thang.md` §6. Đường dẫn được thêm vào bảng dưới khi task code xong (docs-sync chặn route chưa tồn tại).
 ### 2.1 Xác thực & hồ sơ
 | Method | Route | Vai trò | Ghi chú | Test |
 | :--- | :--- | :--- | :--- | :--- |

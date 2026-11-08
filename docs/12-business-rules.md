@@ -24,9 +24,10 @@
   | Lượt nộp mỗi bài/đề trong lớp dùng thử | 1 |
 
 - **BR-T03** Vượt hạn mức trả 403 `{ code: "TRIAL_LIMIT", limit }`, trừ ghi danh bằng mã lớp trả 409. Giáo viên dùng thử không mua slot được.
-- **BR-T04** Admin xác minh: `VERIFIED` và `slot_limit = GREATEST(slot_limit, 250)`. Từ chối thì giữ giới hạn và lưu ghi chú. Hai trường hợp đều gửi thông báo `TEACHER_VERIFIED`.
+- **BR-T04** *(phần `slot_limit` thay bởi BR-W09 khi FEAT-015 xong: không tặng slot)* Admin xác minh: `VERIFIED` và `slot_limit = GREATEST(slot_limit, 250)`. Từ chối thì giữ giới hạn và lưu ghi chú. Hai trường hợp đều gửi thông báo `TEACHER_VERIFIED`.
 
 ## 3. Slot học sinh (S): DEC-031; `lib/student-slots.ts`
+> **Sẽ thay bởi BR-W01 → BR-W13 (FEAT-015, DEC-042 → DEC-047) khi TASK-051 xong.** Đặc tả: `docs/features/vi-slot-hoc-sinh-thang.md` §7.
 - **BR-S01** 1 slot = 1 học sinh. Số đang dùng = `COUNT(DISTINCT enrollments.student_id)` trên mọi lớp có `classes.teacher_id = giáo viên`.
 - **BR-S02** Ghi danh học sinh **mới** với giáo viên mà `used ≥ slot_limit` thì trả 409 "Thầy cô đã dùng hết slot học sinh…". Học sinh đã có ở lớp khác của cùng giáo viên không tốn thêm slot. Chủ lớp là ADMIN không bị giới hạn.
 - **BR-S03** Kiểm ở mọi đường ghi danh, **trước** mọi lệnh INSERT: mã lớp / link mời / đăng ký kèm mã (`enrollStudentByCode`), giáo viên thêm học sinh (có sẵn hoặc tạo mới), admin `create-user` có `classIds`, admin `users/[id]` đổi `class_ids`. Bị chặn thì không tạo user thừa.
@@ -125,6 +126,7 @@ class_grade_items       (mở) ─finalize─▶ đã chốt (finalized_at) ─r
 slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─reject(reason)─▶ REJECTED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
+classes.billing_status  ACTIVE ─đến kỳ, thiếu slot─▶ GRACE ─quá 7 ngày─▶ LOCKED ; GRACE|LOCKED ─trừ đủ─▶ ACTIVE ; * ─kết thúc lớp─▶ ENDED   (FEAT-015, chưa code)
 users.teacher_status    TRIAL ─verify─▶ VERIFIED | REJECTED ; REJECTED ─verify─▶ VERIFIED   (NULL = coi như VERIFIED)
 leads.status            NEW ─▶ CONTACTED ─▶ DONE
 ```

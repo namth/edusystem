@@ -39,6 +39,7 @@ ALLOW_DEV_RESET_LINK=                             # =1 chỉ ở dev/e2e: forgot
 # ── Worker ──
 APP_URL=http://nextjs:3000
 WORKER_ID=worker-1
+CRON_SECRET=                                      # FEAT-015: worker gọi /api/cron/slot-billing với Bearer này; ≥ 32 ký tự ngẫu nhiên
 ```
 Cấu hình nghiệp vụ **không** đặt trong `.env`. Admin sửa trong app, giá trị lưu ở `system_settings`:
 

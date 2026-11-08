@@ -84,6 +84,15 @@
 | 049 | Cấp lại mật khẩu tạm: admin cho mọi tài khoản, giáo viên cho học sinh lớp mình | — | `brief.md` §5 |
 | 050 | Báo cáo token & chi phí AI theo giáo viên, sửa số liệu trang chi tiết GV | — | `brief.md` §5 |
 
+**FEAT-015 Ví slot học sinh-tháng (SPEC_APPROVED 08/11, chưa giao; chi tiết + DoD ở `docs/features/vi-slot-hoc-sinh-thang.md` §9):**
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 051 | Migration 018/018b + `lib/slot-wallet.ts` + cron + đường ghi danh trừ ví (HIGH, nhạy cảm) | merge 048 | TC-W01–07, 09, 11, 12, 14, 15, 17 |
+| 052 | Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví, `billing`, `end`, `slot-adjust` | 051 | TC-W08, 10, 12, 13 |
+| 053 | UI Ví slot, cài đặt/banner lớp, ví ở chi tiết GV admin, banner HS | 052, merge 049/050 | 4 trạng thái UI |
+| 054 | Trang `/pricing` + link landing/footer | — | TC-W16 |
+
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
 npx vitest run && npx tsc --noEmit && npx next build

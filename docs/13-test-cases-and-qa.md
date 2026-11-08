@@ -18,6 +18,7 @@
 | Thông báo (BR-N) | `notifications-api`, `notifications-lib` |
 | Tổng quan admin (BR-D) | `admin-dashboard` |
 | Bảng điểm (BR-B, FEAT-014) | `gradebook` (lõi, TASK-044), `teacher-grading-api` (TASK-045), `teacher-grading-ui`, `student-gradebook-ui` (TASK-046/047). Ca TC-B01 → TC-B16 ở `docs/features/cham-diem-bang-diem.md` §8 |
+| Ví slot (BR-W, FEAT-015, chưa code) | `slot-wallet` (TASK-051), `slot-wallet-api` (TASK-052), `slot-wallet-ui` (TASK-053), `pricing-page` (TASK-054). Ca TC-W01 → TC-W17 ở `docs/features/vi-slot-hoc-sinh-thang.md` §8 |
 | Kho, chuyển đổi, nhân bản, flashcard, upload | `library-convert-duplicate`, `flashcards-uploads-api`, `subjects` |
 | Trang học sinh / landing | `student-pages`, `student-home`, `landing` |
 | Quy tắc giao diện (DEC-022, DEC-035) | `brand-tokens`, `design-rules` |
@@ -39,6 +40,8 @@ E2E (Playwright, `e2e/`): `auth`, `rbac`, `onboarding`, `student-exam`, `teacher
 | TC-G01 | AI lỗi 3 lần → `NEEDS_REVIEW`, không cho điểm thấp nhất | BR-G01 | `exam-attempts-api` |
 | TC-G02 | Log AI ghi token thật, đúng ngữ cảnh route, không có số bịa | BR-G04 | `ai-usage` |
 | TC-B01 | Giáo viên không phải chủ lớp / người tạo đề lớp khác / học sinh gọi API chấm → 403 | BR-B01, DEC-038 | `teacher-grading-api` |
+| TC-W04 | Hai ghi danh đồng thời khi ví còn 1 slot → đúng 1 thành công, số dư không âm | BR-W03, DEC-042 | `slot-wallet` |
+| TC-W05 | Cron chạy lặp cùng ngày không trừ hai lần một kỳ | BR-W12 | `slot-wallet` |
 | TC-B08 | Chốt khi còn `GRADING`/`NEEDS_REVIEW` → 409; còn chưa xem → 409 tới khi xác nhận | BR-B08 | `teacher-grading-api` |
 | TC-B11 | Học sinh chỉ thấy dòng của mình, bài đã chốt | BR-B11 | `teacher-grading-api` |
 | TC-B12 | AI bài học lỗi 3 lần → `NEEDS_REVIEW`, không 0 điểm | BR-B12 | `gradebook`, `student-lessons-api` |
