@@ -23,7 +23,8 @@ const forgot = async (email: string) =>
     })
   );
 const tokenOf = async (email: string) =>
-  (await h.pg.db.query(`SELECT reset_token FROM users WHERE email = $1`, [email])).rows[0]?.reset_token;
+  ((await h.pg.db.query(`SELECT reset_token FROM users WHERE email = $1`, [email])).rows[0] as { reset_token?: string } | undefined)
+    ?.reset_token as string;
 
 beforeEach(async () => {
   (await import("@/lib/rate-limit")).resetRateLimits();
