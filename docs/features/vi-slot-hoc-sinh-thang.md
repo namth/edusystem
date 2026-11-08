@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS slot_ledger (
   class_id VARCHAR(50), student_id VARCHAR(50), order_id VARCHAR(50),
   period INT,                               -- kỳ của lớp mà dòng này trả cho
   student_count INT,                        -- CYCLE: sĩ số lúc trừ
+  student_ids TEXT[],                       -- CYCLE: học sinh đã tính (để rời rồi vào lại cùng kỳ không trừ lại)
   note TEXT, created_by VARCHAR(50),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -110,7 +111,7 @@ Biến môi trường mới: `CRON_SECRET`. Worker (`worker/grading-worker.js`) 
 
 ## 7. Quy tắc nghiệp vụ (BR-W) & máy trạng thái
 - **BR-W01** 1 slot = 1 học sinh × 1 kỳ (1 tháng dương lịch tính từ `start_date`) của **một** lớp. Học sinh học 2 lớp của cùng giáo viên thì tốn 2 slot.
-- **BR-W02** Học sinh vào lớp → trừ 1 slot `ENROLL` cho kỳ hiện tại (`period = billing_period`) **trong cùng giao dịch** với ghi danh. Học sinh đã có dòng ENROLL/CYCLE của lớp ở kỳ đó (rời rồi vào lại) thì không trừ lại.
+- **BR-W02** Học sinh vào lớp → trừ 1 slot `ENROLL` cho kỳ hiện tại (`period = billing_period`) **trong cùng giao dịch** với ghi danh. Học sinh đã trả kỳ đó (dòng ENROLL của mình, hoặc có trong `student_ids` của dòng CYCLE kỳ đó) — vd rời rồi vào lại — thì không trừ lại.
 - **BR-W03** `slot_balance` không bao giờ âm. Mọi thay đổi số dư đi qua `lib/slot-wallet.ts`, khoá dòng `users` (`SELECT … FOR UPDATE`) và ghi `slot_ledger.balance_after`.
 - **BR-W04** Kỳ mới đến khi `next_charge_at ≤ hôm nay (Asia/Ho_Chi_Minh)`. Số cần trừ = sĩ số enrollments của lớp **tại lúc trừ**. Đủ → trừ 1 dòng `CYCLE` (`student_count`), `billing_period += 1`, `next_charge_at += 1 tháng` (ngày 31 → ngày cuối tháng), `ACTIVE`, báo `SLOT_CHARGED`. Sĩ số 0 → không trừ nhưng vẫn sang kỳ.
 - **BR-W05** Thiếu slot khi đến kỳ → không trừ, `GRACE`, `grace_until = NOW() + 7 ngày`, báo `SLOT_GRACE` (thông báo + email). Mỗi lần chạy cron thử lại. Quá `grace_until` → `LOCKED`, báo `CLASS_LOCKED`. Trong GRACE lớp chạy bình thường nhưng không thêm học sinh mới được nếu thiếu slot (BR-W02).
