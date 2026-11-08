@@ -66,6 +66,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       target_band: teacherRow.target_band || "",
       created_at: new Date(teacherRow.created_at).toLocaleDateString("vi-VN"),
       slot_limit: Number(teacherRow.slot_limit ?? 0),
+      slot_balance: Number(teacherRow.slot_balance ?? 0),
       teacher_status: teacherStatus,
       profile,
     };
@@ -160,8 +161,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const { id: teacherId } = await params;
-    const body = await req.json();
-    const { name, email, phone, target_band, slot_limit } = body;
+    const body = await req.json().catch(() => ({}));
+    const { name, email, phone, target_band } = body;
 
     if (!teacherId?.trim()) {
       return NextResponse.json({ success: false, error: "Missing teacherId" }, { status: 400 });
@@ -169,14 +170,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const cleanId = teacherId.trim();
 
-    if (slot_limit !== undefined) {
-      // Update slot limit
-      await queryPg(`UPDATE users SET slot_limit = $1 WHERE id = $2;`, [Number(slot_limit), cleanId]);
-    } else {
-      // Update profile info
+    // Bỏ qua slot_limit (DEC-042, TASK-053); chỉ cập nhật thông tin cá nhân nếu có
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${idx++}`);
+      values.push(name?.trim());
+    }
+    if (email !== undefined) {
+      updates.push(`email = $${idx++}`);
+      values.push(email?.trim().toLowerCase());
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${idx++}`);
+      values.push(phone?.trim() || "");
+    }
+    if (target_band !== undefined) {
+      updates.push(`target_band = $${idx++}`);
+      values.push(target_band?.trim() || "");
+    }
+
+    if (updates.length > 0) {
+      values.push(cleanId);
       await queryPg(
-        `UPDATE users SET name = $1, email = $2, phone = $3, target_band = $4 WHERE id = $5;`,
-        [name?.trim(), email?.trim().toLowerCase(), phone?.trim() || "", target_band?.trim() || "", cleanId]
+        `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx};`,
+        values
       );
     }
 

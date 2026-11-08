@@ -1,0 +1,3 @@
+KẾT LUẬN: ĐẠT
+Đã kiểm: verify xanh (31/31 tests passed, tsc compile sạch), phạm vi OK (14 file theo đúng mục 3 brief), không lách test, đúng đặc tả khoá lớp LOCKED/ENDED ở thi/nộp/chấm AI (trả 403 CLASS_LOCKED, needs review khi grade-async), API ví slot giáo viên & admin phân quyền chuẩn (401/403/404), đặt ngày khai giảng chặn cycle/giới hạn ngày, kết thúc lớp chuyển ENDED, admin slot-adjust kích hoạt mở lớp theo BR-W07, PUT admin teacher bỏ qua slot_limit và GET trả thêm slot_balance.
+Rủi ro cho trưởng phòng: Cần cập nhật 5 route API mới vào docs/07-api-contracts.md sau khi merge (kỹ sư tuân thủ không sửa docs/).

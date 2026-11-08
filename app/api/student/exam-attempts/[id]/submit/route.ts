@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen, classLockedResponse } from "@/lib/class-billing";
 import {
   type ScoringStandard,
   aggregateTotal,
@@ -15,6 +16,7 @@ import { notifyNeedsReview } from "@/lib/notifications";
 import {
   tallyAndScoreSections,
   formatAttemptResponse,
+  resolveStandardForExam,
   type ExamQuestionResult,
 } from "@/lib/exam-attempts";
 
@@ -48,6 +50,13 @@ export async function POST(
       { success: false, error: "Bạn không có quyền nộp lượt thi này." },
       { status: 403 }
     );
+  }
+
+  if (sub.class_ref) {
+    const classCheck = await assertClassOpen(sub.class_ref);
+    if (!classCheck.ok) {
+      return classLockedResponse();
+    }
   }
 
   if (sub.status !== "IN_PROGRESS") {
@@ -142,10 +151,14 @@ export async function POST(
     };
   });
 
-  const snapshot: ScoringStandard =
+  let snapshot: ScoringStandard =
     typeof sub.standard_snapshot === "string"
       ? JSON.parse(sub.standard_snapshot)
       : sub.standard_snapshot;
+
+  if (!snapshot || !Array.isArray(snapshot.sections)) {
+    snapshot = await resolveStandardForExam(sub.exam_id);
+  }
 
   const sectionScores = tallyAndScoreSections(snapshot, results);
   const hasAi = results.some((r) => r.kind === "AI");

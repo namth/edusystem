@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen, classLockedResponse } from "@/lib/class-billing";
 import {
   checkExamAccess,
   resolveStandardForExam,
@@ -37,6 +38,13 @@ export async function POST(
     typeof body.classId === "string" && body.classId.trim() !== ""
       ? body.classId.trim()
       : null;
+
+  if (classId) {
+    const classCheck = await assertClassOpen(classId);
+    if (!classCheck.ok) {
+      return classLockedResponse();
+    }
+  }
 
   const access = await checkExamAccess(examId, studentId, classId);
   if (!access.allowed) {
