@@ -30,7 +30,8 @@
 | GET | `/api/auth/signup-options` | công khai | Môn / cấp học cho form đăng ký | `landing` |
 | GET | `/api/auth/username-available` | công khai | `?u=` | `onboarding-api` |
 | GET | `/api/auth/email-available` | công khai | `?e=` → `{ available, error? }`; báo email trùng ngay khi gõ ở form đăng ký; giới hạn theo IP | `onboarding-api` |
-| POST | `/api/auth/forgot-password`, `/api/auth/reset-password` | công khai | Token đặt lại | `secrets-password` |
+| POST | `/api/auth/forgot-password` | công khai | Có email thật thì lưu `reset_token` (15 phút). Phản hồi **luôn** `{ success, message }` giống nhau dù email có tồn tại hay không; không bao giờ trả token/link, không log ra console (BR-A06). Chỉ khi `NODE_ENV ≠ production` và `ALLOW_DEV_RESET_LINK=1` mới kèm `resetUrl` | `forgot-password-security`, `onboarding-api` |
+| POST | `/api/auth/reset-password` | công khai | Đặt mật khẩu mới bằng email + token còn hạn | `secrets-password` |
 | GET / POST | `/api/auth/me`, `/api/auth/logout`, `/api/auth/change-password` | đã đăng nhập | Đổi xong cấp cookie mới, bỏ `mcp` | `change-password` |
 | GET / PUT | `/api/profile` | mọi vai trò | Không đổi được `password`, `email`, `role`, `slot_limit` | `profile-slots-grading` |
 

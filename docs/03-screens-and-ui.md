@@ -11,9 +11,10 @@
 | SCR-02 | `/login` | Đăng nhập bằng email hoặc tên đăng nhập | APPROVED (PR #2/#3) | DONE |
 | SCR-03 | `/register` | Đăng ký học sinh kiểu phỏng vấn, mascot Kito | APPROVED | DONE |
 | SCR-04 | `/register/teacher` | Đăng ký giáo viên dùng thử + khảo sát | APPROVED | DONE |
-| SCR-05 | `/forgot-password`, `/reset-password` | Khôi phục mật khẩu | CODE-ONLY | DONE |
+| SCR-05 | `/forgot-password`, `/reset-password` | Khôi phục mật khẩu; chưa gửi email nên sau khi gửi yêu cầu hiện liên hệ hỗ trợ (BR-A06) | CODE-ONLY | DONE |
 | SCR-06 | `/join/[classId]` | Xem trước lớp qua link mời, đăng nhập / đăng ký rồi vào lớp | CODE-ONLY | DONE |
 | SCR-07 | `/change-password` | Đổi mật khẩu (bắt buộc khi `must_change_password`) | CODE-ONLY | DONE |
+| SCR-52 | `/about`, `/terms`, `/privacy`, `/payment-policy` | Trang pháp lý Bộ Công Thương: giới thiệu pháp nhân, điều khoản, bảo mật, chính sách thanh toán & hoàn tiền (thông tin từ `lib/brand.ts`) | CODE-ONLY | DONE |
 | SCR-08 | `/profile` | Hồ sơ cá nhân | CODE-ONLY | DONE |
 | — | `/teacher/login` | Chuyển về `/login` | — | REDIRECT |
 

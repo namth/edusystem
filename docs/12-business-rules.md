@@ -10,6 +10,7 @@
 - **BR-A03** Tài khoản do admin hoặc giáo viên tạo có `must_change_password = true`. Token mang cờ `mcp` thì mọi trang `/admin`, `/teacher`, `/student` chuyển về `/change-password`.
 - **BR-A04** Đăng ký công khai chỉ tạo được `STUDENT` hoặc `TEACHER` dùng thử, vai trò quyết định theo route. Không tạo được `ADMIN`.
 - **BR-A05** `PUT /api/profile` không đổi được `password`, `email`, `role`, `slot_limit`.
+- **BR-A06** Quên mật khẩu không bao giờ lộ token hay link đặt lại qua response hoặc log; phản hồi giống hệt nhau cho email có và không tồn tại. Hệ thống chưa gửi được email nên trang `/forgot-password` hướng dẫn liên hệ hỗ trợ (hotline / email trong `lib/brand.ts`). Ngoại lệ dev/e2e: `ALLOW_DEV_RESET_LINK=1` và `NODE_ENV ≠ production`.
 
 ## 2. Giáo viên dùng thử (T): DEC-027, DEC-028; `lib/teacher-trial.ts`
 - **BR-T01** Đang bị giới hạn khi `teacher_status IN ('TRIAL','REJECTED')`. Trạng thái `VERIFIED`, NULL, hoặc vai trò ADMIN không bị giới hạn. Trạng thái đọc từ DB ở mỗi request, nên xác minh xong có hiệu lực ngay.

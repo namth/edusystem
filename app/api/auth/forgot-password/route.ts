@@ -6,6 +6,13 @@ import crypto from "crypto";
 const FORGOT_WINDOW_MS = 15 * 60 * 1000;
 const FORGOT_MAX_REQUESTS = 5;
 
+const GENERIC_MESSAGE =
+  "Nếu email này đã đăng ký, yêu cầu đặt lại mật khẩu đã được ghi nhận. Chưa nhận được hướng dẫn, vui lòng liên hệ bộ phận hỗ trợ KitoKit để được cấp lại mật khẩu.";
+
+function devResetLinkAllowed(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.ALLOW_DEV_RESET_LINK === "1";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -41,12 +48,17 @@ export async function POST(req: Request) {
       [cleanEmail]
     );
 
-    if (result.rows.length === 0 || result.rows[0].email_is_placeholder === true) {
-      // Security: Even if email is not found or is placeholder, return generic success message to prevent account enumeration
-      return NextResponse.json({
+    // Phản hồi luôn giống nhau dù email có tồn tại hay không (chống dò tài khoản).
+    // KHÔNG BAO GIỜ trả link/token đặt lại trong response hay log ra console.
+    const genericResponse = (devResetUrl?: string) =>
+      NextResponse.json({
         success: true,
-        message: `Nếu địa chỉ "${cleanEmail}" tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn.`,
+        message: GENERIC_MESSAGE,
+        ...(devResetUrl ? { resetUrl: devResetUrl } : {}),
       });
+
+    if (result.rows.length === 0 || result.rows[0].email_is_placeholder === true) {
+      return genericResponse();
     }
 
     const userRow = result.rows[0];
@@ -60,17 +72,16 @@ export async function POST(req: Request) {
       [resetToken, userRow.id]
     );
 
-    const resetUrl = `/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
+    // Chỉ môi trường dev/e2e, bật rõ bằng ALLOW_DEV_RESET_LINK=1, mới nhận link trong response.
+    if (devResetLinkAllowed()) {
+      return genericResponse(
+        `/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`
+      );
+    }
 
-    console.log(`🔑 Created Password Reset Link for ${cleanEmail}: ${resetUrl}`);
-
-    return NextResponse.json({
-      success: true,
-      message: `Đã tạo liên kết khôi phục mật khẩu thành công (Hạn 15 phút).`,
-      resetUrl,
-    });
+    return genericResponse();
   } catch (err: any) {
     console.error("API /api/auth/forgot-password Exception:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi hệ thống khi yêu cầu đặt lại mật khẩu." }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Lỗi hệ thống khi yêu cầu đặt lại mật khẩu." }, { status: 500 });
   }
 }

@@ -31,6 +31,7 @@ GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 SLOT_UNIT_PRICE_VND=0                             # CHỈ là giá khởi tạo khi chưa có system_settings.slot_pricing (DEC-033)
 MEDIA_HOST_DIR=../edusystem-media                 # docker-compose: thư mục media mount vào /app/public/media
 SEED_DEFAULT_PASSWORD=                            # chỉ dùng cho script seed
+ALLOW_DEV_RESET_LINK=                             # =1 chỉ ở dev/e2e: forgot-password trả kèm resetUrl. Production luôn bị bỏ qua (BR-A06)
 
 # ── Worker ──
 APP_URL=http://nextjs:3000
@@ -64,3 +65,4 @@ Cấu hình nghiệp vụ **không** đặt trong `.env`. Admin sửa trong app,
 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ; dashboard đúng chỉ khi Postgres chạy múi giờ UTC | `lib/admin-dashboard.ts` |
 | Thấp | 4 tài khoản học sinh trên server còn mật khẩu plaintext từ dữ liệu cũ, cần đặt lại | DB server |
 | Thấp | `/api/admin/test-portkey` gọi AI thật (chỉ ADMIN, có ghi log chi phí) | `app/api/admin/test-portkey` |
+| Trung bình | Chưa gửi được email → người dùng quên mật khẩu chỉ khôi phục được qua hỗ trợ, admin chưa có nút cấp lại mật khẩu | `docs/11` D12 |
