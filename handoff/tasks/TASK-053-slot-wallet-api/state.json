@@ -1,0 +1,13 @@
+{
+  "id": "TASK-053",
+  "title": "Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví slot, ngày khai giảng, kết thúc lớp, admin cộng/trừ",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-08T12:21:56",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}
