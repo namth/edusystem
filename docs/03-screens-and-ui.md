@@ -15,7 +15,7 @@
 | SCR-06 | `/join/[classId]` | Xem trước lớp qua link mời, đăng nhập / đăng ký rồi vào lớp | CODE-ONLY | DONE |
 | SCR-07 | `/change-password` | Đổi mật khẩu (bắt buộc khi `must_change_password`) | CODE-ONLY | DONE |
 | SCR-52 | `/about`, `/terms`, `/privacy`, `/payment-policy` | Trang pháp lý Bộ Công Thương: giới thiệu pháp nhân, điều khoản, bảo mật, chính sách thanh toán & hoàn tiền (thông tin từ `lib/brand.ts`) | CODE-ONLY | DONE |
-| SCR-53 | `/pricing` | Bảng giá công khai: đơn giá/slot, "1 slot = 1 học sinh × 1 tháng", máy tính sĩ số × số tháng (FEAT-015, TASK-051) | SPEC_ONLY | TODO |
+| SCR-53 | `/pricing` | Bảng giá công khai: đơn giá/slot, "1 slot = 1 học sinh × 1 tháng", máy tính sĩ số × số tháng (FEAT-015, TASK-051) | CODE-ONLY | DONE |
 | SCR-08 | `/profile` | Hồ sơ cá nhân | CODE-ONLY | DONE |
 | — | `/teacher/login` | Chuyển về `/login` | — | REDIRECT |
 
