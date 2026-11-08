@@ -62,6 +62,11 @@ export default function LandingFooter() {
                 </a>
               </li>
               <li>
+                <Link href="/pricing" className="hover:text-accent-300 transition-colors">
+                  Bảng giá
+                </Link>
+              </li>
+              <li>
                 <a href="/#giao-vien" className="hover:text-accent-300 transition-colors">
                   Dành cho giáo viên
                 </a>
