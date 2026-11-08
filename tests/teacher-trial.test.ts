@@ -296,6 +296,14 @@ describe("Mua slot & trial-usage", () => {
       (await import("@/app/api/teacher/slot-requests/route")).POST(req("/api/teacher/slot-requests", { requested_slots: 10 }));
     await loginAs("TEACHER", "tT");
     await expectTrialLimit(await slots(), "slots");
+    // BR-O10: giáo viên chỉ đặt mua được khi đã cấu hình đơn giá + tài khoản nhận tiền
+    await h.pg.db.exec(`
+      CREATE TABLE IF NOT EXISTS system_settings (key VARCHAR(100) PRIMARY KEY, value JSONB, description TEXT, updated_at TIMESTAMPTZ);
+      INSERT INTO system_settings (key, value) VALUES
+        ('slot_pricing', '{"unit_price_vnd":10000}'),
+        ('payment_account', '{"bank_bin":"970436","bank_name":"VCB","account_no":"0123456789","account_name":"KITOKIT"}')
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+    `);
     await loginAs("TEACHER", "tV");
     expect((await slots()).status).toBeLessThan(300);
   });

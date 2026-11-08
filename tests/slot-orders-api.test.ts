@@ -167,6 +167,21 @@ describe("POST /api/teacher/slot-requests — giáo viên tự tạo đơn", () 
     expect((await (await post({ requested_slots: 2 })).json()).slot_request.total_cost).toBe(30000);
   });
 
+  it("BR-O10: đơn giá 0 hoặc chưa có tài khoản nhận tiền → GV tạo đơn bị 409, không sinh đơn; admin tạo hộ vẫn được", async () => {
+    const count = async () => Number((await h.pg.db.query(`SELECT COUNT(*)::int AS n FROM slot_requests WHERE teacher_id='t1'`)).rows[0].n);
+    const before = await count();
+    await loginAs("TEACHER", "t1");
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"unit_price_vnd":0}'::jsonb WHERE key='slot_pricing'`);
+    expect((await post({ requested_slots: 5 })).status).toBe(409);
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"unit_price_vnd":12000}'::jsonb WHERE key='slot_pricing'`);
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"bank_bin":"","bank_name":"","account_no":"","account_name":""}'::jsonb WHERE key='payment_account'`);
+    expect((await post({ requested_slots: 5 })).status).toBe(409);
+    expect(await count()).toBe(before);
+    const { createOrder } = await import("@/lib/slot-orders");
+    const r = await createOrder({ teacherId: "t1", requestedSlots: 5, totalCost: 0, note: "Tặng", source: "ADMIN", createdBy: "a1" });
+    expect(r.ok).toBe(true);
+  });
+
   it("giáo viên dùng thử → 403 TRIAL_LIMIT (giữ DEC-027); số slot sai → 400", async () => {
     await loginAs("TEACHER", "tT");
     expect((await post({ requested_slots: 5 })).status).toBe(403);

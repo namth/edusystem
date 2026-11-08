@@ -160,6 +160,15 @@ export async function createOrder(i: {
   const cleanNote = typeof i.note === "string" && i.note.trim() ? i.note.trim() : null;
 
   if (i.source === "TEACHER") {
+    // BR-O10: chưa cấu hình đơn giá hoặc tài khoản nhận tiền → giáo viên chưa đặt mua được
+    // (tránh đơn 0 đồng / mã QR không có tài khoản). Admin tạo đơn hộ vẫn được.
+    if (!(unit_price_vnd > 0) || !(await getPaymentAccount()).configured) {
+      return {
+        ok: false,
+        status: 409,
+        error: "KitoKit chưa mở bán slot trực tuyến. Vui lòng liên hệ bộ phận hỗ trợ để được tư vấn.",
+      };
+    }
     totalCost = i.requestedSlots * unit_price_vnd;
   } else {
     // source: "ADMIN"

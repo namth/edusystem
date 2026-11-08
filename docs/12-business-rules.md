@@ -44,6 +44,7 @@
 - **BR-O07** Giáo viên thao tác đơn của người khác nhận 404.
 - **BR-O08** QR chỉ sinh khi đã cấu hình `payment_account` (BIN 6 số, STK 6–19 số) **và** đơn còn `PENDING`. Payload theo EMVCo / NAPAS 247; bỏ tag 54 khi số tiền bằng 0. Nội dung được làm sạch: không dấu, in hoa, `[A-Z0-9 ]`, tối đa 25 ký tự.
 - **BR-O09** Đơn giá slot lấy từ `system_settings.slot_pricing`. Thiếu dòng này thì dùng `SLOT_UNIT_PRICE_VND`, cũng thiếu thì 0.
+- **BR-O10** Giáo viên tự đặt mua chỉ được khi `slot_pricing.unit_price_vnd > 0` **và** `payment_account` đã đủ BIN/STK/tên; thiếu một trong hai → 409 "KitoKit chưa mở bán slot trực tuyến…", không sinh đơn. Admin tạo đơn hộ không bị chặn (tặng 0 đồng vẫn được).
 
 ## 5. Bài học & lộ trình (L): FEAT-010
 - **BR-L01** Bài học thuộc `created_by`. TEACHER chỉ thao tác bài học của mình.

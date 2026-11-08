@@ -35,6 +35,7 @@ beforeEach(async () => {
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-005-system-settings.sql", "utf8"));
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-016-slot-orders.sql", "utf8"));
   await h.pg.db.exec(`UPDATE system_settings SET value = '{"unit_price_vnd":10000}'::jsonb WHERE key = 'slot_pricing'`);   // DEC-033: giá đọc từ cấu hình
+  await h.pg.db.exec(`UPDATE system_settings SET value = '{"bank_bin":"970436","bank_name":"VCB","account_no":"0123456789","account_name":"KITOKIT"}'::jsonb WHERE key = 'payment_account'`);   // BR-O10: phải có tài khoản nhận tiền
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-009-scoring-standards.sql", "utf8"));
   await h.pg.db.exec(`
     INSERT INTO users (id,name,email,role,phone,password,target_band) VALUES
