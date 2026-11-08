@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tính năng 1: Quản Lý Lớp Học - KitoKit Guide (kito.io.vn)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo-vertical.png">
+</head>
+<body>
+  <div class="guide-container">
+    <!-- Sidebar -->
+    <aside class="guide-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="images/logo-vertical.png" alt="Kito Logo" class="sidebar-logo-vertical">
+        <h2 class="sidebar-title">KitoKit</h2>
+        <p class="sidebar-subtitle">Cẩm Nang Giáo Viên</p>
+        <span class="sidebar-domain-badge">kito.io.vn</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-title">Bắt Đầu</div>
+        <a href="index.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Tổng Quan & Khởi Động</span>
+        </a>
+
+        <div class="nav-group-title">Lớp & Học Sinh</div>
+        <a href="lop-hoc.html" class="nav-link active">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>1. Quản Lý Lớp Học</span>
+        </a>
+        <a href="tao-hoc-sinh.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+          <span>2. Cấp Acc Học Sinh</span>
+        </a>
+        <a href="slot-goi-cuoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>3. Quản Lý Slot & Mua Gói</span>
+        </a>
+
+        <div class="nav-group-title">Học Liệu & Đề Thi</div>
+        <a href="bai-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>
+          <span>4. Kho Bài Học & Soạn Bài</span>
+        </a>
+        <a href="de-thi.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          <span>5. Soạn Đề Thi 4 Kỹ Năng</span>
+        </a>
+        <a href="ai-nhap-de.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          <span>6. AI Nhập Đề Tự Động</span>
+        </a>
+        <a href="flashcards.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <span>7. Quản Lý Flashcards</span>
+        </a>
+        <a href="mon-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+          <span>8. Quản Lý Môn Học</span>
+        </a>
+
+        <div class="nav-group-title">Chấm Điểm & Báo Cáo</div>
+        <a href="duyet-diem.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>9. Duyệt Điểm AI & Chấm Bài</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>kito.io.vn</strong> · Cổng Giáo Viên
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="guide-main">
+      <div class="guide-topbar">
+        <div class="guide-breadcrumb">
+          <a href="index.html">kito.io.vn</a>
+          <span>/</span>
+          <a href="index.html">Lớp & Học Sinh</a>
+          <span>/</span>
+          <strong>1. Quản Lý Lớp Học</strong>
+        </div>
+        <button class="btn-quick-print" onclick="window.print()">
+          <svg class="lucide-icon sm" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>In trang này</span>
+        </button>
+      </div>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="page-hero-content">
+          <div class="page-tag">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span>Không Gian Lớp Học</span>
+          </div>
+          <h1 class="page-title">Quản Lý Lớp Học & Lộ Trình</h1>
+          <p class="page-subtitle">Tạo lớp học, chia sẻ mã mời/link tham gia cho học sinh, cài đặt lịch học và mở khoá nội dung bài học theo tiến độ từng buổi học.</p>
+        </div>
+        <div class="page-hero-mascot">
+          <img src="images/kito-3d-chien-thang.png" alt="Kito Quản lý lớp">
+        </div>
+      </section>
+
+      <!-- Tip from Kito -->
+      <div class="mascot-tip-box">
+        <div class="mascot-tip-avatar">
+          <img src="images/kito-3d-khen-ngon-cai.png" alt="Mẹo Kito">
+        </div>
+        <div class="mascot-tip-text">
+          <div class="mascot-tip-title">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <span>Mẹo chia sẻ link tham gia lớp nhanh:</span>
+          </div>
+          <div class="mascot-tip-desc">Thầy cô chỉ cần copy <strong>Link Mời</strong> dạng <code>https://kito.io.vn/join/[classId]</code> gửi vào nhóm Zalo lớp. Học sinh chỉ cần bấm vào là tự động đăng ký/đăng nhập và vào thẳng lớp!</div>
+        </div>
+      </div>
+
+      <!-- Steps Flow -->
+      <div class="step-container">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Danh Sách Lớp & Bấm Nút Tạo Lớp Mới</h3>
+              <p class="step-summary">Vào menu <strong>Quản Lý Lớp Học</strong> trên sidebar ➔ Lọc theo trạng thái và bấm <strong>Tạo Lớp Mới</strong>.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport Frame -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/classes</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view">
+              <!-- Top bar inside app -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div>
+                  <h3 style="font-size:17px; font-weight:800; color:var(--ink);">Quản Lý Lớp Học</h3>
+                  <span style="font-size:12px; color:var(--ink-muted);">Tạo và quản lý các lớp học, học viên và bài tập</span>
+                </div>
+                <!-- Callout 1: Button Tạo Lớp -->
+                <div style="position:relative;">
+                  <button style="background:var(--brand-600); color:#fff; border:none; padding:8px 16px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <svg class="lucide-icon sm" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                    <span>Tạo Lớp Mới</span>
+                  </button>
+                  <span class="callout-spot" style="position:absolute; top:-10px; right:-10px;">1</span>
+                </div>
+              </div>
+
+              <!-- Filter tabs in code: ALL, ACTIVE, COMPLETED, UPCOMING -->
+              <div style="display:flex; gap:6px; margin-bottom:16px;">
+                <span style="background:var(--brand-600); color:#fff; padding:4px 12px; border-radius:999px; font-size:11.5px; font-weight:700;">Tất cả</span>
+                <span style="background:#fff; color:var(--ink-muted); border:1px solid var(--line); padding:4px 12px; border-radius:999px; font-size:11.5px; font-weight:600;">Đang diễn ra</span>
+                <span style="background:#fff; color:var(--ink-muted); border:1px solid var(--line); padding:4px 12px; border-radius:999px; font-size:11.5px; font-weight:600;">Sắp khai giảng</span>
+              </div>
+
+              <!-- Cards Grid -->
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px;">
+                <!-- Card 1 -->
+                <div style="background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; position:relative; box-shadow:var(--shadow-sm);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span class="mockup-badge badge-active">ĐANG DIỄN RA</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--ink-subtle);">Mã: KITO88</span>
+                  </div>
+                  <h4 style="font-size:15px; font-weight:800; color:var(--ink); margin-bottom:8px;">IELTS 6.5 Intensive - K26</h4>
+                  <div style="font-size:12px; color:var(--ink-muted); line-height:1.6; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <svg class="lucide-icon sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span>Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 20:00)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                      <span>Sĩ số: <strong>18 / 25</strong> học viên</span>
+                    </div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--line); padding-top:10px;">
+                    <!-- Callout 2: Copy link -->
+                    <div style="position:relative; display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--brand-600); font-weight:600; cursor:pointer;">
+                      <svg class="lucide-icon sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      <span>Sao Chép Link Mời</span>
+                      <span class="callout-spot" style="position:absolute; top:-10px; right:-10px; width:20px; height:20px; font-size:10px;">2</span>
+                    </div>
+                    <a href="#" style="background:var(--brand-50); color:var(--brand-700); text-decoration:none; padding:4px 10px; border-radius:8px; font-size:11.5px; font-weight:700;">
+                      Vào Lớp ➔
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div style="background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow-sm);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span class="mockup-badge badge-warning">SẮP KHAI GIẢNG</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--ink-subtle);">Mã: THPT01</span>
+                  </div>
+                  <h4 style="font-size:15px; font-weight:800; color:var(--ink); margin-bottom:8px;">Luyện Thi Tiếng Anh THPT 2026</h4>
+                  <div style="font-size:12px; color:var(--ink-muted); line-height:1.6; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <svg class="lucide-icon sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span>Thứ 3 - Thứ 5 - Thứ 7 (19:30 - 21:00)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                      <span>Sĩ số: <strong>6 / 30</strong> học viên</span>
+                    </div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--line); padding-top:10px;">
+                    <span style="font-size:12px; color:var(--brand-600); font-weight:600; cursor:pointer;">📋 Copy Link Mời</span>
+                    <a href="#" style="background:var(--brand-50); color:var(--brand-700); text-decoration:none; padding:4px 10px; border-radius:8px; font-size:11.5px; font-weight:700;">
+                      Vào Lớp ➔
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">1</span>
+              <span><strong>Nút Tạo Lớp Mới:</strong> Mở bảng thông tin để thiết lập tên lớp, sĩ số tối đa và lịch học.</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-badge">2</span>
+              <span><strong>Sao Chép Link Mời:</strong> Đường dẫn có dạng <code>https://kito.io.vn/join/[classId]</code> giúp học sinh tham gia lớp trong 1 chạm.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Quản Lý Lộ Trình & Mở Khoá Bài Học Từng Buổi</h3>
+              <p class="step-summary">Bấm vào chi tiết lớp học (<code>/teacher/classes/[classId]</code>) ➔ Vào tab <strong>Lộ trình lớp</strong> ➔ Gạt nút để <strong>Khoá 🔒</strong> hoặc <strong>Mở Khoá 🔓</strong> bài học/đề thi.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport Detail -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/classes/cls_101</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view">
+              <!-- Roadmap Tree Mockup matching TeacherClassRoadmap.tsx -->
+              <div style="background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;">
+                <div style="background:var(--brand-50); padding:12px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+                  <strong style="color:var(--brand-700); font-size:14px;">UNIT 1: Environment & Climate Change</strong>
+                  <span class="mockup-badge badge-active">ĐANG MỞ</span>
+                </div>
+                <div style="padding:12px 16px; border-bottom:1px solid var(--line-soft); display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <svg class="lucide-icon sm" style="color:var(--brand-600);" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+                    <span>Bài học 1: Global Warming Vocabulary & Reading</span>
+                  </div>
+                  <span style="color:var(--emerald-700); font-weight:700; font-size:12px;">Đã Mở Cho Học Sinh</span>
+                </div>
+                <div style="padding:12px 16px; display:flex; align-items:center; justify-content:space-between; font-size:13px; opacity:0.75;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <svg class="lucide-icon sm" style="color:var(--accent-500);" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/></svg>
+                    <span>Đề thi: Listening Practice Section 1</span>
+                  </div>
+                  <!-- Callout 3: Button gạt mở -->
+                  <div style="position:relative;">
+                    <button style="background:var(--brand-600); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:700; font-size:11.5px; cursor:pointer;">
+                      🔓 Bấm Mở Khoá
+                    </button>
+                    <span class="callout-spot" style="position:absolute; top:-8px; right:-8px; width:20px; height:20px; font-size:10px;">3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">3</span>
+              <span><strong>Mở khoá bài học:</strong> Bài chỉ hiển thị trong tài khoản học sinh khi thầy cô bấm Mở khoá, giúp kiểm soát lộ trình theo từng buổi dạy.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Navigation -->
+      <div class="page-nav-footer">
+        <a href="index.html" class="nav-btn">
+          <span class="nav-btn-sub">⬅ Quay lại</span>
+          <span class="nav-btn-title">Tổng Quan Hướng Dẫn</span>
+        </a>
+        <a href="tao-hoc-sinh.html" class="nav-btn next">
+          <span class="nav-btn-sub">Tiếp theo ➔</span>
+          <span class="nav-btn-title">2. Cấp Acc Học Sinh</span>
+        </a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
