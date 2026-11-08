@@ -16,7 +16,11 @@ export type NotificationType =
   | "ORDER_CREATED"
   | "ORDER_APPROVED"
   | "ORDER_REJECTED"
-  | "ORDER_PAID_REPORTED";
+  | "ORDER_PAID_REPORTED"
+  | "SLOT_CHARGED"
+  | "SLOT_GRACE"
+  | "CLASS_LOCKED"
+  | "SLOT_POLICY_CHANGED";
 
 export interface NotificationItem {
   id: string;
@@ -58,6 +62,9 @@ const EMAIL_NOTIFICATION_TYPES = new Set<NotificationType>([
   "ORDER_APPROVED",
   "ORDER_REJECTED",
   "TEACHER_VERIFIED",
+  "SLOT_GRACE",
+  "CLASS_LOCKED",
+  "SLOT_POLICY_CHANGED",
 ]);
 
 /** Gửi email cho người nhận thông báo. Không bao giờ ném lỗi và không chờ quá ~10 s. */

@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { syncTeacherManagesClass } from "@/lib/neo4j";
 import { assertTrialAllows, isTrialTeacher, trialLimitResponse } from "@/lib/teacher-trial";
+import { todayVN, addMonths } from "@/lib/slot-wallet";
 
 export async function GET(_req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -138,9 +139,16 @@ export async function POST(req: Request) {
     const finalSchedule = typeof schedule === "string" ? schedule.trim() : null;
     const finalCourseId = typeof course_id === "string" ? course_id.trim() : null;
 
+    const startDate = todayVN(new Date());
+    const isTrial = await isTrialTeacher(teacherId);
+    const nextChargeAt = isTrial ? null : addMonths(startDate, 1);
+
     const insertSql = `
-      INSERT INTO classes (id, name, code, teacher_id, schedule, max_slots, course_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO classes (
+        id, name, code, teacher_id, schedule, max_slots, course_id,
+        start_date, billing_period, billing_status, next_charge_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'ACTIVE', $9)
       RETURNING *
     `;
     const res = await queryPg(insertSql, [
@@ -151,6 +159,8 @@ export async function POST(req: Request) {
       finalSchedule,
       parsedMaxSlots,
       finalCourseId,
+      startDate,
+      nextChargeAt,
     ]);
     const createdClass = res.rows[0];
 

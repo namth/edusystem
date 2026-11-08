@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { queryPg } from "@/lib/db-pg";
+import { queryPg, getPgPool } from "@/lib/db-pg";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import { assertTrialAllows } from "@/lib/teacher-trial";
-import { assertStudentSlotAvailable } from "@/lib/student-slots";
+import { chargeEnrollment } from "@/lib/slot-wallet";
 
 export type EnrollByCodeResult =
   | { ok: true; class: any; alreadyEnrolled: boolean }
@@ -51,7 +51,8 @@ export async function enrollStudentByCode(
     };
   }
 
-  // Kiểm tra giới hạn học sinh của giáo viên dùng thử
+  // Thứ tự kiểm tra BR-S04: quyền -> dùng thử -> ví -> max_slots
+  // 1. Kiểm tra giới hạn dùng thử
   if (targetClass.teacher_id) {
     const existingWithTeacher = await queryPg(
       `SELECT 1 FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.teacher_id = $1 AND e.student_id = $2 LIMIT 1;`,
@@ -66,42 +67,62 @@ export async function enrollStudentByCode(
         error: trial.error,
       };
     }
+  }
 
-    const slotCheck = await assertStudentSlotAvailable(targetClass.teacher_id, studentId);
-    if (!slotCheck.ok) {
+  // 2. Mở transaction: trừ ví slot và kiểm tra sĩ số lớp
+  const pool = getPgPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const chargeRes = await chargeEnrollment(client, {
+      classId: targetClass.id,
+      studentId,
+    });
+
+    if (!chargeRes.ok) {
+      await client.query("ROLLBACK");
+      return {
+        ok: false,
+        status: chargeRes.status,
+        error: chargeRes.error,
+      };
+    }
+
+    // 3. Kiểm tra sĩ số tối đa của lớp
+    const countRes = await client.query(
+      `SELECT COUNT(*)::int AS n FROM enrollments WHERE class_id = $1;`,
+      [targetClass.id]
+    );
+    const currentCount = Number(countRes.rows[0]?.n || 0);
+
+    if (targetClass.max_slots != null && currentCount >= Number(targetClass.max_slots)) {
+      await client.query("ROLLBACK");
       return {
         ok: false,
         status: 409,
-        error: slotCheck.error,
+        error: "Lớp học đã đủ chỗ.",
       };
     }
+
+    // 4. Chèn ghi danh mới
+    const enrollmentId = "enr_" + crypto.randomUUID();
+    await client.query(
+      `INSERT INTO enrollments (id, student_id, class_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (student_id, class_id) DO NOTHING;`,
+      [enrollmentId, studentId, targetClass.id]
+    );
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
   }
 
-  // Kiểm tra sĩ số lớp
-  const countRes = await queryPg(
-    `SELECT COUNT(*) AS n FROM enrollments WHERE class_id = $1;`,
-    [targetClass.id]
-  );
-  const currentCount = Number(countRes.rows[0]?.n || 0);
-
-  if (targetClass.max_slots != null && currentCount >= Number(targetClass.max_slots)) {
-    return {
-      ok: false,
-      status: 409,
-      error: "Lớp học đã đủ chỗ.",
-    };
-  }
-
-  // Chèn ghi danh mới
-  const enrollmentId = "enr_" + crypto.randomUUID();
-  await queryPg(
-    `INSERT INTO enrollments (id, student_id, class_id)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (student_id, class_id) DO NOTHING;`,
-    [enrollmentId, studentId, targetClass.id]
-  );
-
-  // Đồng bộ Neo4j trong try/catch
+  // Đồng bộ Neo4j trong try/catch sau COMMIT
   try {
     await syncStudentEnrolledInClass(studentId, targetClass.id);
   } catch (neoErr) {

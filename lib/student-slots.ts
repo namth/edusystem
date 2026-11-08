@@ -4,13 +4,13 @@ export async function getStudentSlotUsage(
   teacherId: string
 ): Promise<{ used: number; limit: number }> {
   const userRes = await queryPg(
-    `SELECT COALESCE(slot_limit, 0) AS slot_limit FROM users WHERE id = $1;`,
+    `SELECT COALESCE(slot_balance, 0) AS slot_balance FROM users WHERE id = $1;`,
     [teacherId]
   );
-  const limit = userRes.rows.length > 0 ? Number(userRes.rows[0].slot_limit) : 0;
+  const limit = userRes.rows.length > 0 ? Number(userRes.rows[0].slot_balance) : 0;
 
   const countRes = await queryPg(
-    `SELECT COUNT(DISTINCT e.student_id)::int AS used
+    `SELECT COUNT(e.id)::int AS used
      FROM enrollments e
      JOIN classes c ON e.class_id = c.id
      WHERE c.teacher_id = $1;`,
@@ -23,10 +23,10 @@ export async function getStudentSlotUsage(
 
 export async function assertStudentSlotAvailable(
   teacherId: string,
-  studentId?: string
+  _studentId?: string
 ): Promise<{ ok: true } | { ok: false; status: 409; error: string }> {
   const userRes = await queryPg(
-    `SELECT role, COALESCE(slot_limit, 0) AS slot_limit FROM users WHERE id = $1;`,
+    `SELECT role, COALESCE(slot_balance, 0) AS slot_balance FROM users WHERE id = $1;`,
     [teacherId]
   );
 
@@ -34,27 +34,12 @@ export async function assertStudentSlotAvailable(
     return { ok: true };
   }
 
-  if (studentId) {
-    const existingRes = await queryPg(
-      `SELECT 1
-       FROM enrollments e
-       JOIN classes c ON e.class_id = c.id
-       WHERE c.teacher_id = $1 AND e.student_id = $2
-       LIMIT 1;`,
-      [teacherId, studentId]
-    );
-    if (existingRes.rows.length > 0) {
-      return { ok: true };
-    }
-  }
-
-  const { used, limit } = await getStudentSlotUsage(teacherId);
-
-  if (used >= limit) {
+  const limit = Number(userRes.rows[0].slot_balance);
+  if (limit <= 0) {
     return {
       ok: false,
       status: 409,
-      error: "Thầy cô đã dùng hết slot học sinh. Vui lòng mua thêm slot.",
+      error: "Thầy cô không đủ slot để thêm học sinh. Vui lòng mua thêm slot.",
     };
   }
 

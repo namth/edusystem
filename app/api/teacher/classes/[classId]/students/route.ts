@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireRole } from "@/lib/api-auth";
-import { queryPg } from "@/lib/db-pg";
+import { queryPg, getPgPool } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
-import { assertStudentSlotAvailable } from "@/lib/student-slots";
+import { chargeEnrollment } from "@/lib/slot-wallet";
 
 export async function POST(
   req: Request,
@@ -17,7 +17,7 @@ export async function POST(
 
   const { classId } = await context.params;
 
-  const classRes = await queryPg("SELECT id, teacher_id, max_slots FROM classes WHERE id = $1", [classId]);
+  const classRes = await queryPg("SELECT id, teacher_id, max_slots, billing_status FROM classes WHERE id = $1", [classId]);
   if (classRes.rows.length === 0) {
     return NextResponse.json(
       { success: false, error: "Lớp học không tồn tại." },
@@ -73,6 +73,8 @@ export async function POST(
     [trimmedEmail]
   );
 
+  const pool = getPgPool();
+
   if (userRes.rows.length > 0) {
     const existing = userRes.rows[0];
     if (existing.role !== "STUDENT") {
@@ -101,34 +103,50 @@ export async function POST(
         }
       }
 
-      if (cls.teacher_id) {
-        const slotCheck = await assertStudentSlotAvailable(cls.teacher_id, existing.id);
-        if (!slotCheck.ok) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const chargeRes = await chargeEnrollment(client, {
+          classId,
+          studentId: existing.id,
+        });
+
+        if (!chargeRes.ok) {
+          await client.query("ROLLBACK");
           return NextResponse.json(
-            { success: false, error: slotCheck.error },
+            { success: false, error: chargeRes.error },
+            { status: chargeRes.status }
+          );
+        }
+
+        // Kiểm tra lớp đầy
+        const countRes = await client.query(
+          "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
+          [classId]
+        );
+        const currentCount = Number(countRes.rows[0]?.count ?? 0);
+        if (currentCount >= maxSlots) {
+          await client.query("ROLLBACK");
+          return NextResponse.json(
+            { success: false, error: "Lớp học đã đủ số lượng học viên tối đa." },
             { status: 409 }
           );
         }
-      }
 
-      // Kiểm tra lớp đầy
-      const countRes = await queryPg(
-        "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
-        [classId]
-      );
-      const currentCount = Number(countRes.rows[0]?.count ?? 0);
-      if (currentCount >= maxSlots) {
-        return NextResponse.json(
-          { success: false, error: "Lớp học đã đủ số lượng học viên tối đa." },
-          { status: 409 }
+        const enrId = "enr_" + crypto.randomUUID();
+        await client.query(
+          "INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3)",
+          [enrId, existing.id, classId]
         );
-      }
 
-      const enrId = "enr_" + crypto.randomUUID();
-      await queryPg(
-        "INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3)",
-        [enrId, existing.id, classId]
-      );
+        await client.query("COMMIT");
+      } catch (err: any) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw err;
+      } finally {
+        client.release();
+      }
 
       try {
         await syncStudentEnrolledInClass(existing.id, classId);
@@ -161,31 +179,8 @@ export async function POST(
     }
   }
 
-  if (cls.teacher_id) {
-    const slotCheck = await assertStudentSlotAvailable(cls.teacher_id);
-    if (!slotCheck.ok) {
-      return NextResponse.json(
-        { success: false, error: slotCheck.error },
-        { status: 409 }
-      );
-    }
-  }
-
-  const countRes = await queryPg(
-    "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
-    [classId]
-  );
-  const currentCount = Number(countRes.rows[0]?.count ?? 0);
-  if (currentCount >= maxSlots) {
-    return NextResponse.json(
-      { success: false, error: "Lớp học đã đủ số lượng học viên tối đa." },
-      { status: 409 }
-    );
-  }
-
-  // Tạo user id = "usr_" + crypto.randomUUID(), role = 'STUDENT', password = hashPassword(temp) với temp ≥ 8 ký tự
   const newUserId = "usr_" + crypto.randomUUID();
-  const tempPassword = crypto.randomBytes(6).toString("hex"); // 12 ký tự hex (>= 8 ký tự)
+  const tempPassword = crypto.randomBytes(6).toString("hex");
   const hashed = hashPassword(tempPassword);
   const cleanPhone = phone ? String(phone).trim() : null;
 
@@ -194,20 +189,61 @@ export async function POST(
     VALUES ($1, $2, $3, 'STUDENT', $4, true, $5, 'ACTIVE')
     RETURNING id, name, email, role, phone, status
   `;
-  const insertUserRes = await queryPg(insertUserSql, [
-    newUserId,
-    name.trim(),
-    trimmedEmail,
-    hashed,
-    cleanPhone,
-  ]);
-  const newUser = insertUserRes.rows[0];
 
-  const enrollmentId = "enr_" + crypto.randomUUID();
-  await queryPg(
-    "INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3)",
-    [enrollmentId, newUserId, classId]
-  );
+  let newUser: any;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const chargeRes = await chargeEnrollment(client, {
+      classId,
+      studentId: newUserId,
+    });
+
+    if (!chargeRes.ok) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { success: false, error: chargeRes.error },
+        { status: chargeRes.status }
+      );
+    }
+
+    const countRes = await client.query(
+      "SELECT COUNT(*)::int AS count FROM enrollments WHERE class_id = $1",
+      [classId]
+    );
+    const currentCount = Number(countRes.rows[0]?.count ?? 0);
+    if (currentCount >= maxSlots) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { success: false, error: "Lớp học đã đủ số lượng học viên tối đa." },
+        { status: 409 }
+      );
+    }
+
+    const insertUserRes = await client.query(insertUserSql, [
+      newUserId,
+      name.trim(),
+      trimmedEmail,
+      hashed,
+      cleanPhone,
+    ]);
+    newUser = insertUserRes.rows[0];
+
+    const enrollmentId = "enr_" + crypto.randomUUID();
+    await client.query(
+      "INSERT INTO enrollments (id, student_id, class_id) VALUES ($1, $2, $3)",
+      [enrollmentId, newUserId, classId]
+    );
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 
   try {
     await syncStudentEnrolledInClass(newUserId, classId);
