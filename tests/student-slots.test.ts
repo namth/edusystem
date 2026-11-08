@@ -227,7 +227,7 @@ describe("Chấm AI không còn đọc/trừ/hoàn slot", () => {
       return out;
     };
     const bad = [...walk("app"), ...walk("lib"), ...walk("worker")]
-      .filter((f) => /slot_limit\s*-\s*1|slot_limit\s*\+\s*1|hoàn slot/i.test(read(f)))
+      .filter((f) => /slot_limit\s*-\s*1|slot_limit\s*\+\s*1|hoàn slot cho|hoàn lại slot/i.test(read(f))) // FEAT-015: câu "không hoàn slot" ở UI là hợp lệ
       .map((f) => f.split(path.sep).join("/"));
     expect(bad).toEqual([]);
     expect(read("app/api/student/exam-attempts/[id]/submit/route.ts")).not.toMatch(/slot_limit/);
@@ -237,7 +237,7 @@ describe("Chấm AI không còn đọc/trừ/hoàn slot", () => {
   it("giao diện không còn gọi slot là lượt chấm / không viết cứng số đã dùng", () => {
     const s = read("app/teacher/slots/page.tsx");
     expect(s).not.toMatch(/useState\(218\)|useState\(250\)/);
-    expect(s).toMatch(/usage/);
+    expect(s).toMatch(/\/api\/teacher\/slot-wallet/); // FEAT-015: số dư lấy từ API ví
   });
 });
 

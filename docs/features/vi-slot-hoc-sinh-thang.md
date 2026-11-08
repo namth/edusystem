@@ -1,4 +1,4 @@
-> Trạng thái: SPEC_APPROVED (2026-11-08) · TASK-051, TASK-052 DONE 08/11 · DEC-042 → DEC-047 · TASK-052 → TASK-051
+> Trạng thái: DONE (2026-11-08) — code xong, chưa deploy · DEC-042 → DEC-047 · TASK-052 → TASK-051
 
 # FEAT-015: Ví slot học sinh-tháng
 

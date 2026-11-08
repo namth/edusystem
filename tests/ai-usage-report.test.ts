@@ -460,6 +460,7 @@ describe("4. Giao diện & Menu quản trị (AdminLayout & Pages)", () => {
 
     // Dùng ai_totals và students_used
     expect(s).toMatch(/ai_totals/);
-    expect(s).toMatch(/students_used/);
+    // FEAT-015 (TASK-054): khối "Slot Capacity" thay bằng Ví slot → không còn hiển thị students_used ở trang này
+    expect(s).toMatch(/slot-wallet/);
   });
 });

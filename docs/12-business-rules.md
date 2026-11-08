@@ -126,7 +126,7 @@ class_grade_items       (mở) ─finalize─▶ đã chốt (finalized_at) ─r
 slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─reject(reason)─▶ REJECTED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
-classes.billing_status  ACTIVE ─đến kỳ, thiếu slot─▶ GRACE ─quá 7 ngày─▶ LOCKED ; GRACE|LOCKED ─trừ đủ─▶ ACTIVE ; * ─kết thúc lớp─▶ ENDED   (FEAT-015, chưa code)
+classes.billing_status  ACTIVE ─đến kỳ, thiếu slot─▶ GRACE ─quá 7 ngày─▶ LOCKED ; GRACE|LOCKED ─trừ đủ─▶ ACTIVE ; * ─kết thúc lớp─▶ ENDED   (FEAT-015)
 users.teacher_status    TRIAL ─verify─▶ VERIFIED | REJECTED ; REJECTED ─verify─▶ VERIFIED   (NULL = coi như VERIFIED)
 leads.status            NEW ─▶ CONTACTED ─▶ DONE
 ```

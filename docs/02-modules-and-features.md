@@ -38,7 +38,7 @@ Trang chuyển hướng: `/admin/requests` → `/admin/orders`, `/admin/rubrics`
 | Môn Học | `/teacher/subjects` | Môn của giáo viên (`owner_id`) + môn hệ thống |
 | Quản Lý Flashcards | `/teacher/flashcards` | Thư viện thẻ dùng chung, upload ảnh/audio |
 | Tạo Acc Học Sinh | `/teacher/students/create` | Tạo tài khoản học sinh (kèm lớp) |
-| Slot học sinh & đơn hàng | `/teacher/slots`, `/teacher/orders/[id]` | Xem slot đang dùng / tổng, tạo đơn, trang thanh toán VietQR, báo đã chuyển khoản · **FEAT-015 (SPEC_APPROVED, chưa code):** thành *Ví slot* — số dư, dự báo lần trừ từng lớp, lịch sử; lớp có ngày khai giảng, kết thúc lớp, ân hạn/khoá |
+| Slot học sinh & đơn hàng | `/teacher/slots`, `/teacher/orders/[id]` | Xem slot đang dùng / tổng, tạo đơn, trang thanh toán VietQR, báo đã chuyển khoản · **FEAT-015:** thành *Ví slot* — số dư, dự báo lần trừ từng lớp, lịch sử; lớp có ngày khai giảng, kết thúc lớp, ân hạn/khoá |
 | Chấm & Bảng điểm (FEAT-014) | `/teacher/grading`, `/teacher/grading/[classId]/[kind]/[itemId]` | Chọn lớp → bài (bài học / đề) → bảng điểm học sinh × điểm, sửa điểm & nhận xét từng câu AI, chốt bảng điểm, tổng kết lớp thang 10 (DEC-037 → DEC-041) |
 
 Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị giới hạn theo DEC-027.
@@ -86,4 +86,4 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 - mỗi học sinh nộp 1 lần cho mỗi bài/đề trong lớp dùng thử;
 - không mua slot được.
 
-**Slot học sinh** (DEC-031): giáo viên đã xác minh bị giới hạn tổng số học sinh khác nhau ≤ `users.slot_limit`. Chủ lớp là ADMIN không bị giới hạn. **Sẽ thay bởi FEAT-015 (DEC-042 → DEC-047):** 1 slot = 1 học sinh × 1 tháng của một lớp, trừ khi vào lớp và mỗi kỳ tháng; thiếu slot → ân hạn 7 ngày → khoá lớp; không còn tặng 250 slot. Xem `docs/features/vi-slot-hoc-sinh-thang.md`.
+**Slot học sinh** (DEC-031): giáo viên đã xác minh bị giới hạn tổng số học sinh khác nhau ≤ `users.slot_limit`. Chủ lớp là ADMIN không bị giới hạn. **Đã thay bởi FEAT-015 (DEC-042 → DEC-047):** 1 slot = 1 học sinh × 1 tháng của một lớp, trừ khi vào lớp và mỗi kỳ tháng; thiếu slot → ân hạn 7 ngày → khoá lớp; không còn tặng 250 slot. Xem `docs/features/vi-slot-hoc-sinh-thang.md`.

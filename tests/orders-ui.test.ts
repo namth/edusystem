@@ -90,9 +90,9 @@ describe("Trang giáo viên", () => {
     expect(s).toMatch(/TeacherLayout/);
   });
 
-  it("/teacher/slots: hiện usage thật, tạo đơn rồi chuyển sang /teacher/orders/<id>, danh sách đơn có link", () => {
+  it("/teacher/slots: hiện ví slot thật (FEAT-015), tạo đơn rồi chuyển sang /teacher/orders/<id>, danh sách đơn có link", () => {
     const s = read(SLOTS);
-    expect(s).toMatch(/usage/);
+    expect(s).toMatch(/\/api\/teacher\/slot-wallet/);
     expect(s).toMatch(/\/api\/teacher\/slot-requests/);
     expect(s).toMatch(/router\.push\(`\/teacher\/orders\/\$\{/);
     expect(s).toMatch(/href=\{`\/teacher\/orders\/\$\{/);
