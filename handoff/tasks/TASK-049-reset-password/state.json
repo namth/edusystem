@@ -1,13 +1,99 @@
 {
   "id": "TASK-049",
   "title": "Cấp lại mật khẩu tạm: admin cho mọi tài khoản, giáo viên cho học sinh lớp mình",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "aad320f0-58f1-41d4-a356-4d17de662234",
   "history": [
     {
       "at": "2026-11-08T11:53:37",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T11:55:51",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T11:59:17",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T11:59:25",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T11:59:28",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T11:59:36",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T12:07:21",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:12:05",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:31:23",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:33:31",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T12:33:39",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T12:33:52",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:35:41",
+      "status": "review_passed",
+      "note": "nghiệm thu chéo đạt bởi agy1 — chờ trưởng phòng (HIGH/nhạy cảm)"
+    },
+    {
+      "at": "2026-11-08T12:36:27",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "aad320f0-58f1-41d4-a356-4d17de662234"
+    },
+    "tester": {
+      "account": "agy1",
+      "conversation_id": "f809da9b-c6b2-4055-b278-67052748db92"
+    },
+    "reviewer": {
+      "account": "agy1",
+      "conversation_id": "5a50f5e2-b9cb-461d-9072-1940884512f6"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-049-reset-password/verify.sh",
+    "handoff/tasks/TASK-049-reset-password/verify.sh",
+    "tests/reset-password.test.ts"
+  ],
+  "review_fingerprint": "7d679c6a0f2811991792ddef70b7cf7296baf1699c5fe581229be23969d2c1a1"
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TeacherLayout from "@/components/TeacherLayout";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -629,9 +630,16 @@ export default function TeacherClassDetailPage() {
                           )}
                         </td>
                         <td className="p-3.5 text-right">
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                            {st.status || "ACTIVE"}
-                          </span>
+                          <div className="flex items-center justify-end space-x-2">
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                              {st.status || "ACTIVE"}
+                            </span>
+                            <ResetPasswordButton
+                              userId={st.id}
+                              userName={st.name}
+                              role="TEACHER"
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))
