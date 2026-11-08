@@ -6,6 +6,7 @@ import ResetPasswordButton from "@/components/ResetPasswordButton";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { ClassBillingBanner } from "@/components/slots/ClassBillingBanner";
 import {
   BookOpen,
   UserPlus,
@@ -26,6 +27,9 @@ import {
   AlertCircle,
   RefreshCw,
   KeyRound,
+  Calendar,
+  AlertTriangle,
+  StopCircle,
 } from "lucide-react";
 import TeacherClassRoadmap from "@/components/class-roadmap/TeacherClassRoadmap";
 
@@ -37,6 +41,10 @@ interface ClassDetail {
   schedule: string;
   description: string;
   max_slots: number;
+  billing_status?: "ACTIVE" | "GRACE" | "LOCKED" | "ENDED" | string;
+  start_date?: string | null;
+  next_charge_at?: string | null;
+  grace_until?: string | null;
 }
 
 interface StudentInClass {
@@ -77,6 +85,14 @@ export default function TeacherClassDetailPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [newStudentTempPassword, setNewStudentTempPassword] = useState<{ name: string; password: string } | null>(null);
 
+  // Billing State
+  const [startDate, setStartDate] = useState("");
+  const [nextChargeAt, setNextChargeAt] = useState<string | null>(null);
+  const [billingMsg, setBillingMsg] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [isUpdatingBilling, setIsUpdatingBilling] = useState(false);
+  const [isEndingClass, setIsEndingClass] = useState(false);
+
   // Assign Exam Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedExamId, setSelectedExamId] = useState("");
@@ -88,24 +104,63 @@ export default function TeacherClassDetailPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [studentErrorMsg, setStudentErrorMsg] = useState<string | null>(null);
+  const [isSlotError, setIsSlotError] = useState(false);
 
   // Exam Preview Modal State
   const [previewExam, setPreviewExam] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatDateVN = (dateStr?: string | null) => {
+    if (!dateStr) return "—";
+    try {
+      const parts = dateStr.split("T")[0].split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateStr;
+    }
+  };
 
   const fetchClassData = async () => {
     try {
       setLoading(true);
       setErrorMessage(null);
 
-      // 1. Fetch Class Detail from API
-      const classRes = await fetch(`/api/teacher/classes/${classId}`);
+      // 1. Fetch Class Detail & Wallet data in parallel
+      const [classRes, walletRes] = await Promise.all([
+        fetch(`/api/teacher/classes/${classId}`),
+        fetch("/api/teacher/slot-wallet").catch(() => null),
+      ]);
+
       if (!classRes.ok) {
         const errData = await classRes.json().catch(() => ({}));
         throw new Error(errData.error || "Không thể tải thông tin lớp học.");
       }
       const classData = await classRes.json();
+
+      let billingInfo: any = {};
+      if (walletRes && walletRes.ok) {
+        const walletData = await walletRes.json().catch(() => ({}));
+        const found = (walletData.classes || []).find((c: any) => c.id === classId);
+        if (found) {
+          billingInfo = found;
+        }
+      }
+
       if (classData.class) {
+        const clsBillingStatus = billingInfo.billing_status || classData.class.billing_status || "ACTIVE";
+        const clsStartDate = billingInfo.start_date || classData.class.start_date || null;
+        const clsNextCharge = billingInfo.next_charge_at || classData.class.next_charge_at || null;
+        const clsGraceUntil = billingInfo.grace_until || classData.class.grace_until || null;
+
         setCls({
           id: classData.class.id,
           name: classData.class.name,
@@ -114,7 +169,18 @@ export default function TeacherClassDetailPage() {
           schedule: classData.class.schedule || "Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 20:00)",
           description: classData.class.description || "Lớp luyện thi IELTS chuyên sâu target 7.5+",
           max_slots: classData.class.max_slots || 30,
+          billing_status: clsBillingStatus,
+          start_date: clsStartDate,
+          next_charge_at: clsNextCharge,
+          grace_until: clsGraceUntil,
         });
+
+        if (clsStartDate) {
+          setStartDate(clsStartDate.split("T")[0]);
+        }
+        if (clsNextCharge) {
+          setNextChargeAt(clsNextCharge.split("T")[0]);
+        }
       }
 
       // 2. Fetch Members (Students & Assignments) from API
@@ -180,6 +246,72 @@ export default function TeacherClassDetailPage() {
   useEffect(() => {
     fetchClassData();
   }, [classId]);
+
+  // Billing: Update start_date via PUT
+  const handleUpdateBilling = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startDate) return;
+
+    setIsUpdatingBilling(true);
+    setBillingMsg(null);
+    setBillingError(null);
+
+    try {
+      const res = await fetch(`/api/teacher/classes/${classId}/billing`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start_date: startDate }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 409) {
+          setBillingError(
+            data.error || "Lớp học đã bắt đầu chu kỳ tính phí, không thể thay đổi ngày khai giảng."
+          );
+        } else {
+          setBillingError(data.error || "Không thể cập nhật ngày khai giảng.");
+        }
+        return;
+      }
+
+      setBillingMsg("Cập nhật ngày khai giảng thành công!");
+      if (data.start_date) setStartDate(data.start_date);
+      if (data.next_charge_at) setNextChargeAt(data.next_charge_at);
+      fetchClassData();
+    } catch (err: any) {
+      setBillingError(err.message || "Lỗi khi cập nhật ngày khai giảng.");
+    } finally {
+      setIsUpdatingBilling(false);
+    }
+  };
+
+  // Billing: End class via POST
+  const handleEndClass = async () => {
+    const confirmed = window.confirm(
+      "Bạn có chắc chắn muốn kết thúc lớp học này? Lưu ý: Không hoàn tác được, không hoàn slot."
+    );
+    if (!confirmed) return;
+
+    setIsEndingClass(true);
+    setBillingError(null);
+    try {
+      const res = await fetch(`/api/teacher/classes/${classId}/end`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Lỗi khi kết thúc lớp: " + (data.error || "Không thể kết thúc lớp"));
+        return;
+      }
+      setSuccessMsg("Lớp học đã kết thúc thành công.");
+      fetchClassData();
+    } catch (err: any) {
+      alert("Lỗi kết nối: " + (err.message || err));
+    } finally {
+      setIsEndingClass(false);
+    }
+  };
 
   // Assign exam to class via API
   const handleAssignExamToClass = async (e: React.FormEvent) => {
@@ -249,6 +381,9 @@ export default function TeacherClassDetailPage() {
     if (!name.trim() || !email.trim()) return;
 
     setIsSubmitting(true);
+    setStudentErrorMsg(null);
+    setIsSlotError(false);
+
     try {
       const res = await fetch(`/api/teacher/classes/${classId}/students`, {
         method: "POST",
@@ -260,9 +395,17 @@ export default function TeacherClassDetailPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        alert("Lỗi thêm học sinh: " + (data.error || "Không thể thêm vào lớp"));
+        if (res.status === 409) {
+          setStudentErrorMsg(
+            data.error || "Thầy cô không đủ slot học sinh để ghi danh vào lớp."
+          );
+          setIsSlotError(true);
+        } else {
+          setStudentErrorMsg(data.error || "Không thể thêm vào lớp.");
+          setIsSlotError(false);
+        }
         return;
       }
 
@@ -282,7 +425,8 @@ export default function TeacherClassDetailPage() {
       fetchClassData();
     } catch (e: any) {
       console.error(e);
-      alert("Đã xảy ra lỗi khi thêm học sinh: " + e.message);
+      setStudentErrorMsg("Đã xảy ra lỗi khi thêm học sinh: " + e.message);
+      setIsSlotError(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -318,6 +462,12 @@ export default function TeacherClassDetailPage() {
   return (
     <TeacherLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans text-ink">
+        {/* Banner trạng thái ví slot của lớp */}
+        <ClassBillingBanner
+          billing_status={cls?.billing_status}
+          grace_until={cls?.grace_until}
+        />
+
         {/* Top Header Navigation */}
         <div className="border-b border-line/40 pb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
@@ -355,13 +505,90 @@ export default function TeacherClassDetailPage() {
             </button>
 
             <button
-              onClick={() => setShowCreateStudentModal(true)}
+              onClick={() => {
+                setStudentErrorMsg(null);
+                setIsSlotError(false);
+                setShowCreateStudentModal(true);
+              }}
               className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer font-headline"
             >
               <UserPlus className="w-4 h-4 text-white" />
               <span>Thêm Học Viên</span>
             </button>
           </div>
+        </div>
+
+        {/* Khối Khai giảng & Tính phí */}
+        <div className="bg-white rounded-3xl border border-line p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-line/40 pb-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-brand-600" />
+              <h2 className="text-base font-bold text-ink">Khai giảng &amp; Tính phí</h2>
+            </div>
+            {cls?.billing_status !== "ENDED" && (
+              <button
+                type="button"
+                onClick={handleEndClass}
+                disabled={isEndingClass}
+                className="inline-flex items-center px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                <StopCircle className="w-4 h-4 mr-1.5 text-rose-600" />
+                <span>{isEndingClass ? "Đang xử lý..." : "Kết thúc lớp"}</span>
+              </button>
+            )}
+          </div>
+
+          {billingMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+              {billingMsg}
+            </div>
+          )}
+
+          {billingError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
+              {billingError}
+            </div>
+          )}
+
+          <form onSubmit={handleUpdateBilling} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label htmlFor="start_date_input" className="block text-xs font-bold text-ink-muted mb-1">
+                Ngày khai giảng (start_date)
+              </label>
+              <input
+                id="start_date_input"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                disabled={cls?.billing_status === "ENDED"}
+                className="w-full p-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-brand-600 disabled:opacity-50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-ink-muted mb-1">
+                Ngày trừ tới (next_charge_at)
+              </label>
+              <div className="p-2.5 bg-surface-alt border border-line rounded-xl text-xs font-medium text-ink">
+                {formatDateVN(nextChargeAt)}
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isUpdatingBilling || cls?.billing_status === "ENDED"}
+                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
+              >
+                {isUpdatingBilling ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <Save className="w-4 h-4 text-white" />
+                )}
+                <span>Lưu ngày khai giảng</span>
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Error Notification with Retry */}
@@ -584,7 +811,11 @@ export default function TeacherClassDetailPage() {
               </h2>
 
               <button
-                onClick={() => setShowCreateStudentModal(true)}
+                onClick={() => {
+                  setStudentErrorMsg(null);
+                  setIsSlotError(false);
+                  setShowCreateStudentModal(true);
+                }}
                 className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-all flex items-center space-x-1.5 cursor-pointer font-headline"
               >
                 <UserPlus className="w-4 h-4 text-white" />
@@ -752,6 +983,19 @@ export default function TeacherClassDetailPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {studentErrorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs">
+                  <p className="font-semibold">{studentErrorMsg}</p>
+                  {isSlotError && (
+                    <p className="mt-1">
+                      <Link href="/teacher/slots" className="font-bold underline text-brand-600 hover:text-brand-700">
+                        Mua slot
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <form onSubmit={handleCreateStudentForThisClass} className="space-y-4">
                 <div>

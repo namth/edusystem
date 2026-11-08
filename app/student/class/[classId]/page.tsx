@@ -17,6 +17,7 @@ import {
   Layers,
   Eye,
   Route,
+  Lock,
 } from "lucide-react";
 import StudentRoadmap from "@/components/class-roadmap/StudentRoadmap";
 import ClassGradebook from "@/components/student/ClassGradebook";
@@ -27,6 +28,7 @@ interface UserClass {
   name: string;
   code: string;
   schedule?: string;
+  billing_status?: "ACTIVE" | "GRACE" | "LOCKED" | "ENDED" | string;
 }
 
 interface AssignedExam {
@@ -91,6 +93,7 @@ function StudentClassDetailContent() {
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isClassLockedError, setIsClassLockedError] = useState(false);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -117,6 +120,7 @@ function StudentClassDetailContent() {
     setError(null);
     setForbidden(false);
     setNotFound(false);
+    setIsClassLockedError(false);
 
     try {
       const [classRes, examsRes] = await Promise.all([
@@ -125,8 +129,13 @@ function StudentClassDetailContent() {
       ]);
 
       if (classRes.status === 403) {
-        setForbidden(true);
-        return;
+        const j = await classRes.json().catch(() => ({}));
+        if (j.code === "CLASS_LOCKED") {
+          setIsClassLockedError(true);
+        } else {
+          setForbidden(true);
+          return;
+        }
       }
       if (classRes.status === 404) {
         setNotFound(true);
@@ -135,12 +144,22 @@ function StudentClassDetailContent() {
 
       if (!classRes.ok) {
         const j = await classRes.json().catch(() => ({}));
+        if (j.code === "CLASS_LOCKED") {
+          setIsClassLockedError(true);
+        }
         throw new Error(j.error || "Không thể tải thông tin lớp học.");
       }
 
       const classJson = await classRes.json();
       if (!classJson.success) {
+        if (classJson.code === "CLASS_LOCKED") {
+          setIsClassLockedError(true);
+        }
         throw new Error(classJson.error || "Không thể tải thông tin lớp học.");
+      }
+
+      if (classJson.code === "CLASS_LOCKED") {
+        setIsClassLockedError(true);
       }
 
       setClassDetail(classJson.class);
@@ -203,6 +222,11 @@ function StudentClassDetailContent() {
     fetchClassData();
   }, [classId]);
 
+  const isLocked =
+    isClassLockedError ||
+    classDetail?.billing_status === "LOCKED" ||
+    classDetail?.billing_status === "ENDED";
+
   if (loading) {
     return (
       <StudentLayout>
@@ -261,8 +285,18 @@ function StudentClassDetailContent() {
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 font-sans text-ink">
+        {/* Banner lớp tạm khoá */}
+        {isLocked && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-center space-x-3 shadow-sm">
+            <Lock className="w-5 h-5 text-rose-600 shrink-0" />
+            <span className="text-sm font-semibold">
+              Lớp đang tạm khoá, vui lòng liên hệ giáo viên
+            </span>
+          </div>
+        )}
+
         {/* Global Error Banner */}
-        {error && (
+        {error && !isClassLockedError && (
           <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-2">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
@@ -436,7 +470,11 @@ function StudentClassDetailContent() {
                     </div>
 
                     <div className="shrink-0 w-full md:w-auto text-right">
-                      {asg.hasExam ? (
+                      {isLocked ? (
+                        <span className="inline-block px-5 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-xs font-bold border border-slate-200">
+                          Lớp tạm khoá - Không thể làm bài
+                        </span>
+                      ) : asg.hasExam ? (
                         <Link
                           href={`/student/exam/${asg.exam_id}`}
                           className="w-full md:w-auto px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 font-headline uppercase tracking-wider"
@@ -575,12 +613,18 @@ function StudentClassDetailContent() {
 
                     <div className="pt-4 border-t border-line/40 mt-3 flex items-center justify-between">
                       <span className="text-xs text-ink-subtle font-mono">{ex.duration_minutes || 60} Phút</span>
-                      <Link
-                        href={`/student/exam/${ex.id}`}
-                        className="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition-all"
-                      >
-                        Thi Thử Tự Do
-                      </Link>
+                      {isLocked ? (
+                        <span className="px-4 py-2 bg-slate-100 text-slate-500 text-xs font-bold rounded-xl border border-slate-200">
+                          Lớp tạm khoá
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/student/exam/${ex.id}`}
+                          className="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 transition-all"
+                        >
+                          Thi Thử Tự Do
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}
