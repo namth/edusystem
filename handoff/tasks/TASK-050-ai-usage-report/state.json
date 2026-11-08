@@ -1,13 +1,84 @@
 {
   "id": "TASK-050",
   "title": "Báo cáo token & chi phí AI theo giáo viên, sửa số liệu trang chi tiết GV",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "1f5c9898-4468-4593-8ce7-f80fbadb79ad",
   "history": [
     {
       "at": "2026-11-08T11:53:37",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T11:58:06",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T11:58:11",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:10:30",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T12:10:50",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T12:11:06",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T12:32:03",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:33:42",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T12:33:48",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T12:33:50",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T12:36:07",
+      "status": "accepted",
+      "note": "nghiệm thu chéo đạt bởi agy2 (LOW)"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "1f5c9898-4468-4593-8ce7-f80fbadb79ad"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "ba14e22d-a2f3-4dc9-a66b-98d5cd1bcccf"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "bcdf63f9-85d5-4461-bcdc-32f7641c0cae"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-050-ai-usage-report/verify.sh",
+    "handoff/tasks/TASK-050-ai-usage-report/verify.sh",
+    "tests/ai-usage-report.test.ts"
+  ],
+  "review_fingerprint": "19eec969c181f4bef52aefc723e474c87fbcf263648d7dd1b59ad9ce715eecb1"
 }

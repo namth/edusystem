@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Bookmark,
   Settings,
+  Coins,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -65,6 +66,7 @@ export default function AdminLayout({
 
   const navItems = [
     { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
+    { href: "/admin/ai-usage", label: "Chi phí AI", icon: Coins },
     { href: "/admin/orders", label: "Đơn hàng", icon: Receipt },
     { href: "/admin/teachers", label: "Quản Lý Giáo Viên", icon: UserCheck },
     { href: "/admin/students", label: "Quản Lý Học Sinh", icon: GraduationCap },
