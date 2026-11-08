@@ -1,0 +1,13 @@
+{
+  "id": "TASK-048",
+  "title": "Gửi email qua Resend: quên mật khẩu, đơn hàng, thông báo admin",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-08T11:53:37",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}

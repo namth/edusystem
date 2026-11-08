@@ -76,6 +76,14 @@
 | 046 | UI giáo viên: hub, bảng điểm bài + ngăn chấm, tổng kết; trang lớp bỏ Sổ điểm | 045 | TC-B16 |
 | 047 | UI học sinh: tab Bảng điểm, hiển thị điểm/nhận xét giáo viên | 045 | test UI học sinh |
 
+**Đợt vận hành 08/11 (đang làm; bối cảnh: rà soát thu tiền, `docs/11` D11–D12):**
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 048 | Gửi email qua Resend: quên mật khẩu, đơn hàng, thông báo admin | — | `brief.md` §5 |
+| 049 | Cấp lại mật khẩu tạm: admin cho mọi tài khoản, giáo viên cho học sinh lớp mình | — | `brief.md` §5 |
+| 050 | Báo cáo token & chi phí AI theo giáo viên, sửa số liệu trang chi tiết GV | — | `brief.md` §5 |
+
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
 npx vitest run && npx tsc --noEmit && npx next build

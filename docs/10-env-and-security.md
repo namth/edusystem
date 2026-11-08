@@ -31,6 +31,9 @@ GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 SLOT_UNIT_PRICE_VND=0                             # CHỈ là giá khởi tạo khi chưa có system_settings.slot_pricing (DEC-033)
 MEDIA_HOST_DIR=../edusystem-media                 # docker-compose: thư mục media mount vào /app/public/media
 SEED_DEFAULT_PASSWORD=                            # chỉ dùng cho script seed
+RESEND_API_KEY=                                   # Resend: gửi email (TASK-048). Trống → không gửi, hệ thống vẫn chạy
+MAIL_FROM="KitoKit <no-reply@kitokit.edu.vn>"     # địa chỉ gửi, domain phải xác minh trên Resend
+APP_BASE_URL=https://kitokit.edu.vn               # dựng link tuyệt đối trong email
 ALLOW_DEV_RESET_LINK=                             # =1 chỉ ở dev/e2e: forgot-password trả kèm resetUrl. Production luôn bị bỏ qua (BR-A06)
 
 # ── Worker ──

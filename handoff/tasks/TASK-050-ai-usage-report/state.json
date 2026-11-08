@@ -1,0 +1,13 @@
+{
+  "id": "TASK-050",
+  "title": "Báo cáo token & chi phí AI theo giáo viên, sửa số liệu trang chi tiết GV",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-08T11:53:37",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}

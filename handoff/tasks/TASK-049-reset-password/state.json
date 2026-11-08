@@ -1,0 +1,13 @@
+{
+  "id": "TASK-049",
+  "title": "Cấp lại mật khẩu tạm: admin cho mọi tài khoản, giáo viên cho học sinh lớp mình",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-08T11:53:37",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}
