@@ -20,6 +20,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/db-pg", () => ({
   queryPg: (sql: string, params?: unknown[]) => h.pg.queryPg(sql, params),
+  // FEAT-015: ghi danh cần transaction (chargeEnrollment) → pool giả chạy thẳng trên PGlite
+  getPgPool: () => ({ connect: async () => ({ query: (s: string, p?: unknown[]) => h.pg.queryPg(s, p), release: () => {} }) }),
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({
@@ -303,6 +305,7 @@ describe("POST /api/auth/register — học sinh", () => {
   });
 
   it("có mã lớp hợp lệ → được ghi danh và trả tên lớp", async () => {
+    await h.pg.db.query(`INSERT INTO users (id, name, email, role, teacher_status, slot_balance) VALUES ('t1','GV','t1@x.vn','TEACHER','VERIFIED',10)`); // FEAT-015: ghi danh trừ ví
     await h.pg.db.query(`INSERT INTO classes (id, name, code, teacher_id, max_slots) VALUES ('c1','Lớp 7A','ABC123','t1',30)`);
     const j = await (await registerStudent(studentNoEmail({ classCode: "abc123" }))).json();
     expect(j.enrolled).toEqual({ classId: "c1", className: "Lớp 7A" });
@@ -330,6 +333,7 @@ describe("POST /api/auth/register — học sinh", () => {
 describe("POST /api/student/enroll vẫn hoạt động qua lib/enrollment", () => {
   it("ghi danh bằng mã, sai mã 404, lớp đầy 409", async () => {
     await h.pg.db.query(`INSERT INTO users (id, name, email, role) VALUES ('s1','S','s1@x.vn','STUDENT')`);
+    await h.pg.db.query(`INSERT INTO users (id, name, email, role, teacher_status, slot_balance) VALUES ('t1','GV','t1@x.vn','TEACHER','VERIFIED',10)`); // FEAT-015: ghi danh trừ ví
     await h.pg.db.query(`INSERT INTO classes (id, name, code, teacher_id, max_slots) VALUES ('c1','L','ABC123','t1',30), ('c2','Đầy','FULL01','t1',0)`);
     h.token = await signJwtToken({ userId: "s1", email: "s1@x.vn", role: "STUDENT" });
     const enroll = async (code: string) => (await import("@/app/api/student/enroll/route")).POST(req("/api/student/enroll", { code }));

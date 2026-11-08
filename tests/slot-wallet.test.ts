@@ -124,6 +124,9 @@ beforeEach(async () => {
   ]);
 
   await h.pg.db.exec(`
+    CREATE TABLE IF NOT EXISTS lessons (
+      id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50), created_at TIMESTAMPTZ DEFAULT NOW()
+    );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;
     CREATE TABLE IF NOT EXISTS slot_requests (
       id VARCHAR(50) PRIMARY KEY,

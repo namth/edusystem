@@ -28,8 +28,8 @@
 | 015 | `…-015-student-slots.sql` | Trả lại slot đã bị trừ khi chấm AI (DEC-031) | **Chạy tay một lần** |
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
 | 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema |
-| 018 | `…-018-slot-wallet.sql` *(FEAT-015, chưa có)* | `slot_ledger`; `users.slot_balance`; cột tính phí ở `classes` (`start_date`, `ended_at`, `billing_status`, `grace_until`, `next_charge_at`, `billing_period`) | ensureSchema |
-| 018b | `…-018b-slot-wallet-data.sql` *(FEAT-015, chưa có)* | Chuyển dữ liệu: số dư = slot đã mua, lớp cũ khai giảng = ngày deploy (DEC-047) | **Chạy tay một lần** |
+| 018 | `…-018-slot-wallet.sql` *(FEAT-015)* | `slot_ledger`; `users.slot_balance`; cột tính phí ở `classes` (`start_date`, `ended_at`, `billing_status`, `grace_until`, `next_charge_at`, `billing_period`) | ensureSchema |
+| 018b | `…-018b-slot-wallet-data.sql` *(FEAT-015)* | Chuyển dữ liệu: số dư = slot đã mua, lớp cũ khai giảng = ngày deploy (DEC-047) | **Chạy tay một lần** |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền

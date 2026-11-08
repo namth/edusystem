@@ -40,6 +40,8 @@ beforeEach(async () => {
     CREATE TABLE class_unlocks (class_id VARCHAR(50), curriculum_item_id VARCHAR(50), student_id VARCHAR(50), unlocked_by VARCHAR(50));
     INSERT INTO users (id,name,email,role,password) VALUES ('t1','GV1','t1@x.vn','TEACHER','x'), ('t2','GV2','t2@x.vn','TEACHER','x'),
       ('s1','HS1','s1@x.vn','STUDENT','x'), ('s9','Có sẵn','old@x.vn','STUDENT','x');
+    -- FEAT-015: ghi danh trừ ví slot của GV đã xác minh
+    UPDATE users SET teacher_status='VERIFIED', slot_balance=10 WHERE role='TEACHER';
     INSERT INTO classes (id,name,code,teacher_id,max_slots) VALUES ('c1','Lớp t1','AAA111','t1',2), ('c2','Lớp t2','BBB222','t2',30);
     INSERT INTO enrollments (id,student_id,class_id) VALUES ('en1','s1','c1');
     INSERT INTO exams (id,title,created_by) VALUES ('e1','Đề t1','t1'), ('e2','Đề t2','t2'), ('e0','Đề chung',NULL);

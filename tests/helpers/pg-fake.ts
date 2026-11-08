@@ -37,10 +37,6 @@ CREATE TABLE flashcards (
   id VARCHAR(50) PRIMARY KEY, vietnamese_name VARCHAR(255), correct_english_word VARCHAR(255),
   options JSONB, image_url TEXT, audio_url TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE TABLE IF NOT EXISTS lessons (
-  id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
 `;
 
 export async function createFakePg(migrations: string[] = []) {
@@ -66,6 +62,10 @@ export async function createFakePg(migrations: string[] = []) {
   await db.exec(BASE_SCHEMA);
   for (const m of migrations) {
     await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", m), "utf8"));
+  }
+  // FEAT-015: mọi đường ghi danh đều đi qua ví slot → luôn có cột/bảng của migration 018 (chạy lặp được).
+  if (!migrations.includes("db-migration-018-slot-wallet.sql")) {
+    await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", "db-migration-018-slot-wallet.sql"), "utf8"));
   }
   const calls: { sql: string; params: unknown[] }[] = [];
   async function queryPg(sql: string, params: unknown[] = []) {

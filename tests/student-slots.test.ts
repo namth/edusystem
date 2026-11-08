@@ -73,21 +73,25 @@ beforeEach(async () => {
       ('c1','Lớp 1','AAA111','t1',30), ('c2','Lớp 2','BBB222','t1',30), ('c3','Lớp GV2','CCC333','t2',30), ('cA','Lớp admin','ADM001','a1',30);
   `);
   await h.pg.db.exec(read("docs/db-migration-006-lessons.sql"));
+  // FEAT-015: thay DEC-031 — ví slot_balance thay cho slot_limit
+  await h.pg.db.exec(`UPDATE users SET slot_balance=2 WHERE id='t1'; UPDATE users SET slot_balance=250 WHERE id='t2'`);
 });
 
-const fillT1 = () => h.pg.db.exec(`INSERT INTO enrollments (id,student_id,class_id) VALUES ('e1','s1','c1'), ('e2','s2','c1')`);
+// 2 học sinh đang ở lớp c1 và ví của t1 đã cạn (slot_balance = 0)
+const fillT1 = () => h.pg.db.exec(`INSERT INTO enrollments (id,student_id,class_id) VALUES ('e1','s1','c1'), ('e2','s2','c1'); UPDATE users SET slot_balance=0 WHERE id='t1'`);
+const setBalance = (id: string, n: number) => h.pg.db.exec(`UPDATE users SET slot_balance=${n} WHERE id='${id}'`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("lib/student-slots.ts", () => {
-  it("getStudentSlotUsage đếm học sinh KHÁC NHAU trên mọi lớp của giáo viên", async () => {
+  it("getStudentSlotUsage: used = sĩ số hiện tại trên mọi lớp (FEAT-015), limit = slot_balance", async () => {
     const { getStudentSlotUsage } = await import("@/lib/student-slots");
     expect(await getStudentSlotUsage("t1")).toEqual({ used: 0, limit: 2 });
     await h.pg.db.exec(`INSERT INTO enrollments (id,student_id,class_id) VALUES ('e1','s1','c1'), ('e2','s1','c2'), ('e3','s2','c3')`);
-    expect(await getStudentSlotUsage("t1")).toEqual({ used: 1, limit: 2 });
+    expect(await getStudentSlotUsage("t1")).toEqual({ used: 2, limit: 2 });
     expect(await getStudentSlotUsage("t2")).toEqual({ used: 1, limit: 250 });
   });
 
-  it("assertStudentSlotAvailable: đủ slot → học sinh mới bị chặn 409, học sinh đã có trong lớp khác của GV vẫn ok", async () => {
+  it("assertStudentSlotAvailable: ví đủ → ok; ví cạn → 409 kể cả học sinh đã có ở lớp khác của GV (BR-W01)", async () => {
     const { assertStudentSlotAvailable } = await import("@/lib/student-slots");
     expect(await assertStudentSlotAvailable("t1", "s3")).toEqual({ ok: true });
     await fillT1();
@@ -97,7 +101,7 @@ describe("lib/student-slots.ts", () => {
       expect(r.status).toBe(409);
       expect(r.error).toMatch(/slot/i);
     }
-    expect(await assertStudentSlotAvailable("t1", "s1")).toEqual({ ok: true });
+    expect((await assertStudentSlotAvailable("t1", "s1")).ok).toBe(false); // FEAT-015: thay DEC-031 — lớp thứ hai vẫn tốn slot
     expect(await assertStudentSlotAvailable("t2", "s3")).toEqual({ ok: true });
   });
 
@@ -106,11 +110,10 @@ describe("lib/student-slots.ts", () => {
     expect(await assertStudentSlotAvailable("a1", "s3")).toEqual({ ok: true });
   });
 
-  it("giảm slot_limit dưới số đang dùng: không xoá ai, chỉ chặn học sinh mới", async () => {
+  it("slot_balance về 0 không xoá ghi danh cũ, chỉ chặn ghi danh mới", async () => { // FEAT-015: thay DEC-031
     await fillT1();
-    await h.pg.db.exec(`UPDATE users SET slot_limit=1 WHERE id='t1'`);
     const { getStudentSlotUsage, assertStudentSlotAvailable } = await import("@/lib/student-slots");
-    expect(await getStudentSlotUsage("t1")).toEqual({ used: 2, limit: 1 });
+    expect(await getStudentSlotUsage("t1")).toEqual({ used: 2, limit: 0 });
     expect((await assertStudentSlotAvailable("t1", "s3")).ok).toBe(false);
     expect(await enrolled("c1")).toEqual(["s1", "s2"]);
   });
@@ -118,15 +121,20 @@ describe("lib/student-slots.ts", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Mọi đường ghi danh đều chặn khi hết slot", () => {
-  it("enrollStudentByCode (mã lớp / link mời): hết slot → 409, không ghi; học sinh đã có ở lớp khác của GV → vào được", async () => {
+  it("enrollStudentByCode (mã lớp / link mời): hết slot → 409, không ghi; học sinh đã có ở lớp khác của GV cũng tốn slot (BR-W01)", async () => {
     await fillT1();
     const { enrollStudentByCode } = await import("@/lib/enrollment");
     const r = await enrollStudentByCode("s3", "AAA111");
     expect(r).toMatchObject({ ok: false, status: 409 });
     if (!r.ok) expect(r.error).toMatch(/slot|đủ chỗ/i);
     expect(await enrolled("c1")).toEqual(["s1", "s2"]);
+    expect((await enrollStudentByCode("s1", "BBB222")).ok).toBe(false);
+    expect(await enrolled("c2")).toEqual([]);
+    await setBalance("t1", 1);
     expect((await enrollStudentByCode("s1", "BBB222")).ok).toBe(true);
     expect(await enrolled("c2")).toEqual(["s1"]);
+    expect((await rows(`SELECT slot_balance FROM users WHERE id='t1'`))[0].slot_balance).toBe(0);
+    expect(await rows(`SELECT 1 FROM slot_ledger WHERE teacher_id='t1' AND reason='ENROLL' AND student_id='s1'`)).toHaveLength(1);
     expect((await enrollStudentByCode("s3", "CCC333")).ok).toBe(true);
   });
 
@@ -139,12 +147,14 @@ describe("Mọi đường ghi danh đều chặn khi hết slot", () => {
     expect(await enrolled("c1")).toEqual(["s1", "s2"]);
   });
 
-  it("POST /api/teacher/classes/[classId]/students — thêm học sinh CÓ SẴN khi hết slot → 409; học sinh đã có ở lớp khác → 201", async () => {
+  it("POST /api/teacher/classes/[classId]/students — thêm học sinh CÓ SẴN khi hết slot → 409; có slot lại → 201 (kể cả HS đã ở lớp khác, BR-W01)", async () => {
     await fillT1();
     await loginAs("TEACHER", "t1");
     const { POST } = await import("@/app/api/teacher/classes/[classId]/students/route");
     await expectSlotFull(await POST(req("POST", "/x", { name: "HS3", email: "s3@x.vn" }), ctx({ classId: "c2" })));
     expect(await enrolled("c2")).toEqual([]);
+    await expectSlotFull(await POST(req("POST", "/x", { name: "HS1", email: "s1@x.vn" }), ctx({ classId: "c2" })));
+    await setBalance("t1", 1);
     const ok = await POST(req("POST", "/x", { name: "HS1", email: "s1@x.vn" }), ctx({ classId: "c2" }));
     expect(ok.status).toBeLessThan(300);
     expect(await enrolled("c2")).toEqual(["s1"]);
@@ -175,7 +185,9 @@ describe("Mọi đường ghi danh đều chặn khi hết slot", () => {
     const { PUT } = await import("@/app/api/admin/users/[id]/route");
     await expectSlotFull(await PUT(req("PUT", "/x", { class_ids: ["c3", "c1"] }), ctx({ id: "s3" })));
     expect((await rows(`SELECT class_id FROM enrollments WHERE student_id='s3'`)).map((r) => r.class_id)).toEqual(["c3"]);
-    // học sinh đã ở lớp của t1 thì chuyển sang lớp khác của t1 không tốn thêm slot
+    // FEAT-015: thay DEC-031 — chuyển sang lớp khác của t1 vẫn tốn 1 slot; có slot thì được
+    await expectSlotFull(await PUT(req("PUT", "/x", { class_ids: ["c2"] }), ctx({ id: "s1" })));
+    await setBalance("t1", 1);
     const ok = await PUT(req("PUT", "/x", { class_ids: ["c2"] }), ctx({ id: "s1" }));
     expect(ok.status).toBeLessThan(300);
   });
@@ -199,7 +211,7 @@ describe("GET /api/teacher/slot-requests trả số slot thật", () => {
     const { GET } = await import("@/app/api/teacher/slot-requests/route");
     const j = await (await GET(req("GET", "/x"))).json();
     expect(j.success).toBe(true);
-    expect(j.usage).toEqual({ used: 1, limit: 2 });
+    expect(j.usage).toEqual({ used: 2, limit: 2 });
     expect(Array.isArray(j.slot_requests)).toBe(true);
   });
 });

@@ -35,7 +35,7 @@
   | File | Khi nào | Ghi chú |
   | :--- | :--- | :--- |
   | `docs/db-migration-015-student-slots.sql` | Lần deploy đầu tiên có FEAT-013 (TASK-039) | Trả lại slot học sinh bị trừ khi chấm AI. Sao lưu bảng `users` trước khi chạy |
-  | `docs/db-migration-018b-slot-wallet-data.sql` *(FEAT-015, chưa có)* | Lần deploy đầu có TASK-052, **sau** khi admin đã nhập đơn giá slot và báo trước cho giáo viên | Số dư = slot đã mua; lớp cũ khai giảng = ngày deploy; cron lần đầu trừ kỳ 0, thiếu → ân hạn 7 ngày (DEC-047) |
+  | `docs/db-migration-018b-slot-wallet-data.sql` *(FEAT-015)* | Lần deploy đầu có TASK-052, **sau** khi admin đã nhập đơn giá slot và báo trước cho giáo viên | Số dư = slot đã mua; lớp cũ khai giảng = ngày deploy; cron lần đầu trừ kỳ 0, thiếu → ân hạn 7 ngày (DEC-047) |
 
   Cách chạy:
   ```bash

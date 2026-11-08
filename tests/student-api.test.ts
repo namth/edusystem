@@ -20,9 +20,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/db-pg", () => ({
   queryPg: (sql: string, params?: unknown[]) => h.pg!.queryPg(sql, params),
-  getPgPool: () => {
-    throw new Error("Không dùng pool trực tiếp trong route — dùng queryPg");
-  },
+  // FEAT-015: ghi danh cần transaction (chargeEnrollment) → pool giả chạy thẳng trên PGlite
+  getPgPool: () => ({ connect: async () => ({ query: (s: string, p?: unknown[]) => h.pg!.queryPg(s, p), release: () => {} }) }),
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({
@@ -69,6 +68,8 @@ beforeEach(async () => {
     INSERT INTO users (id,name,email,role) VALUES
       ('s1','HS Một','s1@x.vn','STUDENT'), ('s2','HS Hai','s2@x.vn','STUDENT'), ('s3','HS Ba','s3@x.vn','STUDENT'),
       ('t1','GV Một','t1@x.vn','TEACHER'), ('t2','GV Hai','t2@x.vn','TEACHER'), ('a1','Admin','a1@x.vn','ADMIN');
+    -- FEAT-015: ghi danh trừ ví slot của GV đã xác minh (thay DEC-031)
+    UPDATE users SET teacher_status='VERIFIED', slot_balance=10 WHERE role='TEACHER';
     INSERT INTO classes (id,name,code,teacher_id,max_slots,created_at) VALUES
       ('c1','Lớp IELTS A','ABC123','t1',3,'2026-01-01'),
       ('c2','Lớp Đầy','FULL01','t2',1,'2026-01-02'),
