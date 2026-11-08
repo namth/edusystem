@@ -1,4 +1,4 @@
-> Trạng thái: SPEC_APPROVED (2026-11-08) · DEC-042 → DEC-047 · TASK-051 → TASK-054
+> Trạng thái: SPEC_APPROVED (2026-11-08) · DEC-042 → DEC-047 · TASK-052 → TASK-051
 
 # FEAT-015: Ví slot học sinh-tháng
 
@@ -155,9 +155,9 @@ classes.billing_status  ACTIVE ─đến kỳ, thiếu slot─▶ GRACE ─quá 
 ## 9. Task triển khai & DoD
 | Task | Nội dung | Phụ thuộc | Độ khó | DoD |
 | :--- | :--- | :--- | :--- | :--- |
-| TASK-051 | Migration 018 + 018b, `lib/slot-wallet.ts` (ledger, `chargeEnrollment`, `runBillingCycle`, `adjustBalance`, `retryOverdueClasses`), `approveOrder` cộng ví, cron route + worker gọi hằng giờ, đường ghi danh dùng `chargeEnrollment` | — (sau khi merge 048) | HIGH, nhạy cảm | TC-W01 → 07, 09, 11, 12, 14, 15, 17 |
-| TASK-052 | Chặn lớp LOCKED/ENDED ở nộp bài/AI; API ví GV/admin, `billing`, `end`, `slot-adjust`; bỏ `slot_limit` ở PUT admin teacher | 051 | LOW, nhạy cảm | TC-W08, 10, 12, 13 |
-| TASK-053 | UI: Ví slot GV, cài đặt & banner lớp, khối ví ở chi tiết GV admin, banner lớp khoá ở HS | 052, sau merge 049/050 | LOW | 4 trạng thái UI, `tests/*-ui` |
-| TASK-054 | Trang `/pricing` + link landing/footer | — | LOW | TC-W16 |
+| TASK-051 | Trang `/pricing` + link landing/footer | — | LOW | TC-W16 |
+| TASK-052 | Migration 018 + 018b, `lib/slot-wallet.ts` (ledger, `chargeEnrollment`, `runBillingCycle`, `adjustBalance`, `retryOverdueClasses`), `approveOrder` cộng ví, cron route + worker gọi hằng giờ, đường ghi danh dùng `chargeEnrollment` | — (sau khi merge 048) | HIGH, nhạy cảm | TC-W01 → 07, 09, 11, 12, 14, 15, 17 |
+| TASK-053 | Chặn lớp LOCKED/ENDED ở nộp bài/AI; API ví GV/admin, `billing`, `end`, `slot-adjust`; bỏ `slot_limit` ở PUT admin teacher | 052 | LOW, nhạy cảm | TC-W08, 10, 12, 13 |
+| TASK-054 | UI: Ví slot GV, cài đặt & banner lớp, khối ví ở chi tiết GV admin, banner lớp khoá ở HS | 053, sau merge 049/050 | LOW | 4 trạng thái UI, `tests/*-ui` |
 
 Lệnh xác minh: `npx vitest run && npx tsc --noEmit && npx next build`; `tests/docs-sync.test.ts` xanh.

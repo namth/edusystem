@@ -1,0 +1,13 @@
+{
+  "id": "TASK-052",
+  "title": "Lõi ví slot học sinh-tháng: migration 018, lib/slot-wallet, cron, ghi danh trừ ví",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-08T12:19:10",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}

@@ -88,10 +88,10 @@
 
 | Task | Tiêu đề | Phụ thuộc | DoD |
 | :--- | :--- | :--- | :--- |
-| 051 | Migration 018/018b + `lib/slot-wallet.ts` + cron + đường ghi danh trừ ví (HIGH, nhạy cảm) | merge 048 | TC-W01–07, 09, 11, 12, 14, 15, 17 |
-| 052 | Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví, `billing`, `end`, `slot-adjust` | 051 | TC-W08, 10, 12, 13 |
-| 053 | UI Ví slot, cài đặt/banner lớp, ví ở chi tiết GV admin, banner HS | 052, merge 049/050 | 4 trạng thái UI |
-| 054 | Trang `/pricing` + link landing/footer | — | TC-W16 |
+| 051 | Trang `/pricing` + link landing/footer | — | TC-W16 |
+| 052 | Migration 018/018b + `lib/slot-wallet.ts` + cron + đường ghi danh trừ ví (HIGH, nhạy cảm) | merge 048 | TC-W01–07, 09, 11, 12, 14, 15, 17 |
+| 053 | Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví, `billing`, `end`, `slot-adjust` | 052 | TC-W08, 10, 12, 13 |
+| 054 | UI Ví slot, cài đặt/banner lớp, ví ở chi tiết GV admin, banner HS | 053, merge 049/050 | 4 trạng thái UI |
 
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash

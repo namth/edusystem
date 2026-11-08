@@ -15,7 +15,7 @@
 | SCR-06 | `/join/[classId]` | Xem trước lớp qua link mời, đăng nhập / đăng ký rồi vào lớp | CODE-ONLY | DONE |
 | SCR-07 | `/change-password` | Đổi mật khẩu (bắt buộc khi `must_change_password`) | CODE-ONLY | DONE |
 | SCR-52 | `/about`, `/terms`, `/privacy`, `/payment-policy` | Trang pháp lý Bộ Công Thương: giới thiệu pháp nhân, điều khoản, bảo mật, chính sách thanh toán & hoàn tiền (thông tin từ `lib/brand.ts`) | CODE-ONLY | DONE |
-| SCR-53 | `/pricing` | Bảng giá công khai: đơn giá/slot, "1 slot = 1 học sinh × 1 tháng", máy tính sĩ số × số tháng (FEAT-015, TASK-054) | SPEC_ONLY | TODO |
+| SCR-53 | `/pricing` | Bảng giá công khai: đơn giá/slot, "1 slot = 1 học sinh × 1 tháng", máy tính sĩ số × số tháng (FEAT-015, TASK-051) | SPEC_ONLY | TODO |
 | SCR-08 | `/profile` | Hồ sơ cá nhân | CODE-ONLY | DONE |
 | — | `/teacher/login` | Chuyển về `/login` | — | REDIRECT |
 
@@ -35,7 +35,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
-| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` · FEAT-015: ngày khai giảng, kết thúc lớp, banner ân hạn/khoá (TASK-053, TODO) | CODE-ONLY | DONE |
+| SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` · FEAT-015: ngày khai giảng, kết thúc lớp, banner ân hạn/khoá (TASK-054, TODO) | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
 | SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
 | SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
@@ -43,7 +43,7 @@
 | SCR-26 | `/teacher/subjects` | Môn học | CODE-ONLY | DONE |
 | SCR-27 | `/teacher/flashcards` | Thư viện flashcard | CODE-ONLY | DONE |
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
-| SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn · FEAT-015: thành Ví slot (TASK-053, TODO) | CODE-ONLY | DONE |
+| SCR-29 | `/teacher/slots` | Slot đang dùng / tổng, tạo đơn, danh sách đơn · FEAT-015: thành Ví slot (TASK-054, TODO) | CODE-ONLY | DONE |
 | SCR-30 | `/teacher/orders/[id]` | Trang thanh toán VietQR, báo đã chuyển khoản, huỷ | CODE-ONLY | DONE |
 | SCR-31 | `/teacher/grading` | Hub chấm điểm & bảng điểm theo lớp: chọn lớp, lọc bài, bảng bài và tổng kết lớp (`?class=`, `?tab=summary`) | CODE-ONLY | DONE (FEAT-014) |
 | SCR-51 | `/teacher/grading/[classId]/[kind]/[itemId]` | Bảng điểm một bài (học sinh × điểm), ngăn chấm từng câu AI, chốt / mở chốt (FEAT-014) | CODE-ONLY | DONE (FEAT-014) |

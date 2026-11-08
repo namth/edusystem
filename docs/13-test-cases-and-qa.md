@@ -18,7 +18,7 @@
 | Thông báo (BR-N) | `notifications-api`, `notifications-lib` |
 | Tổng quan admin (BR-D) | `admin-dashboard` |
 | Bảng điểm (BR-B, FEAT-014) | `gradebook` (lõi, TASK-044), `teacher-grading-api` (TASK-045), `teacher-grading-ui`, `student-gradebook-ui` (TASK-046/047). Ca TC-B01 → TC-B16 ở `docs/features/cham-diem-bang-diem.md` §8 |
-| Ví slot (BR-W, FEAT-015, chưa code) | `slot-wallet` (TASK-051), `slot-wallet-api` (TASK-052), `slot-wallet-ui` (TASK-053), `pricing-page` (TASK-054). Ca TC-W01 → TC-W17 ở `docs/features/vi-slot-hoc-sinh-thang.md` §8 |
+| Ví slot (BR-W, FEAT-015, chưa code) | `slot-wallet` (TASK-052), `slot-wallet-api` (TASK-053), `slot-wallet-ui` (TASK-054), `pricing-page` (TASK-051). Ca TC-W01 → TC-W17 ở `docs/features/vi-slot-hoc-sinh-thang.md` §8 |
 | Kho, chuyển đổi, nhân bản, flashcard, upload | `library-convert-duplicate`, `flashcards-uploads-api`, `subjects` |
 | Trang học sinh / landing | `student-pages`, `student-home`, `landing` |
 | Quy tắc giao diện (DEC-022, DEC-035) | `brand-tokens`, `design-rules` |
