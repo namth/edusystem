@@ -1,13 +1,88 @@
 {
   "id": "TASK-054",
   "title": "Giao diện Ví slot: trang ví GV, cài đặt & banner lớp, ví ở chi tiết GV admin, banner lớp khoá ở HS",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "02dfcbca-6340-45af-b41b-630de3596975",
   "history": [
     {
       "at": "2026-11-08T13:28:31",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T15:49:44",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T15:49:48",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:55:48",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T15:56:04",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy1 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T15:56:22",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T15:56:53",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T16:02:01",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T16:08:13",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T16:08:22",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy2"
+    },
+    {
+      "at": "2026-11-08T16:08:25",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T16:11:26",
+      "status": "accepted",
+      "note": "nghiệm thu chéo đạt bởi agy2 (LOW)"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy1",
+      "conversation_id": "02dfcbca-6340-45af-b41b-630de3596975"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "f1acfe8d-bd83-469e-9bd1-d6c2d9641349"
+    },
+    "reviewer": {
+      "account": "agy2",
+      "conversation_id": "68488de3-71ac-4868-b725-ea7983a6f712"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-054-slot-wallet-ui/verify.sh",
+    "tests/slot-wallet-ui.test.ts"
+  ],
+  "review_fingerprint": "d668b7e7f051363db42e11798f4747043344bb7a04bb306331040e559deb78aa"
 }
