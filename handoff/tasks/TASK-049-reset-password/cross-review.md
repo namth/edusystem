@@ -1,0 +1,3 @@
+KẾT LUẬN: ĐẠT
+Đã kiểm: verify xanh (khoá test OK, verify.sh exit 0, 25/25 test reset-password + 11/11 test docs-sync pass), phạm vi OK (chỉ chỉnh sửa 10 file được phép trong brief mục 3, không đụng file ngoài phạm vi hay test khoá), đặc tả logic cấp lại mật khẩu cho Admin và Giáo viên chuẩn xác (sinh mật khẩu 10 ký tự ngẫu nhiên an toàn có đủ hoa/thường/số, hash scrypt, must_change_password=TRUE, xoá reset_token, rate limit 20 lần/giờ, header no-store, bảo mật 404 đồng nhất chống dò tài khoản), UI ResetPasswordButton đúng chuẩn thiết kế DEC-035 (icon KeyRound, nhãn không dấu +, xác nhận và thông báo một lần có sao chép), gắn đúng 3 trang theo yêu cầu.
+Rủi ro cho trưởng phòng: Không

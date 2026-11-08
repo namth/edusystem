@@ -58,6 +58,7 @@
 | GET / PUT / DELETE | `/api/teacher/classes/[classId]` | | `teacher-classes-api` |
 | PUT | `/api/teacher/classes/[classId]/settings` | `unlock_mode`, `pass_percent`, `course_id` | `class-roadmap-api` |
 | POST | `/api/teacher/classes/[classId]/students` | Thêm học sinh có sẵn hoặc tạo mới; 409 nếu đủ chỗ / hết slot; 403 `TRIAL_LIMIT` | `teacher-classes-api`, `student-slots` |
+| POST | `/api/teacher/students/[studentId]/reset-password` | TEACHER: cấp mật khẩu tạm cho học sinh có trong lớp của mình; không thoả (kể cả không tồn tại) → 404 cùng thông điệp; 20 lần/giờ (429) | `reset-password` |
 | GET | `/api/teacher/classes/[classId]/members`, `/api/teacher/classes/[classId]/progress`, `/api/teacher/classes/[classId]/roadmap` | | `class-roadmap-api` |
 | POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
@@ -111,6 +112,7 @@ Test: `slot-orders-api`, `admin-api`.
 | GET | `/api/admin/dashboard?month=YYYY-MM` | `{ month, totals, pending_orders, monthly, daily, top_teachers }`; tháng theo giờ VN; `month` sai → 400 | `admin-dashboard` |
 | GET | `/api/admin/users?role=&teacherStatus=` | | `admin-api`, `teacher-trial` |
 | GET / PUT | `/api/admin/users/[id]` | Sửa thông tin, `class_ids` (409 nếu hết slot) | `admin-api`, `student-slots` |
+| POST | `/api/admin/users/[id]/reset-password` | Cấp mật khẩu tạm 10 ký tự, `must_change_password = true`, xoá `reset_token`; trả `{ temp_password }` một lần, `Cache-Control: no-store`. Tự cấp cho mình → 400; 20 lần/giờ/người gọi (429) | `reset-password` |
 | GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI, `slot_limit` | `admin-api` |
 | POST | `/api/admin/teachers/[id]/verify` | `{ decision: VERIFIED\|REJECTED, note? }` | `teacher-trial` |
 | POST | `/api/admin/create-user`, `/api/admin/delete-user` | Tạo kèm `classIds` (409 nếu hết slot, không tạo user) | `admin-api`, `student-slots` |

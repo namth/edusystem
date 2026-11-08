@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
+import { useAuth } from "@/context/AuthContext";
 import { UserPlus, BookOpen, Loader2, CheckCircle2, X, Save, Users, AlertCircle } from "lucide-react";
 
 interface AccountUser {
@@ -24,6 +26,7 @@ interface ClassItem {
 }
 
 export default function AdminAccountsPage() {
+  const { user: currentUser } = useAuth();
   const [accounts, setAccounts] = useState<AccountUser[]>([]);
   const [classList, setClassList] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -338,15 +341,24 @@ export default function AdminAccountsPage() {
                       )}
                     </td>
                     <td className="p-4 text-right">
-                      {acc.role !== "ADMIN" && (
-                        <button
-                          onClick={() => setViewingClassesUser(acc)}
-                          className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 inline-flex items-center space-x-1 transition-all"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-brand-600" />
-                          <span>Xem Lớp Học</span>
-                        </button>
-                      )}
+                      <div className="flex items-center justify-end space-x-2">
+                        {acc.id !== currentUser?.id && (
+                          <ResetPasswordButton
+                            userId={acc.id}
+                            userName={acc.name}
+                            role="ADMIN"
+                          />
+                        )}
+                        {acc.role !== "ADMIN" && (
+                          <button
+                            onClick={() => setViewingClassesUser(acc)}
+                            className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100 inline-flex items-center space-x-1 transition-all"
+                          >
+                            <BookOpen className="w-3.5 h-3.5 text-brand-600" />
+                            <span>Xem Lớp Học</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

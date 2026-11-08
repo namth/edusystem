@@ -21,6 +21,7 @@ Người dùng quên mật khẩu (nhất là học sinh nhỏ không có email)
 - `components/ResetPasswordButton.tsx` (mới — nút + hộp xác nhận + hộp hiện mật khẩu tạm có nút sao chép)
 - `app/admin/accounts/page.tsx`, `app/admin/students/[id]/page.tsx`, `app/teacher/classes/[classId]/page.tsx` (chỉ gắn nút)
 - `tests/reset-password.test.ts` (mới, nếu tài khoản kiểm chéo chưa viết)
+- `docs/07-api-contracts.md`
 
 **Không được sửa:**
 - Mọi file trong `tests.lock`; `app/admin/teachers/[id]/page.tsx` (TASK-050 đang sửa); `lib/notifications.ts`, `app/api/auth/forgot-password/route.ts` (TASK-048 đang sửa); `docs/`

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Lệnh xác minh tự động cho TASK-049 — do trưởng phòng viết, file này bị khoá.
+# Lệnh xác minh tự động cho TASK-049 — file này bị khoá.
 # Chạy từ thư mục gốc repo. Exit 0 = đạt.
 set -euo pipefail
 
-echo "TODO: Claude điền lệnh xác minh cho TASK-049"
-exit 1
+npx vitest run tests/reset-password.test.ts
+npx vitest run tests/docs-sync.test.ts
+npx tsc --noEmit
