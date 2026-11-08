@@ -1,13 +1,93 @@
 {
   "id": "TASK-051",
   "title": "Trang bảng giá công khai /pricing",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "ef2e800d-5dc6-4464-9e5a-428692f56566",
   "history": [
     {
       "at": "2026-11-08T12:19:10",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-08T13:28:19",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T13:28:51",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:38:51",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:43:18",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-08T13:43:27",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (claude-sonnet-5-5-medium)"
+    },
+    {
+      "at": "2026-11-08T13:43:38",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:43:56",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-08T13:48:53",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:49:37",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-08T13:49:45",
+      "status": "in_review",
+      "note": "giao nghiệm thu chéo cho agy1"
+    },
+    {
+      "at": "2026-11-08T13:50:01",
+      "status": "in_review",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-08T13:51:48",
+      "status": "accepted",
+      "note": "nghiệm thu chéo đạt bởi agy1 (LOW)"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "ef2e800d-5dc6-4464-9e5a-428692f56566"
+    },
+    "tester": {
+      "account": "agy1",
+      "conversation_id": "513d48ca-57bd-478d-8cf1-a70ca33b4853"
+    },
+    "reviewer": {
+      "account": "agy1",
+      "conversation_id": "718bd4a6-28ce-44eb-aedc-ac06db9adfe9"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-051-pricing-page/verify.sh",
+    "tests/pricing-page.test.ts"
+  ],
+  "review_fingerprint": "f6f670ec9e6d8529f621d8af21813ed6efc34845506782491b3a976786a27a0b"
 }

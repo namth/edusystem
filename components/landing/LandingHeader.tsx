@@ -9,6 +9,7 @@ export default function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
+    { href: "/pricing", label: "Bảng giá" },
     { href: "#tinh-nang", label: "Tính năng" },
     { href: "#hoc-sinh", label: "Học sinh" },
     { href: "#giao-vien", label: "Thầy cô & Trung tâm" },
