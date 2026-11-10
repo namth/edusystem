@@ -8,6 +8,8 @@ Mọi lệnh chỉ cần `python3` (agent Antigravity chỉ được chạy pyth
         Ghi vào handoff/digest.md — Claude chỉ đọc file này thay vì đọc cả phiên điều phối.
   launch <ID> [--host macbook] [--coder agyN --checker agyM]
         Tạo worktree nếu chưa có rồi chạy `auto` NỀN (có caffeinate), nhật ký ở handoff/logs/<ID>.log. Trả về ngay.
+  unstick <ID> [--host macbook]
+        Agent dừng sớm giữa chừng: resume vai đang dở rồi chạy tiếp auto (nền).
   guard-scan <ID> [--host macbook]
         Quét diff của worktree: dòng bảo vệ (kiểm quyền, mã 401/403, khoá…) bị bớt đi, test bị xoá, đường tắt (bypass,
         @ts-ignore, .only…). Exit 1 nếu có cảnh báo mức CAO.
@@ -97,7 +99,8 @@ def collect_local() -> dict[str, dict]:
     base = wt_base()
     if base.exists():
         for wt in sorted(p for p in base.iterdir() if p.is_dir()):
-            tasks.update(read_dir_tasks(wt, "worktree", wt))  # trạng thái trong worktree mới hơn repo
+            # mỗi worktree chứa state.json của MỌI task (từ HEAD lúc tạo) — chỉ tin bản của task trùng tên worktree
+            tasks.update({k: v for k, v in read_dir_tasks(wt, "worktree", wt).items() if k == wt.name})
     return tasks
 
 
@@ -113,6 +116,8 @@ def collect_remote(host: str) -> dict[str, dict]:
                 text = "\n".join(buf)
                 state_part, _, brief_part = text.partition("##BRIEF")
                 st = json.loads(state_part)
+                if f"/{st['id']}/" not in cur + "/":
+                    return  # bản sao cũ trong worktree của task khác
                 m = re.search(r"Độ khó[^A-Za-z\n]*(LOW|HIGH)", brief_part)
                 sens = re.search(r"Nhạy cảm[^\n]*?\b(có|yes)\b", brief_part, re.I)
                 diff = "LOW" if m and m.group(1) == "LOW" and not sens else "HIGH"
@@ -138,7 +143,7 @@ def age_min(state: dict) -> int:
         return 0
 
 
-def classify(t: dict) -> tuple[str, str]:
+def classify(t: dict, live: set[str] | None = None) -> tuple[str, str]:
     """(nhóm, việc tiếp theo). Nhóm: claude | auto | running | hung | merge | done."""
     st, status, diff = t["state"], t["state"]["status"], t["difficulty"]
     note = (st["history"][-1].get("note") or "") if st.get("history") else ""
@@ -153,8 +158,10 @@ def classify(t: dict) -> tuple[str, str]:
     if status in RUNNING:
         if re.search(r"cầu cứu|cần trưởng phòng", note, re.I):
             return "claude", "agent cầu cứu — đọc report.md mục câu hỏi"
+        if live is not None and st["id"] not in live and age_min(st) >= 3:
+            return "hung", f"không còn tiến trình auto (agent dừng sớm) — `unstick {st['id']}`"
         if age_min(st) >= STALE_MIN:
-            return "hung", f"không đổi {age_min(st)} phút — `handoff.py resume {st['id']} --role … --note \"CHỈ python3\"`"
+            return "hung", f"không đổi {age_min(st)} phút — `unstick {st['id']}`"
         return "running", "đang chạy"
     if status == "accepted" and t["where"] != "repo":
         if diff == "LOW":
@@ -170,11 +177,12 @@ def merged_ids() -> set[str]:
 
 def build_digest(tasks: dict[str, dict], title: str) -> str:
     merged = merged_ids()
+    live = {m.group(0) for l in running_launches() for m in [re.search(r"TASK-\d+", l)] if m}
     groups: dict[str, list[str]] = {k: [] for k in ("claude", "auto", "hung", "running", "merge")}
     load: dict[str, int] = {}
     for tid in sorted(tasks):
         t = tasks[tid]
-        g, todo = classify(t)
+        g, todo = classify(t, live)
         if g == "done" or (t["state"]["status"] == "accepted" and tid in merged and t["where"] != "repo"):
             continue  # đã merge; worktree máy thợ còn sót không cần xử lý
         st = t["state"]
@@ -254,6 +262,30 @@ def cmd_launch(a) -> None:
     with open(log, "ab") as fh:
         p = subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
     print(f"{a.id}: đã chạy nền auto (pid {p.pid}{', máy ' + a.host if a.host else ''}) — nhật ký {log.relative_to(ROOT)}")
+
+
+def cmd_unstick(a) -> None:
+    """Agent dừng sớm giữa chừng: nhắn làm tiếp (resume) rồi chạy tiếp `auto`, nền, có caffeinate."""
+    resolve_host(a)
+    host = a.host
+    if host:
+        r = ssh(host, f"cd {MACBOOK['wt']}/{a.id} && python3 -c \"import json,glob;print(json.load(open(glob.glob('handoff/tasks/{a.id}-*/state.json')[0]))['status'])\"")
+        status = r.stdout.strip()
+    else:
+        status = H.load_state(H.find_task(a.id))["status"]
+    role = a.role or H.STALL_ROLE.get(status)
+    if not role:
+        H.die(f"{a.id} đang ở {status} — không có vai nào cần resume; dùng `launch`")
+    script = ROOT / "scripts" / "agy-worktree.sh"
+    env = {**os.environ, **({"AGY_HOST": host} if host else {})}
+    chain = (f"bash {shlex.quote(str(script))} resume {a.id} --role {role} --note {shlex.quote(H.RESUME_NOTE)}; "
+             f"bash {shlex.quote(str(script))} auto {a.id}")
+    log = ROOT / "handoff" / "logs" / f"{a.id}.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with open(log, "ab") as fh:
+        p = subprocess.Popen(["caffeinate", "-ims", "bash", "-c", chain], cwd=ROOT, env=env, stdout=fh, stderr=subprocess.STDOUT,
+                             start_new_session=True)
+    print(f"{a.id}: resume vai {role} rồi auto, nền (pid {p.pid}) — nhật ký {log.relative_to(ROOT)}")
 
 
 # ───────────────────────── guard-scan / gate ─────────────────────────
@@ -506,6 +538,7 @@ def main() -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("digest"); d.add_argument("--host"); d.add_argument("--no-write", action="store_true"); d.set_defaults(fn=cmd_digest)
     l = sub.add_parser("launch"); l.add_argument("id"); l.add_argument("--host"); l.add_argument("--coder"); l.add_argument("--checker"); l.set_defaults(fn=cmd_launch)
+    u = sub.add_parser("unstick"); u.add_argument("id"); u.add_argument("--host"); u.add_argument("--role"); u.set_defaults(fn=cmd_unstick)
     g = sub.add_parser("guard-scan"); g.add_argument("id"); g.add_argument("--host"); g.set_defaults(fn=cmd_guard_scan)
     ga = sub.add_parser("gate"); ga.add_argument("id"); ga.add_argument("--host"); ga.add_argument("--skip-tests", action="store_true"); ga.set_defaults(fn=cmd_gate)
     m = sub.add_parser("merge-low"); m.add_argument("id"); m.add_argument("--host"); m.add_argument("--check-only", action="store_true"); m.set_defaults(fn=cmd_merge_low)

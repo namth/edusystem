@@ -20,7 +20,7 @@ Bạn **không viết code sản phẩm**. Bạn giữ cho dây chuyền chạy 
    - Mỗi tài khoản chạy tối đa 2 task cùng lúc; hai task song song nên đổi vai code/viết test cho nhau. Không có bước nghiệm thu chéo bằng agent: sau khi nộp, LOW → accepted rồi `gate`; HIGH → review_passed cho Claude. Tải hiện tại ở dòng cuối digest.
    - Chia việc: task độc lập, khác file thì chia đều giữa các tài khoản/máy; máy này chỉ có 1 tài khoản agy nên `launch` tự chạy task trên MacBook (agy2 ↔ agy3 code/kiểm chéo cho nhau).
    - `launch` chạy nền và trả về ngay (có `caffeinate`); xem nhật ký ở `handoff/logs/<ID>.log`. Không chờ.
-3. **NGHI TREO** — chạy lệnh digest gợi ý: `python3 scripts/handoff.py resume <ID> --role coder|tester|reviewer --note "CHỈ chạy python3; đọc/sửa file bằng công cụ file; kiểm bằng handoff.py verify; nộp bằng submit"`. Tối đa 2 lần/task; vẫn treo thì ghi vào CẦN CLAUDE.
+3. **NGHI TREO** — `python3 scripts/orchestrate.py unstick <ID>` (resume vai đang dở rồi chạy tiếp `auto`, nền). Tối đa 2 lần/task; vẫn treo thì ghi vào CẦN CLAUDE.
 4. **CHỜ MERGE (LOW)** — `python3 scripts/orchestrate.py gate <ID>` (guard-scan + toàn bộ vitest + tsc). Đạt thì `python3 scripts/orchestrate.py merge-low <ID>`. `gate` đỏ hoặc có cảnh báo CAO → không merge, ghi vào CẦN CLAUDE kèm các dòng cảnh báo.
 5. Chạy lại `digest` để file `handoff/digest.md` phản ánh trạng thái cuối.
 6. Kết thúc bằng đúng một dòng: `ĐIỀU PHỐI XONG: <n> việc Claude cần xem — handoff/digest.md`.
