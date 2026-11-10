@@ -1,13 +1,63 @@
 {
   "id": "TASK-058",
   "title": "Analytics học sinh: chịu lỗi API, hiển thị nhận xét AI đúng, nhãn đề đã xoá",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "ae9d6457-4d73-4f96-85d5-5ed925878cc5",
   "history": [
     {
       "at": "2026-11-10T22:23:11",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-10T22:25:55",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy3"
+    },
+    {
+      "at": "2026-11-10T22:28:47",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-10T23:37:30",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (model mặc định)"
+    },
+    {
+      "at": "2026-11-10T23:37:44",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-11T00:30:26",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-11T00:35:26",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-11T00:35:33",
+      "status": "accepted",
+      "note": "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "ae9d6457-4d73-4f96-85d5-5ed925878cc5"
+    },
+    "tester": {
+      "account": "agy3",
+      "conversation_id": "f33eec51-9b6c-45f3-96c2-f38d33576e2e"
+    }
+  },
+  "locked_files": [
+    "handoff/tasks/TASK-058-student-analytics-robust/verify.sh",
+    "tests/student-analytics-robust.test.ts"
+  ],
+  "via": "agy"
 }

@@ -92,6 +92,12 @@
 | 052 | Migration 018/018b + `lib/slot-wallet.ts` + cron + đường ghi danh trừ ví (HIGH, nhạy cảm) | merge 048 | TC-W01–07, 09, 11, 12, 14, 15, 17 |
 | 053 | Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví, `billing`, `end`, `slot-adjust` | 052 | TC-W08, 10, 12, 13 |
 | 054 | UI Ví slot, cài đặt/banner lớp, ví ở chi tiết GV admin, banner HS | 053, merge 049/050 | 4 trạng thái UI |
+| 055 | Khung học sinh: menu cls_101, điều hướng mobile, bỏ ô tìm kiếm chết, nhãn "Học sinh" | — | `brief.md` §5 |
+| 056 | Dashboard học sinh: bỏ streak giả, lỗi theo khối, "Đang làm dở", badge billing | — | `brief.md` §5 |
+| 057 | Trang làm bài/đề thi học sinh: bỏ `alert()`, khung CLASS_LOCKED, lỗi 403/409 thân thiện | — | `brief.md` §5 |
+| 058 | Analytics học sinh: chịu lỗi API, hiển thị `ai_feedback` đúng | — | `brief.md` §5 |
+| 059 | Dọn lối vào học sinh: `/student`, `/student/landing` → dashboard, nhãn vai trò hồ sơ | — | `brief.md` §5 |
+| 060 | Siết API lớp học sinh: STUDENT-only, whitelist cột, `checkLessonAccess` trước `assertClassOpen` (HIGH, nhạy cảm) | — | `brief.md` §5 |
 
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
