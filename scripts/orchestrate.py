@@ -102,16 +102,21 @@ def collect_local() -> dict[str, dict]:
 
 
 def collect_remote(host: str) -> dict[str, dict]:
-    script = ('for f in %s/*/handoff/tasks/*/state.json; do [ -f "$f" ] && { echo "@@$f"; cat "$f"; echo; }; done'
-              % MACBOOK["wt"])
+    script = ('for f in %s/*/handoff/tasks/*/state.json; do [ -f "$f" ] && { echo "@@$f"; cat "$f"; echo; echo "##BRIEF"; '
+              'head -12 "$(dirname "$f")/brief.md" 2>/dev/null; }; done' % MACBOOK["wt"])
     r = ssh(host, script)
     out, cur, buf = {}, None, []
 
     def flush() -> None:
         if cur and buf:
             try:
-                st = json.loads("".join(buf))
-                out[st["id"]] = {"state": st, "dir": None, "where": f"worktree@{host}", "wt": cur, "difficulty": "HIGH?"}
+                text = "\n".join(buf)
+                state_part, _, brief_part = text.partition("##BRIEF")
+                st = json.loads(state_part)
+                m = re.search(r"Độ khó[^A-Za-z\n]*(LOW|HIGH)", brief_part)
+                sens = re.search(r"Nhạy cảm[^\n]*?\b(có|yes)\b", brief_part, re.I)
+                diff = "LOW" if m and m.group(1) == "LOW" and not sens else "HIGH"
+                out[st["id"]] = {"state": st, "dir": None, "where": f"worktree@{host}", "wt": cur, "difficulty": diff}
             except json.JSONDecodeError:
                 pass
 

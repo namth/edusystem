@@ -85,6 +85,10 @@ CONFIG = load_config()
 AGY_TIMEOUT = os.environ.get("AGY_PRINT_TIMEOUT", CONFIG["agy_timeout"])
 
 WORKER_CMDS = {"start": ("assigned", "changes_requested"), "submit": ("in_progress",)}
+STALL_ROLE = {"tests_assigned": "tester", "assigned": "coder", "in_progress": "coder", "in_review": "reviewer"}
+MAX_AUTO_RESUMES = 2
+RESUME_NOTE = ("Bạn đã dừng sớm. Chỉ chạy python3 (không ls/git/sed/npx); đọc/sửa file bằng công cụ file. Làm tiếp tới khi hoàn tất "
+               "đúng bước cuối của skill (tests-done / submit / review-pass|review-fail), không dừng để hỏi.")
 MAX_CROSS_ROUNDS = 2  # quá số vòng trả về chéo này thì đẩy lên trưởng phòng
 TASK_OWN = ("brief.md", "state.json", "tests.lock", "review.md", "report.md", "cross-review.md")
 
@@ -699,7 +703,8 @@ def cmd_auto(a) -> None:
         die("người code và người kiểm phải là hai tài khoản khác nhau")
     print(f"{state['id']}: {coder} code · {checker} viết test + nghiệm thu chéo")
     ns = lambda **kw: argparse.Namespace(id=a.id, agy_model=a.agy_model, **kw)  # noqa: E731
-    for _ in range(12):  # chặn vòng lặp vô hạn
+    stalls: dict[str, int] = {}
+    for _ in range(16):  # chặn vòng lặp vô hạn
         status = load_state(task)["status"]
         print(f"\n=== {state['id']} đang ở {status}", flush=True)
         if status == "draft":
@@ -726,7 +731,14 @@ def cmd_auto(a) -> None:
         else:
             break
         if load_state(task)["status"] == status:
-            break  # agent dừng mà không chuyển trạng thái → cần người xem
+            # agent dừng sớm mà không chuyển trạng thái (hay gặp ở model Claude trên agy: đọc xong rồi dừng) → tự nhắn làm tiếp
+            role = STALL_ROLE.get(status)
+            if role and stalls.get(status, 0) < MAX_AUTO_RESUMES:
+                stalls[status] = stalls.get(status, 0) + 1
+                print(f"Agent dừng sớm ở {status} → tự resume vai {role} (lần {stalls[status]}/{MAX_AUTO_RESUMES})", flush=True)
+                cmd_resume(argparse.Namespace(id=a.id, role=role, agy_model=a.agy_model, note=RESUME_NOTE))
+                continue
+            break  # vẫn không chuyển trạng thái → cần người xem
     st = load_state(task)
     print(f"\n=== KẾT THÚC auto {st['id']}: {st['status']}")
     print({"accepted": "Đạt. Chạy `orchestrate.py gate` rồi `merge-low` (LOW), hoặc Claude merge.",
