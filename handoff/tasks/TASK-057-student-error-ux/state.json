@@ -1,0 +1,13 @@
+{
+  "id": "TASK-057",
+  "title": "Trang làm bài học sinh: bỏ alert, thông báo lớp khoá và lỗi thân thiện",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-10T22:23:11",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}

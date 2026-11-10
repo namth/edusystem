@@ -213,8 +213,24 @@ def cmd_digest(a) -> None:
 
 # ───────────────────────── launch ─────────────────────────
 
+MAX_PARALLEL = int(os.environ.get("ORCH_MAX_PARALLEL", "4"))  # 2 tài khoản máy thợ × 2 task
+
+
+def running_launches() -> list[str]:
+    """Các tiến trình `agy-worktree.sh auto` do launch bật và còn chạy."""
+    out = sh(["pgrep", "-fl", "agy-worktree.sh auto"]).stdout.splitlines()
+    return [l for l in out if "caffeinate" not in l and "pgrep" not in l]
+
+
 def cmd_launch(a) -> None:
     a.host = default_host(a.host)
+    live = running_launches()
+    if len(live) >= MAX_PARALLEL:
+        print(f"TỪ CHỐI launch {a.id}: đã có {len(live)} task đang chạy (tối đa {MAX_PARALLEL}). Chờ xong rồi chạy lại.")
+        return
+    if any(a.id in l for l in live):
+        print(f"{a.id} đang chạy rồi.")
+        return
     script = ROOT / "scripts" / "agy-worktree.sh"
     env = {**os.environ, **({"AGY_HOST": a.host} if a.host else {})}
     base = wt_base()

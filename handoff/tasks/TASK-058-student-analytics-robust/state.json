@@ -1,0 +1,13 @@
+{
+  "id": "TASK-058",
+  "title": "Analytics học sinh: chịu lỗi API, hiển thị nhận xét AI đúng, nhãn đề đã xoá",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-10T22:23:11",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}

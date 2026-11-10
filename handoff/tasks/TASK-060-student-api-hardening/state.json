@@ -1,0 +1,13 @@
+{
+  "id": "TASK-060",
+  "title": "Siết API lớp học sinh: vai trò, bỏ cột nội bộ, thứ tự kiểm quyền với lớp khoá",
+  "status": "draft",
+  "conversation_id": null,
+  "history": [
+    {
+      "at": "2026-11-10T22:23:11",
+      "status": "draft",
+      "note": "Claude tạo task"
+    }
+  ]
+}
