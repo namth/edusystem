@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Lệnh xác minh tự động cho TASK-055 — do trưởng phòng viết, file này bị khoá.
+# Lệnh xác minh tự động cho TASK-055 — hợp đồng nghiệm thu do kỹ sư kiểm thử chéo viết, file này bị khoá.
 # Chạy từ thư mục gốc repo. Exit 0 = đạt.
 set -euo pipefail
 
-echo "TODO: Claude điền lệnh xác minh cho TASK-055"
-exit 1
+ls tests/student-layout-nav.test.ts >/dev/null
+npx vitest run tests/student-layout-nav.test.ts tests/design-rules.test.ts --maxWorkers=4
+npx tsc --noEmit
