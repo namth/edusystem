@@ -13,7 +13,7 @@ Mọi lệnh chỉ cần `python3` (agent Antigravity chỉ được chạy pyth
         @ts-ignore, .only…). Exit 1 nếu có cảnh báo mức CAO.
   gate <ID> [--skip-tests] [--host macbook]
         guard-scan + TOÀN BỘ vitest + tsc trong worktree; ghi handoff/tasks/<ID>-*/gate.json (pass/fail + dấu vân tay diff).
-  merge-low <ID> [--host macbook]
+  merge-low <ID> [--host macbook] [--check-only]
         Merge task vào nhánh hiện tại CHỈ KHI: trạng thái accepted, Độ khó LOW và không nhạy cảm, gate.json đạt và diff
         chưa đổi từ lúc gate, nhánh hiện tại không phải main/master. Còn lại từ chối — việc đó của Claude.
   run [--as agy1] [--model SLUG | --hard] [--dry-run]
@@ -309,9 +309,22 @@ def analyse(files: dict[str, tuple[list[str], list[str]]]) -> list[tuple[str, st
     return found
 
 
+def resolve_host(a) -> None:
+    """Không chỉ định --host: worktree có ở máy này thì chạy tại đây, không thì theo máy mặc định (máy thợ)."""
+    if not a.host and not (wt_base() / a.id).exists():
+        a.host = default_host(None)
+
+
+def remote_run(a, sub: str, extra: str = "", timeout: int = 2400) -> int:
+    """Chạy `orchestrate.py <sub> <ID>` trong worktree trên máy thợ (đường dẫn worktree theo AGY_WT_DIR của máy đó)."""
+    wt = f"{MACBOOK['wt']}/{a.id}"
+    cmd = (f"cd {wt} && AGY_WT_DIR={MACBOOK['wt']} caffeinate -ims python3 scripts/orchestrate.py {sub} {a.id} {extra}").strip()
+    r = ssh(a.host, cmd, timeout=timeout)
+    print((r.stdout + r.stderr).strip()[-3000:])
+    return r.returncode
+
+
 def wt_of(a) -> Path:
-    if a.host:
-        H.die("guard-scan/gate/merge-low trên máy thợ: chạy lệnh này TRONG worktree trên máy đó (ssh … python3 scripts/orchestrate.py gate ID)")
     wt = wt_base() / a.id
     if not wt.exists():
         H.die(f"không có worktree {wt}")
@@ -336,6 +349,9 @@ def task_dir_in(wt: Path, tid: str) -> Path:
 
 
 def cmd_guard_scan(a) -> int:
+    resolve_host(a)
+    if a.host:
+        return remote_run(a, "guard-scan")
     wt = wt_of(a)
     found = analyse(diff_lines(wt, base_ref(wt)))
     for lvl, msg in found:
@@ -350,6 +366,9 @@ def tail(text: str, n: int = 12) -> str:
 
 
 def cmd_gate(a) -> int:
+    resolve_host(a)
+    if a.host:
+        return remote_run(a, "gate", "--skip-tests" if a.skip_tests else "")
     wt = wt_of(a)
     base = base_ref(wt)
     result = {"id": a.id, "at": H.now(), "base": base}
@@ -381,6 +400,19 @@ def cmd_gate(a) -> int:
 
 
 def cmd_merge_low(a) -> int:
+    resolve_host(a)
+    if a.host:
+        if remote_run(a, "merge-low", "--check-only") != 0:
+            return 1
+        branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT).stdout.strip()
+        if branch in ("main", "master"):
+            print(f"TỪ CHỐI merge {a.id}: nhánh hiện tại là {branch}")
+            return 1
+        ssh(a.host, f"rm -f {MACBOOK['wt']}/{a.id}/handoff/tasks/{a.id}-*/gate.json")
+        r = sh(["bash", str(ROOT / "scripts" / "agy-worktree.sh"), "merge", a.id], cwd=ROOT, timeout=600,
+               env={**os.environ, "AGY_HOST": a.host})
+        print((r.stdout + r.stderr).strip()[-800:])
+        return r.returncode
     wt = wt_of(a)
     task = task_dir_in(wt, a.id)
     st = json.loads((task / "state.json").read_text(encoding="utf-8"))
@@ -399,11 +431,14 @@ def cmd_merge_low(a) -> int:
         elif g.get("fingerprint") != fingerprint_wt(wt, g.get("base", "HEAD")):
             refuse.append("diff đã đổi sau khi gate — chạy lại `gate`")
     branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT).stdout.strip()
-    if branch in ("main", "master"):
+    if branch in ("main", "master") and not a.check_only:
         refuse.append(f"nhánh hiện tại là {branch} — điều phối không merge thẳng vào đó")
     if refuse:
         print(f"TỪ CHỐI merge {a.id}:\n  - " + "\n  - ".join(refuse))
         return 1
+    if a.check_only:
+        print(f"merge-low {a.id}: đủ điều kiện")
+        return 0
     # gate.json là tệp của điều phối, không đưa vào lịch sử
     gate.unlink()
     r = sh(["bash", str(ROOT / "scripts" / "agy-worktree.sh"), "merge", a.id], cwd=ROOT, timeout=300)
@@ -452,7 +487,7 @@ def main() -> int:
     l = sub.add_parser("launch"); l.add_argument("id"); l.add_argument("--host"); l.add_argument("--coder"); l.add_argument("--checker"); l.set_defaults(fn=cmd_launch)
     g = sub.add_parser("guard-scan"); g.add_argument("id"); g.add_argument("--host"); g.set_defaults(fn=cmd_guard_scan)
     ga = sub.add_parser("gate"); ga.add_argument("id"); ga.add_argument("--host"); ga.add_argument("--skip-tests", action="store_true"); ga.set_defaults(fn=cmd_gate)
-    m = sub.add_parser("merge-low"); m.add_argument("id"); m.add_argument("--host"); m.set_defaults(fn=cmd_merge_low)
+    m = sub.add_parser("merge-low"); m.add_argument("id"); m.add_argument("--host"); m.add_argument("--check-only", action="store_true"); m.set_defaults(fn=cmd_merge_low)
     r = sub.add_parser("run"); r.add_argument("--as", dest="as_"); r.add_argument("--dry-run", action="store_true"); r.add_argument("--note"); r.add_argument("--model"); r.add_argument("--hard", action="store_true"); r.set_defaults(fn=cmd_run)
     a = p.parse_args()
     return a.fn(a) or 0
