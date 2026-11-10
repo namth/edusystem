@@ -1,13 +1,78 @@
 {
   "id": "TASK-056",
   "title": "Dashboard học sinh: bỏ dữ liệu giả, lỗi từng khối, lượt đang làm dở, huy hiệu lớp",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "6feb61cc-8bd2-4897-9a2d-f3b213de31a2",
   "history": [
     {
       "at": "2026-11-10T22:23:11",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-10T22:25:15",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy3"
+    },
+    {
+      "at": "2026-11-10T22:29:06",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-10T22:29:33",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (model mặc định)"
+    },
+    {
+      "at": "2026-11-10T22:29:36",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-10T22:29:50",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-10T22:38:54",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-10T22:39:06",
+      "status": "accepted",
+      "note": "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge"
+    },
+    {
+      "at": "2026-11-10T23:45",
+      "status": "in_progress",
+      "note": "cổng tự động tsc đỏ → trả coder sửa"
+    },
+    {
+      "at": "2026-11-10T23:47:07",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-10T23:47:52",
+      "status": "accepted",
+      "note": "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge"
     }
-  ]
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "6feb61cc-8bd2-4897-9a2d-f3b213de31a2"
+    },
+    "tester": {
+      "account": "agy3",
+      "conversation_id": "63de1d16-7f11-4835-91af-a2940f85f2e5"
+    }
+  },
+  "locked_files": [
+    "handoff/tasks/TASK-056-student-dashboard-polish/verify.sh",
+    "tests/student-dashboard-polish.test.ts"
+  ],
+  "via": "agy"
 }
