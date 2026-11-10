@@ -28,17 +28,17 @@ HOST="${AGY_HOST:-}"
 case "$HOST" in
   "") ;;
   macbook)
-    REMOTE="namtran@192.168.1.34"
+    REMOTE="namtran@${MACBOOK_HOST:-nams-macbook-air.local}"  # IP đổi theo mạng → dùng tên .local; khoá host đối chiếu theo alias cũ
     SSH_KEY="$HOME/.ssh/id_macbook_agy"
     REMOTE_REPO="~/agy-farm/learningsystem"
     REMOTE_WT_BASE="~/agy-farm/worktrees"
-    REMOTE_AGY_HOME="\$HOME/.agy-worker"
+    REMOTE_AGY_HOME="\$HOME/.agy-worker"  # tài khoản cuối cùng vẫn do --coder/--checker chọn trong handoff.py (accounts.json của máy thợ)
     GIT_REMOTE="macbook"
     ;;
   *) die "AGY_HOST không biết: $HOST" ;;
 esac
-rsh() { ssh -i "$SSH_KEY" -o BatchMode=yes "$REMOTE" "export PATH=\"\$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:\$PATH\"; $*"; }
-rgit() { GIT_SSH_COMMAND="ssh -i $SSH_KEY -o BatchMode=yes" git -C "$ROOT" "$@"; }
+rsh() { ssh -i "$SSH_KEY" -o BatchMode=yes -o HostKeyAlias=192.168.1.34 "$REMOTE" "export PATH=\"\$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:\$PATH\"; $*"; }
+rgit() { GIT_SSH_COMMAND="ssh -i $SSH_KEY -o BatchMode=yes -o HostKeyAlias=192.168.1.34" git -C "$ROOT" "$@"; }
 
 account_home() {
   local n="${AGY_ACCOUNT:-1}"
@@ -80,7 +80,7 @@ case "$cmd" in
     if [ -n "$HOST" ]; then
       args=""; for a in "$@"; do args="$args $(printf '%q' "$a")"; done
       echo "Máy thợ $HOST (agy HOME=$REMOTE_AGY_HOME) — worktree $(rwt_path)"
-      rsh "cd $(rwt_path) && HOME=$REMOTE_AGY_HOME python3 scripts/handoff.py $sub $id$args"
+      rsh "cd $(rwt_path) && caffeinate -ims env HOME=$REMOTE_AGY_HOME python3 scripts/handoff.py $sub $id$args"  # máy thợ chỉ ngủ sau khi lệnh xong
     else
       [ -d "$(wt_path)" ] || die "chưa có worktree cho $id — chạy: $0 new $id"
       h="$(account_home)"

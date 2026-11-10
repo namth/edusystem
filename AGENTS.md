@@ -7,3 +7,4 @@ Bạn là **kỹ sư thực thi**; Claude Code là trưởng phòng giao việc 
 - Hook chặn sửa file test bị khoá & đường dẫn chỉ-đọc: `.agents/hooks.json` (cấu hình ở `handoff/config.json`)
 - Giao thức giao việc: `handoff/README.md`
 - Bối cảnh dự án & bất biến: `CONTEXT.md` (nếu có), `CLAUDE.md`
+- Vai điều phối (khi prompt nói bạn là ĐIỀU PHỐI): skill `dieu-phoi` (`.agents/skills/dieu-phoi/SKILL.md`), công cụ `scripts/orchestrate.py`

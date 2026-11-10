@@ -45,6 +45,9 @@ next-env.d.ts
 
 # bộ phối hợp Claude ↔ Antigravity (không được ignore)
 !handoff/**
+handoff/digest.md
+handoff/logs/
+handoff/tasks/*/gate.json
 !.agents/**
 
 # Media bài học khi chạy local (production gắn thư mục ngoài qua docker-compose)

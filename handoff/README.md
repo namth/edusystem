@@ -106,6 +106,34 @@ Kiểm tra mọi thứ đã sẵn sàng:
 python3 scripts/handoff.py doctor
 ```
 
+## Mô hình điều phối bằng Antigravity (ORCH)
+
+Mục tiêu: phần dài và ít cần trí tuệ (chạy `auto`, hồi phục phiên treo, gate, merge task LOW) do một tài khoản Antigravity làm; Claude chỉ viết đặc tả/blueprint, làm task khó và nhạy cảm, duyệt cuối. Claude đọc `handoff/digest.md` (≤ ~30 dòng) thay vì mang cả phiên điều phối.
+
+| Tài khoản | Máy | HOME | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| `agy1` | máy chính | `~` | code / kiểm |
+| `agy4` | máy chính | `~/.agy-account2` | thường dùng làm ĐIỀU PHỐI |
+| `agy2` | MacBook | `~/.agy-worker` | code / kiểm |
+| `agy3` | MacBook | `~/.agy-worker2` | code / kiểm (tài khoản mới) |
+
+Tên tài khoản nằm trong `~/.config/handoff/accounts.json` của từng máy (tên không trùng giữa các máy để văn phòng ảo hiển thị đúng). MacBook truy cập bằng `nams-macbook-air.local` (không dùng IP; khoá host đối chiếu theo `HostKeyAlias=192.168.1.34`).
+
+Công cụ — `scripts/orchestrate.py`, mọi lệnh chỉ cần `python3`:
+
+| Lệnh | Việc |
+| :--- | :--- |
+| `digest [--host macbook]` | Bảng việc: CẦN CLAUDE · ĐIỀU PHỐI LÀM TIẾP · NGHI TREO · ĐANG CHẠY · CHỜ MERGE; ghi `handoff/digest.md` |
+| `launch <ID> [--host macbook]` | Tạo worktree nếu chưa có rồi chạy `auto` nền (có `caffeinate`), nhật ký `handoff/logs/` |
+| `guard-scan <ID>` | Quét diff: bảo vệ bị bớt (kiểm quyền, 401/403, khoá…), test bị xoá, đường tắt |
+| `gate <ID>` | guard-scan + toàn bộ vitest + tsc, ghi `gate.json` kèm dấu vân tay diff |
+| `merge-low <ID>` | Merge chỉ khi accepted + LOW + không nhạy cảm + gate đạt và diff chưa đổi + không phải nhánh main/master |
+| `run [--as agyN]` | Khởi động phiên agy làm điều phối (skill `/dieu-phoi`) |
+
+Ranh giới cứng nằm trong mã, không dựa vào lời nhắc: hook `agy_guard.py` (đặt `HANDOFF_ROLE=orchestrator`) chỉ cho ghi trong `handoff/`; `merge-low` từ chối task HIGH/nhạy cảm. Agent điều phối chỉ chạy `python3`. Chỉ nới quyền shell nếu thật cần.
+
+Cách dùng: Claude lập kế hoạch + brief + commit → `python3 scripts/orchestrate.py run --as agy4` (hoặc để agy1 chạy) → đọc `handoff/digest.md` → duyệt task ở mục CẦN CLAUDE. Kiểm thử công cụ: `python3 scripts/test_orchestrate.py`.
+
 ## Lệnh nhanh
 
 ```bash

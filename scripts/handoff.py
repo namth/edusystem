@@ -833,6 +833,7 @@ def cmd_doctor(a) -> None:
 
     for rel in (".agents/rules/vai-tro-ky-su-thuc-thi.md", ".agents/skills/thuc-hien-task/SKILL.md",
                 ".agents/skills/viet-test-cheo/SKILL.md", ".agents/skills/nghiem-thu-cheo/SKILL.md",
+                ".agents/skills/dieu-phoi/SKILL.md", "scripts/orchestrate.py",
                 ".agents/hooks.json", "scripts/agy_guard.py", "AGENTS.md", "handoff/config.json"):
         check((ROOT / rel).exists(), f"có {rel}", "chạy /khoi-tao-phoi-hop cập nhật")
     legacy = [p for p in (".agent/rules/vai-tro-ky-su-thuc-thi.md", ".agent/workflows/thuc-hien-task.md")
