@@ -6,21 +6,18 @@
     "tests/",
     "e2e/"
   ],
-  "agy_model": "claude-sonnet-5-5-medium",
+  "agy_model": "gemini-3.8-flash-high",
   "agy_fallback_models": [],
   "agy_timeout": "60m",
   "agy_role_models": {
     "coder": [
-      "gemini-3.8-flash-high",
-      "claude-sonnet-4-6"
+      "gemini-3.8-flash-high"
     ],
     "tester": [
-      "gemini-3.8-flash-high",
-      "claude-sonnet-4-6"
+      "gemini-3.8-flash-high"
     ],
     "reviewer": [
-      "gemini-3.8-flash-high",
-      "claude-sonnet-4-6"
+      "gemini-3.8-flash-high"
     ]
   },
   "cross_review": false

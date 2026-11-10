@@ -151,3 +151,5 @@ python3 scripts/handoff.py verify TASK-001      # kiểm khoá test + chạy ver
 python3 scripts/handoff.py verify TASK-001 --quiet  # chỉ in tóm tắt, log đầy đủ ra file (trưởng phòng nghiệm thu)
 python3 scripts/handoff.py doctor               # kiểm tra bộ phối hợp & agy
 ```
+
+> **Quy ước model (11/2026):** `gemini-3.8-flash-high` có hạn mức lớn nhất nên là model mặc định cho mọi vai (coder/tester/reviewer/điều phối). Model khác (Claude trên agy, gemini-4-argon) hạn mức rất thấp — chỉ dùng khi thật cần, chỉ định tay bằng `--agy-model` / `orchestrate.py run --hard`.
