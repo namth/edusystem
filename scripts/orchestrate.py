@@ -16,7 +16,8 @@ Mọi lệnh chỉ cần `python3` (agent Antigravity chỉ được chạy pyth
   merge-low <ID> [--host macbook]
         Merge task vào nhánh hiện tại CHỈ KHI: trạng thái accepted, Độ khó LOW và không nhạy cảm, gate.json đạt và diff
         chưa đổi từ lúc gate, nhánh hiện tại không phải main/master. Còn lại từ chối — việc đó của Claude.
-  run [--as agyN] [--dry-run]
+  run [--as agy1] [--model SLUG | --hard] [--dry-run]
+        (mặc định agy1 + gemini-3.8-flash-high; --hard = gemini-4-argon-high)
         Khởi động một phiên agy làm điều phối (skill /dieu-phoi). Hook agy_guard chặn sửa ngoài handoff/.
 
 Biến môi trường: AGY_WT_DIR (thư mục worktree), MACBOOK_HOST (mặc định nams-macbook-air.local), ORCH_STALE_MIN (mặc định 45).
@@ -191,7 +192,13 @@ def build_digest(tasks: dict[str, dict], title: str) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+def default_host(host: str | None) -> str | None:
+    """Máy này chỉ có 1 tài khoản agy (chạy điều phối) → code/kiểm chéo chạy trên máy thợ."""
+    return host or ("macbook" if len(H.agy_accounts()) < 2 else None)
+
+
 def cmd_digest(a) -> None:
+    a.host = default_host(a.host)
     tasks = collect_local()
     title = "máy này"
     if a.host:
@@ -207,6 +214,7 @@ def cmd_digest(a) -> None:
 # ───────────────────────── launch ─────────────────────────
 
 def cmd_launch(a) -> None:
+    a.host = default_host(a.host)
     script = ROOT / "scripts" / "agy-worktree.sh"
     env = {**os.environ, **({"AGY_HOST": a.host} if a.host else {})}
     base = wt_base()
@@ -413,7 +421,7 @@ Tuyệt đối không sửa code sản phẩm/test, không tự nghiệm thu tas
 
 def cmd_run(a) -> int:
     accs = H.agy_accounts()
-    name = a.as_ or (sorted(accs)[-1] if accs else None)
+    name = a.as_ or ("agy1" if "agy1" in accs else (sorted(accs)[0] if accs else None))
     if not name:
         H.die("máy này chưa có tài khoản agy — xem `python3 scripts/handoff.py accounts`")
     home = H.account_home(name)
@@ -422,7 +430,8 @@ def cmd_run(a) -> int:
         print(f"[dry-run] tài khoản {name} (HOME={home})\n{prompt}")
         return 0
     os.environ["HANDOFF_ROLE"] = "orchestrator"
-    models = [H.CONFIG.get("agy_model")] + list(H.CONFIG.get("agy_fallback_models", []))
+    # Điều phối là việc nhẹ: mặc định Flash High; --hard dùng Gemini 4 Argon (máy chính chạy được) rồi lùi về Flash
+    models = [a.model] if a.model else (["gemini-4-argon-high", "gemini-3.8-flash-high"] if a.hard else ["gemini-3.8-flash-high", "gemini-4-argon-medium"])
     result = None
     for m in models:
         result = H.agy_run(prompt, model=m, home=home)
@@ -444,7 +453,7 @@ def main() -> int:
     g = sub.add_parser("guard-scan"); g.add_argument("id"); g.add_argument("--host"); g.set_defaults(fn=cmd_guard_scan)
     ga = sub.add_parser("gate"); ga.add_argument("id"); ga.add_argument("--host"); ga.add_argument("--skip-tests", action="store_true"); ga.set_defaults(fn=cmd_gate)
     m = sub.add_parser("merge-low"); m.add_argument("id"); m.add_argument("--host"); m.set_defaults(fn=cmd_merge_low)
-    r = sub.add_parser("run"); r.add_argument("--as", dest="as_"); r.add_argument("--dry-run", action="store_true"); r.add_argument("--note"); r.set_defaults(fn=cmd_run)
+    r = sub.add_parser("run"); r.add_argument("--as", dest="as_"); r.add_argument("--dry-run", action="store_true"); r.add_argument("--note"); r.add_argument("--model"); r.add_argument("--hard", action="store_true"); r.set_defaults(fn=cmd_run)
     a = p.parse_args()
     return a.fn(a) or 0
 

@@ -112,12 +112,13 @@ Mục tiêu: phần dài và ít cần trí tuệ (chạy `auto`, hồi phục p
 
 | Tài khoản | Máy | HOME | Ghi chú |
 | :--- | :--- | :--- | :--- |
-| `agy1` | máy chính | `~` | code / kiểm |
-| `agy4` | máy chính | `~/.agy-account2` | thường dùng làm ĐIỀU PHỐI |
-| `agy2` | MacBook | `~/.agy-worker` | code / kiểm |
-| `agy3` | MacBook | `~/.agy-worker2` | code / kiểm (tài khoản mới) |
+| `agy1` | máy chính | `~` | **ĐIỀU PHỐI** (máy này còn chạy Claude nên chỉ giữ 1 tài khoản); mặc định `gemini-3.8-flash-high`, việc khó thì `run --hard` (`gemini-4-argon-high`) |
+| `agy2` | MacBook | `~/.agy-worker` | code / kiểm chéo |
+| `agy3` | MacBook | `~/.agy-worker2` | code / kiểm chéo (tài khoản mới) |
 
 Tên tài khoản nằm trong `~/.config/handoff/accounts.json` của từng máy (tên không trùng giữa các máy để văn phòng ảo hiển thị đúng). MacBook truy cập bằng `nams-macbook-air.local` (không dùng IP; khoá host đối chiếu theo `HostKeyAlias=192.168.1.34`).
+
+Máy chính chỉ có 1 tài khoản nên `digest`/`launch` tự dùng `--host macbook` (code và kiểm chéo giữa agy2 ↔ agy3 trên MacBook).
 
 Công cụ — `scripts/orchestrate.py`, mọi lệnh chỉ cần `python3`:
 
@@ -132,7 +133,7 @@ Công cụ — `scripts/orchestrate.py`, mọi lệnh chỉ cần `python3`:
 
 Ranh giới cứng nằm trong mã, không dựa vào lời nhắc: hook `agy_guard.py` (đặt `HANDOFF_ROLE=orchestrator`) chỉ cho ghi trong `handoff/`; `merge-low` từ chối task HIGH/nhạy cảm. Agent điều phối chỉ chạy `python3`. Chỉ nới quyền shell nếu thật cần.
 
-Cách dùng: Claude lập kế hoạch + brief + commit → `python3 scripts/orchestrate.py run --as agy4` (hoặc để agy1 chạy) → đọc `handoff/digest.md` → duyệt task ở mục CẦN CLAUDE. Kiểm thử công cụ: `python3 scripts/test_orchestrate.py`.
+Cách dùng: Claude lập kế hoạch + brief + commit → `python3 scripts/orchestrate.py run` (agy1, thêm `--hard` khi cần Gemini 4 Argon) → đọc `handoff/digest.md` → duyệt task ở mục CẦN CLAUDE. Kiểm thử công cụ: `python3 scripts/test_orchestrate.py`.
 
 ## Lệnh nhanh
 
