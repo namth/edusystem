@@ -18,6 +18,12 @@ import {
   Lock,
 } from "lucide-react";
 
+const ROLE_LABELS: Record<string, string> = {
+  STUDENT: "Học sinh",
+  TEACHER: "Giáo viên",
+  ADMIN: "Quản trị viên",
+};
+
 export default function UserProfilePage() {
   const { user: authUser } = useAuth();
   const [role, setRole] = useState(authUser?.role || "STUDENT");
@@ -239,7 +245,7 @@ export default function UserProfilePage() {
               <h3 className="text-lg font-bold text-ink">{name || "Người Dùng"}</h3>
               <p className="text-xs text-ink-muted mt-0.5">{email}</p>
               <span className="inline-block mt-3 px-3 py-1 rounded-full bg-brand-50 text-brand-600 border border-brand-300 text-xs font-bold uppercase">
-                {role}
+                {ROLE_LABELS[role] || role}
               </span>
             </div>
           </div>
