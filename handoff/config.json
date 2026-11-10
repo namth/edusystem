@@ -7,22 +7,19 @@
     "e2e/"
   ],
   "agy_model": "claude-sonnet-5-5-medium",
-  "agy_fallback_models": [
-    "gemini-3.8-flash-high"
-  ],
+  "agy_fallback_models": [],
   "agy_timeout": "60m",
   "agy_role_models": {
     "coder": [
-      "claude-sonnet-5-5-medium",
-      "gemini-3.8-flash-high"
+      "gemini-3.8-flash-high",
+      "claude-sonnet-4-6"
     ],
     "tester": [
-      "claude-opus-4-6-thinking",
-      "claude-sonnet-4-6",
-      "gemini-3.8-flash-high"
+      "gemini-3.8-flash-high",
+      "claude-sonnet-4-6"
     ],
     "reviewer": [
-      "claude-opus-4-6-thinking",
+      "gemini-3.8-flash-high",
       "claude-sonnet-4-6"
     ]
   },
