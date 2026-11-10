@@ -1,13 +1,73 @@
 {
   "id": "TASK-055",
   "title": "Khung học sinh: sửa menu cls_101, điều hướng mobile, bỏ ô tìm kiếm chết",
-  "status": "draft",
-  "conversation_id": null,
+  "status": "accepted",
+  "conversation_id": "b1a053cc-26cc-4481-95af-a7e8a2d5196c",
   "history": [
     {
       "at": "2026-11-10T22:23:11",
       "status": "draft",
       "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-10T22:24:58",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-10T22:39:55",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-opus-4-6-thinking → claude-sonnet-4-6 (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-10T22:40:09",
+      "status": "tests_assigned",
+      "note": "đổi model agy: claude-sonnet-4-6 → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-10T22:47:06",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-10T22:47:43",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy3 (model mặc định)"
+    },
+    {
+      "at": "2026-11-10T22:47:48",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-10T23:07:53",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-11T00:40:12",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-11T00:42:29",
+      "status": "accepted",
+      "note": "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge"
     }
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy3",
+      "conversation_id": "b1a053cc-26cc-4481-95af-a7e8a2d5196c"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "403993cc-3ffe-41ed-8aff-c8a898bfd62d"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-055-student-layout-nav/verify.sh",
+    "tests/student-layout-nav.test.ts"
   ]
 }

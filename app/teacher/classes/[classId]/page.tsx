@@ -71,7 +71,7 @@ interface AssignedExamItem {
 
 export default function TeacherClassDetailPage() {
   const params = useParams();
-  const classId = (params?.classId || "cls_101") as string;
+  const classId = params.classId as string;
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"assignments" | "students" | "roadmap">("assignments");
