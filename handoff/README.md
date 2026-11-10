@@ -106,6 +106,14 @@ Kiểm tra mọi thứ đã sẵn sàng:
 python3 scripts/handoff.py doctor
 ```
 
+## Kiểm tra: cổng tự động thay nghiệm thu chéo (10/11/2026)
+
+Nghiệm thu chéo bằng agent kém hiệu quả (cùng họ model nên cùng điểm mù; đợt 048–054 bỏ sót 4 lỗi nghiêm trọng, tester chéo viết sai hợp đồng ở 4/7 task) nên mặc định **tắt** (`cross_review: false`):
+- Test vẫn do tài khoản khác viết từ brief (`tests`/`auto`), model tester khác họ với người code (`agy_role_models`).
+- Sau `submit` (đã kiểm khoá test + phạm vi + `verify.sh`): **LOW → accepted**, **HIGH/nhạy cảm → review_passed**, không còn vòng agent kiểm.
+- Việc kiểm thật là `python3 scripts/orchestrate.py gate <ID>` (quét bảo vệ bị bớt + toàn bộ vitest + tsc); LOW đạt gate thì `merge-low`, HIGH thì Claude duyệt.
+- Bật lại nghiệm thu chéo: `"cross_review": true` trong `handoff/config.json`.
+
 ## Mô hình điều phối bằng Antigravity (ORCH)
 
 Mục tiêu: phần dài và ít cần trí tuệ (chạy `auto`, hồi phục phiên treo, gate, merge task LOW) do một tài khoản Antigravity làm; Claude chỉ viết đặc tả/blueprint, làm task khó và nhạy cảm, duyệt cuối. Claude đọc `handoff/digest.md` (≤ ~30 dòng) thay vì mang cả phiên điều phối.

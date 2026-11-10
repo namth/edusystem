@@ -729,8 +729,8 @@ def cmd_auto(a) -> None:
             break  # agent dừng mà không chuyển trạng thái → cần người xem
     st = load_state(task)
     print(f"\n=== KẾT THÚC auto {st['id']}: {st['status']}")
-    print({"accepted": "Đạt (nghiệm thu chéo). Trưởng phòng chỉ cần merge.",
-           "review_passed": "Nghiệm thu chéo đạt, task HIGH/nhạy cảm → trưởng phòng duyệt lần cuối (/nghiem-thu).",
+    print({"accepted": "Đạt. Chạy `orchestrate.py gate` rồi `merge-low` (LOW), hoặc Claude merge.",
+           "review_passed": "Task HIGH/nhạy cảm → chạy `orchestrate.py gate`, trưởng phòng duyệt lần cuối (/nghiem-thu).",
            }.get(st["status"], "CẦN TRƯỞNG PHÒNG: agent dừng giữa chừng, cầu cứu, hoặc trả về quá "
                                 f"{MAX_CROSS_ROUNDS} vòng — đọc report.md mục câu hỏi / review.md."))
 
@@ -880,8 +880,8 @@ def cmd_doctor(a) -> None:
         check(any("python3" in x for x in allow), "agy được phép chạy python3 (handoff.py, test)",
               f'thêm "command(python3)" vào permissions.allow trong {AGY_SETTINGS}')
     accs = agy_accounts()
-    check(len(accs) >= 2, f"có ≥ 2 tài khoản agy để nghiệm thu chéo ({', '.join(accs) or 'không có'})",
-          "không bắt buộc — đăng nhập thêm tài khoản: HOME=~/.agy-account2 agy")
+    check(len(accs) >= 2, f"có ≥ 2 tài khoản agy để viết test chéo ({', '.join(accs) or 'không có'})",
+          "không bắt buộc — máy chỉ 1 tài khoản thì chạy task trên máy thợ (AGY_HOST=macbook)")
     check(IDE_CLI.exists(), "có Antigravity IDE (đường dự phòng `antigravity-ide chat`)", "không bắt buộc")
     for ok, label, fix in checks:
         print(f"{'OK  ' if ok else 'THIẾU'} {label}" + ("" if ok or not fix else f"\n      → {fix}"))

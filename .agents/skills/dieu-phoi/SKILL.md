@@ -17,7 +17,7 @@ Bạn **không viết code sản phẩm**. Bạn giữ cho dây chuyền chạy 
 ## Vòng làm việc (một lượt)
 1. `python3 scripts/orchestrate.py digest` (tự gộp MacBook khi máy này chỉ có 1 tài khoản). Đọc 5 nhóm: CẦN CLAUDE · ĐIỀU PHỐI LÀM TIẾP · NGHI TREO · ĐANG CHẠY · CHỜ MERGE (LOW).
 2. **ĐIỀU PHỐI LÀM TIẾP** — với từng task: `python3 scripts/orchestrate.py launch <ID> [--host macbook] [--coder agyN --checker agyM]`.
-   - Mỗi tài khoản chạy tối đa 2 task cùng lúc; hai task chạy song song phải đổi vai code/kiểm cho nhau. Tải hiện tại ở dòng cuối digest.
+   - Mỗi tài khoản chạy tối đa 2 task cùng lúc; hai task song song nên đổi vai code/viết test cho nhau. Không có bước nghiệm thu chéo bằng agent: sau khi nộp, LOW → accepted rồi `gate`; HIGH → review_passed cho Claude. Tải hiện tại ở dòng cuối digest.
    - Chia việc: task độc lập, khác file thì chia đều giữa các tài khoản/máy; máy này chỉ có 1 tài khoản agy nên `launch` tự chạy task trên MacBook (agy2 ↔ agy3 code/kiểm chéo cho nhau).
    - `launch` chạy nền và trả về ngay (có `caffeinate`); xem nhật ký ở `handoff/logs/<ID>.log`. Không chờ.
 3. **NGHI TREO** — chạy lệnh digest gợi ý: `python3 scripts/handoff.py resume <ID> --role coder|tester|reviewer --note "CHỈ chạy python3; đọc/sửa file bằng công cụ file; kiểm bằng handoff.py verify; nộp bằng submit"`. Tối đa 2 lần/task; vẫn treo thì ghi vào CẦN CLAUDE.
