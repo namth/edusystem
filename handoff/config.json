@@ -2,8 +2,29 @@
   "protected_paths": [
     "stitch_english_mock_exam_portal/"
   ],
-  "test_paths": ["tests/", "e2e/"],
+  "test_paths": [
+    "tests/",
+    "e2e/"
+  ],
   "agy_model": "claude-sonnet-5-5-medium",
-  "agy_fallback_models": ["gemini-3.8-flash-high"],
-  "agy_timeout": "60m"
+  "agy_fallback_models": [
+    "gemini-3.8-flash-high"
+  ],
+  "agy_timeout": "60m",
+  "agy_role_models": {
+    "coder": [
+      "claude-sonnet-5-5-medium",
+      "gemini-3.8-flash-high"
+    ],
+    "tester": [
+      "claude-opus-4-6-thinking",
+      "claude-sonnet-4-6",
+      "gemini-3.8-flash-high"
+    ],
+    "reviewer": [
+      "claude-opus-4-6-thinking",
+      "claude-sonnet-4-6"
+    ]
+  },
+  "cross_review": false
 }

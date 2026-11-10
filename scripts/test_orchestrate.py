@@ -72,6 +72,40 @@ class Scan(unittest.TestCase):
         self.assertTrue(any("đường tắt" in m for _, m in self.scan()))
 
 
+class RoleAndAuto(unittest.TestCase):
+    def fixture(self, diff):
+        import argparse, shutil
+        d = Path(tempfile.mkdtemp())
+        td = d / "handoff" / "tasks" / "TASK-900-x"
+        td.mkdir(parents=True)
+        (td / "brief.md").write_text(f"**Độ khó:** {diff}\n**Nhạy cảm:** không\n")
+        st = {"id": "TASK-900", "title": "t", "status": "submitted", "history": [], "agents": {}}
+        (td / "state.json").write_text(json.dumps(st))
+        self.old = (O.H.ROOT, O.H.TASKS)
+        O.H.ROOT, O.H.TASKS = d, d / "handoff" / "tasks"
+        self.addCleanup(lambda: (setattr(O.H, "ROOT", self.old[0]), setattr(O.H, "TASKS", self.old[1])))
+        return td, argparse.Namespace(id="TASK-900", coder="agy2", checker="agy3", agy_model=None)
+
+    def status(self, td):
+        return json.loads((td / "state.json").read_text())["status"]
+
+    def test_low_goes_accepted_high_goes_review_passed_without_agent_review(self):
+        for diff, want in (("LOW", "accepted"), ("HIGH", "review_passed")):
+            td, ns = self.fixture(diff)
+            O.H.cmd_auto(ns)
+            self.assertEqual(self.status(td), want)
+
+    def test_role_models_chain_and_toggle(self):
+        old = dict(O.H.CONFIG)
+        self.addCleanup(lambda: (O.H.CONFIG.clear(), O.H.CONFIG.update(old)))
+        O.H.CONFIG["agy_role_models"] = {"reviewer": ["m-a", "m-b"]}
+        O.H.CONFIG["agy_model"] = "base"
+        self.assertEqual(O.H.role_models("reviewer"), ["m-a", "m-b"])
+        self.assertEqual(O.H.role_models("coder"), ["base"])
+        O.H.CONFIG["cross_review"] = True
+        self.assertTrue(O.H.cross_review_enabled())
+
+
 class GuardRole(unittest.TestCase):
     def run_guard(self, role, path, tool="write_to_file"):
         env = {**os.environ}

@@ -40,6 +40,8 @@ Cấu hình riêng của dự án: handoff/config.json
   protected_paths  thư mục/file agent thực thi không được sửa (hook .agents/hooks.json chặn)
   test_paths       nơi người kiểm được viết test (mặc định tests/, e2e/)
   agy_model        slug model mặc định cho agy (xem `agy models`); null = mặc định của agy
+  agy_role_models  {"coder": [...], "tester": [...], "reviewer": [...]} chuỗi model theo vai trò (đầu tiên dùng trước, hết hạn mức/không có thì lùi)
+  cross_review     true = bật lại nghiệm thu chéo bằng agent sau khi nộp (mặc định tắt: LOW → accepted rồi gate; HIGH → review_passed)
   agy_fallback_models  model dự phòng, thử lần lượt khi model đang dùng hết hạn mức (429)
   agy_timeout      thời gian tối đa một lần chạy agy (vd "60m")
 Tài khoản agy của từng máy: tự nhận ~ (agy1) và ~/.agy-accountN (agyN); ghi đè bằng
@@ -369,12 +371,24 @@ def agent_of(state: dict, role: str) -> dict:
     return agents.setdefault(role, {"account": None, "conversation_id": None})
 
 
+def role_models(role: str) -> list[str | None]:
+    """Model theo vai trò (config agy_role_models): người kiểm khác họ model với người code thì mới độc lập.
+    Model không có ở tài khoản đó thì is_quota coi như hết hạn mức và tự lùi sang model kế tiếp."""
+    chain = (CONFIG.get("agy_role_models") or {}).get(role)
+    return list(chain) if chain else [CONFIG.get("agy_model")]
+
+
+def cross_review_enabled() -> bool:
+    """Nghiệm thu chéo bằng agent mặc định TẮT (cổng tự động + Claude thay thế); bật lại: "cross_review": true."""
+    return bool(CONFIG.get("cross_review", False))
+
+
 def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | None = None,
              role: str = "coder", account: str | None = None) -> None:
     """Chạy agy cho một vai của task; model hết hạn mức mà vai đó chưa xong → tự chuyển sang model dự phòng
     (handoff/config.json → agy_fallback_models) trong cùng hội thoại, rồi in báo cáo."""
     home = account_home(account)
-    models = list(dict.fromkeys([model, *CONFIG.get("agy_fallback_models", [])]))
+    models = list(dict.fromkeys([*([model] if model else role_models(role)), *CONFIG.get("agy_fallback_models", [])]))
     for i, m in enumerate(models):
         result = agy_run(prompt, conversation_id=conversation_id, model=m, home=home)
         state = load_state(task)
@@ -696,7 +710,14 @@ def cmd_auto(a) -> None:
         elif status == "tests_ready":
             cmd_dispatch(ns(as_=coder, via="agy", model="pro"))
         elif status == "submitted":
-            cmd_dispatch_review(ns(as_=checker))
+            if cross_review_enabled():
+                cmd_dispatch_review(ns(as_=checker))
+            else:  # submit đã kiểm khoá test + phạm vi + verify.sh; phần còn lại do cổng tự động (orchestrate.py gate) và Claude
+                st = load_state(task)
+                if difficulty(task) == "LOW":
+                    save_state(task, st, "accepted", "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge")
+                else:
+                    save_state(task, st, "review_passed", "HIGH/nhạy cảm: không nghiệm thu chéo bằng agent — chờ trưởng phòng (gate + duyệt)")
         elif status == "changes_requested":
             st = load_state(task)
             if st.get("cross_rounds", 0) > MAX_CROSS_ROUNDS:
@@ -876,7 +897,7 @@ def main() -> None:
     d.add_argument("--model", default="pro", choices=["pro", "flash", "flash_lite"])
     d.add_argument("--via", default="auto", choices=["auto", "agy", "agentapi", "ide", "clipboard"],
                    help="auto: agy → agentapi (trong terminal Antigravity) → antigravity-ide chat → clipboard")
-    default_model = os.environ.get("AGY_MODEL") or CONFIG["agy_model"]
+    default_model = os.environ.get("AGY_MODEL")  # None → agy_task chọn theo vai trò (agy_role_models) rồi agy_model
     d.add_argument("--agy-model", default=default_model,
                    help="slug model cho agy (xem `agy models`); mặc định: biến AGY_MODEL, rồi handoff/config.json")
     d.add_argument("--as", dest="as_", help="tài khoản agy viết code (vd agy1; xem `accounts`)")
