@@ -63,6 +63,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+try:  # đo lường hiệu quả (scripts/metrics.py); thiếu cũng không sao
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from metrics import log_event
+except Exception:  # pragma: no cover
+    def log_event(*_a, **_k) -> None:
+        return None
+
 ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "handoff" / "tasks"
 TEMPLATE = ROOT / "handoff" / "templates"
@@ -406,6 +413,7 @@ def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | 
             break
         nxt = models[i + 1]
         print(f"Model {m or 'mặc định'} hết hạn mức → chuyển sang {nxt or 'mặc định'}.", flush=True)
+        log_event("quota_fallback", state["id"], role=role, frm=m, to=nxt)
         state["history"].append({"at": now(), "status": state["status"], "note": f"đổi model agy: {m} → {nxt} (hết hạn mức)"})
         save_state(task, state)
         if conversation_id:
@@ -736,6 +744,7 @@ def cmd_auto(a) -> None:
             if role and stalls.get(status, 0) < MAX_AUTO_RESUMES:
                 stalls[status] = stalls.get(status, 0) + 1
                 print(f"Agent dừng sớm ở {status} → tự resume vai {role} (lần {stalls[status]}/{MAX_AUTO_RESUMES})", flush=True)
+                log_event("resume_early_stop", state["id"], role=role)
                 cmd_resume(argparse.Namespace(id=a.id, role=role, agy_model=a.agy_model, note=RESUME_NOTE))
                 continue
             break  # vẫn không chuyển trạng thái → cần người xem
@@ -800,6 +809,7 @@ def cmd_accept(a) -> None:
     if check_lock(task) or run_verify(task, quiet=True) != 0:
         die("chưa đạt — chạy `verify` để xem chi tiết")
     save_state(task, state, "accepted", "Claude nghiệm thu")
+    log_event("accept", state["id"])
     print(f"{state['id']} -> accepted")
 
 

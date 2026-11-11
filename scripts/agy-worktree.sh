@@ -30,7 +30,7 @@ case "$HOST" in
   macbook)
     REMOTE="namtran@${MACBOOK_HOST:-nams-macbook-air.local}"  # IP đổi theo mạng → dùng tên .local; khoá host đối chiếu theo alias cũ
     SSH_KEY="$HOME/.ssh/id_macbook_agy"
-    REMOTE_REPO="~/agy-farm/learningsystem"
+    REMOTE_REPO="~/agy-farm/$(basename "$(dirname "$(git rev-parse --git-common-dir)")" 2>/dev/null || echo repo)"
     REMOTE_WT_BASE="~/agy-farm/worktrees"
     REMOTE_AGY_HOME="\$HOME/.agy-worker"  # tài khoản cuối cùng vẫn do --coder/--checker chọn trong handoff.py (accounts.json của máy thợ)
     GIT_REMOTE="macbook"
@@ -120,6 +120,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
       rsh "cd $REMOTE_REPO && git worktree remove --force $(rwt_path) && git branch -D $(branch) >/dev/null"
       git -C "$ROOT" branch -d "$(branch)"
       echo "Đã merge $id (máy thợ $HOST) vào $(git -C "$ROOT" branch --show-current)"
+      python3 "$ROOT/scripts/metrics.py" event merge "$id" >/dev/null 2>&1 || true
     else
       wt="$(wt_path)"
       [ -d "$wt" ] || die "không có worktree $wt"
@@ -135,6 +136,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
       git -C "$ROOT" worktree remove "$wt"
       git -C "$ROOT" branch -d "$(branch)"
       echo "Đã merge $id vào $(git -C "$ROOT" branch --show-current)"
+      python3 "$ROOT/scripts/metrics.py" event merge "$id" >/dev/null 2>&1 || true
     fi
     ;;
   list)

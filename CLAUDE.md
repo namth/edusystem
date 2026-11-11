@@ -16,3 +16,5 @@ KitoKit — cổng bài học & đề thi đa môn, tiếng Anh có chấm AI (N
 - **Giai đoạn hiện tại: code** (FEAT-009 → 013 đã xong). Một chuẩn duy nhất: `docs/01–15` + `docs/features/` + `docs/qa/` + `CONTEXT.md` — bản đồ ở `CONTEXT.md` §5.
 - Code lệch tài liệu → sửa tài liệu theo code; lỗi code ghi vào `docs/11` §4.
 - Tính năng lớn: `/grill-feature`, cập nhật chéo docs 02/03/04/06/07/11/12/13/14 + `CONTEXT.md` trong cùng PR. Đổi schema → migration mới + `docs/06`. Đổi API → `docs/07`. Deploy / migration tay → `docs/15`. `tests/docs-sync.test.ts` phải xanh.
+- **Điều phối bằng Antigravity (ORCH):** model mặc định `gemini-3.8-flash-high`; `scripts/orchestrate.py` (digest/launch/unstick/gate/merge-low/run). LOW → gate tự động → merge-low; HIGH/nhạy cảm → Claude duyệt diff cuối.
+- **Luôn theo dõi hiệu quả:** `scripts/metrics.py begin/end/report` (token Claude theo đợt, so sánh agy vs self, thống kê lỗi agent); dữ liệu ở `~/.config/handoff/metrics/`.

@@ -40,6 +40,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import handoff as H  # noqa: E402
 
+try:
+    from metrics import log_event
+except Exception:  # pragma: no cover
+    def log_event(*_a, **_k) -> None:
+        return None
+
 ROOT = H.ROOT
 STALE_MIN = int(os.environ.get("ORCH_STALE_MIN", "45"))
 MACBOOK = {
@@ -261,6 +267,7 @@ def cmd_launch(a) -> None:
     cmd = ["caffeinate", "-ims", "bash", str(script)] + args
     with open(log, "ab") as fh:
         p = subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+    log_event("launch", a.id, host=a.host)
     print(f"{a.id}: đã chạy nền auto (pid {p.pid}{', máy ' + a.host if a.host else ''}) — nhật ký {log.relative_to(ROOT)}")
 
 
@@ -285,6 +292,7 @@ def cmd_unstick(a) -> None:
     with open(log, "ab") as fh:
         p = subprocess.Popen(["caffeinate", "-ims", "bash", "-c", chain], cwd=ROOT, env=env, stdout=fh, stderr=subprocess.STDOUT,
                              start_new_session=True)
+    log_event("unstick", a.id, role=role)
     print(f"{a.id}: resume vai {role} rồi auto, nền (pid {p.pid}) — nhật ký {log.relative_to(ROOT)}")
 
 
@@ -448,6 +456,7 @@ def cmd_gate(a) -> int:
     result["pass"] = ok and not a.skip_tests
     result["fingerprint"] = fingerprint_wt(wt, base)
     (task_dir_in(wt, a.id) / "gate.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    log_event("gate_pass" if result["pass"] else "gate_fail", a.id, guard=len([1 for l, _ in found if l == "CAO"]), vitest=result.get("vitest", {}).get("exit"), tsc=result.get("tsc", {}).get("exit"))
     print(f"GATE {a.id}: {'ĐẠT' if result['pass'] else 'KHÔNG ĐẠT' + (' (bỏ qua test nên không đủ để merge)' if a.skip_tests else '')}")
     return 0 if result["pass"] else 1
 
