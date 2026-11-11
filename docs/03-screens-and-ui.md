@@ -23,7 +23,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-10 | `/student/dashboard` | Trang chủ học sinh: lớp, việc cần làm, vào lớp bằng mã | CODE-ONLY | DONE |
-| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; tab Bảng điểm (`?tab=gradebook`) xem điểm chính thức các bài đã chốt | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
+| SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; tab Bảng điểm (`?tab=gradebook`) xem điểm chính thức các bài đã chốt | CODE-ONLY | DONE |
 | SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại | CODE-ONLY | DONE |
 | SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm | CODE-ONLY | DONE |
 | SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm" | CODE-ONLY | DONE |

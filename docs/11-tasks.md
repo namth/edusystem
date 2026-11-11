@@ -115,7 +115,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 ## 4. Tồn đọng: lệch giữa code và tài liệu / lỗi đã biết (phát hiện khi dựng lại docs 03/11)
 | # | Mức | Vấn đề | Chỗ | Đề xuất |
 | :--- | :--- | :--- | :--- | :--- |
-| D1 | Cao | Menu học sinh "Đề Thi & Bài Tập" trỏ cứng `/student/class/cls_101` | `components/StudentLayout.tsx` | Trỏ về lớp đầu tiên hoặc danh sách lớp |
+| D1 | Cao | Menu học sinh "Đề Thi & Bài Tập" trỏ cứng `/student/class/cls_101` | `components/StudentLayout.tsx` | ✅ Đã sửa 11/11 (TASK-055) |
 | D2 | TB | `users.password DEFAULT '123456'` trong DDL | `lib/db-pg.ts` `ensureSchema` | Migration mới bỏ DEFAULT (`ALTER COLUMN password DROP DEFAULT`) |
 | D3 | TB | 4 tài khoản học sinh trên server còn mật khẩu plaintext | DB server | Đặt lại mật khẩu |
 | D4 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ (server đã kiểm 03/11: Postgres chạy UTC → dashboard đúng) | migration 014 | Đổi sang TIMESTAMPTZ khi có dịp |
