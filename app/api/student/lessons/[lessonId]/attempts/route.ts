@@ -45,11 +45,6 @@ export async function POST(
     );
   }
 
-  const classCheck = await assertClassOpen(classId);
-  if (!classCheck.ok) {
-    return classLockedResponse();
-  }
-
   if (typeof answers !== "object" || answers === null || Array.isArray(answers)) {
     return NextResponse.json(
       { success: false, error: "answers phải là đối tượng." },
@@ -63,6 +58,11 @@ export async function POST(
       { success: false, error: access.error },
       { status: access.status }
     );
+  }
+
+  const classCheck = await assertClassOpen(classId);
+  if (!classCheck.ok) {
+    return classLockedResponse();
   }
 
   const trialAttempt = await assertTrialAttemptAllowed({
