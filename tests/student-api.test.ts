@@ -20,9 +20,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/db-pg", () => ({
   queryPg: (sql: string, params?: unknown[]) => h.pg!.queryPg(sql, params),
-  getPgPool: () => {
-    throw new Error("Không dùng pool trực tiếp trong route — dùng queryPg");
-  },
+  // FEAT-015: ghi danh cần transaction (chargeEnrollment) → pool giả chạy thẳng trên PGlite
+  getPgPool: () => ({ connect: async () => ({ query: (s: string, p?: unknown[]) => h.pg!.queryPg(s, p), release: () => {} }) }),
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({
@@ -64,11 +63,15 @@ beforeEach(async () => {
   h.token = undefined;
   h.neo4jEnroll.length = 0;
   h.pg = await createFakePg(["db-migration-004-enrollments-assignments.sql"]);
+  // cột của migration 006 mà route lớp học sinh chọn (fixture pg-fake chưa có)
+  await h.pg.db.exec("ALTER TABLE classes ADD COLUMN IF NOT EXISTS unlock_mode VARCHAR(20) NOT NULL DEFAULT 'MANUAL'; ALTER TABLE classes ADD COLUMN IF NOT EXISTS pass_percent INTEGER NOT NULL DEFAULT 70;");
   await h.pg.db.exec(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;   -- DEC-031: ghi danh kiểm slot học sinh
     INSERT INTO users (id,name,email,role) VALUES
       ('s1','HS Một','s1@x.vn','STUDENT'), ('s2','HS Hai','s2@x.vn','STUDENT'), ('s3','HS Ba','s3@x.vn','STUDENT'),
       ('t1','GV Một','t1@x.vn','TEACHER'), ('t2','GV Hai','t2@x.vn','TEACHER'), ('a1','Admin','a1@x.vn','ADMIN');
+    -- FEAT-015: ghi danh trừ ví slot của GV đã xác minh (thay DEC-031)
+    UPDATE users SET teacher_status='VERIFIED', slot_balance=10 WHERE role='TEACHER';
     INSERT INTO classes (id,name,code,teacher_id,max_slots,created_at) VALUES
       ('c1','Lớp IELTS A','ABC123','t1',3,'2026-01-01'),
       ('c2','Lớp Đầy','FULL01','t2',1,'2026-01-02'),
@@ -195,7 +198,7 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
   });
 
   it("lớp không tồn tại → 404", async () => {
-    await loginAs("ADMIN", "a1");
+    await loginAs("STUDENT", "s1");
     expect((await get("cX")).status).toBe(404);
   });
 
@@ -204,11 +207,13 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect((await get("c1")).status).toBe(403);
   });
 
-  it("TEACHER không phụ trách lớp → 403; TEACHER phụ trách → 200", async () => {
+  it("API dành cho học sinh: TEACHER/ADMIN đều → 403 (DEC TASK-060)", async () => {
     await loginAs("TEACHER", "t2");
     expect((await get("c1")).status).toBe(403);
     await loginAs("TEACHER", "t1");
-    expect((await get("c1")).status).toBe(200);
+    expect((await get("c1")).status).toBe(403);
+    await loginAs("ADMIN", "a1");
+    expect((await get("c1")).status).toBe(403);
   });
 
   it("STUDENT đã ghi danh: lớp + bài được giao kèm thông tin đề + bài nộp của chính mình cho các đề đó", async () => {
@@ -217,7 +222,9 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    expect(json.class).toMatchObject({ id: "c1", name: "Lớp IELTS A", code: "ABC123", teacher_id: "t1" });
+    expect(json.class).toMatchObject({ id: "c1", name: "Lớp IELTS A", code: "ABC123" });
+    expect(json.class).not.toHaveProperty("teacher_id"); // TASK-060: không lộ cột nội bộ
+    expect(json.class).not.toHaveProperty("max_slots");
 
     const byExam = Object.fromEntries(json.assignments.map((a: any) => [a.exam_id, a]));
     expect(Object.keys(byExam).sort()).toEqual(["e1", "e2"]);
@@ -237,10 +244,9 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect(a2.exam).toBeNull();
   });
 
-  it("TEACHER/ADMIN xem lớp: submissions là mảng rỗng", async () => {
+  it("TEACHER/ADMIN không xem được lớp qua API học sinh (403)", async () => {
     await loginAs("ADMIN", "a1");
-    const json = await (await get("c1")).json();
-    expect(json.submissions).toEqual([]);
+    expect((await get("c1")).status).toBe(403);
   });
 });
 

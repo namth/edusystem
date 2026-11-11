@@ -5,6 +5,8 @@
 **Độ khó:** LOW <!-- LOW: nghiệm thu chéo đạt là xong · HIGH: Claude duyệt cuối (kèm blueprint ở mục 4) -->
 **Nhạy cảm:** không <!-- "có" nếu chạm phân quyền, tiền, migration, bảo mật → luôn chờ Claude duyệt cuối -->
 
+**Lệnh agent được chạy:** CHỈ `python3` — kiểm bằng `python3 scripts/handoff.py verify {{ID}} --quiet`, nộp bằng `submit`. Đọc/sửa file bằng công cụ file; không dùng `ls`, `git`, `sed`, `npx`, `cat` (bị từ chối và làm phiên dừng).
+
 ## 1. Mục tiêu
 <!-- Một đoạn: làm gì, vì sao, giá trị cho người dùng. -->
 

@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { BRAND } from "@/lib/brand";
 import Link from "next/link";
 import { School, Mail, KeyRound, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const { resetPasswordForEmail } = useAuth();
-
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -38,7 +36,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      setSuccessMsg(data.message || `Đã tạo liên kết khôi phục mật khẩu cho email "${email}".`);
+      setSuccessMsg(data.message || "Yêu cầu đặt lại mật khẩu đã được ghi nhận.");
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Có lỗi xảy ra khi gửi yêu cầu.");
@@ -78,6 +76,22 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <span>{successMsg}</span>
               </div>
+              <div className="p-4 bg-surface-alt border border-line rounded-xl text-xs text-ink space-y-1" data-testid="support-contact">
+                <p className="font-bold">Cần cấp lại mật khẩu ngay? Liên hệ hỗ trợ KitoKit:</p>
+                <p>
+                  Hotline:{" "}
+                  <a href={`tel:${BRAND.company.hotlineRaw}`} className="font-bold text-brand-600 hover:underline">
+                    {BRAND.company.hotline}
+                  </a>
+                </p>
+                <p>
+                  Email:{" "}
+                  <a href={`mailto:${BRAND.company.contactEmail}`} className="font-bold text-brand-600 hover:underline">
+                    {BRAND.company.contactEmail}
+                  </a>
+                </p>
+                <p className="text-ink-subtle">Giờ làm việc: {BRAND.company.workingHours}</p>
+              </div>
               <Link
                 href="/login"
                 className="w-full py-3 px-4 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2"
@@ -116,10 +130,10 @@ export default function ForgotPasswordPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Đang gửi email...</span>
+                      <span>Đang gửi yêu cầu...</span>
                     </>
                   ) : (
-                    <span>GỬI LIÊN KẾT KHÔI PHỤC</span>
+                    <span>GỬI YÊU CẦU KHÔI PHỤC</span>
                   )}
                 </button>
               </div>

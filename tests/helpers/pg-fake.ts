@@ -63,6 +63,10 @@ export async function createFakePg(migrations: string[] = []) {
   for (const m of migrations) {
     await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", m), "utf8"));
   }
+  // FEAT-015: mọi đường ghi danh đều đi qua ví slot → luôn có cột/bảng của migration 018 (chạy lặp được).
+  if (!migrations.includes("db-migration-018-slot-wallet.sql")) {
+    await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", "db-migration-018-slot-wallet.sql"), "utf8"));
+  }
   const calls: { sql: string; params: unknown[] }[] = [];
   async function queryPg(sql: string, params: unknown[] = []) {
     calls.push({ sql, params });

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { GraduationCap, Edit3, BookOpen, Loader2, CheckCircle2, ArrowLeft, FileText, X, Clock, AlertCircle } from "lucide-react";
@@ -265,13 +266,22 @@ export default function AdminStudentDetailPage() {
                   <GraduationCap className="w-5 h-5 text-brand-600" />
                   <span>Thông Tin Cơ Bản</span>
                 </h2>
-                <button
-                  onClick={() => setShowEditInfoModal(true)}
-                  className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100"
-                >
-                  <Edit3 className="w-3.5 h-3.5 inline mr-1" />
-                  Sửa
-                </button>
+                <div className="flex items-center space-x-2">
+                  {student && (
+                    <ResetPasswordButton
+                      userId={student.id}
+                      userName={student.name}
+                      role="ADMIN"
+                    />
+                  )}
+                  <button
+                    onClick={() => setShowEditInfoModal(true)}
+                    className="px-3 py-1.5 bg-surface-alt text-brand-600 border border-line rounded-xl text-xs font-medium hover:bg-brand-100"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 inline mr-1" />
+                    Sửa
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2.5 text-xs text-ink">

@@ -10,6 +10,7 @@
 - **BR-A03** Tài khoản do admin hoặc giáo viên tạo có `must_change_password = true`. Token mang cờ `mcp` thì mọi trang `/admin`, `/teacher`, `/student` chuyển về `/change-password`.
 - **BR-A04** Đăng ký công khai chỉ tạo được `STUDENT` hoặc `TEACHER` dùng thử, vai trò quyết định theo route. Không tạo được `ADMIN`.
 - **BR-A05** `PUT /api/profile` không đổi được `password`, `email`, `role`, `slot_limit`.
+- **BR-A06** Quên mật khẩu không bao giờ lộ token hay link đặt lại qua response hoặc log; phản hồi giống hệt nhau cho email có và không tồn tại. Hệ thống chưa gửi được email nên trang `/forgot-password` hướng dẫn liên hệ hỗ trợ (hotline / email trong `lib/brand.ts`). Ngoại lệ dev/e2e: `ALLOW_DEV_RESET_LINK=1` và `NODE_ENV ≠ production`.
 
 ## 2. Giáo viên dùng thử (T): DEC-027, DEC-028; `lib/teacher-trial.ts`
 - **BR-T01** Đang bị giới hạn khi `teacher_status IN ('TRIAL','REJECTED')`. Trạng thái `VERIFIED`, NULL, hoặc vai trò ADMIN không bị giới hạn. Trạng thái đọc từ DB ở mỗi request, nên xác minh xong có hiệu lực ngay.
@@ -23,9 +24,10 @@
   | Lượt nộp mỗi bài/đề trong lớp dùng thử | 1 |
 
 - **BR-T03** Vượt hạn mức trả 403 `{ code: "TRIAL_LIMIT", limit }`, trừ ghi danh bằng mã lớp trả 409. Giáo viên dùng thử không mua slot được.
-- **BR-T04** Admin xác minh: `VERIFIED` và `slot_limit = GREATEST(slot_limit, 250)`. Từ chối thì giữ giới hạn và lưu ghi chú. Hai trường hợp đều gửi thông báo `TEACHER_VERIFIED`.
+- **BR-T04** *(phần `slot_limit` thay bởi BR-W09 khi FEAT-015 xong: không tặng slot)* Admin xác minh: `VERIFIED` và `slot_limit = GREATEST(slot_limit, 250)`. Từ chối thì giữ giới hạn và lưu ghi chú. Hai trường hợp đều gửi thông báo `TEACHER_VERIFIED`.
 
 ## 3. Slot học sinh (S): DEC-031; `lib/student-slots.ts`
+> **Đã thay bởi BR-W01 → BR-W13 (FEAT-015, DEC-042 → DEC-047) từ TASK-052** — các BR-S dưới đây chỉ còn giá trị lịch sử. Đặc tả: `docs/features/vi-slot-hoc-sinh-thang.md` §7.
 - **BR-S01** 1 slot = 1 học sinh. Số đang dùng = `COUNT(DISTINCT enrollments.student_id)` trên mọi lớp có `classes.teacher_id = giáo viên`.
 - **BR-S02** Ghi danh học sinh **mới** với giáo viên mà `used ≥ slot_limit` thì trả 409 "Thầy cô đã dùng hết slot học sinh…". Học sinh đã có ở lớp khác của cùng giáo viên không tốn thêm slot. Chủ lớp là ADMIN không bị giới hạn.
 - **BR-S03** Kiểm ở mọi đường ghi danh, **trước** mọi lệnh INSERT: mã lớp / link mời / đăng ký kèm mã (`enrollStudentByCode`), giáo viên thêm học sinh (có sẵn hoặc tạo mới), admin `create-user` có `classIds`, admin `users/[id]` đổi `class_ids`. Bị chặn thì không tạo user thừa.
@@ -43,6 +45,7 @@
 - **BR-O07** Giáo viên thao tác đơn của người khác nhận 404.
 - **BR-O08** QR chỉ sinh khi đã cấu hình `payment_account` (BIN 6 số, STK 6–19 số) **và** đơn còn `PENDING`. Payload theo EMVCo / NAPAS 247; bỏ tag 54 khi số tiền bằng 0. Nội dung được làm sạch: không dấu, in hoa, `[A-Z0-9 ]`, tối đa 25 ký tự.
 - **BR-O09** Đơn giá slot lấy từ `system_settings.slot_pricing`. Thiếu dòng này thì dùng `SLOT_UNIT_PRICE_VND`, cũng thiếu thì 0.
+- **BR-O10** Giáo viên tự đặt mua chỉ được khi `slot_pricing.unit_price_vnd > 0` **và** `payment_account` đã đủ BIN/STK/tên; thiếu một trong hai → 409 "KitoKit chưa mở bán slot trực tuyến…", không sinh đơn. Admin tạo đơn hộ không bị chặn (tặng 0 đồng vẫn được).
 
 ## 5. Bài học & lộ trình (L): FEAT-010
 - **BR-L01** Bài học thuộc `created_by`. TEACHER chỉ thao tác bài học của mình.
@@ -123,6 +126,7 @@ class_grade_items       (mở) ─finalize─▶ đã chốt (finalized_at) ─r
 slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─reject(reason)─▶ REJECTED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
+classes.billing_status  ACTIVE ─đến kỳ, thiếu slot─▶ GRACE ─quá 7 ngày─▶ LOCKED ; GRACE|LOCKED ─trừ đủ─▶ ACTIVE ; * ─kết thúc lớp─▶ ENDED   (FEAT-015)
 users.teacher_status    TRIAL ─verify─▶ VERIFIED | REJECTED ; REJECTED ─verify─▶ VERIFIED   (NULL = coi như VERIFIED)
 leads.status            NEW ─▶ CONTACTED ─▶ DONE
 ```

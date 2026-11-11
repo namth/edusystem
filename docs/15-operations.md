@@ -35,6 +35,7 @@
   | File | Khi nào | Ghi chú |
   | :--- | :--- | :--- |
   | `docs/db-migration-015-student-slots.sql` | Lần deploy đầu tiên có FEAT-013 (TASK-039) | Trả lại slot học sinh bị trừ khi chấm AI. Sao lưu bảng `users` trước khi chạy |
+  | `docs/db-migration-018b-slot-wallet-data.sql` *(FEAT-015)* | Lần deploy đầu có TASK-052, **sau** khi admin đã nhập đơn giá slot và báo trước cho giáo viên | Số dư = slot đã mua; lớp cũ khai giảng = ngày deploy; cron lần đầu trừ kỳ 0, thiếu → ân hạn 7 ngày (DEC-047) |
 
   Cách chạy:
   ```bash
@@ -49,6 +50,8 @@
 | Tài khoản nhận tiền VietQR + đơn giá slot | `/admin/orders`, tab Cấu hình thanh toán | Trước khi giáo viên mua slot. Mặc định trống và 0 |
 | Bảng giá model AI + tỷ giá USD→VND | `/admin/settings` | Trước khi xem chi phí AI. Dashboard cảnh báo khi có model chưa có giá |
 | Model AI nhập đề | `/admin/settings` | Tuỳ chọn |
+| `CRON_SECRET` + worker gọi `/api/cron/slot-billing` hằng giờ *(FEAT-015)* | `.env` server, `docker compose` worker | Trước khi chạy migration 018b |
+| Gửi email: `RESEND_API_KEY`, `MAIL_FROM`, `APP_BASE_URL`; xác minh domain `kitokit.edu.vn` trên Resend (DNS SPF/DKIM) *(TASK-048)* | Resend + `.env` server | Trước deploy TASK-048; thiếu thì app chạy nhưng không gửi email |
 | Kiểm múi giờ Postgres là UTC (`show timezone;`) | DB server | Một lần. Dashboard coi `ai_usage_logs.created_at` là UTC (`docs/11` D4) |
 
 ## 5. Sao lưu & rollback

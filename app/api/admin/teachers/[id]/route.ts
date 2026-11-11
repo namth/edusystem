@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { getAiPricing } from "@/lib/ai-usage";
+import { usdToVnd } from "@/lib/ai-pricing";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN"]);
@@ -63,7 +65,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       phone: teacherRow.phone || "",
       target_band: teacherRow.target_band || "",
       created_at: new Date(teacherRow.created_at).toLocaleDateString("vi-VN"),
-      slot_limit: teacherRow.slot_limit || 250,
+      slot_limit: Number(teacherRow.slot_limit ?? 0),
+      slot_balance: Number(teacherRow.slot_balance ?? 0),
       teacher_status: teacherStatus,
       profile,
     };
@@ -87,9 +90,35 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       student_count: headcountMap[c.id] || 0,
     }));
 
+    // Số học sinh đã dùng theo BR-S01 (DISTINCT học sinh qua mọi lớp của giáo viên)
+    const usedRes = await queryPg(
+      `SELECT COUNT(DISTINCT e.student_id)::int AS used
+       FROM enrollments e
+       JOIN classes c ON e.class_id = c.id
+       WHERE c.teacher_id = $1;`,
+      [cleanId]
+    );
+    const students_used = Number(usedRes.rows[0]?.used) || 0;
+
     // 4. Fetch real AI Usage logs
     let aiLogs: any[] = [];
+    let ai_totals = { requests: 0, total_tokens: 0, cost_vnd: 0 };
     try {
+      const pricing = await getAiPricing();
+      const totRes = await queryPg(
+        `SELECT COUNT(*)::int AS requests,
+                COALESCE(SUM(total_tokens), 0) AS total_tokens,
+                COALESCE(SUM(cost_usd), 0) AS cost_usd
+         FROM ai_usage_logs
+         WHERE teacher_id = $1 OR teacher_id = $2;`,
+        [cleanId, teacherRow.email]
+      );
+      const tr = totRes.rows[0] || {};
+      ai_totals = {
+        requests: Number(tr.requests) || 0,
+        total_tokens: Number(tr.total_tokens) || 0,
+        cost_vnd: usdToVnd(Number(tr.cost_usd) || 0, pricing.usd_vnd_rate),
+      };
       const logsRes = await queryPg(
         `SELECT * FROM ai_usage_logs WHERE teacher_id = $1 OR teacher_id = $2 ORDER BY created_at DESC LIMIT 50;`,
         [cleanId, teacherRow.email]
@@ -117,6 +146,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       profile,
       classes: managedClasses,
       aiLogs,
+      ai_totals,
+      students_used,
     });
   } catch (err: any) {
     console.error("API /api/admin/teachers/[id] GET Error:", err);
@@ -130,8 +161,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const { id: teacherId } = await params;
-    const body = await req.json();
-    const { name, email, phone, target_band, slot_limit } = body;
+    const body = await req.json().catch(() => ({}));
+    const { name, email, phone, target_band } = body;
 
     if (!teacherId?.trim()) {
       return NextResponse.json({ success: false, error: "Missing teacherId" }, { status: 400 });
@@ -139,14 +170,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const cleanId = teacherId.trim();
 
-    if (slot_limit !== undefined) {
-      // Update slot limit
-      await queryPg(`UPDATE users SET slot_limit = $1 WHERE id = $2;`, [Number(slot_limit), cleanId]);
-    } else {
-      // Update profile info
+    // Bỏ qua slot_limit (DEC-042, TASK-053); chỉ cập nhật thông tin cá nhân nếu có
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${idx++}`);
+      values.push(name?.trim());
+    }
+    if (email !== undefined) {
+      updates.push(`email = $${idx++}`);
+      values.push(email?.trim().toLowerCase());
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${idx++}`);
+      values.push(phone?.trim() || "");
+    }
+    if (target_band !== undefined) {
+      updates.push(`target_band = $${idx++}`);
+      values.push(target_band?.trim() || "");
+    }
+
+    if (updates.length > 0) {
+      values.push(cleanId);
       await queryPg(
-        `UPDATE users SET name = $1, email = $2, phone = $3, target_band = $4 WHERE id = $5;`,
-        [name?.trim(), email?.trim().toLowerCase(), phone?.trim() || "", target_band?.trim() || "", cleanId]
+        `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx};`,
+        values
       );
     }
 

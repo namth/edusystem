@@ -21,6 +21,17 @@
 - **Tiền:** số nguyên VND, do server tính. **Điểm:** do server tính.
 
 ## 2. Danh mục endpoint
+
+> **FEAT-015:** lõi ví (TASK-052) đã có: route cron bên dưới; mọi đường ghi danh trừ ví qua `chargeEnrollment` (hết slot → 409, lớp LOCKED/ENDED → 409); `approveOrder` cộng `slot_balance` + dòng `PURCHASE`. API ví, `billing`, `end`, `slot-adjust` (TASK-053) ở bảng dưới; nộp bài/mở lượt lớp LOCKED/ENDED → 403 `CLASS_LOCKED`, grade-async → `NEEDS_REVIEW`. Đặc tả: `docs/features/vi-slot-hoc-sinh-thang.md` §6.
+
+| Method | Path | Quyền | Mô tả | Test |
+| :--- | :--- | :--- | :--- | :--- |
+| POST | `/api/cron/slot-billing` | `Authorization: Bearer <CRON_SECRET>` (so sánh hằng thời gian) | Chạy `runBillingCycle()`: trừ kỳ theo sĩ số, ân hạn 7 ngày, khoá lớp; trả `{ charged, grace, locked, skipped }`. Sai/thiếu secret → 401. Worker gọi hằng giờ | `slot-wallet` |
+| GET | `/api/teacher/slot-wallet` | TEACHER | `{ balance, unit_price_vnd, total_next_needed, classes[{ id, name, billing_status, start_date, next_charge_at, grace_until, student_count, enough_for_next }], ledger[], next_cursor }`; `?cursor=&class_id=` (20 dòng/trang) | `slot-wallet-api` |
+| PUT | `/api/teacher/classes/[classId]/billing` | TEACHER chủ lớp, ADMIN | `{ start_date: YYYY-MM-DD }`; đã có dòng CYCLE → 409; quá 30 ngày trước / 90 ngày tới → 400; lớp người khác → 404 | `slot-wallet-api` |
+| POST | `/api/teacher/classes/[classId]/end` | TEACHER chủ lớp, ADMIN | `billing_status = ENDED`, `ended_at`; đã ENDED → 409; lớp người khác → 404 | `slot-wallet-api` |
+| GET | `/api/admin/teachers/[id]/slot-wallet` | ADMIN | Như bản giáo viên | `slot-wallet-api` |
+| POST | `/api/admin/teachers/[id]/slot-adjust` | ADMIN | `{ delta: int ≠ 0, |delta| ≤ 100000, note 1–500 }`; trừ làm âm → 409; cộng thì trừ ngay các lớp GRACE/LOCKED (BR-W07) | `slot-wallet-api` |
 ### 2.1 Xác thực & hồ sơ
 | Method | Route | Vai trò | Ghi chú | Test |
 | :--- | :--- | :--- | :--- | :--- |
@@ -30,7 +41,8 @@
 | GET | `/api/auth/signup-options` | công khai | Môn / cấp học cho form đăng ký | `landing` |
 | GET | `/api/auth/username-available` | công khai | `?u=` | `onboarding-api` |
 | GET | `/api/auth/email-available` | công khai | `?e=` → `{ available, error? }`; báo email trùng ngay khi gõ ở form đăng ký; giới hạn theo IP | `onboarding-api` |
-| POST | `/api/auth/forgot-password`, `/api/auth/reset-password` | công khai | Token đặt lại | `secrets-password` |
+| POST | `/api/auth/forgot-password` | công khai | Có email thật thì lưu `reset_token` (15 phút). Phản hồi **luôn** `{ success, message }` giống nhau dù email có tồn tại hay không; không bao giờ trả token/link, không log ra console (BR-A06). Chỉ khi `NODE_ENV ≠ production` và `ALLOW_DEV_RESET_LINK=1` mới kèm `resetUrl` | `forgot-password-security`, `onboarding-api` |
+| POST | `/api/auth/reset-password` | công khai | Đặt mật khẩu mới bằng email + token còn hạn | `secrets-password` |
 | GET / POST | `/api/auth/me`, `/api/auth/logout`, `/api/auth/change-password` | đã đăng nhập | Đổi xong cấp cookie mới, bỏ `mcp` | `change-password` |
 | GET / PUT | `/api/profile` | mọi vai trò | Không đổi được `password`, `email`, `role`, `slot_limit` | `profile-slots-grading` |
 
@@ -57,6 +69,7 @@
 | GET / PUT / DELETE | `/api/teacher/classes/[classId]` | | `teacher-classes-api` |
 | PUT | `/api/teacher/classes/[classId]/settings` | `unlock_mode`, `pass_percent`, `course_id` | `class-roadmap-api` |
 | POST | `/api/teacher/classes/[classId]/students` | Thêm học sinh có sẵn hoặc tạo mới; 409 nếu đủ chỗ / hết slot; 403 `TRIAL_LIMIT` | `teacher-classes-api`, `student-slots` |
+| POST | `/api/teacher/students/[studentId]/reset-password` | TEACHER: cấp mật khẩu tạm cho học sinh có trong lớp của mình; không thoả (kể cả không tồn tại) → 404 cùng thông điệp; 20 lần/giờ (429) | `reset-password` |
 | GET | `/api/teacher/classes/[classId]/members`, `/api/teacher/classes/[classId]/progress`, `/api/teacher/classes/[classId]/roadmap` | | `class-roadmap-api` |
 | POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
@@ -110,7 +123,9 @@ Test: `slot-orders-api`, `admin-api`.
 | GET | `/api/admin/dashboard?month=YYYY-MM` | `{ month, totals, pending_orders, monthly, daily, top_teachers }`; tháng theo giờ VN; `month` sai → 400 | `admin-dashboard` |
 | GET | `/api/admin/users?role=&teacherStatus=` | | `admin-api`, `teacher-trial` |
 | GET / PUT | `/api/admin/users/[id]` | Sửa thông tin, `class_ids` (409 nếu hết slot) | `admin-api`, `student-slots` |
-| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI, `slot_limit` | `admin-api` |
+| POST | `/api/admin/users/[id]/reset-password` | Cấp mật khẩu tạm 10 ký tự, `must_change_password = true`, xoá `reset_token`; trả `{ temp_password }` một lần, `Cache-Control: no-store`. Tự cấp cho mình → 400; 20 lần/giờ/người gọi (429) | `reset-password` |
+| GET / PUT | `/api/admin/teachers/[id]` | Kèm `profile`, nhật ký AI (50 dòng), `ai_totals` (SUM toàn bộ log), `students_used`, `slot_balance`; PUT bỏ qua `slot_limit` (FEAT-015) | `admin-api` |
+| GET | `/api/admin/ai-usage?month=YYYY-MM[&format=csv]` | Báo cáo theo giáo viên: token, `cost_vnd`, `by_purpose`, `revenue_vnd` (đơn APPROVED trong tháng), `margin_vnd`, dòng `unattributed`; CSV có BOM. Tháng sai → 400 | `ai-usage-report` |
 | POST | `/api/admin/teachers/[id]/verify` | `{ decision: VERIFIED\|REJECTED, note? }` | `teacher-trial` |
 | POST | `/api/admin/create-user`, `/api/admin/delete-user` | Tạo kèm `classIds` (409 nếu hết slot, không tạo user) | `admin-api`, `student-slots` |
 | GET | `/api/admin/classes` | | `admin-api` |

@@ -1,0 +1,63 @@
+{
+  "id": "TASK-060",
+  "title": "Siết API lớp học sinh: vai trò, bỏ cột nội bộ, thứ tự kiểm quyền với lớp khoá",
+  "status": "accepted",
+  "conversation_id": "ef6fce5b-49c2-4fcb-833c-d709ae654536",
+  "history": [
+    {
+      "at": "2026-11-10T22:23:11",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-11T00:58:02",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy3"
+    },
+    {
+      "at": "2026-11-11T08:49:08",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-11T08:49:23",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy2 (model mặc định)"
+    },
+    {
+      "at": "2026-11-11T08:49:48",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-11T08:54:24",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-11T08:54:30",
+      "status": "review_passed",
+      "note": "HIGH/nhạy cảm: không nghiệm thu chéo bằng agent — chờ trưởng phòng (gate + duyệt)"
+    },
+    {
+      "at": "2026-11-11T09:06:45",
+      "status": "accepted",
+      "note": "Claude nghiệm thu"
+    }
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy2",
+      "conversation_id": "ef6fce5b-49c2-4fcb-833c-d709ae654536"
+    },
+    "tester": {
+      "account": "agy3",
+      "conversation_id": "88e09e9b-d561-4719-b88e-14b24350d2c8"
+    }
+  },
+  "via": "agy",
+  "locked_files": [
+    "handoff/tasks/TASK-060-student-api-hardening/verify.sh",
+    "tests/student-classes-hardening.test.ts"
+  ]
+}

@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import { queryPg, getPgPool } from "@/lib/db-pg";
 import { createNotification } from "@/lib/notifications";
+import { applyDelta, retryOverdueClasses } from "@/lib/slot-wallet";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -160,6 +161,15 @@ export async function createOrder(i: {
   const cleanNote = typeof i.note === "string" && i.note.trim() ? i.note.trim() : null;
 
   if (i.source === "TEACHER") {
+    // BR-O10: chưa cấu hình đơn giá hoặc tài khoản nhận tiền → giáo viên chưa đặt mua được
+    // (tránh đơn 0 đồng / mã QR không có tài khoản). Admin tạo đơn hộ vẫn được.
+    if (!(unit_price_vnd > 0) || !(await getPaymentAccount()).configured) {
+      return {
+        ok: false,
+        status: 409,
+        error: "KitoKit chưa mở bán slot trực tuyến. Vui lòng liên hệ bộ phận hỗ trợ để được tư vấn.",
+      };
+    }
     totalCost = i.requestedSlots * unit_price_vnd;
   } else {
     // source: "ADMIN"
@@ -250,6 +260,9 @@ export async function approveOrder(
 ): Promise<Result<Order>> {
   const pool = getPgPool();
   const client = await pool.connect();
+  let updatedOrderRow: any = null;
+  let failResult: Result<Order> | null = null;
+
   try {
     await client.query("BEGIN");
 
@@ -266,38 +279,59 @@ export async function approveOrder(
 
     if (updateRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      const checkRes = await queryPg(`SELECT id, status FROM slot_requests WHERE id = $1`, [id]);
+      const checkRes = await client.query(`SELECT id, status FROM slot_requests WHERE id = $1`, [id]);
       if (checkRes.rows.length === 0) {
-        return { ok: false, status: 404, error: "Đơn hàng không tồn tại." };
+        failResult = { ok: false, status: 404, error: "Đơn hàng không tồn tại." };
+      } else {
+        failResult = { ok: false, status: 409, error: "Đơn hàng không ở trạng thái chờ duyệt." };
       }
-      return { ok: false, status: 409, error: "Đơn hàng không ở trạng thái chờ duyệt." };
+    } else {
+      const updated = updateRes.rows[0];
+      const deltaRes = await applyDelta(client, {
+        teacherId: updated.teacher_id,
+        delta: Number(updated.requested_slots),
+        reason: "PURCHASE",
+        orderId: updated.id,
+      });
+
+      if (!deltaRes.ok) {
+        await client.query("ROLLBACK");
+        failResult = { ok: false, status: 409, error: "Không thể cộng slot cho đơn hàng này." };
+      } else {
+        await client.query("COMMIT");
+        updatedOrderRow = updated;
+      }
     }
-
-    const updated = updateRes.rows[0];
-    await client.query(
-      `UPDATE users SET slot_limit = COALESCE(slot_limit, 0) + $1 WHERE id = $2;`,
-      [Number(updated.requested_slots), updated.teacher_id]
-    );
-
-    await client.query("COMMIT");
-
-    // Sau COMMIT mới gửi thông báo
-    await createNotification({
-      userId: updated.teacher_id,
-      type: "ORDER_APPROVED",
-      title: "Đơn mua slot đã được duyệt",
-      body: `Đơn mua ${updated.requested_slots} slot của bạn đã được duyệt.`,
-      link: `/teacher/orders/${updated.id}`,
-      refId: updated.id,
-    }).catch(() => {});
-
-    return { ok: true, order: formatOrder(updated) };
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query("ROLLBACK").catch(() => {});
     throw err;
   } finally {
     client.release();
   }
+
+  if (failResult) {
+    return failResult;
+  }
+
+  if (updatedOrderRow) {
+    // Sau khi ĐÃ release client: thử trừ các lớp nợ và gửi thông báo
+    await retryOverdueClasses(updatedOrderRow.teacher_id).catch((err) => {
+      console.warn("retryOverdueClasses warning:", err);
+    });
+
+    await createNotification({
+      userId: updatedOrderRow.teacher_id,
+      type: "ORDER_APPROVED",
+      title: "Đơn mua slot đã được duyệt",
+      body: `Đơn mua ${updatedOrderRow.requested_slots} slot của bạn đã được duyệt.`,
+      link: `/teacher/orders/${updatedOrderRow.id}`,
+      refId: updatedOrderRow.id,
+    }).catch(() => {});
+
+    return { ok: true, order: formatOrder(updatedOrderRow) };
+  }
+
+  return { ok: false, status: 409, error: "Lỗi duyệt đơn hàng." };
 }
 
 /**

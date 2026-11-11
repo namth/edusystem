@@ -161,6 +161,22 @@ async function reclaimStuckMessages(redis) {
   }
 }
 
+async function triggerSlotBillingCron() {
+  try {
+    const res = await fetch(`${APP_URL}/api/cron/slot-billing`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.CRON_SECRET || ""}`,
+      },
+    });
+    const json = await res.json().catch(() => ({}));
+    console.log(`[Slot Billing Cron] Completed (status ${res.status}):`, json);
+  } catch (err) {
+    console.error("[Slot Billing Cron] Error:", err.message || err);
+  }
+}
+
 async function main() {
   const redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -182,6 +198,10 @@ async function main() {
   }
 
   console.log(`⚡ [Grading Worker] Listening for GRADING_REQUESTED events as '${CONSUMER}'...`);
+
+  // Khởi động cron tính phí slot (chạy 1 lần lúc khởi động và định kỳ mỗi giờ)
+  triggerSlotBillingCron().catch(() => {});
+  setInterval(triggerSlotBillingCron, 60 * 60 * 1000);
 
   let lastClaimAt = 0;
 

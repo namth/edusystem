@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { SlotLedgerTable } from "@/components/slots/SlotLedgerTable";
 import {
   TEACHER_LEVELS,
   WORKPLACE_TYPES,
@@ -28,6 +29,8 @@ import {
   ShieldAlert,
   CreditCard,
   AlertCircle,
+  Wallet,
+  Sliders,
 } from "lucide-react";
 
 interface TeacherProfileData {
@@ -54,7 +57,6 @@ interface TeacherDetail {
   phone?: string;
   target_band?: string;
   created_at: string;
-  slot_limit: number;
   teacher_status?: "TRIAL" | "VERIFIED" | "REJECTED" | null;
   profile?: TeacherProfileData | null;
 }
@@ -78,6 +80,13 @@ interface AILogRecord {
   total_tokens: number;
   cost_usd: number;
   created_at: string;
+}
+
+interface WalletData {
+  balance: number;
+  unit_price_vnd: number;
+  total_next_needed: number;
+  classes?: any[];
 }
 
 function mapOptionLabel(
@@ -131,11 +140,21 @@ export default function AdminTeacherDetailPage() {
   const [profile, setProfile] = useState<TeacherProfileData | null>(null);
   const [classes, setClasses] = useState<ManagedClass[]>([]);
   const [aiLogs, setAiLogs] = useState<AILogRecord[]>([]);
+  const [aiTotals, setAiTotals] = useState({ requests: 0, total_tokens: 0, cost_vnd: 0 });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTestingPortkey, setIsTestingPortkey] = useState(false);
+
+  // Wallet state
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [delta, setDelta] = useState<string>("");
+  const [note, setNote] = useState<string>("");
+  const [isAdjusting, setIsAdjusting] = useState<boolean>(false);
+  const [adjustMsg, setAdjustMsg] = useState<string | null>(null);
+  const [adjustError, setAdjustError] = useState<string | null>(null);
 
   // Verify states
   const [reviewNote, setReviewNote] = useState("");
@@ -143,14 +162,12 @@ export default function AdminTeacherDetailPage() {
 
   // Edit Modals
   const [showEditInfoModal, setShowEditInfoModal] = useState(false);
-  const [showEditSlotModal, setShowEditSlotModal] = useState(false);
 
   // Edit Form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [qualification, setQualification] = useState("");
-  const [slotLimit, setSlotLimit] = useState(250);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Tạo đơn mua slot
@@ -160,6 +177,74 @@ export default function AdminTeacherDetailPage() {
   const [isCreatingOrder, setIsCreatingOrder] = useState<boolean>(false);
   const [createOrderSuccess, setCreateOrderSuccess] = useState<{ id: string; code: string } | null>(null);
   const [createOrderError, setCreateOrderError] = useState<string | null>(null);
+
+  const fetchWalletData = useCallback(async () => {
+    if (!teacherId) return;
+    try {
+      setWalletLoading(true);
+      const res = await fetch(`/api/admin/teachers/${teacherId}/slot-wallet`);
+      if (res.ok) {
+        const data = await res.json();
+        setWallet({
+          balance: Number(data.balance ?? 0),
+          unit_price_vnd: Number(data.unit_price_vnd ?? 0),
+          total_next_needed: Number(data.total_next_needed ?? 0),
+          classes: data.classes || [],
+        });
+      }
+    } catch (e) {
+      console.error("fetchWalletData error:", e);
+    } finally {
+      setWalletLoading(false);
+    }
+  }, [teacherId]);
+
+  const handleAdjustSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const deltaNum = parseInt(delta, 10);
+    if (isNaN(deltaNum) || deltaNum === 0) {
+      setAdjustError("Số slot điều chỉnh phải là số nguyên khác 0.");
+      return;
+    }
+    if (!note.trim()) {
+      setAdjustError("Lý do điều chỉnh không được để trống.");
+      return;
+    }
+    if (note.trim().length > 500) {
+      setAdjustError("Lý do điều chỉnh tối đa 500 ký tự.");
+      return;
+    }
+
+    setIsAdjusting(true);
+    setAdjustError(null);
+    setAdjustMsg(null);
+
+    try {
+      const res = await fetch(`/api/admin/teachers/${teacherId}/slot-adjust`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delta: deltaNum,
+          note: note.trim(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setAdjustError(data.error || "Không thể điều chỉnh ví slot.");
+        return;
+      }
+
+      setAdjustMsg(`Đã điều chỉnh thành công! Số dư mới: ${Number(data.balance).toLocaleString("vi-VN")} slot.`);
+      setDelta("");
+      setNote("");
+      fetchWalletData();
+    } catch (err: any) {
+      setAdjustError(err.message || "Lỗi khi gọi API điều chỉnh ví slot.");
+    } finally {
+      setIsAdjusting(false);
+    }
+  };
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,10 +320,10 @@ export default function AdminTeacherDetailPage() {
       setEmail(tObj.email);
       setPhone(tObj.phone || "");
       setQualification(tObj.target_band || "");
-      setSlotLimit(tObj.slot_limit || 250);
 
       setClasses(data.classes || []);
       setAiLogs(data.aiLogs || []);
+      setAiTotals(data.ai_totals || { requests: 0, total_tokens: 0, cost_vnd: 0 });
     } catch (e: any) {
       console.error(e);
       setErrorMsg("Đã xảy ra lỗi khi nạp thông tin giảng viên.");
@@ -249,7 +334,8 @@ export default function AdminTeacherDetailPage() {
 
   useEffect(() => {
     fetchTeacherData();
-  }, [teacherId]);
+    fetchWalletData();
+  }, [teacherId, fetchWalletData]);
 
   const handleVerifyDecision = async (decision: "VERIFIED" | "REJECTED") => {
     if (!teacherId) return;
@@ -276,6 +362,7 @@ export default function AdminTeacherDetailPage() {
           : "Đã cập nhật trạng thái từ chối xác minh cho giáo viên."
       );
       await fetchTeacherData();
+      fetchWalletData();
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (e: any) {
       console.error(e);
@@ -285,14 +372,10 @@ export default function AdminTeacherDetailPage() {
     }
   };
 
-  // Compute 100% REAL totals from PostgreSQL ai_usage_logs
-  const totalRealTokens = aiLogs.reduce((sum, log) => sum + log.total_tokens, 0);
-  const totalRealRequests = aiLogs.length;
-  const totalRealCostUsd = aiLogs.reduce((sum, log) => sum + log.cost_usd, 0);
-
-  const usedSlotsCount = classes.reduce((sum, c) => sum + c.student_count, 0);
-  const totalSlotLimit = teacher?.slot_limit || 250;
-  const remainingSlots = Math.max(0, totalSlotLimit - usedSlotsCount);
+  // Tổng AI do server tính (SQL SUM toàn bộ log)
+  const totalRealTokens = aiTotals.total_tokens;
+  const totalRealRequests = aiTotals.requests;
+  const totalCostVnd = aiTotals.cost_vnd;
 
   // Real Portkey Gateway Live Test Call via Server API Route
   const handleTestPortkeyLive = async () => {
@@ -362,36 +445,6 @@ export default function AdminTeacherDetailPage() {
     } catch (e) {
       console.error(e);
       alert("Lỗi hệ thống khi cập nhật thông tin.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSaveSlotLimit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/admin/teachers/${teacherId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slot_limit: slotLimit,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert("Lỗi cập nhật slot: " + (data.error || "Không thể thay đổi slot."));
-        return;
-      }
-
-      setSuccessMsg(`Đã điều chỉnh hạn mức sĩ số slot thành ${slotLimit} học viên!`);
-      setShowEditSlotModal(false);
-      fetchTeacherData();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (e) {
-      console.error(e);
-      alert("Lỗi hệ thống khi điều chỉnh slot.");
     } finally {
       setIsSubmitting(false);
     }
@@ -490,7 +543,7 @@ export default function AdminTeacherDetailPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Basic Info, Verification & Slot Capacity */}
+          {/* Left Column: Basic Info, Verification & Slot Wallet Card */}
           <div className="space-y-6">
             {/* Basic Info Card */}
             <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
@@ -629,48 +682,90 @@ export default function AdminTeacherDetailPage() {
               </div>
             </div>
 
-            {/* Slot Capacity Card */}
+            {/* Khối Ví slot & Form Điều chỉnh */}
             <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
               <div className="flex justify-between items-center border-b border-line/40 pb-3">
                 <h2 className="text-base font-bold text-brand-600 flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-brand-600" />
-                  <span>Hạn Mức Sĩ Số Slots</span>
+                  <Wallet className="w-5 h-5 text-brand-600" />
+                  <span>Ví slot</span>
                 </h2>
-                <button
-                  onClick={() => setShowEditSlotModal(true)}
-                  className="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-300 rounded-xl text-xs font-bold hover:bg-brand-100"
-                >
-                  Sửa Slot
-                </button>
+                {walletLoading && <Loader2 className="w-4 h-4 animate-spin text-brand-600" />}
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-surface-alt rounded-xl border border-line">
-                  <span className="text-[10px] text-ink-subtle font-bold block uppercase">Tổng Slot</span>
-                  <span className="text-lg font-bold text-brand-600">{totalSlotLimit}</span>
+              <div className="p-4 bg-brand-50/50 rounded-2xl border border-brand-200">
+                <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider">
+                  Số dư ví slot hiện tại
+                </p>
+                <div className="text-2xl font-black text-brand-600 mt-1">
+                  {wallet ? `${wallet.balance.toLocaleString("vi-VN")} slot` : "0 slot"}
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <span className="text-[10px] text-emerald-800 font-bold block uppercase">Đã Dùng</span>
-                  <span className="text-lg font-bold text-emerald-700">{usedSlotsCount}</span>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
-                  <span className="text-[10px] text-blue-800 font-bold block uppercase">Còn Lại</span>
-                  <span className="text-lg font-bold text-blue-700">{remainingSlots}</span>
-                </div>
+                <p className="text-[11px] text-ink-subtle mt-1">
+                  Nhu cầu 31 ngày tới: {wallet ? wallet.total_next_needed.toLocaleString("vi-VN") : 0} slot
+                </p>
               </div>
 
-              {/* Progress bar */}
-              <div>
-                <div className="flex justify-between text-xs text-ink-muted mb-1 font-medium">
-                  <span>Tỷ lệ sử dụng slot:</span>
-                  <span>{Math.round((usedSlotsCount / totalSlotLimit) * 100)}%</span>
-                </div>
-                <div className="w-full bg-surface-alt h-2.5 rounded-full overflow-hidden border border-line">
-                  <div
-                    className="bg-brand-600 h-full rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (usedSlotsCount / totalSlotLimit) * 100)}%` }}
-                  />
-                </div>
+              {/* Form Điều chỉnh ví slot */}
+              <div className="pt-2 border-t border-line/40 space-y-3">
+                <h3 className="text-xs font-bold text-ink uppercase tracking-wider flex items-center space-x-1.5">
+                  <Sliders className="w-4 h-4 text-brand-600" />
+                  <span>Điều chỉnh ví slot</span>
+                </h3>
+
+                {adjustMsg && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+                    {adjustMsg}
+                  </div>
+                )}
+
+                {adjustError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
+                    {adjustError}
+                  </div>
+                )}
+
+                <form onSubmit={handleAdjustSlot} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-ink mb-1">
+                      Số slot delta (+ cộng / - trừ) (*)
+                    </label>
+                    <input
+                      type="number"
+                      name="delta"
+                      required
+                      placeholder="Ví dụ: 50 hoặc -20"
+                      value={delta}
+                      onChange={(e) => setDelta(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl font-bold text-brand-600 focus:outline-none focus:border-brand-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-ink mb-1">
+                      Lý do điều chỉnh (note, tối đa 500 ký tự) (*)
+                    </label>
+                    <textarea
+                      rows={2}
+                      maxLength={500}
+                      required
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Nhập lý do bắt buộc (vd: Tặng khuyến mại, điều chỉnh trừ lỗi...)"
+                      className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl focus:outline-none focus:border-brand-600"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isAdjusting || !note.trim() || !delta}
+                    className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isAdjusting ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <span>Điều chỉnh</span>
+                    )}
+                  </button>
+                </form>
               </div>
             </div>
 
@@ -767,7 +862,7 @@ export default function AdminTeacherDetailPage() {
             </div>
           </div>
 
-          {/* Right Column: Real Portkey AI Analytics & Managed Classes */}
+          {/* Right Column: Real Portkey AI Analytics, Managed Classes & Slot Ledger */}
           <div className="lg:col-span-2 space-y-6">
             {/* Real Portkey AI Token Usage Analytics Section */}
             <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
@@ -801,7 +896,7 @@ export default function AdminTeacherDetailPage() {
 
                 <div className="p-4 bg-surface-alt rounded-2xl border border-line space-y-1">
                   <span className="text-xs text-ink-muted font-medium block">Tổng Chi Phí Ước Tính:</span>
-                  <span className="text-xl font-bold text-ink block">${totalRealCostUsd.toFixed(4)} USD</span>
+                  <span className="text-xl font-bold text-ink block">{totalCostVnd.toLocaleString("vi-VN")} đ</span>
                   <span className="text-[10px] text-emerald-700 block font-bold">&check; Portkey Metadata Tracked</span>
                 </div>
               </div>
@@ -883,6 +978,11 @@ export default function AdminTeacherDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Sổ cái lịch sử ví slot */}
+            <div className="bg-white p-6 rounded-3xl border border-line shadow-sm space-y-4">
+              <SlotLedgerTable teacherId={teacherId} onRefreshWallet={fetchWalletData} />
+            </div>
           </div>
         </div>
 
@@ -944,44 +1044,6 @@ export default function AdminTeacherDetailPage() {
                   <button type="button" onClick={() => setShowEditInfoModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-medium shadow">
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" /> : "Lưu Thay Đổi"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal: Edit Slot Capacity */}
-        {showEditSlotModal && (
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-line space-y-6 animate-in fade-in zoom-in-95">
-              <div className="flex justify-between items-center border-b border-line/40 pb-4">
-                <h2 className="text-xl font-bold text-brand-600">Sửa Hạn Mức Slot Giảng Viên</h2>
-                <button onClick={() => setShowEditSlotModal(false)} className="text-ink-subtle">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveSlotLimit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-brand-600 mb-1">
-                    Tổng Số Slot Được Cấp (Slots Capacity)
-                  </label>
-                  <input
-                    type="number"
-                    min={10}
-                    max={2000}
-                    step={50}
-                    value={slotLimit}
-                    onChange={(e) => setSlotLimit(Number(e.target.value))}
-                    className="w-full px-4 py-3 bg-brand-50 border border-brand-300 rounded-xl text-lg font-bold text-brand-600 focus:outline-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex space-x-3">
-                  <button type="button" onClick={() => setShowEditSlotModal(false)} className="flex-1 py-3 border border-line text-ink-muted rounded-xl text-xs font-medium">Hủy</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-brand-600 text-white rounded-xl text-xs font-medium shadow">
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" /> : "Lưu Số Slot"}
                   </button>
                 </div>
               </form>

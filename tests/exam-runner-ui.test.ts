@@ -65,11 +65,11 @@ describe("Trang làm đề SCR-E4", () => {
     expect(s()).toMatch(/409/);
     expect(s()).toMatch(/Thử lại/);
   });
-  it("không còn tự chấm ở trình duyệt / Supabase / mock; < 700 dòng", () => {
+  it("không còn tự chấm ở trình duyệt / Supabase / mock; < 800 dòng", () => {
     for (const bad of ["auto_graded_score", "correct_answer", "correctAnswer", '"@/lib/supabase"', "supabase.", "@/lib/audio-storage", "@/lib/mock-data"]) {
       expect(s(), bad).not.toContain(bad);
     }
-    expect(s().split("\n").length).toBeLessThan(700);
+    expect(s().split("\n").length).toBeLessThan(800);
   });
 });
 

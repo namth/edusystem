@@ -129,6 +129,29 @@ function StudentExamInner() {
           setCurrentScreenIdx(0);
           setPhase("running");
           return;
+        } else {
+          const attData = await attRes.json().catch(() => ({}));
+          if (attRes.status === 403) {
+            if (attData.code === "CLASS_LOCKED") {
+              setErrorMessage("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+            } else {
+              setErrorMessage(attData.error || "Bạn chưa ghi danh hoặc không có quyền làm đề thi này.");
+            }
+          } else if (attRes.status === 409) {
+            setErrorMessage(attData.error || "Bạn đã hết lượt làm đề thi này.");
+          } else {
+            setErrorMessage(attData.error || "Không thể tạo lượt làm bài thi.");
+          }
+          setPhase("error");
+          return;
+        }
+      }
+      if (contentRes.status === 403) {
+        const cData = await contentRes.json().catch(() => ({}));
+        if (cData.code === "CLASS_LOCKED") {
+          setErrorMessage("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+          setPhase("error");
+          return;
         }
       }
       const examRes = await fetch(`/api/exams/${examId}`);
@@ -154,11 +177,21 @@ function StudentExamInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ classId }),
       });
-      if (res.status === 403) { setErrorMessage("Bạn không có quyền làm đề thi này (403)."); return; }
-      if (res.status === 409) { setErrorMessage("Bạn đã hết lượt làm đề này (409)."); return; }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setErrorMessage(data.error || "Không thể bắt đầu lượt thi.");
+        if (res.status === 403) {
+          if (data.code === "CLASS_LOCKED") {
+            setErrorMessage("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+          } else {
+            setErrorMessage(data.error || "Bạn chưa ghi danh hoặc không có quyền làm đề thi này.");
+          }
+          return;
+        }
+        if (res.status === 409) {
+          setErrorMessage(data.error || "Bạn đã hết lượt làm đề thi này.");
+          return;
+        }
+        setErrorMessage(data.error || "Không thể bắt đầu lượt làm bài.");
         return;
       }
       const { attempt: newAttempt, remaining_attempts } = await res.json();
@@ -201,7 +234,10 @@ function StudentExamInner() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Lỗi nộp bài thi");
+        if (res.status === 403 && errData.code === "CLASS_LOCKED") {
+          throw new Error("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+        }
+        throw new Error(errData.error || "Lỗi nộp bài thi.");
       }
       const { attempt: submittedAttempt } = await res.json();
       setAttempt(submittedAttempt);
@@ -331,14 +367,19 @@ function StudentExamInner() {
   }
 
   if (phase === "error") {
+    const isLocked = errorMessage?.includes("Lớp học đang bị khoá");
     return (
-      <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-white border border-rose-200 text-center space-y-4">
+      <div role="alert" className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-white border border-rose-200 text-center space-y-4">
         <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
-        <h2 className="text-lg font-bold text-ink">Không thể tải đề thi</h2>
+        <h2 className="text-lg font-bold text-ink">
+          {isLocked ? "Lớp học đang bị khoá" : "Không thể tải đề thi"}
+        </h2>
         <p className="text-sm text-rose-700">{errorMessage || "Đã xảy ra lỗi."}</p>
         <div className="flex justify-center gap-3 pt-2">
-          <button type="button" onClick={checkInitialStatus} className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold cursor-pointer">Thử lại</button>
-          <Link href="/student/dashboard" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold">Về Dashboard</Link>
+          {!isLocked && (
+            <button type="button" onClick={checkInitialStatus} className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold cursor-pointer">Thử lại</button>
+          )}
+          <Link href="/student/dashboard" className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold">Về Dashboard</Link>
         </div>
       </div>
     );
@@ -360,7 +401,18 @@ function StudentExamInner() {
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800"><AlertCircle className="w-4 h-4 text-amber-700" />Lưu ý quan trọng:</div>
           <p className="text-xs text-ink-muted leading-relaxed">Đồng hồ tính theo máy chủ, tải lại trang không dừng giờ. Vui lòng đảm bảo kết nối mạng ổn định trong suốt quá trình làm bài thi.</p>
         </div>
-        {errorMessage && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">{errorMessage}</div>}
+        {errorMessage && (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800 space-y-2">
+            <p>{errorMessage}</p>
+            {errorMessage.includes("Lớp học đang bị khoá") && (
+              <div>
+                <Link href="/student/dashboard" className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 underline hover:text-brand-800">
+                  <ArrowLeft className="w-3.5 h-3.5" /> Về Dashboard
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between pt-2">
           <Link href="/student/dashboard" className="inline-flex items-center gap-1 text-xs font-bold text-ink-muted hover:text-brand-600"><ArrowLeft className="w-4 h-4" /> Quay lại</Link>
           <button type="button" disabled={startLoading} onClick={handleStartExam} className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-xs cursor-pointer">

@@ -40,6 +40,8 @@ Cấu hình riêng của dự án: handoff/config.json
   protected_paths  thư mục/file agent thực thi không được sửa (hook .agents/hooks.json chặn)
   test_paths       nơi người kiểm được viết test (mặc định tests/, e2e/)
   agy_model        slug model mặc định cho agy (xem `agy models`); null = mặc định của agy
+  agy_role_models  {"coder": [...], "tester": [...], "reviewer": [...]} chuỗi model theo vai trò (đầu tiên dùng trước, hết hạn mức/không có thì lùi)
+  cross_review     true = bật lại nghiệm thu chéo bằng agent sau khi nộp (mặc định tắt: LOW → accepted rồi gate; HIGH → review_passed)
   agy_fallback_models  model dự phòng, thử lần lượt khi model đang dùng hết hạn mức (429)
   agy_timeout      thời gian tối đa một lần chạy agy (vd "60m")
 Tài khoản agy của từng máy: tự nhận ~ (agy1) và ~/.agy-accountN (agyN); ghi đè bằng
@@ -60,6 +62,13 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+try:  # đo lường hiệu quả (scripts/metrics.py); thiếu cũng không sao
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from metrics import log_event
+except Exception:  # pragma: no cover
+    def log_event(*_a, **_k) -> None:
+        return None
 
 ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "handoff" / "tasks"
@@ -83,6 +92,10 @@ CONFIG = load_config()
 AGY_TIMEOUT = os.environ.get("AGY_PRINT_TIMEOUT", CONFIG["agy_timeout"])
 
 WORKER_CMDS = {"start": ("assigned", "changes_requested"), "submit": ("in_progress",)}
+STALL_ROLE = {"tests_assigned": "tester", "assigned": "coder", "in_progress": "coder", "in_review": "reviewer"}
+MAX_AUTO_RESUMES = 2
+RESUME_NOTE = ("Bạn đã dừng sớm. Chỉ chạy python3 (không ls/git/sed/npx); đọc/sửa file bằng công cụ file. Làm tiếp tới khi hoàn tất "
+               "đúng bước cuối của skill (tests-done / submit / review-pass|review-fail), không dừng để hỏi.")
 MAX_CROSS_ROUNDS = 2  # quá số vòng trả về chéo này thì đẩy lên trưởng phòng
 TASK_OWN = ("brief.md", "state.json", "tests.lock", "review.md", "report.md", "cross-review.md")
 
@@ -369,12 +382,24 @@ def agent_of(state: dict, role: str) -> dict:
     return agents.setdefault(role, {"account": None, "conversation_id": None})
 
 
+def role_models(role: str) -> list[str | None]:
+    """Model theo vai trò (config agy_role_models): người kiểm khác họ model với người code thì mới độc lập.
+    Model không có ở tài khoản đó thì is_quota coi như hết hạn mức và tự lùi sang model kế tiếp."""
+    chain = (CONFIG.get("agy_role_models") or {}).get(role)
+    return list(chain) if chain else [CONFIG.get("agy_model")]
+
+
+def cross_review_enabled() -> bool:
+    """Nghiệm thu chéo bằng agent mặc định TẮT (cổng tự động + Claude thay thế); bật lại: "cross_review": true."""
+    return bool(CONFIG.get("cross_review", False))
+
+
 def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | None = None,
              role: str = "coder", account: str | None = None) -> None:
     """Chạy agy cho một vai của task; model hết hạn mức mà vai đó chưa xong → tự chuyển sang model dự phòng
     (handoff/config.json → agy_fallback_models) trong cùng hội thoại, rồi in báo cáo."""
     home = account_home(account)
-    models = list(dict.fromkeys([model, *CONFIG.get("agy_fallback_models", [])]))
+    models = list(dict.fromkeys([*([model] if model else role_models(role)), *CONFIG.get("agy_fallback_models", [])]))
     for i, m in enumerate(models):
         result = agy_run(prompt, conversation_id=conversation_id, model=m, home=home)
         state = load_state(task)
@@ -388,12 +413,31 @@ def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | 
             break
         nxt = models[i + 1]
         print(f"Model {m or 'mặc định'} hết hạn mức → chuyển sang {nxt or 'mặc định'}.", flush=True)
+        log_event("quota_fallback", state["id"], role=role, frm=m, to=nxt)
         state["history"].append({"at": now(), "status": state["status"], "note": f"đổi model agy: {m} → {nxt} (hết hạn mức)"})
         save_state(task, state)
         if conversation_id:
             prompt = (f"Tiếp tục {state['id']} theo yêu cầu ban đầu của hội thoại này, từ chỗ đang dừng, "
                       f"theo skill {ROLE_SKILL[role]}, tới khi {ROLE_FINISH[role]}.")
     report_agy(task, result, role, home)
+
+
+def agy_failure_cause(result: dict, done: bool) -> tuple[str, str] | None:
+    """Phân loại vì sao agy dừng bất thường → (mã, gợi ý). None = chạy bình thường."""
+    text = json.dumps(result, ensure_ascii=False)
+    low = text.lower()
+    if "no capacity" in low or "code 503" in low or "unavailable" in low:
+        return "capacity", "máy chủ model quá tải (503) — không phải lỗi task; chạy lại sau vài phút (unstick), không đổi model vội."
+    if "resource_exhausted" in low or "quota" in low:
+        return ("quota_after_done" if done else "quota"), (
+            "hết hạn mức model — dùng model khác (`--agy-model`) hoặc chờ reset; flash-high là mặc định vì hạn mức lớn nhất.")
+    if "headless mode cannot prompt" in low or "auto-denied" in low or "permission" in low and "denied" in low:
+        return "permission", "agent bị từ chối quyền lệnh (thường do `python3 -c` nhiều dấu nháy, hoặc lệnh ngoài python3) — resume kèm ghi chú chỉ dùng công cụ file."
+    if any(k in low for k in ("deadline", "timed out", "timeout", "econnreset", "connection reset")):
+        return "network", "lỗi mạng/quá thời gian — chạy lại (unstick); kiểm tra đường truyền."
+    if not done and result.get("status") == "SUCCESS":
+        return "early_stop", "agent trả lời xong nhưng chưa hoàn tất bước cuối — resume nhắc làm tiếp (auto đã tự thử); nếu lặp lại, đọc câu cuối của agent: thường nó đang báo bị chặn."
+    return None
 
 
 def report_agy(task: Path, result: dict, role: str = "coder", home: Path | None = None) -> None:
@@ -405,6 +449,10 @@ def report_agy(task: Path, result: dict, role: str = "coder", home: Path | None 
         print(f"  [stderr] {n}")
     if result.get("error"):
         print(f"  [lỗi] {result['error']}")
+    cause = agy_failure_cause(result, state["status"] in ROLE_DONE[role])
+    if cause:
+        print(f"CHẨN ĐOÁN: {cause[0]} — {cause[1]}")
+        log_event("agy_failure", state["id"], cause=cause[0], role=role)
     if is_quota(result):
         if state["status"] in ROLE_DONE[role]:
             print("(Lỗi hạn mức xảy ra sau khi agent đã xong phần việc — không ảnh hưởng kết quả.)")
@@ -464,6 +512,13 @@ def cmd_new(a) -> None:
 def cmd_lock(a) -> None:
     task = find_task(a.id)
     files = [task / "verify.sh", *[ROOT / f for f in a.files]]
+    bad = [l.strip() for l in (task / "verify.sh").read_text(encoding="utf-8").splitlines()
+           if re.search(r"\btsc\b", l) and re.search(r"\.tsx?\b", l) and not re.search(r"(-p|--project)\b", l)
+           and not l.lstrip().startswith("#")]
+    if bad:  # tsc nhận file trên dòng lệnh thì BỎ QUA tsconfig.json → báo lỗi giả (đã gặp ở TASK-057)
+        die("verify.sh chạy `tsc` với danh sách file nên tsc bỏ qua tsconfig.json: " + bad[0] + "\n"
+            "  → dùng `npx tsc --noEmit -p tsconfig.json` (toàn dự án).")
+    relock = (task / "tests.lock").exists()
     lines = []
     for f in files:
         if not f.exists():
@@ -473,6 +528,8 @@ def cmd_lock(a) -> None:
     state = load_state(task)
     state["locked_files"] = [l.split("  ", 1)[1] for l in lines]
     save_state(task, state)
+    if relock:
+        log_event("claude_fix", state["id"], what="khoá lại test/verify sau khi chỉnh tay")
     print(f"Đã khoá {len(lines)} file.")
 
 
@@ -685,7 +742,8 @@ def cmd_auto(a) -> None:
         die("người code và người kiểm phải là hai tài khoản khác nhau")
     print(f"{state['id']}: {coder} code · {checker} viết test + nghiệm thu chéo")
     ns = lambda **kw: argparse.Namespace(id=a.id, agy_model=a.agy_model, **kw)  # noqa: E731
-    for _ in range(12):  # chặn vòng lặp vô hạn
+    stalls: dict[str, int] = {}
+    for _ in range(16):  # chặn vòng lặp vô hạn
         status = load_state(task)["status"]
         print(f"\n=== {state['id']} đang ở {status}", flush=True)
         if status == "draft":
@@ -696,7 +754,14 @@ def cmd_auto(a) -> None:
         elif status == "tests_ready":
             cmd_dispatch(ns(as_=coder, via="agy", model="pro"))
         elif status == "submitted":
-            cmd_dispatch_review(ns(as_=checker))
+            if cross_review_enabled():
+                cmd_dispatch_review(ns(as_=checker))
+            else:  # submit đã kiểm khoá test + phạm vi + verify.sh; phần còn lại do cổng tự động (orchestrate.py gate) và Claude
+                st = load_state(task)
+                if difficulty(task) == "LOW":
+                    save_state(task, st, "accepted", "LOW: không nghiệm thu chéo bằng agent — cổng tự động (orchestrate.py gate) trước khi merge")
+                else:
+                    save_state(task, st, "review_passed", "HIGH/nhạy cảm: không nghiệm thu chéo bằng agent — chờ trưởng phòng (gate + duyệt)")
         elif status == "changes_requested":
             st = load_state(task)
             if st.get("cross_rounds", 0) > MAX_CROSS_ROUNDS:
@@ -705,11 +770,19 @@ def cmd_auto(a) -> None:
         else:
             break
         if load_state(task)["status"] == status:
-            break  # agent dừng mà không chuyển trạng thái → cần người xem
+            # agent dừng sớm mà không chuyển trạng thái (hay gặp ở model Claude trên agy: đọc xong rồi dừng) → tự nhắn làm tiếp
+            role = STALL_ROLE.get(status)
+            if role and stalls.get(status, 0) < MAX_AUTO_RESUMES:
+                stalls[status] = stalls.get(status, 0) + 1
+                print(f"Agent dừng sớm ở {status} → tự resume vai {role} (lần {stalls[status]}/{MAX_AUTO_RESUMES})", flush=True)
+                log_event("resume_early_stop", state["id"], role=role)
+                cmd_resume(argparse.Namespace(id=a.id, role=role, agy_model=a.agy_model, note=RESUME_NOTE))
+                continue
+            break  # vẫn không chuyển trạng thái → cần người xem
     st = load_state(task)
     print(f"\n=== KẾT THÚC auto {st['id']}: {st['status']}")
-    print({"accepted": "Đạt (nghiệm thu chéo). Trưởng phòng chỉ cần merge.",
-           "review_passed": "Nghiệm thu chéo đạt, task HIGH/nhạy cảm → trưởng phòng duyệt lần cuối (/nghiem-thu).",
+    print({"accepted": "Đạt. Chạy `orchestrate.py gate` rồi `merge-low` (LOW), hoặc Claude merge.",
+           "review_passed": "Task HIGH/nhạy cảm → chạy `orchestrate.py gate`, trưởng phòng duyệt lần cuối (/nghiem-thu).",
            }.get(st["status"], "CẦN TRƯỞNG PHÒNG: agent dừng giữa chừng, cầu cứu, hoặc trả về quá "
                                 f"{MAX_CROSS_ROUNDS} vòng — đọc report.md mục câu hỏi / review.md."))
 
@@ -767,6 +840,7 @@ def cmd_accept(a) -> None:
     if check_lock(task) or run_verify(task, quiet=True) != 0:
         die("chưa đạt — chạy `verify` để xem chi tiết")
     save_state(task, state, "accepted", "Claude nghiệm thu")
+    log_event("accept", state["id"])
     print(f"{state['id']} -> accepted")
 
 
@@ -775,6 +849,7 @@ def cmd_reject(a) -> None:
     state = load_state(task)
     if state["status"] not in ("submitted", "review_passed", "changes_requested"):
         die(f"{state['id']} đang ở trạng thái {state['status']}, chỉ trả về được task đã nộp")
+    log_event("reject", state["id"])
     review = task / "review.md"
     if not review.exists():
         die(f"viết {review.relative_to(ROOT)} trước khi trả về")
@@ -833,6 +908,7 @@ def cmd_doctor(a) -> None:
 
     for rel in (".agents/rules/vai-tro-ky-su-thuc-thi.md", ".agents/skills/thuc-hien-task/SKILL.md",
                 ".agents/skills/viet-test-cheo/SKILL.md", ".agents/skills/nghiem-thu-cheo/SKILL.md",
+                ".agents/skills/dieu-phoi/SKILL.md", "scripts/orchestrate.py",
                 ".agents/hooks.json", "scripts/agy_guard.py", "AGENTS.md", "handoff/config.json"):
         check((ROOT / rel).exists(), f"có {rel}", "chạy /khoi-tao-phoi-hop cập nhật")
     legacy = [p for p in (".agent/rules/vai-tro-ky-su-thuc-thi.md", ".agent/workflows/thuc-hien-task.md")
@@ -858,8 +934,8 @@ def cmd_doctor(a) -> None:
         check(any("python3" in x for x in allow), "agy được phép chạy python3 (handoff.py, test)",
               f'thêm "command(python3)" vào permissions.allow trong {AGY_SETTINGS}')
     accs = agy_accounts()
-    check(len(accs) >= 2, f"có ≥ 2 tài khoản agy để nghiệm thu chéo ({', '.join(accs) or 'không có'})",
-          "không bắt buộc — đăng nhập thêm tài khoản: HOME=~/.agy-account2 agy")
+    check(len(accs) >= 2, f"có ≥ 2 tài khoản agy để viết test chéo ({', '.join(accs) or 'không có'})",
+          "không bắt buộc — máy chỉ 1 tài khoản thì chạy task trên máy thợ (AGY_HOST=macbook)")
     check(IDE_CLI.exists(), "có Antigravity IDE (đường dự phòng `antigravity-ide chat`)", "không bắt buộc")
     for ok, label, fix in checks:
         print(f"{'OK  ' if ok else 'THIẾU'} {label}" + ("" if ok or not fix else f"\n      → {fix}"))
@@ -875,7 +951,7 @@ def main() -> None:
     d.add_argument("--model", default="pro", choices=["pro", "flash", "flash_lite"])
     d.add_argument("--via", default="auto", choices=["auto", "agy", "agentapi", "ide", "clipboard"],
                    help="auto: agy → agentapi (trong terminal Antigravity) → antigravity-ide chat → clipboard")
-    default_model = os.environ.get("AGY_MODEL") or CONFIG["agy_model"]
+    default_model = os.environ.get("AGY_MODEL")  # None → agy_task chọn theo vai trò (agy_role_models) rồi agy_model
     d.add_argument("--agy-model", default=default_model,
                    help="slug model cho agy (xem `agy models`); mặc định: biến AGY_MODEL, rồi handoff/config.json")
     d.add_argument("--as", dest="as_", help="tài khoản agy viết code (vd agy1; xem `accounts`)")

@@ -3,6 +3,8 @@
 import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { submissionScore } from "@/lib/score-display";
+import { appBaseUrl, isMailerConfigured, sendEmail } from "@/lib/mailer";
+import { notificationEmail } from "@/lib/email-templates";
 
 export type NotificationType =
   | "EXAM_GRADED"
@@ -14,7 +16,11 @@ export type NotificationType =
   | "ORDER_CREATED"
   | "ORDER_APPROVED"
   | "ORDER_REJECTED"
-  | "ORDER_PAID_REPORTED";
+  | "ORDER_PAID_REPORTED"
+  | "SLOT_CHARGED"
+  | "SLOT_GRACE"
+  | "CLASS_LOCKED"
+  | "SLOT_POLICY_CHANGED";
 
 export interface NotificationItem {
   id: string;
@@ -35,13 +41,51 @@ export async function createNotification(n: {
   link?: string | null;
   refId: string;
 }): Promise<void> {
-  await queryPg(
+  const res = await queryPg(
     `INSERT INTO notifications (id, user_id, type, title, body, link, ref_id, read_at, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NOW())
      ON CONFLICT (user_id, type, ref_id)
-     DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, link = EXCLUDED.link, read_at = NULL, created_at = NOW()`,
+     DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, link = EXCLUDED.link, read_at = NULL, created_at = NOW()
+     RETURNING (xmax = 0) AS inserted`,
     ["ntf_" + crypto.randomUUID(), n.userId, n.type, n.title, n.body ?? null, n.link ?? null, n.refId]
   );
+  // Chỉ gửi email khi thực sự tạo dòng mới (không gửi lại khi trúng ON CONFLICT).
+  if (EMAIL_NOTIFICATION_TYPES.has(n.type) && res.rows?.[0]?.inserted === true) {
+    await emailNotification(n);
+  }
+}
+
+/** Các loại thông báo được gửi kèm email (Resend). */
+const EMAIL_NOTIFICATION_TYPES = new Set<NotificationType>([
+  "TEACHER_SIGNUP",
+  "ORDER_PAID_REPORTED",
+  "ORDER_APPROVED",
+  "ORDER_REJECTED",
+  "TEACHER_VERIFIED",
+  "SLOT_GRACE",
+  "CLASS_LOCKED",
+  "SLOT_POLICY_CHANGED",
+]);
+
+/** Gửi email cho người nhận thông báo. Không bao giờ ném lỗi và không chờ quá ~10 s. */
+async function emailNotification(n: {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  link?: string | null;
+}): Promise<void> {
+  try {
+    if (!isMailerConfigured()) return;
+    const u = await queryPg("SELECT email FROM users WHERE id = $1 LIMIT 1", [n.userId]);
+    const to: string | undefined = u.rows[0]?.email;
+    if (!to) return;
+    const url = n.link ? appBaseUrl() + (n.link.startsWith("/") ? n.link : "/" + n.link) : null;
+    const mail = notificationEmail({ title: n.title, body: n.body, url });
+    await sendEmail({ to, ...mail });
+  } catch (err) {
+    console.warn("createNotification: gửi email thất bại", err instanceof Error ? err.name : "error");
+  }
 }
 
 function parseJson(v: unknown): any {

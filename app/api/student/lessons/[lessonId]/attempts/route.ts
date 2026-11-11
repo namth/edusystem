@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen, classLockedResponse } from "@/lib/class-billing";
 import { checkLessonAccess } from "@/lib/lesson-access";
 import { assertTrialAttemptAllowed, trialLimitResponse } from "@/lib/teacher-trial";
 import {
@@ -57,6 +58,11 @@ export async function POST(
       { success: false, error: access.error },
       { status: access.status }
     );
+  }
+
+  const classCheck = await assertClassOpen(classId);
+  if (!classCheck.ok) {
+    return classLockedResponse();
   }
 
   const trialAttempt = await assertTrialAttemptAllowed({

@@ -19,6 +19,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/db-pg", () => ({
   queryPg: (sql: string, params?: unknown[]) => h.pg.queryPg(sql, params),
+  // FEAT-015: ghi danh cần transaction (chargeEnrollment) → pool giả chạy thẳng trên PGlite
+  getPgPool: () => ({ connect: async () => ({ query: (s: string, p?: unknown[]) => h.pg.queryPg(s, p), release: () => {} }) }),
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({
@@ -106,6 +108,7 @@ beforeEach(async () => {
       ('s2','HS2','s2@x.vn','STUDENT',NULL,0),
       ('s3','HS3','s3@x.vn','STUDENT',NULL,0),
       ('s4','HS4','s4@x.vn','STUDENT',NULL,0);
+    UPDATE users SET slot_balance=10 WHERE id='tV'; -- FEAT-015: ghi danh trừ ví slot của GV đã xác minh
     INSERT INTO teacher_profiles (user_id, answers) VALUES ('tT', '{"subjects":["english"],"levels":["PRIMARY"],"workplace_type":"CENTER","student_count":"LT10","needs":["AI_GRADING"]}');
     INSERT INTO questions (id, skill, category, prompt, content, created_by) VALUES
       ('q1','Reading','READING_MC','Câu 1','{"sub_questions":[]}','tT'),
@@ -296,6 +299,14 @@ describe("Mua slot & trial-usage", () => {
       (await import("@/app/api/teacher/slot-requests/route")).POST(req("/api/teacher/slot-requests", { requested_slots: 10 }));
     await loginAs("TEACHER", "tT");
     await expectTrialLimit(await slots(), "slots");
+    // BR-O10: giáo viên chỉ đặt mua được khi đã cấu hình đơn giá + tài khoản nhận tiền
+    await h.pg.db.exec(`
+      CREATE TABLE IF NOT EXISTS system_settings (key VARCHAR(100) PRIMARY KEY, value JSONB, description TEXT, updated_at TIMESTAMPTZ);
+      INSERT INTO system_settings (key, value) VALUES
+        ('slot_pricing', '{"unit_price_vnd":10000}'),
+        ('payment_account', '{"bank_bin":"970436","bank_name":"VCB","account_no":"0123456789","account_name":"KITOKIT"}')
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+    `);
     await loginAs("TEACHER", "tV");
     expect((await slots()).status).toBeLessThan(300);
   });
@@ -324,7 +335,7 @@ describe("Admin xác minh giáo viên", () => {
     expect((await verify("tT", { decision: "REJECTED", note: "x".repeat(501) })).status).toBe(400);
   });
 
-  it("VERIFIED: mở giới hạn ngay ở request kế tiếp, slot_limit ≥ 250, ghi người duyệt, báo giáo viên", async () => {
+  it("VERIFIED: mở giới hạn ngay ở request kế tiếp, không tặng slot (FEAT-015), ghi người duyệt, báo giáo viên", async () => {
     await h.pg.db.exec(`INSERT INTO classes (id, name, code, teacher_id) VALUES ('c1','A','C1','tT')`);
     await loginAs("TEACHER", "tT");
     await expectTrialLimit(await createClass("B"), "classes");
@@ -333,9 +344,10 @@ describe("Admin xác minh giáo viên", () => {
     const res = await verify("tT", { decision: "VERIFIED", note: "Đã gọi điện" });
     expect(res.status).toBe(200);
     expect((await res.json()).teacher).toMatchObject({ id: "tT", teacher_status: "VERIFIED" });
-    const u = (await rows(`SELECT teacher_status, slot_limit FROM users WHERE id='tT'`))[0];
+    const u = (await rows(`SELECT teacher_status, slot_limit, slot_balance FROM users WHERE id='tT'`))[0];
     expect(u.teacher_status).toBe("VERIFIED");
-    expect(Number(u.slot_limit)).toBeGreaterThanOrEqual(250);
+    expect(Number(u.slot_limit)).toBe(9); // FEAT-015: thay DEC-031 — xác minh không nâng slot_limit lên 250
+    expect(Number(u.slot_balance)).toBe(0); // và không tặng slot
     const p = (await rows(`SELECT reviewed_by, reviewed_at, review_note FROM teacher_profiles WHERE user_id='tT'`))[0];
     expect(p.reviewed_by).toBe("ad");
     expect(p.reviewed_at).toBeTruthy();

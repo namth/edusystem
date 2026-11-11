@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 
 export async function GET(_request?: Request) {
-  const auth = await requireRole();
+  const auth = await requireRole(["STUDENT"]);
   if (auth.error) return auth.error;
 
   try {

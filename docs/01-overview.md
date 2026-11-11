@@ -30,6 +30,7 @@
 | FEAT-012 | Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử | `docs/features/dang-ky-phong-van.md` |
 | FEAT-013 | Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh | `docs/features/quan-tri-he-thong.md` |
 | FEAT-014 | Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết lớp (DONE 06/11) | `docs/features/cham-diem-bang-diem.md` |
+| FEAT-015 | Ví slot học sinh-tháng: trừ slot theo kỳ tháng của lớp, ân hạn 7 ngày rồi khoá lớp, lịch sử ví, trang `/pricing` (DONE 08/11, chưa deploy) | `docs/features/vi-slot-hoc-sinh-thang.md` |
 
 Không có mã FEAT riêng nhưng đã có trong code: landing `/` và form liên hệ (TASK-033); nền tảng đa môn (TASK-034); thông báo trong app (TASK-030); thương hiệu và token màu (DEC-022).
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasValidInternalToken, requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen } from "@/lib/class-billing";
 import { withAiUsageContext } from "@/lib/ai-usage";
 import {
   type ScoringStandard,
@@ -42,6 +43,28 @@ export async function POST(req: Request) {
       { success: true, skipped: true },
       { status: 200 }
     );
+  }
+
+  if (sub.class_ref) {
+    const classCheck = await assertClassOpen(sub.class_ref);
+    if (!classCheck.ok) {
+      await queryPg(
+        `UPDATE submissions
+         SET status = 'NEEDS_REVIEW',
+             total_score = NULL,
+             passed = NULL,
+             last_grading_error = 'CLASS_LOCKED'
+         WHERE id = $1`,
+        [sub.id]
+      );
+      await notifyNeedsReview(sub.id);
+      return NextResponse.json({
+        success: true,
+        submissionId: sub.id,
+        status: "NEEDS_REVIEW",
+        last_grading_error: "CLASS_LOCKED",
+      });
+    }
   }
 
   // Worker đã giao quá số lần cho phép mà vẫn lỗi → chuyển giáo viên chấm tay thay vì kẹt GRADING

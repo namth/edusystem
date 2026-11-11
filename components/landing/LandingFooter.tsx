@@ -69,6 +69,11 @@ export default function LandingFooter() {
                 </a>
               </li>
               <li>
+                <Link href="/pricing" className="hover:text-accent-300 transition-colors">
+                  Bảng giá
+                </Link>
+              </li>
+              <li>
                 <Link href="/for-teachers" className="hover:text-accent-300 transition-colors inline-flex items-center gap-1.5 font-semibold text-white">
                   <Sparkles className="w-3.5 h-3.5 text-accent-300" />
                   <span>Giới thiệu cho Giáo viên</span>

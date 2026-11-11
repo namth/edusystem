@@ -1,0 +1,74 @@
+{
+  "id": "TASK-057",
+  "title": "Trang làm bài học sinh: bỏ alert, thông báo lớp khoá và lỗi thân thiện",
+  "status": "accepted",
+  "conversation_id": "803ecd8d-655a-4b4d-9ed7-964699e742b8",
+  "history": [
+    {
+      "at": "2026-11-10T22:23:11",
+      "status": "draft",
+      "note": "Claude tạo task"
+    },
+    {
+      "at": "2026-11-10T22:25:37",
+      "status": "tests_assigned",
+      "note": "giao viết test chéo cho agy2"
+    },
+    {
+      "at": "2026-11-10T22:30:09",
+      "status": "tests_ready",
+      "note": "test chéo đã khoá (1 file), verify đỏ đúng chờ code"
+    },
+    {
+      "at": "2026-11-10T22:30:34",
+      "status": "assigned",
+      "note": "giao code qua agy cho agy3 (model mặc định)"
+    },
+    {
+      "at": "2026-11-10T22:30:41",
+      "status": "assigned",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-10T23:45:17",
+      "status": "in_progress",
+      "note": "Antigravity nhận việc"
+    },
+    {
+      "at": "2026-11-11T08:36:46",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-11T08:40:59",
+      "status": "in_progress",
+      "note": "đổi model agy: claude-sonnet-5-5-medium → gemini-3.8-flash-high (hết hạn mức)"
+    },
+    {
+      "at": "2026-11-11T08:43:07",
+      "status": "submitted",
+      "note": "Antigravity nộp, verify.sh đạt"
+    },
+    {
+      "at": "2026-11-11",
+      "status": "accepted",
+      "note": "LOW: submit đạt, chờ cổng tự động"
+    }
+  ],
+  "agents": {
+    "coder": {
+      "account": "agy3",
+      "conversation_id": "803ecd8d-655a-4b4d-9ed7-964699e742b8"
+    },
+    "tester": {
+      "account": "agy2",
+      "conversation_id": "e5b1e877-ae15-4053-80b3-e677f4eb9f72"
+    }
+  },
+  "locked_files": [
+    "handoff/tasks/TASK-057-student-error-ux/verify.sh",
+    "tests/student-error-ux.test.ts",
+    "handoff/tasks/TASK-057-student-error-ux/verify.sh"
+  ],
+  "via": "agy"
+}

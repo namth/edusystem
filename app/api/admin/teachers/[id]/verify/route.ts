@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
-import { queryPg } from "@/lib/db-pg";
+import { queryPg, getPgPool } from "@/lib/db-pg";
 import { createNotification } from "@/lib/notifications";
+import { todayVN } from "@/lib/slot-wallet";
 
 export async function POST(
   req: Request,
@@ -59,33 +60,55 @@ export async function POST(
       );
     }
 
-    if (decision === "VERIFIED") {
-      await queryPg(
-        `UPDATE users
-         SET teacher_status = 'VERIFIED',
-             slot_limit = GREATEST(COALESCE(slot_limit, 0), 250)
-         WHERE id = $1`,
-        [teacherId]
-      );
-    } else {
-      await queryPg(
-        `UPDATE users
-         SET teacher_status = 'REJECTED'
-         WHERE id = $1`,
-        [teacherId]
-      );
-    }
+    const pool = getPgPool();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    await queryPg(
-      `INSERT INTO teacher_profiles (user_id, answers, reviewed_by, reviewed_at, review_note)
-       VALUES ($1, '{}'::jsonb, $2, NOW(), $3)
-       ON CONFLICT (user_id)
-       DO UPDATE SET
-         reviewed_by = EXCLUDED.reviewed_by,
-         reviewed_at = NOW(),
-         review_note = EXCLUDED.review_note`,
-      [teacherId, adminUser.userId, cleanNote]
-    );
+      if (decision === "VERIFIED") {
+        await client.query(
+          `UPDATE users
+           SET teacher_status = 'VERIFIED'
+           WHERE id = $1`,
+          [teacherId]
+        );
+
+        const today = todayVN(new Date());
+        await client.query(
+          `UPDATE classes
+           SET start_date = $1,
+               billing_period = 0,
+               next_charge_at = $1
+           WHERE teacher_id = $2`,
+          [today, teacherId]
+        );
+      } else {
+        await client.query(
+          `UPDATE users
+           SET teacher_status = 'REJECTED'
+           WHERE id = $1`,
+          [teacherId]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO teacher_profiles (user_id, answers, reviewed_by, reviewed_at, review_note)
+         VALUES ($1, '{}'::jsonb, $2, NOW(), $3)
+         ON CONFLICT (user_id)
+         DO UPDATE SET
+           reviewed_by = EXCLUDED.reviewed_by,
+           reviewed_at = NOW(),
+           review_note = EXCLUDED.review_note`,
+        [teacherId, adminUser.userId, cleanNote]
+      );
+
+      await client.query("COMMIT");
+    } catch (txErr) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     try {
       await createNotification({

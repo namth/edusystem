@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { assertClassOpen, classLockedResponse } from "@/lib/class-billing";
 
 export async function PUT(
   req: Request,
@@ -23,7 +24,7 @@ export async function PUT(
   }
 
   const subRes = await queryPg(
-    "SELECT id, student_id, status, deadline_at FROM submissions WHERE id = $1 LIMIT 1",
+    "SELECT id, student_id, status, deadline_at, class_ref FROM submissions WHERE id = $1 LIMIT 1",
     [id]
   );
   if (subRes.rows.length === 0) {
@@ -39,6 +40,13 @@ export async function PUT(
       { success: false, error: "Bạn không có quyền sửa lượt thi này." },
       { status: 403 }
     );
+  }
+
+  if (sub.class_ref) {
+    const classCheck = await assertClassOpen(sub.class_ref);
+    if (!classCheck.ok) {
+      return classLockedResponse();
+    }
   }
 
   if (sub.status !== "IN_PROGRESS") {

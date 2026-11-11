@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import StudentLayout from "@/components/StudentLayout";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Flame, Clock, ArrowRight, PlusCircle, CheckCircle2, Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { Clock, ArrowRight, PlusCircle, CheckCircle2, Calendar, AlertCircle, Loader2 } from "lucide-react";
 import { submissionScore, formatScore } from "@/lib/score-display";
 
 interface UserClass {
@@ -12,64 +12,68 @@ interface UserClass {
   name: string;
   code: string;
   schedule: string;
+  billing_status?: string;
 }
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
   const [classes, setClasses] = useState<UserClass[]>([]);
-  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [classesLoading, setClassesLoading] = useState(true);
+  const [classesError, setClassesError] = useState<string | null>(null);
+
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
+  const [subsError, setSubsError] = useState<string | null>(null);
+
   const [joinCode, setJoinCode] = useState("");
   const [joinMsg, setJoinMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchClasses = async () => {
+    setClassesLoading(true);
+    setClassesError(null);
     try {
-      const [classesRes, subsRes] = await Promise.all([
-        fetch("/api/student/classes"),
-        fetch("/api/submissions"),
-      ]);
-
-      if (!classesRes.ok) {
-        const json = await classesRes.json().catch(() => ({}));
+      const res = await fetch("/api/student/classes");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
         throw new Error(json.error || "Không thể tải danh sách lớp học.");
       }
-      if (!subsRes.ok) {
-        const json = await subsRes.json().catch(() => ({}));
-        throw new Error(json.error || "Không thể tải lịch sử bài nộp.");
-      }
-
-      const classesJson = await classesRes.json();
-      const subsJson = await subsRes.json();
-
-      if (!classesJson.success) {
-        throw new Error(classesJson.error || "Không thể tải danh sách lớp học.");
-      }
-      if (!subsJson.success) {
-        throw new Error(subsJson.error || "Không thể tải lịch sử bài nộp.");
-      }
-
-      const mappedClasses = (classesJson.classes || []).map((c: any) => ({
+      const mappedClasses = (json.classes || []).map((c: any) => ({
         id: c.id,
         name: c.name,
         code: c.code,
         schedule: c.schedule || "Chưa có lịch học cố định",
+        billing_status: c.billing_status,
       }));
-
       setClasses(mappedClasses);
-      setRecentSubmissions((subsJson.data || []).slice(0, 5));
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "Đã xảy ra lỗi khi tải dữ liệu.");
+      setClassesError(e.message || "Đã xảy ra lỗi khi tải danh sách lớp học.");
     } finally {
-      setLoading(false);
+      setClassesLoading(false);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    setSubsLoading(true);
+    setSubsError(null);
+    try {
+      const res = await fetch("/api/submissions");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Không thể tải lịch sử bài nộp.");
+      }
+      setSubmissions(json.data || []);
+    } catch (e: any) {
+      console.error(e);
+      setSubsError(e.message || "Đã xảy ra lỗi khi tải lịch sử bài nộp.");
+    } finally {
+      setSubsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchClasses();
+    fetchSubmissions();
   }, []);
 
   const handleJoinClass = async (e: React.FormEvent) => {
@@ -92,7 +96,7 @@ export default function StudentDashboardPage() {
         } else {
           setJoinMsg(`Đã tham gia lớp "${json.class?.name || ""}" thành công!`);
           setJoinCode("");
-          fetchDashboardData();
+          fetchClasses();
         }
       } else if (res.status === 404) {
         setJoinMsg("Mã lớp không hợp lệ hoặc không tồn tại!");
@@ -109,47 +113,23 @@ export default function StudentDashboardPage() {
     setTimeout(() => setJoinMsg(null), 4000);
   };
 
+  const inProgressSubmissions = submissions.filter((sub) => sub.status === "IN_PROGRESS");
+  const completedSubmissions = submissions.filter((sub) => sub.status !== "IN_PROGRESS");
+
   return (
     <StudentLayout>
       <div className="max-w-[1280px] mx-auto space-y-8 font-sans">
-        {/* Stitch Welcome & Daily Streak Widget */}
+        {/* Welcome Banner */}
         <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-line/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <h1 className="font-headline text-2xl md:text-3xl font-bold text-brand-600 mb-1">
-              Welcome back, {user?.name || "bạn"}!
+              Xin chào, {user?.name || "bạn"}!
             </h1>
             <p className="font-body text-sm text-ink-muted">
               Chào mừng bạn đến với hệ thống học tiếng Anh và luyện thi trực tuyến.
             </p>
           </div>
-
-          {/* Daily Streak Widget */}
-          <div className="flex items-center gap-4 bg-brand-50 px-5 py-3 rounded-xl border border-brand-300">
-            <div className="bg-accent-400/30 p-2.5 rounded-full flex items-center justify-center text-brand-600">
-              <Flame className="w-6 h-6 fill-brand-600" />
-            </div>
-            <div>
-              <div className="font-mono text-xs text-ink-muted font-medium">Daily Streak</div>
-              <div className="font-headline text-xl text-brand-600 font-bold">14 Days</div>
-            </div>
-          </div>
         </div>
-
-        {/* Global Error Banner */}
-        {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-              <span className="text-sm font-semibold">{error}</span>
-            </div>
-            <button
-              onClick={fetchDashboardData}
-              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0"
-            >
-              Thử lại
-            </button>
-          </div>
-        )}
 
         {joinMsg && (
           <div className="p-4 rounded-xl bg-brand-50 border border-brand-300 text-brand-600 flex items-center space-x-2">
@@ -194,7 +174,20 @@ export default function StudentDashboardPage() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-headline text-xl text-ink font-bold">Lớp Học Của Tôi ({classes.length})</h2>
               </div>
-              {loading ? (
+              {classesError ? (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <span className="text-sm font-semibold">{classesError}</span>
+                  </div>
+                  <button
+                    onClick={fetchClasses}
+                    className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              ) : classesLoading ? (
                 <div className="flex items-center space-x-2 p-6 bg-white rounded-xl border border-line">
                   <Loader2 className="w-5 h-5 text-brand-600 animate-spin" />
                   <p className="text-xs text-ink-subtle font-mono">Đang tải danh sách lớp học...</p>
@@ -213,7 +206,18 @@ export default function StudentDashboardPage() {
                       className="bg-white border border-line rounded-xl p-5 hover:shadow-md transition-all block"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-headline font-bold text-base text-ink">{cls.name}</h3>
+                        <div className="space-y-1">
+                          <h3 className="font-headline font-bold text-base text-ink">{cls.name}</h3>
+                          {cls.billing_status === "LOCKED" && (
+                            <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 font-sans text-xs font-bold rounded border border-red-200">Đã khoá</span>
+                          )}
+                          {cls.billing_status === "GRACE" && (
+                            <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 font-sans text-xs font-bold rounded border border-amber-300">Sắp khoá</span>
+                          )}
+                          {cls.billing_status === "ENDED" && (
+                            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 font-sans text-xs font-bold rounded border border-gray-300">Đã kết thúc</span>
+                          )}
+                        </div>
                         <span className="bg-brand-50 text-brand-600 font-mono text-xs font-bold px-2 py-0.5 rounded border border-brand-300">
                           {cls.code}
                         </span>
@@ -231,28 +235,72 @@ export default function StudentDashboardPage() {
 
           {/* Right Side Column */}
           <div className="lg:col-span-4 space-y-6">
+            {/* Khối Bài Thi Đang Làm Dở */}
+            {inProgressSubmissions.length > 0 && (
+              <div className="bg-white border border-line rounded-2xl p-5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-line/50 pb-2">
+                  <h2 className="font-headline text-sm font-bold text-ink flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span>Đang làm dở ({inProgressSubmissions.length})</span>
+                  </h2>
+                </div>
+
+                <div className="space-y-2.5">
+                  {inProgressSubmissions.map((sub) => (
+                    <div key={sub.id} className="p-3 bg-surface-alt rounded-xl border border-line space-y-2">
+                      <div className="flex justify-between items-start">
+                        <span className="font-bold text-xs text-ink">Mã bài: {sub.id}</span>
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-300">
+                          Đang làm dở
+                        </span>
+                      </div>
+                      <Link
+                        href={`/student/exam/${sub.exam_id || sub.examId}${sub.class_id || sub.classId ? `?classId=${sub.class_id || sub.classId}` : ""}`}
+                        className="w-full py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold block text-center transition-all shadow-2xs"
+                      >
+                        Tiếp tục làm bài &rarr;
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Recent Submissions & AI Results Widget */}
             <div className="bg-white border border-line rounded-2xl p-5 shadow-2xs space-y-3">
               <div className="flex items-center justify-between border-b border-line/50 pb-2">
                 <h2 className="font-headline text-sm font-bold text-ink flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                  <span>Bài Thi Đã Nộp ({recentSubmissions.length})</span>
+                  <span>Bài Thi Đã Nộp ({completedSubmissions.length})</span>
                 </h2>
               </div>
 
-              {loading ? (
+              {subsLoading ? (
                 <div className="flex items-center space-x-2 py-4">
                   <Loader2 className="w-4 h-4 text-brand-600 animate-spin" />
                   <p className="text-xs text-ink-subtle font-mono">Đang tải bài thi đã nộp...</p>
                 </div>
-              ) : recentSubmissions.length === 0 ? (
+              ) : subsError ? (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span className="text-xs font-semibold">{subsError}</span>
+                  </div>
+                  <button
+                    onClick={fetchSubmissions}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              ) : completedSubmissions.length === 0 ? (
                 <div className="p-4 text-center bg-surface-alt rounded-xl border border-line space-y-1">
                   <p className="text-xs font-medium text-ink-muted">Bạn chưa thực hiện bài thi nào gần đây.</p>
                   <p className="text-[11px] text-ink-subtle">Hãy vào lớp học để làm bài thi được giao.</p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {recentSubmissions.map((sub) => {
+                  {completedSubmissions.slice(0, 5).map((sub) => {
                     const scoreInfo = submissionScore(sub);
                     const formatted = formatScore(scoreInfo);
                     const scoreDisplay =

@@ -76,6 +76,29 @@
 | 046 | UI giáo viên: hub, bảng điểm bài + ngăn chấm, tổng kết; trang lớp bỏ Sổ điểm | 045 | TC-B16 |
 | 047 | UI học sinh: tab Bảng điểm, hiển thị điểm/nhận xét giáo viên | 045 | test UI học sinh |
 
+**Đợt vận hành 08/11 (đều `accepted`; bối cảnh: rà soát thu tiền, `docs/11` D11–D12):**
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 048 | Gửi email qua Resend: quên mật khẩu, đơn hàng, thông báo admin | — | `brief.md` §5 |
+| 049 | Cấp lại mật khẩu tạm: admin cho mọi tài khoản, giáo viên cho học sinh lớp mình | — | `brief.md` §5 |
+| 050 | Báo cáo token & chi phí AI theo giáo viên, sửa số liệu trang chi tiết GV | — | `brief.md` §5 |
+
+**FEAT-015 Ví slot học sinh-tháng (đều `accepted` 08/11; chi tiết + DoD ở `docs/features/vi-slot-hoc-sinh-thang.md` §9):**
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 051 | Trang `/pricing` + link landing/footer | — | TC-W16 |
+| 052 | Migration 018/018b + `lib/slot-wallet.ts` + cron + đường ghi danh trừ ví (HIGH, nhạy cảm) | merge 048 | TC-W01–07, 09, 11, 12, 14, 15, 17 |
+| 053 | Khoá lớp LOCKED/ENDED ở nộp bài & AI; API ví, `billing`, `end`, `slot-adjust` | 052 | TC-W08, 10, 12, 13 |
+| 054 | UI Ví slot, cài đặt/banner lớp, ví ở chi tiết GV admin, banner HS | 053, merge 049/050 | 4 trạng thái UI |
+| 055 | Khung học sinh: menu cls_101, điều hướng mobile, bỏ ô tìm kiếm chết, nhãn "Học sinh" | — | `brief.md` §5 |
+| 056 | Dashboard học sinh: bỏ streak giả, lỗi theo khối, "Đang làm dở", badge billing | — | `brief.md` §5 |
+| 057 | Trang làm bài/đề thi học sinh: bỏ `alert()`, khung CLASS_LOCKED, lỗi 403/409 thân thiện | — | `brief.md` §5 |
+| 058 | Analytics học sinh: chịu lỗi API, hiển thị `ai_feedback` đúng | — | `brief.md` §5 |
+| 059 | Dọn lối vào học sinh: `/student`, `/student/landing` → dashboard, nhãn vai trò hồ sơ | — | `brief.md` §5 |
+| 060 | Siết API lớp học sinh: STUDENT-only, whitelist cột, `checkLessonAccess` trước `assertClassOpen` (HIGH, nhạy cảm) | — | `brief.md` §5 |
+
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
 npx vitest run && npx tsc --noEmit && npx next build
@@ -92,7 +115,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 ## 4. Tồn đọng: lệch giữa code và tài liệu / lỗi đã biết (phát hiện khi dựng lại docs 03/11)
 | # | Mức | Vấn đề | Chỗ | Đề xuất |
 | :--- | :--- | :--- | :--- | :--- |
-| D1 | Cao | Menu học sinh "Đề Thi & Bài Tập" trỏ cứng `/student/class/cls_101` | `components/StudentLayout.tsx` | Trỏ về lớp đầu tiên hoặc danh sách lớp |
+| D1 | Cao | Menu học sinh "Đề Thi & Bài Tập" trỏ cứng `/student/class/cls_101` | `components/StudentLayout.tsx` | ✅ Đã sửa 11/11 (TASK-055) |
 | D2 | TB | `users.password DEFAULT '123456'` trong DDL | `lib/db-pg.ts` `ensureSchema` | Migration mới bỏ DEFAULT (`ALTER COLUMN password DROP DEFAULT`) |
 | D3 | TB | 4 tài khoản học sinh trên server còn mật khẩu plaintext | DB server | Đặt lại mật khẩu |
 | D4 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ (server đã kiểm 03/11: Postgres chạy UTC → dashboard đúng) | migration 014 | Đổi sang TIMESTAMPTZ khi có dịp |
@@ -101,4 +124,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 | D7 | ✅ 03/11 | ~~Tài liệu ngoài chuẩn~~ đã chuyển vào `docs/archive/`, README viết lại: `README.md` (mặc định create-next-app), `FEATURE_INDEX.md`, `SYSTEM_ARCHITECTURE.md`, `USERS.md`, `task.md`, `docs/ADR_AUTH.md`, `docs/ADR-001-…`, `docs/SCORING.md` (mô tả Supabase Auth / luồng chấm cũ) | gốc repo, `docs/` | Gộp phần còn đúng vào 01–14 rồi xoá hoặc chuyển vào `docs/archive/` |
 | D8 | Thấp | Rác: `scratch/`, `scratch_inspect_neo4j.cjs` | gốc repo | Xoá |
 | D10 | Cao | Tab "Sổ điểm" trang lớp gọi `grade-override` thiếu `section_scores` → luôn 400, đọc cột cũ (`final_score`, `ai_score`); `members` tính điểm từ bài nộp mọi lớp; AI bài học lỗi → 0 điểm; người tạo đề thấy bài lớp khác | `app/teacher/classes/[classId]/page.tsx`, `app/api/teacher/classes/[classId]/members/route.ts`, `app/api/lessons/grade-async/route.ts`, `app/api/teacher/submissions/route.ts` | ✅ Đã sửa trong FEAT-014 (TASK-044 → 046) |
+| D11 | Nghiêm trọng | `forgot-password` trả `resetUrl` (kèm token) trong response và log ra console → ai biết email cũng đặt lại được mật khẩu người khác; thông điệp khác nhau giữa email có/không tồn tại | `app/api/auth/forgot-password/route.ts` | ✅ Đã sửa 08/11 (BR-A06, `tests/forgot-password-security.test.ts`) |
+| D13 | TB | `/payment-policy` hứa "tự động gạch nợ, cấp slot ngay", cổng thẻ/ví và email hoá đơn tự động — chưa có; đơn giá 0 vẫn cho tạo đơn | `app/payment-policy/page.tsx`, `lib/slot-orders.ts` | ✅ 08/11: sửa câu chữ theo duyệt tay (kích hoạt trong giờ làm việc, hoá đơn theo yêu cầu), thêm BR-O10 |
+| D12 | TB | Chưa có dịch vụ gửi email (quên mật khẩu, xác thực email, xác nhận đơn/hoá đơn mà `/payment-policy` đã hứa) và admin chưa có chức năng cấp lại mật khẩu người dùng | `lib/`, `app/admin/` | Tính năng mới qua `/grill-feature` |
 | D9 | Thấp | File lớn: `components/question-builder/QuestionSetEditor.tsx` khoảng 2.860 dòng | — | Tách theo dạng câu hỏi khi có dịp |

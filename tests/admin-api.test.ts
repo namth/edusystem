@@ -50,6 +50,8 @@ beforeEach(async () => {
       ('t1','Cô Lan','lan@x.vn','TEACHER','0901','salt:hash',10,'tok'),
       ('s1','Nguyễn An','an@x.vn','STUDENT','0902','salt:hash',0,NULL),
       ('s2','Trần Bình','binh@x.vn','STUDENT',NULL,'salt:hash',0,NULL);
+    -- FEAT-015: ví slot (thay DEC-031): GV đã xác minh có 10 slot; ghi danh trừ ví
+    UPDATE users SET teacher_status='VERIFIED', slot_balance=10 WHERE id='t1';
     INSERT INTO classes (id,name,code,teacher_id) VALUES ('c1','Lớp A','AAA','t1'), ('c2','Lớp B','BBB','t1');
     INSERT INTO enrollments (id,student_id,class_id) VALUES ('e1','s1','c1');
     INSERT INTO submissions (id,exam_id,student_id,answers,final_score,created_at) VALUES
@@ -154,13 +156,14 @@ describe("Duyệt đơn mua slot — /api/admin/requests", () => {
     expect(json.slot_requests.map((r: any) => r.id)).toEqual(["r1", "r2"]);
   });
 
-  it("APPROVE đơn PENDING → APPROVED và cộng requested_slots vào slot_limit của giáo viên", async () => {
+  it("APPROVE đơn PENDING → APPROVED và cộng requested_slots vào slot_balance + 1 dòng slot_ledger PURCHASE (slot_limit không đổi)", async () => {
     await loginAs("ADMIN", "a1");
     const { PUT } = await import("@/app/api/admin/requests/[id]/route");
     const res = await PUT(req("PUT", "/x", { action: "APPROVE" }), ctx("r1"));
     expect(res.status).toBe(200);
     expect((await rows(`SELECT status FROM slot_requests WHERE id='r1'`))[0].status).toBe("APPROVED");
-    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(60);
+    expect((await rows(`SELECT slot_balance, slot_limit FROM users WHERE id='t1'`))[0]).toEqual({ slot_balance: 60, slot_limit: 10 });
+    expect(await rows(`SELECT delta FROM slot_ledger WHERE teacher_id='t1' AND reason='PURCHASE'`)).toEqual([{ delta: 50 }]);
   });
 
   it("duyệt lại đơn đã xử lý → 409, không cộng thêm; REJECT → REJECTED không cộng; action lạ → 400; không có → 404", async () => {
@@ -171,7 +174,7 @@ describe("Duyệt đơn mua slot — /api/admin/requests", () => {
     expect((await PUT(req("PUT", "/x", { action: "APPROVE" }), ctx("rX"))).status).toBe(404);
     expect((await PUT(req("PUT", "/x", { action: "REJECT" }), ctx("r1"))).status).toBe(200);
     expect((await rows(`SELECT status FROM slot_requests WHERE id='r1'`))[0].status).toBe("REJECTED");
-    expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(10);
+    expect((await rows(`SELECT slot_balance FROM users WHERE id='t1'`))[0].slot_balance).toBe(10);
   });
 });
 

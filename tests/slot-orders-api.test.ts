@@ -28,7 +28,7 @@ const req = (method: string, url: string, body?: unknown) =>
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const rows = async (sql: string, p: unknown[] = []) => (await h.pg.db.query(sql, p)).rows as any[];
 const order = async (id: string) => (await rows(`SELECT * FROM slot_requests WHERE id=$1`, [id]))[0];
-const slot = async (id: string) => (await rows(`SELECT slot_limit FROM users WHERE id=$1`, [id]))[0].slot_limit;
+const slot = async (id: string) => (await rows(`SELECT slot_balance FROM users WHERE id=$1`, [id]))[0].slot_balance; // FEAT-015: thay DEC-031 — số dư ví
 const notes = (userId: string, type: string) => rows(`SELECT ref_id, link FROM notifications WHERE user_id=$1 AND type=$2`, [userId, type]);
 const read = (f: string) => fs.readFileSync(f, "utf8");
 
@@ -68,6 +68,7 @@ beforeEach(async () => {
       ('a1','Admin 1','a1@x.vn','ADMIN',NULL,0), ('a2','Admin 2','a2@x.vn','ADMIN',NULL,0),
       ('t1','Cô Lan','t1@x.vn','TEACHER','VERIFIED',250), ('t2','Thầy Minh','t2@x.vn','TEACHER','VERIFIED',250),
       ('tT','GV thử','tt@x.vn','TEACHER','TRIAL',9), ('s1','HS','s1@x.vn','STUDENT',NULL,0);
+    UPDATE users SET slot_balance=250 WHERE role='TEACHER';
     INSERT INTO slot_requests (id,teacher_id,teacher_name,teacher_email,requested_slots,total_cost,status) VALUES
       ('old1','t1','Cô Lan','t1@x.vn',10,100000,'APPROVED'), ('old2','t2','Thầy Minh','t2@x.vn',20,200000,'PENDING');
   `);
@@ -165,6 +166,21 @@ describe("POST /api/teacher/slot-requests — giáo viên tự tạo đơn", () 
     process.env.SLOT_UNIT_PRICE_VND = "15000";
     await loginAs("TEACHER", "t1");
     expect((await (await post({ requested_slots: 2 })).json()).slot_request.total_cost).toBe(30000);
+  });
+
+  it("BR-O10: đơn giá 0 hoặc chưa có tài khoản nhận tiền → GV tạo đơn bị 409, không sinh đơn; admin tạo hộ vẫn được", async () => {
+    const count = async () => Number((await h.pg.db.query(`SELECT COUNT(*)::int AS n FROM slot_requests WHERE teacher_id='t1'`)).rows[0].n);
+    const before = await count();
+    await loginAs("TEACHER", "t1");
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"unit_price_vnd":0}'::jsonb WHERE key='slot_pricing'`);
+    expect((await post({ requested_slots: 5 })).status).toBe(409);
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"unit_price_vnd":12000}'::jsonb WHERE key='slot_pricing'`);
+    await h.pg.db.exec(`UPDATE system_settings SET value='{"bank_bin":"","bank_name":"","account_no":"","account_name":""}'::jsonb WHERE key='payment_account'`);
+    expect((await post({ requested_slots: 5 })).status).toBe(409);
+    expect(await count()).toBe(before);
+    const { createOrder } = await import("@/lib/slot-orders");
+    const r = await createOrder({ teacherId: "t1", requestedSlots: 5, totalCost: 0, note: "Tặng", source: "ADMIN", createdBy: "a1" });
+    expect(r.ok).toBe(true);
   });
 
   it("giáo viên dùng thử → 403 TRIAL_LIMIT (giữ DEC-027); số slot sai → 400", async () => {
@@ -325,6 +341,8 @@ describe("Duyệt / từ chối — /api/admin/orders/[id]/approve | reject", ()
     await loginAs("ADMIN", "a1");
     expect((await approve("old2")).status).toBe(200);
     expect(await slot("t2")).toBe(270);
+    expect(await h.pg.db.query(`SELECT delta FROM slot_ledger WHERE teacher_id='t2' AND reason='PURCHASE'`).then((r: any) => r.rows)).toEqual([{ delta: 20 }]);
+    expect((await rows(`SELECT slot_limit FROM users WHERE id='t2'`))[0].slot_limit).toBe(250); // slot_limit không đổi
     expect(await order("old2")).toMatchObject({ status: "APPROVED", decided_by: "a1" });
     expect((await order("old2")).decided_at).toBeTruthy();
     expect(await notes("t2", "ORDER_APPROVED")).toEqual([{ ref_id: "old2", link: "/teacher/orders/old2" }]);

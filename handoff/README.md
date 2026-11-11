@@ -106,6 +106,43 @@ Kiểm tra mọi thứ đã sẵn sàng:
 python3 scripts/handoff.py doctor
 ```
 
+## Kiểm tra: cổng tự động thay nghiệm thu chéo (10/11/2026)
+
+Nghiệm thu chéo bằng agent kém hiệu quả (cùng họ model nên cùng điểm mù; đợt 048–054 bỏ sót 4 lỗi nghiêm trọng, tester chéo viết sai hợp đồng ở 4/7 task) nên mặc định **tắt** (`cross_review: false`):
+- Test vẫn do tài khoản khác viết từ brief (`tests`/`auto`), model tester khác họ với người code (`agy_role_models`).
+- Sau `submit` (đã kiểm khoá test + phạm vi + `verify.sh`): **LOW → accepted**, **HIGH/nhạy cảm → review_passed**, không còn vòng agent kiểm.
+- Việc kiểm thật là `python3 scripts/orchestrate.py gate <ID>` (quét bảo vệ bị bớt + toàn bộ vitest + tsc); LOW đạt gate thì `merge-low`, HIGH thì Claude duyệt.
+- Bật lại nghiệm thu chéo: `"cross_review": true` trong `handoff/config.json`.
+
+## Mô hình điều phối bằng Antigravity (ORCH)
+
+Mục tiêu: phần dài và ít cần trí tuệ (chạy `auto`, hồi phục phiên treo, gate, merge task LOW) do một tài khoản Antigravity làm; Claude chỉ viết đặc tả/blueprint, làm task khó và nhạy cảm, duyệt cuối. Claude đọc `handoff/digest.md` (≤ ~30 dòng) thay vì mang cả phiên điều phối.
+
+| Tài khoản | Máy | HOME | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| `agy1` | máy chính | `~` | **ĐIỀU PHỐI** (máy này còn chạy Claude nên chỉ giữ 1 tài khoản); mặc định `gemini-3.8-flash-high`, việc khó thì `run --hard` (`gemini-4-argon-high`) |
+| `agy2` | MacBook | `~/.agy-worker` | code / kiểm chéo |
+| `agy3` | MacBook | `~/.agy-worker2` | code / kiểm chéo (tài khoản mới) |
+
+Tên tài khoản nằm trong `~/.config/handoff/accounts.json` của từng máy (tên không trùng giữa các máy để văn phòng ảo hiển thị đúng). MacBook truy cập bằng `nams-macbook-air.local` (không dùng IP; khoá host đối chiếu theo `HostKeyAlias=192.168.1.34`).
+
+Máy chính chỉ có 1 tài khoản nên `digest`/`launch` tự dùng `--host macbook` (code và kiểm chéo giữa agy2 ↔ agy3 trên MacBook).
+
+Công cụ — `scripts/orchestrate.py`, mọi lệnh chỉ cần `python3`:
+
+| Lệnh | Việc |
+| :--- | :--- |
+| `digest [--host macbook]` | Bảng việc: CẦN CLAUDE · ĐIỀU PHỐI LÀM TIẾP · NGHI TREO · ĐANG CHẠY · CHỜ MERGE; ghi `handoff/digest.md` |
+| `launch <ID> [--host macbook]` | Tạo worktree nếu chưa có rồi chạy `auto` nền (có `caffeinate`), nhật ký `handoff/logs/` |
+| `guard-scan <ID>` | Quét diff: bảo vệ bị bớt (kiểm quyền, 401/403, khoá…), test bị xoá, đường tắt |
+| `gate <ID>` | guard-scan + toàn bộ vitest + tsc, ghi `gate.json` kèm dấu vân tay diff |
+| `merge-low <ID>` | Merge chỉ khi accepted + LOW + không nhạy cảm + gate đạt và diff chưa đổi + không phải nhánh main/master |
+| `run [--as agyN]` | Khởi động phiên agy làm điều phối (skill `/dieu-phoi`) |
+
+Ranh giới cứng nằm trong mã, không dựa vào lời nhắc: hook `agy_guard.py` (đặt `HANDOFF_ROLE=orchestrator`) chỉ cho ghi trong `handoff/`; `merge-low` từ chối task HIGH/nhạy cảm. Agent điều phối chỉ chạy `python3`. Chỉ nới quyền shell nếu thật cần.
+
+Cách dùng: Claude lập kế hoạch + brief + commit → `python3 scripts/orchestrate.py run` (agy1, thêm `--hard` khi cần Gemini 4 Argon) → đọc `handoff/digest.md` → duyệt task ở mục CẦN CLAUDE. Kiểm thử công cụ: `python3 scripts/test_orchestrate.py`.
+
 ## Lệnh nhanh
 
 ```bash
@@ -114,3 +151,5 @@ python3 scripts/handoff.py verify TASK-001      # kiểm khoá test + chạy ver
 python3 scripts/handoff.py verify TASK-001 --quiet  # chỉ in tóm tắt, log đầy đủ ra file (trưởng phòng nghiệm thu)
 python3 scripts/handoff.py doctor               # kiểm tra bộ phối hợp & agy
 ```
+
+> **Quy ước model (11/2026):** `gemini-3.8-flash-high` có hạn mức lớn nhất nên là model mặc định cho mọi vai (coder/tester/reviewer/điều phối). Model khác (Claude trên agy, gemini-4-argon) hạn mức rất thấp — chỉ dùng khi thật cần, chỉ định tay bằng `--agy-model` / `orchestrate.py run --hard`.

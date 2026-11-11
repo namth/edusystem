@@ -33,7 +33,7 @@ export default function PaymentPolicyPage() {
             </h2>
           </div>
           <p className="text-sm text-ink-muted leading-relaxed">
-            KitoKit cung cấp các phương thức thanh toán trực tuyến thuận tiện và bảo mật tuyệt đối:
+            Hiện KitoKit nhận thanh toán bằng chuyển khoản ngân hàng qua mã VietQR:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
@@ -43,17 +43,17 @@ export default function PaymentPolicyPage() {
                 <span>Chuyển khoản Ngân hàng (VietQR 24/7)</span>
               </h3>
               <p className="text-ink-muted leading-relaxed">
-                Người dùng quét mã QR chuẩn Napas247 hiển thị trên màn hình thanh toán từ ứng dụng ngân hàng bất kỳ. Hệ thống tự động nhận diện theo mã đơn hàng duy nhất và kích hoạt dịch vụ tức thì.
+                Người dùng quét mã QR chuẩn Napas247 hiển thị trên trang đơn hàng bằng ứng dụng ngân hàng bất kỳ. Mã QR đã điền sẵn số tiền và mã đơn hàng. Sau khi chuyển khoản, bấm “Tôi đã chuyển khoản” để KitoKit đối soát.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-surface border border-line space-y-2">
               <h3 className="font-bold text-ink flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Cổng thanh toán & Thẻ ngân hàng</span>
+                <span>Cổng thanh toán & Thẻ ngân hàng (sắp có)</span>
               </h3>
               <p className="text-ink-muted leading-relaxed">
-                Thanh toán qua cổng trung gian liên kết: Thẻ ATM nội địa (Internet Banking), Thẻ tín dụng/ghi nợ quốc tế (Visa, MasterCard, JCB) và các Ví điện tử được cấp phép.
+                Thanh toán bằng thẻ ATM nội địa, thẻ quốc tế và ví điện tử qua cổng trung gian được cấp phép đang được triển khai. Khi có, KitoKit sẽ cập nhật chính sách này.
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ export default function PaymentPolicyPage() {
           <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200/70 text-xs text-amber-900 flex items-start gap-3">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Lưu ý quan trọng:</strong> Quý khách vui lòng điền chính xác <strong>Mã đơn hàng (Order Code)</strong> trong nội dung chuyển khoản để hệ thống tự động gạch nợ và cấp slot ngay lập tức. Nếu ghi sai mã, quý khách chỉ cần liên hệ Hotline để được nhân viên đối soát thủ công.
+              <strong>Lưu ý quan trọng:</strong> Quý khách vui lòng điền chính xác <strong>Mã đơn hàng (Order Code)</strong> trong nội dung chuyển khoản để nhân viên KitoKit đối soát nhanh và chính xác. Nếu ghi sai mã, quý khách vui lòng liên hệ Hotline kèm ảnh chụp giao dịch.
             </div>
           </div>
         </section>
@@ -75,12 +75,12 @@ export default function PaymentPolicyPage() {
             </h2>
           </div>
           <p className="text-sm text-ink-muted leading-relaxed">
-            Do sản phẩm của KitoKit là <strong>Dịch vụ phần mềm giáo dục trực tuyến (Digital Goods/SaaS)</strong>, quy trình giao nhận sản phẩm được thực hiện hoàn toàn tự động trên môi trường mạng:
+            Do sản phẩm của KitoKit là <strong>Dịch vụ phần mềm giáo dục trực tuyến (Digital Goods/SaaS)</strong>, sản phẩm được bàn giao trực tuyến trên tài khoản của quý khách:
           </p>
           <ul className="list-disc pl-5 text-sm text-ink-muted space-y-2">
-            <li><strong>Thời gian kích hoạt:</strong> Ngay sau khi giao dịch chuyển khoản thành công (thường từ <strong>01 đến 05 phút</strong>).</li>
+            <li><strong>Thời gian kích hoạt:</strong> Sau khi KitoKit đối soát được giao dịch, trong giờ làm việc ({BRAND.company.workingHours}), thường trong vòng <strong>04 giờ làm việc</strong>. Giao dịch ngoài giờ được xử lý vào đầu ngày làm việc kế tiếp.</li>
             <li><strong>Hình thức bàn giao:</strong> Số lượng slot học sinh, quyền truy cập kho đề thi hoặc gói học sẽ được cộng trực tiếp vào tài khoản của Giáo viên/Học sinh trên hệ thống.</li>
-            <li><strong>Xác nhận hoàn thành:</strong> Hệ thống sẽ tự động gửi email hóa đơn/xác nhận đơn hàng và hiển thị trạng thái <em>“Thành công”</em> tại mục Quản lý đơn hàng của người dùng.</li>
+            <li><strong>Xác nhận hoàn thành:</strong> Đơn hàng chuyển sang trạng thái <em>“Đã duyệt”</em> tại trang đơn hàng, kèm thông báo trong ứng dụng và email xác nhận gửi tới địa chỉ email đã đăng ký. Hoá đơn điện tử được xuất theo yêu cầu, quý khách gửi thông tin xuất hoá đơn qua email {BRAND.company.email}.</li>
           </ul>
         </section>
 
