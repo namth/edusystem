@@ -63,7 +63,11 @@ function StudentLessonContent() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitErrorCode, setSubmitErrorCode] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -76,7 +80,10 @@ function StudentLessonContent() {
 
     setLoading(true);
     setErrorStatus(null);
+    setErrorCode(null);
     setErrorMessage(null);
+    setSubmitError(null);
+    setSubmitErrorCode(null);
 
     try {
       const [lessonRes, attemptsRes] = await Promise.all([
@@ -87,7 +94,10 @@ function StudentLessonContent() {
       if (!lessonRes.ok) {
         setErrorStatus(lessonRes.status);
         const data = await lessonRes.json().catch(() => ({}));
-        if (lessonRes.status === 403) {
+        if (data.code === "CLASS_LOCKED") {
+          setErrorCode("CLASS_LOCKED");
+          setErrorMessage("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+        } else if (lessonRes.status === 403) {
           setErrorMessage(data.error || "Bài học chưa được mở hoặc bạn không có quyền truy cập.");
         } else if (lessonRes.status === 404) {
           setErrorMessage("Không tìm thấy bài học");
@@ -116,6 +126,15 @@ function StudentLessonContent() {
         const attemptsJson = await attemptsRes.json();
         const attList: AttemptItem[] = attemptsJson.attempts || [];
         setAttempts(attList);
+      } else {
+        const attemptsData = await attemptsRes.json().catch(() => ({}));
+        if (attemptsData.code === "CLASS_LOCKED") {
+          setErrorCode("CLASS_LOCKED");
+          setErrorStatus(attemptsRes.status);
+          setErrorMessage("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+          setLoading(false);
+          return;
+        }
       }
     } catch (err: any) {
       setErrorStatus(500);
@@ -184,17 +203,19 @@ function StudentLessonContent() {
   const totalQuestions = questions.length;
 
   // Submit attempt
-  const handleSubmit = async () => {
+  const handleSubmit = async (bypassConfirm = false) => {
     if (submitting || !classId || !lessonId) return;
 
-    if (answeredCount < totalQuestions) {
-      const confirmed = window.confirm(
-        `Bạn mới trả lời ${answeredCount}/${totalQuestions} câu hỏi. Bạn có chắc chắn muốn nộp bài không?`
-      );
-      if (!confirmed) return;
+    if (!bypassConfirm && answeredCount < totalQuestions) {
+      setShowConfirmModal(true);
+      return;
     }
 
+    setShowConfirmModal(false);
     setSubmitting(true);
+    setSubmitError(null);
+    setSubmitErrorCode(null);
+
     try {
       const res = await fetch(`/api/student/lessons/${lessonId}/attempts`, {
         method: "POST",
@@ -202,9 +223,14 @@ function StudentLessonContent() {
         body: JSON.stringify({ classId, answers }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        alert(data.error || "Nộp bài thất bại. Vui lòng thử lại.");
+        if (data.code === "CLASS_LOCKED") {
+          setSubmitErrorCode("CLASS_LOCKED");
+          setSubmitError("Lớp học đang bị khoá — liên hệ giáo viên để biết thêm chi tiết.");
+        } else {
+          setSubmitError(data.error || "Nộp bài thất bại. Vui lòng thử lại.");
+        }
         return;
       }
 
@@ -212,7 +238,7 @@ function StudentLessonContent() {
       setCurrentAttempt(newAttempt);
       setAttempts((prev) => [newAttempt, ...prev]);
     } catch (err: any) {
-      alert(err.message || "Lỗi khi nộp bài. Vui lòng kiểm tra kết nối.");
+      setSubmitError(err.message || "Lỗi khi nộp bài. Vui lòng kiểm tra kết nối.");
     } finally {
       setSubmitting(false);
     }
@@ -276,12 +302,16 @@ function StudentLessonContent() {
 
   // Error handling: 403, 404, or network error
   if (errorStatus || errorMessage) {
+    const isLocked = errorCode === "CLASS_LOCKED";
     return (
       <StudentLayout>
         <div className="max-w-4xl mx-auto py-12 px-4">
           <div
+            role="alert"
             className={`rounded-2xl border p-8 text-center space-y-4 ${
-              errorStatus === 403
+              isLocked
+                ? "border-amber-300 bg-amber-50 text-amber-900"
+                : errorStatus === 403
                 ? "border-amber-300 bg-amber-50 text-amber-900"
                 : errorStatus === 404
                 ? "border-gray-300 bg-gray-50 text-gray-900"
@@ -290,7 +320,9 @@ function StudentLessonContent() {
           >
             <AlertCircle className="w-12 h-12 mx-auto" />
             <h2 className="text-xl font-bold font-headline">
-              {errorStatus === 403
+              {isLocked
+                ? "Lớp học đang bị khoá"
+                : errorStatus === 403
                 ? "Bài học chưa được mở"
                 : errorStatus === 404
                 ? "Không tìm thấy bài học"
@@ -301,7 +333,15 @@ function StudentLessonContent() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              {errorStatus === 403 && (
+              {isLocked ? (
+                <Link
+                  href="/student/dashboard"
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 transition-all shadow-xs"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Về Dashboard
+                </Link>
+              ) : errorStatus === 403 ? (
                 <Link
                   href={`/student/class/${classId}`}
                   className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 transition-all shadow-xs"
@@ -309,8 +349,7 @@ function StudentLessonContent() {
                   <ArrowLeft className="w-4 h-4" />
                   Về lộ trình lớp
                 </Link>
-              )}
-              {errorStatus !== 403 && (
+              ) : (
                 <button
                   type="button"
                   onClick={loadData}
@@ -352,6 +391,36 @@ function StudentLessonContent() {
           )}
         </div>
 
+        {/* Thông báo lỗi khi nộp bài */}
+        {submitError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-rose-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span className="text-sm font-semibold">{submitError}</span>
+            </div>
+            {submitErrorCode === "CLASS_LOCKED" ? (
+              <Link
+                href="/student/dashboard"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-2xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Về Dashboard
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSubmitError(null)}
+                className="shrink-0 text-xs font-bold text-rose-700 hover:underline cursor-pointer"
+              >
+                Đóng
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Thanh tiêu đề bài học */}
         <div className="rounded-2xl border border-line bg-white p-6 md:p-8 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -386,7 +455,7 @@ function StudentLessonContent() {
                   <button
                     type="button"
                     disabled={submitting}
-                    onClick={handleSubmit}
+                    onClick={() => handleSubmit(false)}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
                   >
                     {submitting ? (
@@ -594,6 +663,37 @@ function StudentLessonContent() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Modal xác nhận nộp bài khi chưa làm hết câu hỏi */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-line shadow-xl">
+              <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+                <AlertCircle className="w-5 h-5" />
+                <span>Xác nhận nộp bài học</span>
+              </div>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Bạn mới trả lời {answeredCount}/{totalQuestions} câu hỏi. Bạn có chắc chắn muốn nộp bài không?
+              </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                >
+                  Làm tiếp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit(true)}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all"
+                >
+                  Xác nhận nộp bài
+                </button>
+              </div>
             </div>
           </div>
         )}
