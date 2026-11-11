@@ -135,5 +135,16 @@ class GuardRole(unittest.TestCase):
         self.assertEqual(json.loads(r.stdout)["decision"], "deny")
 
 
+
+class FailureCauseTests(unittest.TestCase):
+    def test_causes(self):
+        f = H.agy_failure_cause
+        self.assertEqual(f({"error": "UNAVAILABLE (code 503): No capacity"}, False)[0], "capacity")
+        self.assertEqual(f({"error": "Individual quota reached"}, False)[0], "quota")
+        self.assertEqual(f({"error": "Individual quota reached"}, True)[0], "quota_after_done")
+        self.assertEqual(f({"notices": ["headless mode cannot prompt for permission"]}, False)[0], "permission")
+        self.assertEqual(f({"status": "SUCCESS"}, False)[0], "early_stop")
+        self.assertIsNone(f({"status": "SUCCESS"}, True))
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

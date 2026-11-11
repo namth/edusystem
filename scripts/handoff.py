@@ -422,6 +422,24 @@ def agy_task(task: Path, prompt: str, model: str | None, conversation_id: str | 
     report_agy(task, result, role, home)
 
 
+def agy_failure_cause(result: dict, done: bool) -> tuple[str, str] | None:
+    """Phân loại vì sao agy dừng bất thường → (mã, gợi ý). None = chạy bình thường."""
+    text = json.dumps(result, ensure_ascii=False)
+    low = text.lower()
+    if "no capacity" in low or "code 503" in low or "unavailable" in low:
+        return "capacity", "máy chủ model quá tải (503) — không phải lỗi task; chạy lại sau vài phút (unstick), không đổi model vội."
+    if "resource_exhausted" in low or "quota" in low:
+        return ("quota_after_done" if done else "quota"), (
+            "hết hạn mức model — dùng model khác (`--agy-model`) hoặc chờ reset; flash-high là mặc định vì hạn mức lớn nhất.")
+    if "headless mode cannot prompt" in low or "auto-denied" in low or "permission" in low and "denied" in low:
+        return "permission", "agent bị từ chối quyền lệnh (thường do `python3 -c` nhiều dấu nháy, hoặc lệnh ngoài python3) — resume kèm ghi chú chỉ dùng công cụ file."
+    if any(k in low for k in ("deadline", "timed out", "timeout", "econnreset", "connection reset")):
+        return "network", "lỗi mạng/quá thời gian — chạy lại (unstick); kiểm tra đường truyền."
+    if not done and result.get("status") == "SUCCESS":
+        return "early_stop", "agent trả lời xong nhưng chưa hoàn tất bước cuối — resume nhắc làm tiếp (auto đã tự thử); nếu lặp lại, đọc câu cuối của agent: thường nó đang báo bị chặn."
+    return None
+
+
 def report_agy(task: Path, result: dict, role: str = "coder", home: Path | None = None) -> None:
     state = load_state(task)
     print(f"agy: status={result.get('status')} exit={result['exit_code']} "
@@ -431,6 +449,10 @@ def report_agy(task: Path, result: dict, role: str = "coder", home: Path | None 
         print(f"  [stderr] {n}")
     if result.get("error"):
         print(f"  [lỗi] {result['error']}")
+    cause = agy_failure_cause(result, state["status"] in ROLE_DONE[role])
+    if cause:
+        print(f"CHẨN ĐOÁN: {cause[0]} — {cause[1]}")
+        log_event("agy_failure", state["id"], cause=cause[0], role=role)
     if is_quota(result):
         if state["status"] in ROLE_DONE[role]:
             print("(Lỗi hạn mức xảy ra sau khi agent đã xong phần việc — không ảnh hưởng kết quả.)")
@@ -490,6 +512,13 @@ def cmd_new(a) -> None:
 def cmd_lock(a) -> None:
     task = find_task(a.id)
     files = [task / "verify.sh", *[ROOT / f for f in a.files]]
+    bad = [l.strip() for l in (task / "verify.sh").read_text(encoding="utf-8").splitlines()
+           if re.search(r"\btsc\b", l) and re.search(r"\.tsx?\b", l) and not re.search(r"(-p|--project)\b", l)
+           and not l.lstrip().startswith("#")]
+    if bad:  # tsc nhận file trên dòng lệnh thì BỎ QUA tsconfig.json → báo lỗi giả (đã gặp ở TASK-057)
+        die("verify.sh chạy `tsc` với danh sách file nên tsc bỏ qua tsconfig.json: " + bad[0] + "\n"
+            "  → dùng `npx tsc --noEmit -p tsconfig.json` (toàn dự án).")
+    relock = (task / "tests.lock").exists()
     lines = []
     for f in files:
         if not f.exists():
@@ -499,6 +528,8 @@ def cmd_lock(a) -> None:
     state = load_state(task)
     state["locked_files"] = [l.split("  ", 1)[1] for l in lines]
     save_state(task, state)
+    if relock:
+        log_event("claude_fix", state["id"], what="khoá lại test/verify sau khi chỉnh tay")
     print(f"Đã khoá {len(lines)} file.")
 
 
@@ -818,6 +849,7 @@ def cmd_reject(a) -> None:
     state = load_state(task)
     if state["status"] not in ("submitted", "review_passed", "changes_requested"):
         die(f"{state['id']} đang ở trạng thái {state['status']}, chỉ trả về được task đã nộp")
+    log_event("reject", state["id"])
     review = task / "review.md"
     if not review.exists():
         die(f"viết {review.relative_to(ROOT)} trước khi trả về")

@@ -20,3 +20,11 @@ Bạn là kỹ sư kiểm thử. Một tài khoản Antigravity khác sẽ viế
 5. Kết thúc bằng một dòng: "<ID> đã có test — chờ tài khoản khác code."
 
 Không sửa `brief.md`, `state.json`, không commit. Lệnh shell: tuân theo luật 10 trong `.agents/rules/vai-tro-ky-su-thuc-thi.md` (chỉ `python3`).
+
+## Bẫy đã gặp (bắt buộc tránh)
+- `verify.sh`: type-check bằng `npx tsc --noEmit -p tsconfig.json`; KHÔNG truyền danh sách file cho tsc (nó bỏ qua tsconfig.json → báo lỗi giả, `lock` sẽ từ chối).
+- Trước `tests-done`: chạy toàn bộ `npx vitest run` + tsc; test cũ bị task làm lỗi thời thì ghi vào `report.md` để trưởng phòng xử lý, đừng để cổng tự động phát hiện sau.
+- Không dùng `python3 -c "…"` nhiều dấu nháy lồng nhau (bị từ chối quyền); ghi script ra file `.py` rồi `python3 file.py`, hoặc dùng công cụ đọc file.
+- Không bọc đường dẫn file trong dấu nháy thừa khi gọi công cụ đọc/ghi file.
+- Không thêm `eslint-disable`/`@ts-ignore` vào file test (cổng tự động coi là đường tắt).
+- Sau khi `tests-done`, không sửa file test nữa (hash khoá sẽ lệch).

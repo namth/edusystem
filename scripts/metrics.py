@@ -9,7 +9,8 @@ Chỉ dùng thư viện chuẩn. Dữ liệu nằm ở máy người dùng (dùn
   metrics.py event <loại> [TASK-ID] [--note …]        ghi tay một sự kiện
   metrics.py add-period <nhãn> --mode … --tasks N --turns T --out O --cw W --cr R [--note …]   nhập đợt cũ
   metrics.py report [--json]                           tổng kết: token/task theo mode + thống kê lỗi agent
-Loại sự kiện chuẩn: launch, unstick, resume_early_stop, quota_fallback, gate_pass, gate_fail, reject,
+  metrics.py review                                    tự quét sự kiện, chỉ ra điểm cần chỉnh (ngưỡng: >1 lần/task)
+Loại sự kiện chuẩn: agy_failure (cause=capacity|quota|permission|network|early_stop), launch, unstick, resume_early_stop, quota_fallback, gate_pass, gate_fail, reject,
   accept, merge, claude_fix (Claude phải tự sửa việc của agent), lock_edited, escalate_hard.
 Token Claude lấy từ transcript ~/.claude/projects/<tên-thư-mục-dự-án>*/**/*.jsonl (gồm cả worktree)."""
 from __future__ import annotations
@@ -191,6 +192,33 @@ def cmd_report(a) -> None:
           "claude_fix cao → việc không hợp để giao; quota_fallback cao → hạn mức model.")
 
 
+def cmd_review(a) -> None:
+    """Tự quét dữ liệu và chỉ ra điểm cần chỉnh (thay cho việc người đọc log tay)."""
+    ev = read("events.jsonl")
+    c = collections.Counter(e["kind"] for e in ev)
+    merged = c["merge"] or 1
+    causes = collections.Counter(e.get("cause") for e in ev if e["kind"] == "agy_failure")
+    notes = []
+    rate = lambda k: c[k] / merged  # noqa: E731
+    if rate("unstick") + rate("resume_early_stop") > 1:
+        notes.append(f"Agent dừng sớm {rate('unstick') + rate('resume_early_stop'):.1f} lần/task: xem nguyên nhân (permission → siết skill/brief 'chỉ python3'; early_stop → đổi model hoặc chia task nhỏ hơn).")
+    if rate("gate_fail") > 1:
+        notes.append(f"Gate trượt {rate('gate_fail'):.1f} lần/task: brief/test chưa chặt hoặc tester chưa chạy tsc+docs-sync; thêm bước 'chạy đủ vitest+tsc' vào skill viết test.")
+    if rate("claude_fix") > 1:
+        notes.append(f"Claude phải tự sửa {rate('claude_fix'):.1f} lần/task: nếu >1 thường kéo cả lợi ích token — xem việc nào nên tự làm ngay hoặc viết brief/test kỹ hơn.")
+    if c["quota_fallback"] + causes["quota"] > 0:
+        notes.append("Có lỗi hạn mức model: giữ flash-high mặc định, tránh model Claude/argon trừ khi thật cần.")
+    if causes["capacity"]:
+        notes.append(f"{causes['capacity']} lần máy chủ model quá tải (503): chạy lại sau, không tính là lỗi task.")
+    if causes["permission"]:
+        notes.append(f"{causes['permission']} lần bị từ chối quyền lệnh: thêm ví dụ lệnh đúng vào brief/skill.")
+    if c["lock_edited"]:
+        notes.append("Có test bị sửa sau khi khoá: kiểm tra tester có chạy sau tests-done; cân nhắc khoá ngay khi tests-done.")
+    print("# Điểm cần chỉnh (tự quét)\n" + ("\n".join("- " + n for n in notes) if notes else "- Chưa thấy điểm bất thường."))
+    if causes:
+        print("\nNguyên nhân lỗi agent: " + ", ".join(f"{k}={v}" for k, v in causes.most_common()))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -202,8 +230,9 @@ def main() -> int:
         p.add_argument(f"--{k}", type=int, required=True)
     p.add_argument("--note", default="")
     r = sub.add_parser("report"); r.add_argument("--json", action="store_true")
+    sub.add_parser("review")
     a = ap.parse_args()
-    {"begin": cmd_begin, "end": cmd_end, "event": cmd_event, "add-period": cmd_add_period, "report": cmd_report}[a.cmd](a)
+    {"begin": cmd_begin, "end": cmd_end, "event": cmd_event, "add-period": cmd_add_period, "report": cmd_report, "review": cmd_review}[a.cmd](a)
     return 0
 
 
