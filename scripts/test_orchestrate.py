@@ -138,7 +138,7 @@ class GuardRole(unittest.TestCase):
 
 class FailureCauseTests(unittest.TestCase):
     def test_causes(self):
-        f = H.agy_failure_cause
+        f = O.H.agy_failure_cause
         self.assertEqual(f({"error": "UNAVAILABLE (code 503): No capacity"}, False)[0], "capacity")
         self.assertEqual(f({"error": "Individual quota reached"}, False)[0], "quota")
         self.assertEqual(f({"error": "Individual quota reached"}, True)[0], "quota_after_done")
