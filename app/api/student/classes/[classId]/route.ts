@@ -6,15 +6,27 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ classId: string }> }
 ) {
-  // Kiểm quyền trước khi await params
-  const auth = await requireRole();
+  // Kiểm quyền trước khi await params: chỉ cho học sinh (STUDENT)
+  const auth = await requireRole(["STUDENT"]);
   if (auth.error) return auth.error;
 
   const { classId } = await params;
 
   try {
     const classRes = await queryPg(
-      `SELECT * FROM classes WHERE id = $1 LIMIT 1;`,
+      `SELECT 
+        id,
+        name,
+        code,
+        course_id,
+        schedule,
+        start_date,
+        ended_at,
+        unlock_mode,
+        pass_percent,
+        billing_status,
+        created_at
+       FROM classes WHERE id = $1 LIMIT 1;`,
       [classId]
     );
 
@@ -27,27 +39,17 @@ export async function GET(
 
     const classData = classRes.rows[0];
 
-    // Phân quyền theo vai trò
-    if (auth.user.role === "STUDENT") {
-      const enrollRes = await queryPg(
-        `SELECT 1 FROM enrollments WHERE student_id = $1 AND class_id = $2 LIMIT 1;`,
-        [auth.user.userId, classId]
+    // Học sinh phải ghi danh vào lớp học này
+    const enrollRes = await queryPg(
+      `SELECT 1 FROM enrollments WHERE student_id = $1 AND class_id = $2 LIMIT 1;`,
+      [auth.user.userId, classId]
+    );
+    if (enrollRes.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Bạn chưa ghi danh vào lớp học này." },
+        { status: 403 }
       );
-      if (enrollRes.rows.length === 0) {
-        return NextResponse.json(
-          { success: false, error: "Bạn chưa ghi danh vào lớp học này." },
-          { status: 403 }
-        );
-      }
-    } else if (auth.user.role === "TEACHER") {
-      if (classData.teacher_id !== auth.user.userId) {
-        return NextResponse.json(
-          { success: false, error: "Bạn không phụ trách lớp học này." },
-          { status: 403 }
-        );
-      }
     }
-    // ADMIN xem mọi lớp
 
     // Lấy danh sách bài giao của lớp kèm thông tin đề (LEFT JOIN)
     const assignmentsRes = await queryPg(

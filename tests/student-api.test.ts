@@ -63,6 +63,8 @@ beforeEach(async () => {
   h.token = undefined;
   h.neo4jEnroll.length = 0;
   h.pg = await createFakePg(["db-migration-004-enrollments-assignments.sql"]);
+  // cột của migration 006 mà route lớp học sinh chọn (fixture pg-fake chưa có)
+  await h.pg.db.exec("ALTER TABLE classes ADD COLUMN IF NOT EXISTS unlock_mode VARCHAR(20) NOT NULL DEFAULT 'MANUAL'; ALTER TABLE classes ADD COLUMN IF NOT EXISTS pass_percent INTEGER NOT NULL DEFAULT 70;");
   await h.pg.db.exec(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_limit INT DEFAULT 250;   -- DEC-031: ghi danh kiểm slot học sinh
     INSERT INTO users (id,name,email,role) VALUES
@@ -196,7 +198,7 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
   });
 
   it("lớp không tồn tại → 404", async () => {
-    await loginAs("ADMIN", "a1");
+    await loginAs("STUDENT", "s1");
     expect((await get("cX")).status).toBe(404);
   });
 
@@ -205,11 +207,13 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect((await get("c1")).status).toBe(403);
   });
 
-  it("TEACHER không phụ trách lớp → 403; TEACHER phụ trách → 200", async () => {
+  it("API dành cho học sinh: TEACHER/ADMIN đều → 403 (DEC TASK-060)", async () => {
     await loginAs("TEACHER", "t2");
     expect((await get("c1")).status).toBe(403);
     await loginAs("TEACHER", "t1");
-    expect((await get("c1")).status).toBe(200);
+    expect((await get("c1")).status).toBe(403);
+    await loginAs("ADMIN", "a1");
+    expect((await get("c1")).status).toBe(403);
   });
 
   it("STUDENT đã ghi danh: lớp + bài được giao kèm thông tin đề + bài nộp của chính mình cho các đề đó", async () => {
@@ -218,7 +222,9 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    expect(json.class).toMatchObject({ id: "c1", name: "Lớp IELTS A", code: "ABC123", teacher_id: "t1" });
+    expect(json.class).toMatchObject({ id: "c1", name: "Lớp IELTS A", code: "ABC123" });
+    expect(json.class).not.toHaveProperty("teacher_id"); // TASK-060: không lộ cột nội bộ
+    expect(json.class).not.toHaveProperty("max_slots");
 
     const byExam = Object.fromEntries(json.assignments.map((a: any) => [a.exam_id, a]));
     expect(Object.keys(byExam).sort()).toEqual(["e1", "e2"]);
@@ -238,10 +244,9 @@ describe("GET /api/student/classes/[classId] — chi tiết lớp + bài đượ
     expect(a2.exam).toBeNull();
   });
 
-  it("TEACHER/ADMIN xem lớp: submissions là mảng rỗng", async () => {
+  it("TEACHER/ADMIN không xem được lớp qua API học sinh (403)", async () => {
     await loginAs("ADMIN", "a1");
-    const json = await (await get("c1")).json();
-    expect(json.submissions).toEqual([]);
+    expect((await get("c1")).status).toBe(403);
   });
 });
 
