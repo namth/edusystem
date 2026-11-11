@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tính năng 3: Quản Lý Slot & Mua Gói - KitoKit Guide (kito.io.vn)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo-vertical.png">
+</head>
+<body>
+  <div class="guide-container">
+    <!-- Sidebar -->
+    <aside class="guide-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="images/logo-vertical.png" alt="Kito Logo" class="sidebar-logo-vertical">
+        <h2 class="sidebar-title">KitoKit</h2>
+        <p class="sidebar-subtitle">Cẩm Nang Giáo Viên</p>
+        <span class="sidebar-domain-badge">kito.io.vn</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-title">Bắt Đầu</div>
+        <a href="index.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Tổng Quan & Khởi Động</span>
+        </a>
+
+        <div class="nav-group-title">Lớp & Học Sinh</div>
+        <a href="lop-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>1. Quản Lý Lớp Học</span>
+        </a>
+        <a href="tao-hoc-sinh.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+          <span>2. Cấp Acc Học Sinh</span>
+        </a>
+        <a href="slot-goi-cuoc.html" class="nav-link active">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>3. Quản Lý Slot & Mua Gói</span>
+        </a>
+
+        <div class="nav-group-title">Học Liệu & Đề Thi</div>
+        <a href="bai-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>
+          <span>4. Kho Bài Học & Soạn Bài</span>
+        </a>
+        <a href="de-thi.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          <span>5. Soạn Đề Thi 4 Kỹ Năng</span>
+        </a>
+        <a href="ai-nhap-de.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          <span>6. AI Nhập Đề Tự Động</span>
+        </a>
+        <a href="flashcards.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <span>7. Quản Lý Flashcards</span>
+        </a>
+        <a href="mon-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+          <span>8. Quản Lý Môn Học</span>
+        </a>
+
+        <div class="nav-group-title">Chấm Điểm & Báo Cáo</div>
+        <a href="duyet-diem.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>9. Duyệt Điểm AI & Chấm Bài</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>kito.io.vn</strong> · Cổng Giáo Viên
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="guide-main">
+      <div class="guide-topbar">
+        <div class="guide-breadcrumb">
+          <a href="index.html">kito.io.vn</a>
+          <span>/</span>
+          <a href="index.html">Lớp & Học Sinh</a>
+          <span>/</span>
+          <strong>3. Quản Lý Slot & Mua Gói</strong>
+        </div>
+        <button class="btn-quick-print" onclick="window.print()">
+          <svg class="lucide-icon sm" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>In trang này</span>
+        </button>
+      </div>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="page-hero-content">
+          <div class="page-tag">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            <span>Quản Lý Hạn Ngạch</span>
+          </div>
+          <h1 class="page-title">Quản Lý Slot & Đơn Hàng VietQR</h1>
+          <p class="page-subtitle">Theo dõi số lượng học sinh đang hoạt động trong hệ thống, chủ động tạo đơn mua thêm slot và thanh toán tức thì qua mã VietQR thông minh.</p>
+        </div>
+        <div class="page-hero-mascot">
+          <img src="images/kito-an-mung-chien-thang.png" alt="Kito Mua Slot">
+        </div>
+      </section>
+
+      <!-- Tip from Kito -->
+      <div class="mascot-tip-box">
+        <div class="mascot-tip-avatar">
+          <img src="images/kito-3d-nhan-sao.png" alt="Mẹo Slot">
+        </div>
+        <div class="mascot-tip-text">
+          <div class="mascot-tip-title">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <span>Quy tắc tính Slot trong KitoKit:</span>
+          </div>
+          <div class="mascot-tip-desc"><strong>1 Slot = 1 Học sinh hoạt động</strong>. Nếu một học sinh tham gia 3 lớp khác nhau của thầy cô thì hệ thống <strong>chỉ tính là 1 slot duy nhất</strong>!</div>
+        </div>
+      </div>
+
+      <!-- Steps Flow -->
+      <div class="step-container">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Kiểm Tra Hạn Ngạch & Tạo Đơn Mua Slot</h3>
+              <p class="step-summary">Truy cập <code>https://kito.io.vn/teacher/slots</code> để xem số slot đã dùng và chọn số lượng muốn mua thêm.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport Frame -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/slots</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view">
+              <!-- Top Metrics matching TeacherSlotsPage -->
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:18px;">
+                <div style="background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; position:relative;">
+                  <span style="font-size:11px; font-weight:700; color:var(--ink-subtle); text-transform:uppercase;">SLOT HỌC SINH ĐANG DÙNG</span>
+                  <div style="font-size:24px; font-weight:800; color:var(--brand-600); margin-top:4px;">18 / 50</div>
+                  <div style="font-size:12px; color:var(--emerald-700); font-weight:600; margin-top:2px;">Còn trống 32 slot học viên</div>
+                  <span class="callout-spot" style="position:absolute; top:-8px; right:-8px; width:22px; height:22px; font-size:11px;">1</span>
+                </div>
+
+                <div style="background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px;">
+                  <span style="font-size:11px; font-weight:700; color:var(--ink-subtle); text-transform:uppercase;">TRẠNG THÁI TÀI KHOẢN</span>
+                  <div style="font-size:16px; font-weight:800; color:var(--emerald-700); margin-top:6px;">ĐÃ XÁC MINH (VERIFIED)</div>
+                  <span style="font-size:12px; color:var(--ink-muted);">Đầy đủ quyền tạo đề & mở lớp</span>
+                </div>
+              </div>
+
+              <!-- Purchase Box -->
+              <div style="background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; position:relative;">
+                <h4 style="font-size:14px; font-weight:800; color:var(--ink); margin-bottom:12px;">Đăng Ký Mua Thêm Slot</h4>
+                <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+                  <div style="position:relative;">
+                    <label style="font-size:12px; font-weight:600; color:var(--ink-muted); margin-right:8px;">Số lượng slot:</label>
+                    <input type="number" value="50" readonly style="width:80px; padding:6px 10px; border:1.5px solid var(--brand-500); border-radius:8px; font-weight:700; font-size:14px; text-align:center;">
+                    <span class="callout-spot" style="position:absolute; top:-10px; right:-10px; width:22px; height:22px; font-size:11px;">2</span>
+                  </div>
+                  <span style="font-size:13px; color:var(--ink-muted);">= <strong>500.000 VNĐ</strong> (10.000đ / slot)</span>
+                  <button style="margin-left:auto; background:var(--brand-600); color:#fff; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer;">
+                    Tạo Đơn Hàng Mua Slot ➔
+                  </button>
+                  <span class="callout-spot" style="position:absolute; top:-10px; right:12px; width:22px; height:22px; font-size:11px;">3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">1</span>
+              <span><strong>Thanh hạn ngạch:</strong> Giúp theo dõi số học sinh thực tế để chủ động nâng cấp gói.</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-badge">2</span>
+              <span><strong>Nhập số slot:</strong> Thầy cô có thể đặt mua theo quy mô thực tế của trung tâm.</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-badge">3</span>
+              <span><strong>Tạo Đơn Hàng:</strong> Hệ thống tự động chuyển sang trang thanh toán VietQR.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Quét Mã VietQR & Bấm Báo Đã Chuyển Khoản</h3>
+              <p class="step-summary">Trang thanh toán <code>/teacher/orders/[id]</code> hiển thị mã QR có sẵn số tiền và nội dung chuyển khoản tự động.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport PaymentPanel -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/orders/ord_9901</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view" style="display:flex; justify-content:center;">
+              <div style="background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; max-width:440px; width:100%; text-align:center; box-shadow:var(--shadow-sm);">
+                <span class="mockup-badge badge-warning" style="margin-bottom:10px;">CHỜ THANH TOÁN</span>
+                <h4 style="font-size:16px; font-weight:800; color:var(--ink);">Đơn Hàng #SLOT-9901</h4>
+                <div style="font-size:24px; font-weight:800; color:var(--accent-500); margin:8px 0 16px;">500.000 VNĐ</div>
+
+                <!-- VietQR Mockup -->
+                <div style="background:#f8fafc; border:2px dashed var(--brand-300); border-radius:12px; padding:16px; display:inline-block; margin-bottom:16px; position:relative;">
+                  <div style="width:160px; height:160px; background:#e2e8f0; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; color:var(--ink-muted);">
+                    <svg class="lucide-icon lg" style="color:var(--brand-600); margin-bottom:6px;" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    <span>Mã VietQR Tự Động</span>
+                    <strong style="color:var(--brand-700);">MB Bank</strong>
+                  </div>
+                  <span class="callout-spot" style="position:absolute; top:-10px; right:-10px;">1</span>
+                </div>
+
+                <div style="background:var(--surface-alt); border-radius:10px; padding:12px; font-size:12.5px; text-align:left; margin-bottom:16px; line-height:1.7;">
+                  <div>🏦 <strong>Ngân hàng:</strong> MB Bank (Quân Đội)</div>
+                  <div>💳 <strong>Số tài khoản:</strong> 999988886666</div>
+                  <div>📝 <strong>Nội dung:</strong> <code style="font-weight:700; color:var(--brand-600);">KITO SLOT9901</code></div>
+                </div>
+
+                <!-- Callout 2: Báo đã chuyển -->
+                <div style="position:relative;">
+                  <button style="width:100%; background:var(--emerald-700); color:#fff; border:none; padding:12px; border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span>Tôi Đã Chuyển Khoản</span>
+                  </button>
+                  <span class="callout-spot" style="position:absolute; top:-10px; right:10px;">2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">1</span>
+              <span><strong>Mã VietQR tự động:</strong> Quét bằng app ngân hàng sẽ tự điền chính xác số tiền và nội dung.</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-badge">2</span>
+              <span><strong>Tôi Đã Chuyển Khoản:</strong> Báo hệ thống ghi nhận và kích hoạt slot ngay lập tức.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Navigation -->
+      <div class="page-nav-footer">
+        <a href="tao-hoc-sinh.html" class="nav-btn">
+          <span class="nav-btn-sub">⬅ Quay lại</span>
+          <span class="nav-btn-title">2. Cấp Acc Học Sinh</span>
+        </a>
+        <a href="bai-hoc.html" class="nav-btn next">
+          <span class="nav-btn-sub">Tiếp theo ➔</span>
+          <span class="nav-btn-title">4. Kho Bài Học & Soạn Bài</span>
+        </a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

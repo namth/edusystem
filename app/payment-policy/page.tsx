@@ -13,7 +13,7 @@ export default function PaymentPolicyPage() {
   return (
     <LegalLayout
       title="Chính Sách Thanh Toán & Hoàn Tiền"
-      subtitle="Minh bạch phương thức thanh toán, thời gian kích hoạt dịch vụ số và chính sách bảo vệ quyền lợi người tiêu dùng theo quy chuẩn của Bộ Công Thương."
+      subtitle="Minh bạch phương thức thanh toán, thời gian kích hoạt dịch vụ số và chính sách bảo vệ quyền lợi người tiêu dùng trên hệ thống KitoKit."
       lastUpdated="08/11/2026"
     >
       <div className="prose prose-sm sm:prose max-w-none text-ink space-y-8">

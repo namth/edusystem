@@ -93,9 +93,17 @@ export default function LandingShowcase() {
               <Point label="Với KitoKit">AI nhập đề, trình soạn nhiều dạng câu, kéo thả lộ trình, AI chấm có thầy cô duyệt.</Point>
               <Point label="Kết quả">Một nơi quản lý lớp, kho bài học, đề thi và tiến độ từng học sinh.</Point>
             </div>
-            <a href="#lien-he" className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-bold px-6 py-3 shadow-lg shadow-accent-500/25 transition-all">
-              Liên hệ dùng thử <ArrowRight className="w-4 h-4" />
-            </a>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/register/teacher" className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-bold px-6 py-3 shadow-lg shadow-accent-500/25 transition-all">
+                Đăng ký giáo viên dùng thử <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link href="/for-teachers" className="inline-flex items-center gap-2 rounded-2xl bg-white hover:bg-brand-50 text-brand-700 border border-brand-200 font-bold px-5 py-3 shadow-xs transition-all">
+                Tài liệu giới thiệu cho Thầy Cô
+              </Link>
+              <a href="/guideline/index.html" className="inline-flex items-center gap-2 rounded-2xl bg-white hover:bg-brand-50 text-ink-muted hover:text-brand-700 border border-line font-bold px-4 py-3 text-xs sm:text-sm transition-all">
+                Xem cẩm nang hướng dẫn
+              </a>
+            </div>
           </div>
           <div className="flex justify-center lg:justify-end"><TeacherMock /></div>
         </div>

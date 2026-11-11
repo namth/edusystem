@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tính năng 6: AI Nhập Đề Tự Động - KitoKit Guide (kito.io.vn)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo-vertical.png">
+</head>
+<body>
+  <div class="guide-container">
+    <!-- Sidebar -->
+    <aside class="guide-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="images/logo-vertical.png" alt="Kito Logo" class="sidebar-logo-vertical">
+        <h2 class="sidebar-title">KitoKit</h2>
+        <p class="sidebar-subtitle">Cẩm Nang Giáo Viên</p>
+        <span class="sidebar-domain-badge">kito.io.vn</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-title">Bắt Đầu</div>
+        <a href="index.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Tổng Quan & Khởi Động</span>
+        </a>
+
+        <div class="nav-group-title">Lớp & Học Sinh</div>
+        <a href="lop-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>1. Quản Lý Lớp Học</span>
+        </a>
+        <a href="tao-hoc-sinh.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+          <span>2. Cấp Acc Học Sinh</span>
+        </a>
+        <a href="slot-goi-cuoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>3. Quản Lý Slot & Mua Gói</span>
+        </a>
+
+        <div class="nav-group-title">Học Liệu & Đề Thi</div>
+        <a href="bai-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>
+          <span>4. Kho Bài Học & Soạn Bài</span>
+        </a>
+        <a href="de-thi.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          <span>5. Soạn Đề Thi 4 Kỹ Năng</span>
+        </a>
+        <a href="ai-nhap-de.html" class="nav-link active">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+          <span>6. AI Nhập Đề Tự Động</span>
+        </a>
+        <a href="flashcards.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <span>7. Quản Lý Flashcards</span>
+        </a>
+        <a href="mon-hoc.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+          <span>8. Quản Lý Môn Học</span>
+        </a>
+
+        <div class="nav-group-title">Chấm Điểm & Báo Cáo</div>
+        <a href="duyet-diem.html" class="nav-link">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>9. Duyệt Điểm AI & Chấm Bài</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>kito.io.vn</strong> · Cổng Giáo Viên
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="guide-main">
+      <div class="guide-topbar">
+        <div class="guide-breadcrumb">
+          <a href="index.html">kito.io.vn</a>
+          <span>/</span>
+          <a href="index.html">Học Liệu & Đề Thi</a>
+          <span>/</span>
+          <strong>6. AI Nhập Đề Tự Động</strong>
+        </div>
+        <button class="btn-quick-print" onclick="window.print()">
+          <svg class="lucide-icon sm" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>In trang này</span>
+        </button>
+      </div>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="page-hero-content">
+          <div class="page-tag">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            <span>Công Nghệ AI Ingestion Studio</span>
+          </div>
+          <h1 class="page-title">AI Nhập Đề Tự Động (Word/PDF/Ảnh)</h1>
+          <p class="page-subtitle">Biến file tài liệu Word (.docx), đề thi PDF hoặc hình ảnh chụp đề thi thành bộ câu hỏi tương tác hoàn chỉnh trên <strong>kito.io.vn</strong> chỉ trong 10 giây.</p>
+        </div>
+        <div class="page-hero-mascot">
+          <img src="images/kito-3d-ngau.png" alt="Kito AI Siêu Ngầu">
+        </div>
+      </section>
+
+      <!-- Tip from Kito -->
+      <div class="mascot-tip-box">
+        <div class="mascot-tip-avatar">
+          <img src="images/kito-ngau.png" alt="Mascot Ngầu">
+        </div>
+        <div class="mascot-tip-text">
+          <div class="mascot-tip-title">
+            <svg class="lucide-icon sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <span>Khả năng bóc tách siêu thông minh:</span>
+          </div>
+          <div class="mascot-tip-desc">Mô hình AI trên <strong>kito.io.vn</strong> tự động nhận diện đoạn văn đọc hiểu, các câu hỏi số 1, 2, 3... và tự nhận diện bảng đáp án cuối trang để khoanh vùng đáp án đúng!</div>
+        </div>
+      </div>
+
+      <!-- Steps Flow -->
+      <div class="step-container">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Tải File Đề Thi Lên Hệ Thống</h3>
+              <p class="step-summary">Vào <strong>Kho Bài Học & Đề Thi</strong> ➔ Chọn nút <strong>AI Nhập Đề</strong> ➔ Kéo thả file tài liệu vào khung.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport Frame -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/library?action=ai-ingest</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view">
+              <div style="border:2px dashed var(--brand-300); background:var(--brand-50); border-radius:18px; padding:32px 20px; text-align:center; position:relative; max-width:620px; margin:0 auto;">
+                <svg class="lucide-icon lg" style="color:var(--brand-600); margin-bottom:8px;" viewBox="0 0 24 24"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+                <h4 style="font-size:16px; font-weight:800; color:var(--brand-700);">Kéo & Thả File Đề Thi Vào Đây</h4>
+                <p style="font-size:12.5px; color:var(--ink-muted); margin:4px 0 16px;">Hỗ trợ Word (.docx), tài liệu PDF hoặc Ảnh chụp đề (.png, .jpg)</p>
+                <button style="background:var(--brand-600); color:#fff; border:none; padding:9px 20px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer;">
+                  Chọn File Từ Máy Tính
+                </button>
+                <span class="callout-spot" style="position:absolute; top:16px; right:16px;">1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">1</span>
+              <span><strong>Vùng tải tệp:</strong> Hệ thống sử dụng OCR đa ngôn ngữ để trích xuất cả đề tiếng Anh lẫn đề Toán/Lý/Hoá.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div class="step-title-box">
+              <h3 class="step-title">Duyệt Bản Nháp & Xác Nhận Lưu Vào Kho</h3>
+              <p class="step-summary">AI Studio hiển thị danh sách câu hỏi bóc tách. Thầy cô kiểm tra đáp án và bấm <strong>Lưu Vào Hệ Thống</strong>.</p>
+            </div>
+          </div>
+
+          <!-- UI Viewport Review Frame -->
+          <div class="ui-viewport">
+            <div class="ui-viewport-bar">
+              <div class="ui-dots">
+                <span class="ui-dot ui-dot-red"></span>
+                <span class="ui-dot ui-dot-yellow"></span>
+                <span class="ui-dot ui-dot-green"></span>
+              </div>
+              <div class="ui-address-bar">https://kito.io.vn/teacher/library/ai-studio</div>
+              <div style="width: 40px;"></div>
+            </div>
+            <div class="ui-content-view">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <svg class="lucide-icon sm" style="color:var(--emerald-700);" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <strong style="font-size:13px; color:var(--emerald-800);">Đã Trích Xuất Xong 20 Câu Hỏi</strong>
+                </div>
+
+                <!-- Callout 2: Button Lưu -->
+                <div style="position:relative;">
+                  <button style="background:var(--brand-600); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <svg class="lucide-icon sm" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    <span>Lưu Vào Kho Hệ Thống</span>
+                  </button>
+                  <span class="callout-spot" style="position:absolute; top:-10px; right:-10px; width:20px; height:20px; font-size:10px;">2</span>
+                </div>
+              </div>
+
+              <!-- Question Group Mockup -->
+              <div style="background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                  <span style="font-weight:700; font-size:13px; color:var(--brand-700);">Câu 1: Reading Comprehension</span>
+                  <span class="mockup-badge badge-active">Độ chính xác: 99%</span>
+                </div>
+                <p style="font-size:12.5px; color:var(--ink); margin-bottom:10px;">According to paragraph 2, why are renewable resources considered superior?</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                  <div style="padding:6px 10px; background:var(--surface-alt); border-radius:6px;">A. They are cheaper to construct initially</div>
+                  <div style="padding:6px 10px; background:var(--emerald-50); border:1px solid var(--emerald-700); border-radius:6px; font-weight:700; color:var(--emerald-800);">☑ B. They produce minimal long-term emissions</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="callout-legend">
+            <div class="legend-item">
+              <span class="legend-badge">2</span>
+              <span><strong>Lưu Vào Kho Hệ Thống:</strong> Đề thi được tạo ngay lập tức, sẵn sàng giao bài cho học sinh.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Navigation -->
+      <div class="page-nav-footer">
+        <a href="de-thi.html" class="nav-btn">
+          <span class="nav-btn-sub">⬅ Quay lại</span>
+          <span class="nav-btn-title">5. Soạn Đề Thi 4 Kỹ Năng</span>
+        </a>
+        <a href="flashcards.html" class="nav-btn next">
+          <span class="nav-btn-sub">Tiếp theo ➔</span>
+          <span class="nav-btn-title">7. Quản Lý Flashcards</span>
+        </a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
