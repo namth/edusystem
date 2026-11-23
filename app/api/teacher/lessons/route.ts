@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     const sql = `
       SELECT
         l.*,
-        COALESCE(jsonb_array_length(CASE WHEN jsonb_typeof(l.question_ids) = 'array' THEN l.question_ids ELSE '[]'::jsonb END), 0) AS block_count,
+        (SELECT COUNT(*)::int FROM sections s WHERE s.lesson_id = l.id AND s.deleted_at IS NULL) AS block_count,
         (SELECT COUNT(*)::int FROM curriculum_items ci WHERE ci.lesson_id = l.id) AS usage_count
       FROM lessons l
       ${whereClause}
@@ -59,9 +59,6 @@ export async function GET(req: Request) {
       title: r.title,
       description: r.description,
       skills: Array.isArray(r.skills) ? r.skills : [],
-      question_ids: Array.isArray(r.question_ids)
-        ? r.question_ids
-        : (typeof r.question_ids === "string" ? JSON.parse(r.question_ids) : []),
       block_count: Number(r.block_count || 0),
       usage_count: Number(r.usage_count || 0),
       subject_id: r.subject_id || "english",
@@ -117,14 +114,14 @@ export async function POST(req: Request) {
 
     const id = "lsn_" + crypto.randomUUID();
 
-    let insertSql = `INSERT INTO lessons (id, title, description, skills, question_ids, created_by, created_at, updated_at)
-       VALUES ($1, $2, $3, '{}', '[]', $4, NOW(), NOW())
+    let insertSql = `INSERT INTO lessons (id, title, description, skills, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, '{}', $4, NOW(), NOW())
        RETURNING *;`;
     let insertParams: any[] = [id, title, description, authUser.userId];
 
     if (hasExplicitSubjectId) {
-      insertSql = `INSERT INTO lessons (id, title, description, skills, question_ids, subject_id, created_by, created_at, updated_at)
-       VALUES ($1, $2, $3, '{}', '[]', $4, $5, NOW(), NOW())
+      insertSql = `INSERT INTO lessons (id, title, description, skills, subject_id, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, '{}', $4, $5, NOW(), NOW())
        RETURNING *;`;
       insertParams = [id, title, description, cleanSubjectId, authUser.userId];
     }
@@ -137,9 +134,6 @@ export async function POST(req: Request) {
       title: inserted.title,
       description: inserted.description,
       skills: Array.isArray(inserted.skills) ? inserted.skills : [],
-      question_ids: Array.isArray(inserted.question_ids)
-        ? inserted.question_ids
-        : (typeof inserted.question_ids === "string" ? JSON.parse(inserted.question_ids) : []),
       subject_id: inserted.subject_id || cleanSubjectId,
       created_by: inserted.created_by,
       created_at: inserted.created_at,

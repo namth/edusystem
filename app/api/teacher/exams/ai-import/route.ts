@@ -4,6 +4,8 @@ import { getPgPool, queryPg } from "@/lib/db-pg";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 import { validateQuestionContent, skillOfCategory } from "@/lib/question-conversion";
 import { serverError } from "@/lib/api-errors";
+import { importToSections, saveTreeInTx, type Queryable } from "@/lib/exam-structure";
+import { treeErrorResponse } from "@/lib/sections-db";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -29,6 +31,8 @@ export async function POST(req: Request) {
     if (!check.ok) invalid.push({ index, tempId: typeof q?.tempId === "string" ? q.tempId : undefined, reason: check.reason });
     const meta = content?.import_meta && typeof content.import_meta === "object" ? (content.import_meta as Record<string, unknown>) : {};
     return {
+      // FEAT-017 BR-P14: nhóm đề giấy (tempId "<nhóm>_<n>") → một phần
+      group: typeof q?.tempId === "string" ? q.tempId.replace(/_\d+$/, "") : `g${index}`,
       // BR-I23: không tin nhãn kỹ năng client gửi ("Phonetics"…) — suy từ dạng câu để thứ tự màn thi giữ nguyên đề giấy
       skill: skillOfCategory(category),
       category,
@@ -71,48 +75,27 @@ export async function POST(req: Request) {
     // Business Rule BR-INGEST-05: PostgreSQL Transaction boundary
     await client.query("BEGIN");
 
-    const createdQuestionIds: string[] = [];
-    const detectedSkills = new Set<string>();
-    let primaryStimulusText = "";
-
-    // 1. Insert each question (đã chuyển dạng ở FEAT-015, đã kiểm ở trên) into `questions` table
-    for (let idx = 0; idx < normalized.length; idx++) {
-      const q = normalized[idx];
-      detectedSkills.add(q.skill);
-      if (q.stimulus_text && !primaryStimulusText) {
-        primaryStimulusText = q.stimulus_text;
-      }
-      const qId = `q_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`;
-      const qRes = await client.query(
-        `INSERT INTO questions (
-          id, skill, category, prompt, stimulus_text, content, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-        RETURNING id`,
-        [qId, q.skill, q.category, q.prompt, q.stimulus_text, JSON.stringify(q.content)]
-      );
-      createdQuestionIds.push(qRes.rows[0].id);
-    }
-
-    const skillsArray = Array.from(detectedSkills);
-    if (skillsArray.length === 0) skillsArray.push("Reading");
-
-    // 2. Insert into `exams` table
+    // FEAT-017 (BR-P14): nhóm đề giấy → phần; trắc nghiệm tách mỗi ý một câu; lưu cả cây như trình soạn
+    const sections = importToSections(normalized);
     const examId = `exam_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const examRes = await client.query(
-      `INSERT INTO exams (
-        id, title, duration_minutes, skills, question_ids, stimulus_text, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-      RETURNING id`,
-      [
-        examId,
-        examTitle,
-        Number(durationMinutes) || 60,
-        skillsArray,
-        JSON.stringify(createdQuestionIds),
-        primaryStimulusText || null,
-        authUser.userId,
-      ]
+      `INSERT INTO exams (id, title, duration_minutes, skills, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [examId, examTitle, Number(durationMinutes) || 60, [], authUser.userId]
     );
+    const db: Queryable = { query: async (t, p) => ({ rows: (await client.query(t, p as unknown[])).rows }) };
+    try {
+      await saveTreeInTx(db, { kind: "exam", id: examId, userId: authUser.userId, sections, allowMissingAudio: true });
+    } catch (e) {
+      const res = treeErrorResponse(e);
+      if (res) {
+        await client.query("ROLLBACK");
+        return res;
+      }
+      throw e;
+    }
+    const importedCount = sections.reduce((n, s) => n + s.questions.length, 0);
 
     const finalExamId = examRes.rows[0]?.id || examId;
     let curriculumItemId: string | null = null;
@@ -206,7 +189,7 @@ export async function POST(req: Request) {
         examId: finalExamId,
         courseId: destination?.courseId || null,
         curriculumItemId,
-        importedQuestionsCount: createdQuestionIds.length,
+        importedQuestionsCount: importedCount,
         message: destination?.type === "COURSE_CURRICULUM"
           ? "Đã tạo đề thi và liên kết thành công vào lộ trình khóa học!"
           : "Đã lưu đề thi thành công vào Kho Đề Thi!",

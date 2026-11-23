@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions, flashcardIdsOf } from "@/lib/sections-db";
 import {
   type ScoringStandard,
   aggregateTotal,
 } from "@/lib/exam-scoring";
 import {
   gradeQuestion,
-  type GradableQuestion,
   type FlashcardRow,
 } from "@/lib/grading";
 import { pushGradingEvent } from "@/lib/redis-queue";
@@ -61,7 +61,7 @@ export async function POST(
   const is_late = Date.now() > deadlineTime + 2 * 60 * 1000;
 
   const examRes = await queryPg(
-    "SELECT id, question_ids, created_by FROM exams WHERE id = $1 LIMIT 1",
+    "SELECT id, created_by FROM exams WHERE id = $1 LIMIT 1",
     [sub.exam_id]
   );
   if (examRes.rows.length === 0) {
@@ -70,67 +70,13 @@ export async function POST(
       { status: 404 }
     );
   }
-  const exam = examRes.rows[0];
-
-  let questionIds: string[] = [];
-  if (Array.isArray(exam.question_ids)) {
-    questionIds = exam.question_ids;
-  } else if (typeof exam.question_ids === "string") {
-    try {
-      const parsed = JSON.parse(exam.question_ids);
-      if (Array.isArray(parsed)) questionIds = parsed;
-    } catch {
-      questionIds = [];
-    }
-  }
-
-  let questions: GradableQuestion[] = [];
+  // FEAT-017: chấm các câu đang có trong đề (câu xoá mềm không chấm, BR-P10)
+  const { questions } = await loadParentQuestions("exam", String(sub.exam_id));
   const flashcardsMap: Record<string, FlashcardRow> = {};
-
-  if (questionIds.length > 0) {
-    const placeholders = questionIds.map((_, i) => `$${i + 1}`).join(", ");
-    const qRes = await queryPg(
-      `SELECT * FROM questions WHERE id IN (${placeholders});`,
-      questionIds
-    );
-    const qMap = new Map<string, any>(qRes.rows.map((q: any) => [q.id, q]));
-    questions = questionIds.map((qId) => qMap.get(qId)).filter(Boolean);
-
-    const flashcardIdsSet = new Set<string>();
-    for (const q of questions) {
-      if (q.category && typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        let contentObj = q.content;
-        if (typeof contentObj === "string") {
-          try {
-            contentObj = JSON.parse(contentObj);
-          } catch {
-            contentObj = null;
-          }
-        }
-        const ids: string[] =
-          (q as any).flashcard_ids ||
-          contentObj?.flashcard_ids ||
-          contentObj?.flashcardIds ||
-          [];
-        if (Array.isArray(ids)) {
-          for (const fcId of ids) {
-            if (fcId && typeof fcId === "string") flashcardIdsSet.add(fcId);
-          }
-        }
-      }
-    }
-
-    if (flashcardIdsSet.size > 0) {
-      const fcIdList = Array.from(flashcardIdsSet);
-      const fcPlaceholders = fcIdList.map((_, i) => `$${i + 1}`).join(", ");
-      const fcRes = await queryPg(
-        `SELECT * FROM flashcards WHERE id IN (${fcPlaceholders});`,
-        fcIdList
-      );
-      for (const fc of fcRes.rows) {
-        flashcardsMap[fc.id] = fc;
-      }
-    }
+  const fcIdList = flashcardIdsOf(questions);
+  if (fcIdList.length > 0) {
+    const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [fcIdList]);
+    for (const fc of fcRes.rows) flashcardsMap[fc.id] = fc as FlashcardRow;
   }
 
   // Chấm từng câu

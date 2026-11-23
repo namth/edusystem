@@ -228,7 +228,13 @@ describe("POST /api/teacher/exams/ai-import", () => {
     expect((await post({ examTitle: "Đề", questions: [] })).status).toBe(400);
   });
 
-  it("vào Kho Đề: tạo câu hỏi + đề, question_ids đúng thứ tự, created_by = người gọi", async () => {
+  // FEAT-017: câu theo phần (sections) — đọc theo thứ tự phần → câu
+  const tree = async (examId: string) =>
+    (await h.pg!.db.query<any>(
+      `SELECT q.id, q.prompt, q.category, q.content, s.id AS section_id, s.instruction, s.stimulus_text, s.skill FROM questions q
+       JOIN sections s ON s.id = q.section_id WHERE s.exam_id = $1 ORDER BY s.position, q.position`, [examId])).rows;
+
+  it("vào Kho Đề: mỗi nhóm đề giấy → một phần, lời dẫn nhóm lên phần, trắc nghiệm một ý một câu; created_by = người gọi", async () => {
     await loginAs("TEACHER", "t1");
     const res = await post({ examTitle: "Đề AI", durationMinutes: 45, destination: { type: "STANDALONE" }, questions });
     expect(res.status).toBe(201);
@@ -236,11 +242,31 @@ describe("POST /api/teacher/exams/ai-import", () => {
     const exam = (await h.pg!.db.query<any>(`SELECT * FROM exams WHERE id = $1`, [body.examId])).rows[0];
     expect(exam).toMatchObject({ title: "Đề AI", duration_minutes: 45, created_by: "t1" });
     expect(exam.skills.sort()).toEqual(["Listening", "Reading"]);
-    const qs = (await h.pg!.db.query<any>(`SELECT id, prompt, content FROM questions`)).rows;
-    const byId = Object.fromEntries(qs.map((q: any) => [q.id, q]));
-    expect(exam.question_ids.map((id: string) => byId[id].prompt)).toEqual(["Câu 1", "Câu 2"]);
-    expect(byId[exam.question_ids[0]].content.sub_questions[0].correct_answer).toBe("A");
-    expect(byId[exam.question_ids[0]].content.import_meta).toMatchObject({ source: "AI_IMPORT", paper_format: "READING_COMPREHENSION" });
+    const rows = await tree(body.examId);
+    expect(rows.map((r: any) => [r.skill, r.instruction])).toEqual([["Reading", "Câu 1"], ["Listening", "Câu 2"]]);
+    expect(rows[0].stimulus_text).toBe("Bài đọc");
+    expect(rows[0].content).toMatchObject({ correct_answer: "A", import_meta: { source: "AI_IMPORT", paper_format: "READING_COMPREHENSION" } });
+    expect(rows[0].content.sub_questions).toBeUndefined();
+    expect(body.importedQuestionsCount).toBe(2);
+  });
+
+  it("TC-P16: nhóm 3 trắc nghiệm + 1 sắp xếp → 1 phần 4 câu; 2 nhóm cùng bài đọc → chung 1 phần; Listening chưa có audio vẫn nhập được", async () => {
+    await loginAs("TEACHER", "t1");
+    const res = await post({ examTitle: "Đề", questions: [
+      { tempId: "gA_0", skill: "Reading", category: "READING_MC", prompt: "Read and choose", stimulus_text: "<p>Passage</p>",
+        content: { sub_questions: [mc("1", "A"), mc("2", "B"), mc("3", "C")] } },
+      { tempId: "gA_1", skill: "Reading", category: "READING_ORDERING", prompt: "Read and choose", stimulus_text: "<p>Passage</p>",
+        content: { ordering_type: "WORD_ORDERING", correct_text: "People thought the story" } },
+      { tempId: "gB_0", skill: "Reading", category: "READING_MC", prompt: "Questions 5-6", stimulus_text: "<p>Passage</p>", content: { sub_questions: [mc("5", "D")] } },
+      { tempId: "gC_0", skill: "Listening", category: "LISTENING_MC", prompt: "Listen", stimulus_text: null, content: { sub_questions: [mc("7", "A")] } },
+    ] });
+    expect(res.status).toBe(201);
+    const rows = await tree((await res.json()).examId);
+    const sections = [...new Set(rows.map((r: any) => r.section_id))];
+    expect(sections).toHaveLength(2);
+    expect(rows.filter((r: any) => r.section_id === sections[0]).map((r: any) => r.category)).toEqual(["READING_MC", "READING_MC", "READING_MC", "READING_ORDERING", "READING_MC"]);
+    expect(rows[0].instruction).toBe("Read and choose\nQuestions 5-6");
+    expect(rows.map((r: any) => r.content.correct_answer).filter(Boolean)).toEqual(["A", "B", "C", "D", "A"]);
   });
 
   it("FEAT-015: lưu nguyên câu điền ô đã chuyển dạng, stimulus_text = NULL, chấm được", async () => {
@@ -254,6 +280,7 @@ describe("POST /api/teacher/exams/ai-import", () => {
     expect(res.status).toBe(201);
     const q = (await h.pg!.db.query<any>(`SELECT * FROM questions`)).rows[0];
     expect(q).toMatchObject({ category: "READING_FILL_IN", stimulus_text: null });
+    expect((await h.pg!.db.query<any>(`SELECT stimulus_type FROM sections WHERE id = $1`, [q.section_id])).rows[0].stimulus_type).toBe("NONE");
     expect(q.content).toMatchObject({ fill_subtype: "INLINE_SELECT", correct_answers: ["has", "in"] });
     const { gradeQuestion } = await import("@/lib/grading");
     expect(gradeQuestion({ id: q.id, category: q.category, content: q.content }, ["has", "in"])).toMatchObject({ earned: 2, max: 2 });

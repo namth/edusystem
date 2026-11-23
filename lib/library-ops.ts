@@ -70,52 +70,48 @@ export async function getExamUsages(client: QueryableClient, examId: string): Pr
   };
 }
 
-export async function deepCopyQuestions(
+/**
+ * FEAT-017 (BR-P13): chép sâu các phần + câu (chưa xoá) từ đề / bài học này sang đề / bài học khác, id mới.
+ */
+export async function copySections(
   client: QueryableClient,
-  questionIds: string[],
+  from: { kind: "exam" | "lesson"; id: string },
+  to: { kind: "exam" | "lesson"; id: string },
   createdBy: string
-): Promise<string[]> {
-  if (questionIds.length === 0) return [];
-
-  const qRes = await client.query(
-    `SELECT id, skill, category, prompt, content, stimulus_text, stimulus_audio_url
-     FROM questions
-     WHERE id = ANY($1);`,
-    [questionIds]
+): Promise<number> {
+  const fromCol = from.kind === "exam" ? "exam_id" : "lesson_id";
+  const toCol = to.kind === "exam" ? "exam_id" : "lesson_id";
+  const sRes = await client.query(
+    `SELECT * FROM sections WHERE ${fromCol} = $1 AND deleted_at IS NULL ORDER BY position ASC, created_at ASC`,
+    [from.id]
   );
-
-  const qMap = new Map<string, any>(qRes.rows.map((r: any) => [r.id, r]));
-  const newIds: string[] = [];
-
-  for (const qid of questionIds) {
-    const orig = qMap.get(qid);
-    if (!orig) continue;
-
-    const newQId = "q_" + crypto.randomUUID();
-    const contentJson =
-      typeof orig.content === "string" ? orig.content : JSON.stringify(orig.content ?? {});
-
+  let count = 0;
+  for (let si = 0; si < sRes.rows.length; si++) {
+    const sec = sRes.rows[si];
+    const newSecId = "sec_" + crypto.randomUUID();
     await client.query(
-      `INSERT INTO questions (
-         id, skill, category, prompt, content, stimulus_text, stimulus_audio_url, created_by, created_at
-       )
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, NOW());`,
-      [
-        newQId,
-        orig.skill ?? null,
-        orig.category ?? null,
-        orig.prompt ?? null,
-        contentJson,
-        orig.stimulus_text ?? null,
-        orig.stimulus_audio_url ?? null,
-        createdBy,
-      ]
+      `INSERT INTO sections (id, ${toCol}, position, skill, instruction, stimulus_type, stimulus_text,
+         stimulus_audio_url, stimulus_audio_text, stimulus_audio_gender)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [newSecId, to.id, si, sec.skill, sec.instruction ?? null, sec.stimulus_type || "NONE", sec.stimulus_text ?? null,
+        sec.stimulus_audio_url ?? null, sec.stimulus_audio_text ?? null, sec.stimulus_audio_gender ?? null]
     );
-
-    newIds.push(newQId);
+    const qRes = await client.query(
+      `SELECT * FROM questions WHERE section_id = $1 AND deleted_at IS NULL ORDER BY position ASC, created_at ASC`,
+      [sec.id]
+    );
+    for (let qi = 0; qi < qRes.rows.length; qi++) {
+      const q = qRes.rows[qi];
+      const contentJson = typeof q.content === "string" ? q.content : JSON.stringify(q.content ?? {});
+      await client.query(
+        `INSERT INTO questions (id, section_id, position, skill, category, prompt, content, created_by, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, NOW())`,
+        ["q_" + crypto.randomUUID(), newSecId, qi, q.skill ?? sec.skill, q.category, q.prompt ?? null, contentJson, createdBy]
+      );
+      count++;
+    }
   }
-
-  return newIds;
+  return count;
 }
 
 export async function convertLessonToExamItem(
@@ -148,26 +144,15 @@ export async function convertLessonToExamItem(
 
     const newExamId = "exam_" + crypto.randomUUID();
     const skills: string[] = Array.isArray(lesson.skills) ? lesson.skills : [];
-    const questionIds = parseQuestionIds(lesson.question_ids);
     const subjectId = lesson.subject_id || "english";
 
     await client.query(
-      `INSERT INTO exams (
-         id, title, description, duration_minutes, skills, question_ids,
-         created_by, subject_id, stimulus_type, created_at
-       )
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, 'TEXT_ONLY', NOW());`,
-      [
-        newExamId,
-        lesson.title,
-        lesson.description ?? null,
-        durationMinutes,
-        skills,
-        JSON.stringify(questionIds),
-        lesson.created_by,
-        subjectId,
-      ]
+      `INSERT INTO exams (id, title, description, duration_minutes, skills, created_by, subject_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW());`,
+      [newExamId, lesson.title, lesson.description ?? null, durationMinutes, skills, lesson.created_by, subjectId]
     );
+    // FEAT-017 (BR-P13): chuyển loại = đổi cha của các phần, giữ nguyên id phần / câu
+    await client.query("UPDATE sections SET lesson_id = NULL, exam_id = $1 WHERE lesson_id = $2", [newExamId, lessonId]);
 
     await client.query("DELETE FROM lessons WHERE id = $1", [lessonId]);
     await client.query("COMMIT");
@@ -212,36 +197,16 @@ export async function convertExamToLessonItem(
       return { id: examId, ok: false, reason: "IN_USE", usages };
     }
 
-    const hasStimulusText =
-      typeof exam.stimulus_text === "string" && exam.stimulus_text.trim().length > 0;
-    const hasStimulusAudio =
-      typeof exam.stimulus_audio_url === "string" && exam.stimulus_audio_url.trim().length > 0;
-
-    if (hasStimulusText || hasStimulusAudio) {
-      await client.query("ROLLBACK");
-      return { id: examId, ok: false, reason: "HAS_STIMULUS" };
-    }
-
     const newLessonId = "lsn_" + crypto.randomUUID();
     const skills: string[] = Array.isArray(exam.skills) ? exam.skills : [];
-    const questionIds = parseQuestionIds(exam.question_ids);
     const subjectId = exam.subject_id || "english";
 
     await client.query(
-      `INSERT INTO lessons (
-         id, title, description, skills, question_ids, created_by, subject_id, created_at, updated_at
-       )
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, NOW(), NOW());`,
-      [
-        newLessonId,
-        exam.title,
-        exam.description ?? null,
-        skills,
-        JSON.stringify(questionIds),
-        exam.created_by,
-        subjectId,
-      ]
+      `INSERT INTO lessons (id, title, description, skills, created_by, subject_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW());`,
+      [newLessonId, exam.title, exam.description ?? null, skills, exam.created_by, subjectId]
     );
+    await client.query("UPDATE sections SET exam_id = NULL, lesson_id = $1 WHERE exam_id = $2", [newLessonId, examId]);
 
     await client.query("DELETE FROM exams WHERE id = $1", [examId]);
     await client.query("COMMIT");
@@ -281,29 +246,17 @@ export async function duplicateLessonInTx(
       return { status: 403, error: "Bạn không có quyền nhân bản bài học này." };
     }
 
-    const origQIds = parseQuestionIds(orig.question_ids);
-    const copiedQIds = await deepCopyQuestions(client, origQIds, authUser.userId);
-
     const newId = "lsn_" + crypto.randomUUID();
     const skills: string[] = Array.isArray(orig.skills) ? orig.skills : [];
     const subjectId = orig.subject_id || "english";
 
     const insRes = await client.query(
-      `INSERT INTO lessons (
-         id, title, description, skills, question_ids, created_by, subject_id, created_at, updated_at
-       )
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, NOW(), NOW())
+      `INSERT INTO lessons (id, title, description, skills, created_by, subject_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
        RETURNING *;`,
-      [
-        newId,
-        newTitle,
-        orig.description ?? null,
-        skills,
-        JSON.stringify(copiedQIds),
-        authUser.userId,
-        subjectId,
-      ]
+      [newId, newTitle, orig.description ?? null, skills, authUser.userId, subjectId]
     );
+    await copySections(client, { kind: "lesson", id: lessonId }, { kind: "lesson", id: newId }, authUser.userId);
 
     await client.query("COMMIT");
 
@@ -313,7 +266,6 @@ export async function duplicateLessonInTx(
       title: row.title,
       description: row.description,
       skills: Array.isArray(row.skills) ? row.skills : [],
-      question_ids: parseQuestionIds(row.question_ids),
       subject_id: row.subject_id || subjectId,
       created_by: row.created_by,
       created_at: row.created_at,
@@ -355,39 +307,20 @@ export async function duplicateExamInTx(
       return { status: 403, error: "Bạn không có quyền nhân bản đề thi này." };
     }
 
-    const origQIds = parseQuestionIds(orig.question_ids);
-    const copiedQIds = await deepCopyQuestions(client, origQIds, authUser.userId);
-
     const newId = "exam_" + crypto.randomUUID();
     const skills: string[] = Array.isArray(orig.skills) ? orig.skills : [];
     const subjectId = orig.subject_id || "english";
     const durationMinutes = orig.duration_minutes ?? 60;
-    const stimulusType = orig.stimulus_type ?? "TEXT_ONLY";
 
     const insRes = await client.query(
-      `INSERT INTO exams (
-         id, title, description, duration_minutes, skills, question_ids, created_by,
-         passing_score, scoring_standard_id, stimulus_type, stimulus_text, stimulus_audio_url,
-         subject_id, created_at
-       )
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, NOW())
+      `INSERT INTO exams (id, title, description, duration_minutes, skills, created_by, passing_score,
+         scoring_standard_id, subject_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
        RETURNING *;`,
-      [
-        newId,
-        newTitle,
-        orig.description ?? null,
-        durationMinutes,
-        skills,
-        JSON.stringify(copiedQIds),
-        authUser.userId,
-        orig.passing_score ?? null,
-        orig.scoring_standard_id ?? null,
-        stimulusType,
-        orig.stimulus_text ?? null,
-        orig.stimulus_audio_url ?? null,
-        subjectId,
-      ]
+      [newId, newTitle, orig.description ?? null, durationMinutes, skills, authUser.userId,
+        orig.passing_score ?? null, orig.scoring_standard_id ?? null, subjectId]
     );
+    await copySections(client, { kind: "exam", id: examId }, { kind: "exam", id: newId }, authUser.userId);
 
     await client.query("COMMIT");
 
@@ -395,7 +328,6 @@ export async function duplicateExamInTx(
     const exam = {
       ...row,
       skills: Array.isArray(row.skills) ? row.skills : [],
-      question_ids: parseQuestionIds(row.question_ids),
       subject_id: row.subject_id || subjectId,
     };
 

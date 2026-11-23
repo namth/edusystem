@@ -139,7 +139,7 @@ describe("Giao diện phân hệ giáo viên không dẫn sang phân hệ khác"
   const teacherFiles = [
     ...walk("app/teacher"),
     ...walk("components/teacher"),
-    ...walk("components/question-builder"),
+    ...walk("components/section-builder"), // FEAT-017 thay components/question-builder
     "components/TeacherLayout.tsx",
     "components/class-roadmap/TeacherClassRoadmap.tsx",
   ];

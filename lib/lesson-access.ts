@@ -115,7 +115,6 @@ export async function checkLessonAccess(
         id: string;
         title: string;
         description: string | null;
-        question_ids: string[];
       };
     }
 > {
@@ -124,7 +123,7 @@ export async function checkLessonAccess(
   }
 
   const lessonRes = await queryPg(
-    "SELECT id, title, description, question_ids FROM lessons WHERE id = $1",
+    "SELECT id, title, description FROM lessons WHERE id = $1",
     [lessonId]
   );
   if (lessonRes.rows.length === 0) {
@@ -155,12 +154,6 @@ export async function checkLessonAccess(
     return { ok: false, status: 403, error: "Bài học chưa được mở." };
   }
 
-  const question_ids: string[] = Array.isArray(lRow.question_ids)
-    ? lRow.question_ids
-    : typeof lRow.question_ids === "string"
-    ? JSON.parse(lRow.question_ids)
-    : [];
-
   return {
     ok: true,
     klass: roadmapRes.klass,
@@ -169,7 +162,6 @@ export async function checkLessonAccess(
       id: lRow.id,
       title: lRow.title,
       description: lRow.description ?? null,
-      question_ids,
     },
   };
 }

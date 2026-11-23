@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions } from "@/lib/sections-db";
+import type { TreeSection } from "@/lib/exam-structure";
 import { serverError } from "@/lib/api-errors";
 
 export async function GET(
@@ -43,6 +45,7 @@ export async function GET(
 
     let exam: any = null;
     let questions: any[] = [];
+    let sections: TreeSection[] = [];
 
     if (submission.exam_id) {
       const examRes = await queryPg(
@@ -52,29 +55,12 @@ export async function GET(
       if (examRes.rows.length > 0) {
         exam = examRes.rows[0];
 
-        let questionIds: string[] = [];
-        if (Array.isArray(exam.question_ids)) {
-          questionIds = exam.question_ids;
-        } else if (typeof exam.question_ids === "string") {
-          try {
-            const parsed = JSON.parse(exam.question_ids);
-            if (Array.isArray(parsed)) {
-              questionIds = parsed;
-            }
-          } catch {
-            questionIds = [];
-          }
-        }
-
-        if (questionIds.length > 0) {
-          const placeholders = questionIds.map((_, i) => `$${i + 1}`).join(", ");
-          const qRes = await queryPg(
-            `SELECT * FROM questions WHERE id IN (${placeholders});`,
-            questionIds
-          );
-          const qMap = new Map(qRes.rows.map((q: any) => [q.id, q]));
-          questions = questionIds.map((qId) => qMap.get(qId)).filter(Boolean);
-        }
+        // FEAT-017 (BR-P10): xem lại bài thấy cả câu đã xoá mềm nếu câu đó có trong bài nộp
+        const rawResults = typeof submission.results === "string" ? JSON.parse(submission.results || "[]") : submission.results;
+        const answeredIds: string[] = Array.isArray(rawResults) ? rawResults.map((r: { question_id?: unknown }) => String(r?.question_id ?? "")).filter(Boolean) : [];
+        const loaded = await loadParentQuestions("exam", String(submission.exam_id), { includeDeletedIds: answeredIds });
+        questions = loaded.questions;
+        sections = loaded.sections;
       }
     }
 
@@ -82,6 +68,7 @@ export async function GET(
       success: true,
       submission,
       exam,
+      sections,
       questions,
     });
   } catch (err: any) {

@@ -102,10 +102,12 @@ export async function POST(req: Request) {
 
       if (aiResults.length > 0) {
         const aiQIds = Array.from(new Set(aiResults.map((r) => r.question_id)));
-        const placeholders = aiQIds.map((_, i) => `$${i + 1}`).join(", ");
+        // FEAT-017: ngữ cảnh nằm ở phần (sections), không còn ở câu
         const qRes = await queryPg(
-          `SELECT id, skill, category, prompt, stimulus_text FROM questions WHERE id IN (${placeholders});`,
-          aiQIds
+          `SELECT q.id, q.skill, q.category, q.prompt, q.content, s.stimulus_text
+           FROM questions q LEFT JOIN sections s ON s.id = q.section_id
+           WHERE q.id = ANY($1);`,
+          [aiQIds]
         );
         const qMap = new Map<string, any>(qRes.rows.map((q: any) => [q.id, q]));
 
@@ -118,7 +120,8 @@ export async function POST(req: Request) {
             step: 0.5,
           };
 
-          const prompt = q?.prompt || q?.stimulus_text || q?.category || "";
+          const contentText = q?.content && typeof q.content === "object" ? q.content.text : undefined;
+          const prompt = q?.prompt || contentText || q?.stimulus_text || q?.category || "";
           const studentAns = answers[r.question_id] || "";
           const rubricId = (section as any).rubric_id;
 

@@ -64,7 +64,7 @@ beforeEach(async () => {
   await h.pg.db.exec(`
     ALTER TABLE exams ADD COLUMN IF NOT EXISTS description TEXT;
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
-    CREATE TABLE lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
+    CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
     INSERT INTO courses VALUES ('co1','Khóa t1','t1'), ('co2','Khóa t2','t2'), ('coSys','Khóa chung',NULL);
     INSERT INTO questions (id,skill,category,prompt,content,created_by) VALUES
       ('q1','Reading','READING_MC','Câu 1','{"sub_questions":[{"id":"s1","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"A"}]}','t1'),
@@ -80,7 +80,11 @@ beforeEach(async () => {
 
 describe("POST /api/teacher/exams — tạo đề", () => {
   const post = async (body: unknown) => (await import("@/app/api/teacher/exams/route")).POST(req("POST", "/api/teacher/exams", body));
-  const valid = { title: "  Đề mới ", description: "HD", duration_minutes: 50, question_ids: ["q2", "q1"], course_id: "co1" };
+  // FEAT-017: tạo đề = { exam, sections } (cây phần), không còn question_ids
+  const essay = { category: "WRITING_ESSAY", prompt: "Viết về gia đình", content: { min_words: 150 } };
+  const mc = { category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } };
+  const tree = [{ skill: "Writing", questions: [essay] }, { skill: "Reading", instruction: "Chọn đáp án", questions: [mc] }];
+  const valid = { exam: { title: "  Đề mới ", description: "HD", duration_minutes: 50, course_id: "co1" }, sections: tree };
 
   it("chưa đăng nhập 401; STUDENT 403", async () => {
     expect((await post(valid)).status).toBe(401);
@@ -94,24 +98,28 @@ describe("POST /api/teacher/exams — tạo đề", () => {
     expect(res.status).toBe(201);
     const { exam } = await res.json();
     expect(exam.id).toMatch(/^exam_[0-9a-f-]{36}$/);
-    expect(exam).toMatchObject({ title: "Đề mới", description: "HD", duration_minutes: 50, question_ids: ["q2", "q1"], skills: ["Writing", "Reading"], created_by: "t1" });
+    expect(exam).toMatchObject({ title: "Đề mới", description: "HD", duration_minutes: 50, skills: ["Writing", "Reading"], created_by: "t1" });
+    const secs = await rows(`SELECT id, skill, position FROM sections WHERE exam_id='${exam.id}' ORDER BY position`);
+    expect(secs.map((s: any) => s.skill)).toEqual(["Writing", "Reading"]);
     expect(h.neo).toContainEqual(["sync", "co1", "Khóa t1", exam.id, "Đề mới"]);
     expect(h.events.some((e) => e[1] === "EXAM_CREATED")).toBe(true);
   });
 
   it("không gắn khóa → không gọi syncCourseExam; duration mặc định 60", async () => {
     await loginAs("TEACHER", "t1");
-    const { exam } = await (await post({ title: "Đề", question_ids: ["q1"] })).json();
+    const { exam } = await (await post({ title: "Đề", sections: [{ skill: "Reading", questions: [mc] }] })).json();
     expect(exam.duration_minutes).toBe(60);
     expect(h.neo.filter((n) => n[0] === "sync")).toEqual([]);
   });
 
-  it("dữ liệu sai → 400, không ghi: thiếu tiêu đề, question_ids rỗng/không phải mảng, câu không tồn tại, câu của GV khác, khóa của GV khác, duration ≤ 0", async () => {
+  it("dữ liệu sai → 400, không ghi: thiếu tiêu đề, thiếu / rỗng sections, câu khác kỹ năng, câu của đề khác, khóa của GV khác, duration ≤ 0", async () => {
     await loginAs("TEACHER", "t1");
+    const m = (patch: Record<string, unknown>) => ({ ...valid, exam: { ...valid.exam, ...patch } });
     for (const body of [
-      { ...valid, title: " " }, { ...valid, question_ids: [] }, { ...valid, question_ids: "q1" },
-      { ...valid, question_ids: ["qX"] }, { ...valid, question_ids: ["q3"] }, { ...valid, course_id: "co2" },
-      { ...valid, duration_minutes: 0 },
+      m({ title: " " }), { exam: valid.exam }, { ...valid, sections: [] }, { ...valid, sections: "x" },
+      { ...valid, sections: [{ skill: "Reading", questions: [essay] }] },
+      { ...valid, sections: [{ skill: "Reading", questions: [{ ...mc, id: "q1" }] }] },
+      m({ course_id: "co2" }), m({ duration_minutes: 0 }),
     ]) expect((await post(body)).status, JSON.stringify(body)).toBe(400);
     expect((await rows(`SELECT COUNT(*)::int n FROM exams`))[0].n).toBe(2);
   });
@@ -138,6 +146,9 @@ describe("GET/PUT /api/teacher/exams/[id]", () => {
     expect(json.exam).toMatchObject({ id: "eOld", title: "Đề cũ", description: "Mô tả cũ", duration_minutes: 45 });
     expect(json.questions.map((q: any) => q.id)).toEqual(["qFc", "q1"]);
     expect(json.questions[1].content.sub_questions[0].correct_answer).toBe("A");
+    expect(json.sections.map((s: any) => s.questions.map((q: any) => q.id))).toEqual([["qFc"], ["q1"]]);
+    expect(json.exam.updated_at).toMatch(/^\d{4}-/);
+    expect(json.exam.attempt_count).toBe(0);
     expect(json.flashcards.map((f: any) => f.id)).toEqual(["f1"]);
     expect(json.course_id).toBe("co1");
   });
@@ -152,12 +163,18 @@ describe("GET/PUT /api/teacher/exams/[id]", () => {
     expect((await GET(req("GET", "/x"), ctx("eT2"))).status).toBe(200);
   });
 
-  it("PUT chỉ cập nhật trường gửi lên; đổi question_ids tính lại skills; đổi course_id gỡ quan hệ cũ rồi gắn mới", async () => {
+  it("PUT chỉ cập nhật trường gửi lên; đổi cây phần tính lại skills; đổi course_id gỡ quan hệ cũ rồi gắn mới", async () => {
     await loginAs("TEACHER", "t1");
-    const res = await (await api()).PUT(req("PUT", "/x", { question_ids: ["q2"], course_id: "coSys" }), ctx("eOld"));
+    const { GET, PUT } = await api();
+    const cur = await (await GET(req("GET", "/x"), ctx("eOld"))).json();
+    const res = await PUT(req("PUT", "/x", {
+      exam: { course_id: "coSys", updated_at: cur.exam.updated_at },
+      sections: [{ skill: "Writing", questions: [{ category: "WRITING_ESSAY", prompt: "Viết", content: { min_words: 100 } }] }],
+    }), ctx("eOld"));
     expect(res.status).toBe(200);
-    const { exam } = await res.json();
-    expect(exam).toMatchObject({ title: "Đề cũ", duration_minutes: 45, question_ids: ["q2"], skills: ["Writing"] });
+    const { exam, sections } = await res.json();
+    expect(exam).toMatchObject({ title: "Đề cũ", duration_minutes: 45, skills: ["Writing"] });
+    expect(sections).toHaveLength(1);
     expect(h.neo.some((n) => n[0] === "cypher" && /DELETE/i.test(n[1]) && n[2]?.examId === "eOld")).toBe(true);
     expect(h.neo).toContainEqual(["sync", "coSys", "Khóa chung", "eOld", "Đề cũ"]);
   });
@@ -165,35 +182,40 @@ describe("GET/PUT /api/teacher/exams/[id]", () => {
   it("PUT dữ liệu sai → 400 không ghi", async () => {
     await loginAs("TEACHER", "t1");
     const { PUT } = await api();
-    expect((await PUT(req("PUT", "/x", { question_ids: ["q3"] }), ctx("eOld"))).status).toBe(400);
+    await h.pg!.queryPg("SELECT 1"); // gom dữ liệu seed cũ thành phần trước khi đọc thẳng DB
+    const t2q = (await rows(`SELECT q.id FROM questions q JOIN sections s ON s.id = q.section_id WHERE s.exam_id = 'eT2'`));
+    const before = await rows(`SELECT q.id FROM questions q JOIN sections s ON s.id = q.section_id WHERE s.exam_id = 'eOld' ORDER BY s.position`);
+    expect((await PUT(req("PUT", "/x", { sections: [{ skill: "Listening", stimulus_type: "AUDIO_ONLY", stimulus_audio_url: "/a.mp3", questions: [{ id: t2q[0]?.id || "q3", category: "LISTENING_MC", content: {} }] }] }), ctx("eOld"))).status).toBe(400);
     expect((await PUT(req("PUT", "/x", { title: "" }), ctx("eOld"))).status).toBe(400);
-    expect((await rows(`SELECT question_ids FROM exams WHERE id='eOld'`))[0].question_ids).toEqual(["qFc", "q1"]);
+    expect((await PUT(req("PUT", "/x", { exam: { updated_at: "2000-01-01T00:00:00.000Z" }, sections: [] }), ctx("eOld"))).status).toBe(409);
+    expect(await rows(`SELECT q.id FROM questions q JOIN sections s ON s.id = q.section_id WHERE s.exam_id = 'eOld' ORDER BY s.position`)).toEqual(before);
   });
 });
 
 // ── Trang tạo đề & component dùng chung ───────────────────────────────────
-const COMP = "components/question-builder/QuestionSetEditor.tsx";
+const COMP = "components/section-builder/SectionEditor.tsx"; // FEAT-017 thay QuestionSetEditor
 const PAGE = "app/teacher/tests/create/page.tsx";
 const read = (p: string) => fs.readFileSync(p, "utf8");
 
-describe("QuestionSetEditor tách khỏi trang tạo đề", () => {
+describe("SectionEditor tách khỏi trang tạo đề (FEAT-017)", () => {
   it("component tồn tại, là client component, có export default và hỗ trợ mode EXAM/LESSON", () => {
     const src = read(COMP);
     expect(src.trimStart().startsWith('"use client"')).toBe(true);
-    expect(src).toMatch(/export default function QuestionSetEditor/);
+    expect(src).toMatch(/export default function SectionEditor/);
     expect(src).toMatch(/"EXAM"\s*\|\s*"LESSON"|"LESSON"\s*\|\s*"EXAM"/);
     expect(src).toMatch(/onSave/);
   });
 
-  it("component lưu câu hỏi qua /api/teacher/questions, lấy khóa học qua /api/teacher/courses", () => {
+  it("component lưu cả cây phần qua onSave (không gọi /api/teacher/questions), lấy khóa học qua /api/teacher/courses", () => {
     const src = read(COMP);
-    expect(src).toContain("/api/teacher/questions");
+    expect(src).not.toContain("/api/teacher/questions");
+    expect(src).toContain("toPayload(sections)");
     expect(src).toContain("/api/teacher/courses");
   });
 
-  it("trang tạo đề mỏng: dùng QuestionSetEditor, gọi /api/teacher/exams, < 400 dòng", () => {
+  it("trang tạo đề mỏng: dùng SectionEditor, gọi /api/teacher/exams, < 400 dòng", () => {
     const src = read(PAGE);
-    expect(src).toContain("QuestionSetEditor");
+    expect(src).toContain("SectionEditor");
     expect(src).toContain("/api/teacher/exams");
     expect(src.split("\n").length).toBeLessThan(400);
   });

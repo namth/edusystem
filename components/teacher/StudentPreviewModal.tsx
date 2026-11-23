@@ -4,7 +4,7 @@
 // Nạp qua /api/teacher/{lessons|exams}/[id]/preview: nội dung đã ẩn đáp án, chấm thử không lưu.
 // Giáo viên không bao giờ được dẫn sang trang của phân hệ học sinh.
 import { useState, useEffect, useCallback, useMemo } from "react";
-import LessonPlayer, { GradeResult, FlashcardItem } from "@/components/lesson-player/LessonPlayer";
+import LessonPlayer, { type PlayerSection, GradeResult, FlashcardItem } from "@/components/lesson-player/LessonPlayer";
 import { emptyAnswerFor, countAnswered } from "@/lib/lesson-player";
 import { groupQuestionsBySkill } from "@/lib/exam-player";
 import {
@@ -69,6 +69,7 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<PreviewMeta | null>(null);
   const [questions, setQuestions] = useState<PreviewQuestion[]>([]);
+  const [treeSections, setTreeSections] = useState<PlayerSection[] | undefined>(undefined);
   const [flashcards, setFlashcards] = useState<FlashcardItem[]>([]);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [results, setResults] = useState<GradeResult[] | null>(null);
@@ -78,7 +79,7 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
 
   // Nạp dữ liệu thuần (không setState) → áp vào state trong .then, tránh setState đồng bộ trong effect.
   const fetchPreview = useCallback(async (): Promise<
-    | { ok: true; meta: PreviewMeta | null; questions: PreviewQuestion[]; flashcards: FlashcardItem[] }
+    | { ok: true; meta: PreviewMeta | null; questions: PreviewQuestion[]; flashcards: FlashcardItem[]; sections?: PlayerSection[] }
     | { ok: false; error: string }
   > => {
     try {
@@ -92,6 +93,7 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
         meta: json[kind] || null,
         questions: Array.isArray(json.questions) ? json.questions : [],
         flashcards: Array.isArray(json.flashcards) ? json.flashcards : [],
+        sections: Array.isArray(json.sections) ? json.sections : undefined,
       };
     } catch (err: unknown) {
       console.error("Preview load error:", err);
@@ -108,6 +110,7 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
       if (r.ok) {
         setMeta(r.meta);
         setQuestions(r.questions);
+        setTreeSections(r.sections);
         setFlashcards(r.flashcards);
         setAnswers(initAnswers(r.questions));
       } else {
@@ -181,16 +184,17 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
 
   const answeredCount = useMemo(() => countAnswered(questions, answers), [questions, answers]);
 
-  // Đề thi: chia theo kỹ năng như học sinh làm bài; bài học: một khối liền
+  // FEAT-017: có cây phần thì hiện theo phần như học sinh thấy (một khối, LessonPlayer tự chia phần);
+  // dữ liệu cũ: đề thi chia theo kỹ năng, bài học một khối liền
   const sections = useMemo(() => {
-    if (kind === "lesson") return [{ skill: "", questions, start: 1 }];
+    if (kind === "lesson" || treeSections) return [{ skill: "", questions, start: 1 }];
     let start = 1;
     return groupQuestionsBySkill(questions).map((g) => {
       const sec = { skill: g.skill, questions: g.questions as PreviewQuestion[], start };
       start += g.questions.length;
       return sec;
     });
-  }, [kind, questions]);
+  }, [kind, questions, treeSections]);
 
   const onAnswer = (qId: string, val: unknown) => setAnswers((prev) => ({ ...prev, [qId]: val }));
   const hasContent = !loading && !error && questions.length > 0;
@@ -340,6 +344,7 @@ export default function StudentPreviewModal({ kind, id, fallbackTitle, onClose }
                     results={results}
                     disabled={submitting || Boolean(results)}
                     startNumber={sec.start}
+                    sections={treeSections}
                   />
                 </section>
               ))}

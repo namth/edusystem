@@ -216,16 +216,16 @@ describe("subject_id trên khoá học / đề / bài học", () => {
 
   it("exams: POST nhận subject_id, GET trả + lọc; PUT đổi được", async () => {
     const E = await import("@/app/api/teacher/exams/route");
-    const res = await E.POST(req("POST", "/api/teacher/exams", { title: "Đề Toán", duration_minutes: 20, question_ids: ["q1"], subject_id: toanId }));
+    const res = await E.POST(req("POST", "/api/teacher/exams", { title: "Đề Toán", duration_minutes: 20, sections: [{ skill: "Reading", questions: [{ category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } }] }], subject_id: toanId }));
     expect(res.status).toBeLessThan(300);
     const list = (await (await E.GET(req("GET", `/api/teacher/exams?subject_id=${toanId}`))).json()).exams;
     expect(list.map((e: any) => e.title)).toEqual(["Đề Toán"]);
     expect(list[0].subject_id).toBe(toanId);
     const all = (await (await E.GET(req("GET", "/api/teacher/exams"))).json()).exams;
     expect(all.find((e: any) => e.id === "eOld").subject_id).toBe("english");
-    expect((await E.POST(req("POST", "/api/teacher/exams", { title: "Lén", duration_minutes: 20, question_ids: ["q1"], subject_id: otherId }))).status).toBe(400);
+    expect((await E.POST(req("POST", "/api/teacher/exams", { title: "Lén", duration_minutes: 20, sections: [{ skill: "Reading", questions: [{ category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } }] }], subject_id: otherId }))).status).toBe(400);
     const X = await import("@/app/api/teacher/exams/[id]/route");
-    const put = await X.PUT(req("PUT", "/api/teacher/exams/eOld", { title: "Đề cũ", duration_minutes: 30, question_ids: ["q1"], subject_id: toanId }), ctx("eOld"));
+    const put = await X.PUT(req("PUT", "/api/teacher/exams/eOld", { title: "Đề cũ", duration_minutes: 30, subject_id: toanId }), ctx("eOld"));
     expect(put.status).toBe(200);
     expect((await rows(`SELECT subject_id FROM exams WHERE id='eOld'`))[0].subject_id).toBe(toanId);
   });

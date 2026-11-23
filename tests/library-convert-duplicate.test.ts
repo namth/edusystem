@@ -90,6 +90,17 @@ beforeEach(async () => {
   await h.pg.db.exec(`INSERT INTO lesson_attempts (id,lesson_id,class_id,student_id) VALUES ('la1','lTried','c1','s1')`);
 });
 
+// FEAT-017: câu thuộc phần (sections) — đọc id / dạng câu theo thứ tự phần → câu.
+// queryPg("SELECT 1") để helper gom dữ liệu seed cũ (question_ids) thành phần trước khi đọc thẳng DB.
+const treeRows = async (kind: "exam" | "lesson", id: string) => {
+  await h.pg!.queryPg("SELECT 1");
+  return rows(`SELECT q.id, q.category, q.prompt, q.content, q.skill, q.created_by, s.instruction, s.stimulus_text FROM questions q JOIN sections s ON s.id = q.section_id
+               WHERE s.${kind}_id = $1 ORDER BY s.position, q.position`, [id]);
+};
+const qidsOf = async (kind: "exam" | "lesson", id: string) => (await treeRows(kind, id)).map((r: any) => r.id);
+const catsOf = async (kind: "exam" | "lesson", id: string) => (await treeRows(kind, id)).map((r: any) => r.category);
+const qCount = async () => { await h.pg!.queryPg("SELECT 1"); return (await rows(`SELECT COUNT(*)::int n FROM questions`))[0].n; };
+
 describe("POST /api/teacher/library/convert — phân quyền & kiểm tra đầu vào", () => {
   it("chưa đăng nhập 401; STUDENT 403; không chạm DB", async () => {
     expect((await convert({ from: "lesson", ids: ["lFree"] })).status).toBe(401);
@@ -112,6 +123,8 @@ describe("POST /api/teacher/library/convert — phân quyền & kiểm tra đầ
 describe("Chuyển bài học → đề thi", () => {
   it("bài học tự do → tạo đề cùng tiêu đề / mô tả / kỹ năng / câu hỏi (giữ thứ tự) / môn / người tạo, rồi xoá bài học", async () => {
     await loginAs("TEACHER", "t1");
+    const before = await qidsOf("lesson", "lFree");
+    const n0 = await qCount();
     const res = await convert({ from: "lesson", ids: ["lFree"], duration_minutes: 40 });
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -123,10 +136,11 @@ describe("Chuyển bài học → đề thi", () => {
     const [exam] = await rows(`SELECT * FROM exams WHERE id=$1`, [r.new_id]);
     expect(exam).toMatchObject({ title: "Bài nhập nhầm", description: "mô tả bài", duration_minutes: 40, created_by: "t1", subject_id: "subj_toan" });
     expect(exam.skills).toEqual(["Reading", "Writing"]);
-    expect(exam.question_ids).toEqual(["qa", "qb"]);
+    expect(await catsOf("exam", r.new_id)).toEqual(["READING_MC", "WRITING_ESSAY"]);
+    expect(await qidsOf("exam", r.new_id)).toEqual(before); // BR-P13: chuyển loại giữ nguyên id phần / câu
     expect(await rows(`SELECT id FROM lessons WHERE id='lFree'`)).toEqual([]);
     // câu hỏi không bị nhân bản / xoá khi chuyển
-    expect((await rows(`SELECT COUNT(*)::int n FROM questions`))[0].n).toBe(3);
+    expect(await qCount()).toBe(n0);
   });
 
   it("không gửi duration_minutes → đề mặc định 30 phút", async () => {
@@ -160,27 +174,30 @@ describe("Chuyển bài học → đề thi", () => {
 describe("Chuyển đề thi → bài học", () => {
   it("đề tự do → tạo bài học cùng tiêu đề / mô tả / kỹ năng / câu hỏi / môn / người tạo, rồi xoá đề", async () => {
     await loginAs("TEACHER", "t1");
+    const before = await qidsOf("exam", "eFree");
     const json = await (await convert({ from: "exam", ids: ["eFree"] })).json();
     const r = json.results[0];
     expect(r).toMatchObject({ id: "eFree", ok: true });
     const [lesson] = await rows(`SELECT * FROM lessons WHERE id=$1`, [r.new_id]);
     expect(lesson).toMatchObject({ title: "Đề nhập nhầm", description: "mô tả đề", created_by: "t1", subject_id: "subj_toan" });
     expect(lesson.skills).toEqual(["Reading", "Writing"]);
-    expect(lesson.question_ids).toEqual(["qb", "qa"]);
+    expect(await catsOf("lesson", r.new_id)).toEqual(["WRITING_ESSAY", "READING_MC"]);
+    expect(await qidsOf("lesson", r.new_id)).toEqual(before);
     expect(String(r.new_id).startsWith("lsn_")).toBe(true);
     expect(await rows(`SELECT id FROM exams WHERE id='eFree'`)).toEqual([]);
   });
 
-  it("đề đã giao lớp / có bài đọc chung / của GV khác → bị chặn đúng lý do, giữ nguyên", async () => {
+  it("đề đã giao lớp / của GV khác → bị chặn đúng lý do, giữ nguyên; đề có bài đọc chung chuyển được (FEAT-017: bài đọc là một phần)", async () => {
     await loginAs("TEACHER", "t1");
     const json = await (await convert({ from: "exam", ids: ["eUsed", "eStim", "eOther"] })).json();
     const by = Object.fromEntries(json.results.map((r: any) => [r.id, r]));
     expect(by.eUsed).toMatchObject({ ok: false, reason: "IN_USE" });
     expect(by.eUsed.usages).toMatchObject({ assignments: 1 });
-    expect(by.eStim).toMatchObject({ ok: false, reason: "HAS_STIMULUS" });
+    expect(by.eStim).toMatchObject({ ok: true });
+    expect((await rows(`SELECT stimulus_text FROM sections WHERE lesson_id=$1 ORDER BY position`, [by.eStim.new_id]))[0].stimulus_text).toBe("Đoạn văn dùng chung cho cả đề");
     expect(by.eOther).toMatchObject({ ok: false, reason: "FORBIDDEN" });
-    expect((await rows(`SELECT COUNT(*)::int n FROM exams`))[0].n).toBe(4);
-    expect((await rows(`SELECT COUNT(*)::int n FROM lessons`))[0].n).toBe(4);
+    expect((await rows(`SELECT COUNT(*)::int n FROM exams`))[0].n).toBe(3);
+    expect((await rows(`SELECT COUNT(*)::int n FROM lessons`))[0].n).toBe(5);
   });
 
   it("đề đã có bài nộp → IN_USE (usages.submissions)", async () => {
@@ -207,6 +224,8 @@ describe("Nhân bản bài học", () => {
 
   it("tạo bài mới với tên mới, sao chép SÂU câu hỏi (id mới, cùng nội dung, giữ thứ tự); bản gốc không đổi", async () => {
     await loginAs("TEACHER", "t1");
+    const origIds = await qidsOf("lesson", "lFree");
+    const n0 = await qCount();
     const res = await dupLesson("lFree", { title: "  Bài nhập nhầm — lớp 5B  " });
     expect(res.status).toBe(201);
     const { lesson } = await res.json();
@@ -215,17 +234,16 @@ describe("Nhân bản bài học", () => {
     const [copy] = await rows(`SELECT * FROM lessons WHERE id=$1`, [lesson.id]);
     expect(copy).toMatchObject({ description: "mô tả bài", created_by: "t1", subject_id: "subj_toan" });
     expect(copy.skills).toEqual(["Reading", "Writing"]);
-    expect(copy.question_ids).toHaveLength(2);
-    expect(copy.question_ids).not.toContain("qa");
-    expect(copy.question_ids).not.toContain("qb");
-    const copied = await rows(`SELECT id, skill, category, prompt, content, created_by FROM questions WHERE id = ANY($1)`, [copy.question_ids]);
-    const byId = Object.fromEntries(copied.map((q: any) => [q.id, q]));
-    expect(byId[copy.question_ids[0]]).toMatchObject({ skill: "Reading", category: "READING_MC", prompt: "Câu A", created_by: "t1" });
-    expect(byId[copy.question_ids[1]]).toMatchObject({ skill: "Writing", category: "WRITING_ESSAY", prompt: "Câu B" });
-    expect(byId[copy.question_ids[0]].content).toEqual({ sub_questions: [{ id: "1", text: "?", correct_answer: "A" }] });
-    const [orig] = await rows(`SELECT title, question_ids FROM lessons WHERE id='lFree'`);
-    expect(orig).toEqual({ title: "Bài nhập nhầm", question_ids: ["qa", "qb"] });
-    expect((await rows(`SELECT COUNT(*)::int n FROM questions`))[0].n).toBe(5);
+    const copied = await treeRows("lesson", lesson.id);
+    expect(copied).toHaveLength(2);
+    for (const q of copied) expect(origIds).not.toContain(q.id);
+    expect(copied[0]).toMatchObject({ skill: "Reading", category: "READING_MC", instruction: "Câu A", created_by: "t1" });
+    expect(copied[1]).toMatchObject({ skill: "Writing", category: "WRITING_ESSAY", prompt: "Câu B" });
+    expect(copied[0].content).toEqual({ sub_questions: [{ id: "1", text: "?", correct_answer: "A" }] });
+    const [orig] = await rows(`SELECT title FROM lessons WHERE id='lFree'`);
+    expect(orig).toEqual({ title: "Bài nhập nhầm" });
+    expect(await qidsOf("lesson", "lFree")).toEqual(origIds);
+    expect(await qCount()).toBe(n0 + 2);
   });
 
   it("bài đang trong lộ trình vẫn nhân bản được; bản sao không nằm trong lộ trình", async () => {
@@ -260,20 +278,20 @@ describe("Nhân bản đề thi", () => {
     const [copy] = await rows(`SELECT * FROM exams WHERE id=$1`, [exam.id]);
     expect(copy).toMatchObject({
       title: "Đề nhập nhầm (bản sao)", description: "mô tả đề", duration_minutes: 45, created_by: "t1",
-      scoring_standard_id: "std_x", stimulus_type: "TEXT_ONLY", subject_id: "subj_toan",
+      scoring_standard_id: "std_x", subject_id: "subj_toan",
     });
     expect(Number(copy.passing_score)).toBe(6.5);
-    expect(copy.question_ids).toHaveLength(2);
-    expect(copy.question_ids).not.toContain("qa");
-    const prompts = await rows(`SELECT prompt FROM questions WHERE id = ANY($1)`, [copy.question_ids]);
-    expect(prompts.map((p: any) => p.prompt).sort()).toEqual(["Câu A", "Câu B"]);
+    const copied = await treeRows("exam", exam.id);
+    const origIds = await qidsOf("exam", "eFree");
+    expect(copied.map((q: any) => q.category)).toEqual(["WRITING_ESSAY", "READING_MC"]);
+    for (const q of copied) expect(origIds).not.toContain(q.id);
     expect(await rows(`SELECT id FROM class_assignments WHERE exam_id=$1`, [exam.id])).toEqual([]);
   });
 
-  it("đề có bài đọc chung → bản sao giữ nguyên stimulus_text", async () => {
+  it("đề có bài đọc chung → bản sao giữ nguyên phần bài đọc (FEAT-017: bài đọc nằm ở phần)", async () => {
     await loginAs("TEACHER", "t1");
     const { exam } = await (await dupExam("eStim", { title: "Bản sao bài đọc" })).json();
-    expect((await rows(`SELECT stimulus_text FROM exams WHERE id=$1`, [exam.id]))[0].stimulus_text).toBe("Đoạn văn dùng chung cho cả đề");
+    expect((await rows(`SELECT stimulus_text FROM sections WHERE exam_id=$1 ORDER BY position`, [exam.id]))[0].stimulus_text).toBe("Đoạn văn dùng chung cho cả đề");
   });
 });
 

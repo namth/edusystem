@@ -4,18 +4,20 @@ import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "rea
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import StudentLayout from "@/components/StudentLayout";
+import ExamNavigatorGrid from "@/components/exam/ExamNavigatorGrid";
 import LessonPlayer, { FlashcardItem } from "@/components/lesson-player/LessonPlayer";
 import { emptyExamAnswerFor, groupQuestionsBySkill, formatRemaining } from "@/lib/exam-player";
 import { countAnswered } from "@/lib/lesson-player";
 import { sanitizeStimulusHtml } from "@/lib/stimulus-html";
 import { summarizeAttemptResult } from "@/lib/attempt-summary";
 import {
-  buildScreens, navStatus, screenIndexOfQuestion, clampScreenIndex,
+  buildScreens, buildSectionScreens, questionNumberLabel, type SectionLike, type SectionScreen,
+  screenIndexOfQuestion, clampScreenIndex,
   unansweredNumbers, formatSavedAt, keyToOptionLetter, isTypingTarget, applyOptionShortcut,
 } from "@/lib/exam-layout";
 import {
   Timer, AlertCircle, Loader2, Clock, FileCheck, ExternalLink,
-  ArrowLeft, ArrowRight, Flag, LayoutGrid, Volume2, GripVertical, X, CheckCircle2,
+  ArrowLeft, ArrowRight, Flag, LayoutGrid, Volume2, GripVertical, X, CheckCircle2, BookOpen,
 } from "lucide-react";
 
 interface ExamContentData {
@@ -23,6 +25,8 @@ interface ExamContentData {
   standard?: { id: string; name: string; sections?: { skill: string; min: number; max: number }[] };
   questions: any[];
   flashcards?: FlashcardItem[];
+  /** FEAT-017: đề → phần → câu (mỗi phần một màn, BR-P11) */
+  sections?: SectionLike[];
 }
 
 interface AttemptData {
@@ -247,8 +251,16 @@ function StudentExamInner() {
   const questions = contentData?.questions || [];
   const flashcards = contentData?.flashcards || [];
   const groupedSkills = useMemo(() => groupQuestionsBySkill(questions), [questions]);
-  const orderedQuestions = useMemo(() => groupedSkills.flatMap((g) => g.questions), [groupedSkills]);
-  const screens = useMemo(() => buildScreens(questions), [questions]);
+  const sectionsData = contentData?.sections;
+  // FEAT-017: có phần thì thứ tự câu = thứ tự giáo viên xếp (không gom lại theo kỹ năng)
+  const orderedQuestions = useMemo(
+    () => (sectionsData ? questions : groupedSkills.flatMap((g) => g.questions)),
+    [sectionsData, questions, groupedSkills]
+  );
+  const screens: (SectionScreen | ReturnType<typeof buildScreens>[number])[] = useMemo(
+    () => (sectionsData ? buildSectionScreens(sectionsData) : buildScreens(questions)),
+    [sectionsData, questions]
+  );
   const safeScreenIdx = clampScreenIndex(currentScreenIdx, screens.length);
   const currentScreen = screens[safeScreenIdx] || null;
 
@@ -261,8 +273,11 @@ function StudentExamInner() {
   const screenStartNumber = useMemo(() => {
     if (!currentScreen || currentScreen.questionIds.length === 0) return 1;
     const idx = orderedQuestions.findIndex((q) => String(q.id) === String(currentScreen.questionIds[0]));
+    const first = idx >= 0 ? orderedQuestions[idx] : null;
+    if (first && Number(first.number_start) > 0) return Number(first.number_start);
     return idx >= 0 ? idx + 1 : 1;
   }, [currentScreen, orderedQuestions]);
+  const screenInfo = currentScreen as Partial<SectionScreen> | null;
 
   useEffect(() => {
     if (currentScreen?.skill && currentScreen.skill !== activeSkill) setActiveSkill(currentScreen.skill);
@@ -430,42 +445,29 @@ function StudentExamInner() {
   const answeredCount = countAnswered(questions, answers);
   const totalCount = questions.length;
   const progressPct = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
-  const missingNums = unansweredNumbers(questions, answers);
+  // Câu chưa làm theo thứ tự hiển thị, kèm nhãn số câu (câu chiếm nhiều số hiện "7–11")
+  const missingQs = sectionsData
+    ? orderedQuestions.map((q, i) => ({ q, label: questionNumberLabel(q, i + 1) })).filter(({ q }) => countAnswered([q], answers) === 0)
+    : unansweredNumbers(questions, answers).map((num) => ({ q: orderedQuestions[num - 1], label: String(num) }));
+  const missingNums = missingQs.map((m) => m.label);
   const isCurrentScreenFlagged = Boolean(currentScreen && currentScreen.questionIds.every((id) => flaggedIds[id]));
   const handleAnswerChange = (qId: string, val: unknown) => setAnswers((prev) => ({ ...prev, [qId]: val }));
 
+  // FEAT-017: lời dẫn của phần ở đầu màn; phần chỉ đọc (0 câu) có nút Tiếp tục (BR-P11)
+  const renderScreenBody = () => (<>
+    {screenInfo?.instruction && <p className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm font-semibold leading-relaxed text-ink whitespace-pre-line">{screenInfo.instruction}</p>}
+    {screenInfo?.readOnly ? (
+      <div className="flex flex-col items-start gap-4 rounded-2xl border border-line bg-white p-6">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-accent-50 text-accent-600"><BookOpen className="h-6 w-6" /></span>
+        <p className="text-sm leading-relaxed text-ink">Phần này không có câu hỏi. Đọc kỹ hướng dẫn rồi bấm <b>Tiếp tục</b>.</p>
+        {safeScreenIdx < screens.length - 1 && <button type="button" onClick={() => goToScreen(safeScreenIdx + 1)} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 cursor-pointer">Tiếp tục <ArrowRight className="h-4 w-4 text-white" /></button>}
+      </div>
+    ) : <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />}
+  </>);
+
   const renderNavigatorGrid = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-ink">Bảng câu hỏi</span>
-        <span className="text-xs font-semibold text-brand-600">{answeredCount}/{totalCount} đã làm</span>
-      </div>
-      <div className="grid grid-cols-5 gap-2">
-        {orderedQuestions.map((q, idx) => {
-          const st = navStatus({
-            isCurrent: Boolean(currentScreen?.questionIds.includes(q.id)),
-            isFlagged: Boolean(flaggedIds[q.id]),
-            isAnswered: countAnswered([q], answers) > 0,
-          });
-          const btnStyle =
-            st === "current" ? "bg-brand-600 text-white border-brand-600 ring-2 ring-brand-600/30" :
-            st === "flagged" ? "bg-amber-100 text-amber-900 border-amber-400" :
-            st === "answered" ? "bg-emerald-100 text-emerald-900 border-emerald-400" :
-            "bg-white text-ink-muted border-line hover:border-brand-600";
-          return (
-            <button key={q.id} type="button" onClick={() => { const t = screenIndexOfQuestion(screens, q.id); if (t >= 0) goToScreen(t); }} className={`h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer ${btnStyle}`}>
-              {idx + 1}
-            </button>
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-line-soft text-[11px] font-medium text-ink-muted">
-        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-brand-600 inline-block" />Đang làm</div>
-        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-200 border border-amber-400 inline-block" />Đánh dấu</div>
-        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-200 border border-emerald-400 inline-block" />Đã làm</div>
-        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-white border border-line inline-block" />Chưa làm</div>
-      </div>
-    </div>
+    <ExamNavigatorGrid screens={screens} currentIndex={safeScreenIdx} questions={orderedQuestions} answers={answers}
+      flaggedIds={flaggedIds} bySections={Boolean(sectionsData)} onGo={goToScreen} />
   );
 
   return (
@@ -536,7 +538,7 @@ function StudentExamInner() {
                 {currentScreen.stimulus_text && (
                   <div className="rounded-2xl border border-line bg-white p-5 text-sm leading-relaxed text-ink [&_img]:max-h-[45vh] [&_img]:w-auto [&_img]:max-w-full [&_img]:object-contain [&_img]:mx-auto [&_img]:rounded-xl" dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
                 )}
-                <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                {renderScreenBody()}
               </div>
             </div>
           )}
@@ -547,7 +549,7 @@ function StudentExamInner() {
                 {currentScreen.stimulus_text && (
                   <div className="rounded-2xl border border-line bg-white p-5 text-sm leading-relaxed text-ink shadow-2xs [&_img]:max-h-[45vh] [&_img]:w-auto [&_img]:max-w-full [&_img]:object-contain [&_img]:mx-auto [&_img]:rounded-xl" dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
                 )}
-                <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                {renderScreenBody()}
               </div>
             </div>
           )}
@@ -563,7 +565,7 @@ function StudentExamInner() {
                   {mobileSplitTab === "passage" ? (
                     <div className={`rounded-2xl border border-line bg-white p-5 leading-relaxed text-ink ${fontSize} [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-xl`} dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(currentScreen.stimulus_text) }} />
                   ) : (
-                    <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                    renderScreenBody()
                   )}
                 </div>
               </div>
@@ -589,7 +591,7 @@ function StudentExamInner() {
                 </div>
 
                 <div style={{ width: `${100 - splitRatio}%` }} className="h-full overflow-y-auto p-6">
-                  <LessonPlayer questions={screenQuestions} flashcards={flashcards} answers={answers} onChange={handleAnswerChange} allowSpeaking={true} hideStimulus={true} startNumber={screenStartNumber} />
+                  {renderScreenBody()}
                 </div>
               </div>
             </>
@@ -663,14 +665,11 @@ function StudentExamInner() {
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-brand-600">Câu chưa làm (bấm để nhảy tới):</div>
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                  {missingNums.map((num) => {
-                    const targetQ = orderedQuestions[num - 1];
-                    return (
-                      <button key={num} type="button" onClick={() => { setShowConfirmModal(false); if (targetQ) { const idx = screenIndexOfQuestion(screens, targetQ.id); if (idx >= 0) goToScreen(idx); } }} className="px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold cursor-pointer">
-                        Câu {num}
-                      </button>
-                    );
-                  })}
+                  {missingQs.map(({ q: targetQ, label }) => (
+                    <button key={label} type="button" onClick={() => { setShowConfirmModal(false); if (targetQ) { const idx = screenIndexOfQuestion(screens, targetQ.id); if (idx >= 0) goToScreen(idx); } }} className="px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold cursor-pointer">
+                      Câu {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

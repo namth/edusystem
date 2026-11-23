@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { emptyAnswerFor, setAnswerPart, bankUsage, pickBankWord } from "@/lib/lesson-player";
+import { useCallback, useMemo, useState } from "react";
+import {
+  emptyAnswerFor, setAnswerPart, bankUsage, pickBankWord, dropOnGap, dropOnBank, dropOnLine, dropOffLine,
+  type BankDrag, type OrderDrag,
+} from "@/lib/lesson-player";
+import { usePointerDrag } from "./usePointerDrag";
 import SpeakingRecorder from "./SpeakingRecorder";
 import { sanitizeInlineHtml, sanitizeStimulusHtml } from "@/lib/stimulus-html";
 import {
@@ -53,7 +57,23 @@ export interface LessonPlayerProps {
   allowSpeaking?: boolean;
   hideStimulus?: boolean;
   startNumber?: number;
+  /**
+   * FEAT-017: các phần (lời dẫn + ngữ cảnh) — có thì hiện lời dẫn / ngữ cảnh một lần ở đầu mỗi phần,
+   * kể cả phần không có câu (phần chỉ đọc). Không truyền thì hiển thị danh sách câu như cũ.
+   */
+  sections?: PlayerSection[];
 }
+
+export interface PlayerSection {
+  id?: string;
+  skill?: string;
+  instruction?: string | null;
+  stimulus_text?: string | null;
+  stimulus_audio_url?: string | null;
+  questions: { id: string }[];
+}
+
+type DragPayload = { qid: string; gapCount?: number } & ({ t: "bank"; d: BankDrag } | { t: "order"; d: OrderDrag });
 
 export default function LessonPlayer({
   questions,
@@ -65,8 +85,65 @@ export default function LessonPlayer({
   allowSpeaking = false,
   hideStimulus = false,
   startNumber = 1,
+  sections,
 }: LessonPlayerProps) {
   const isReadonly = Boolean(results || disabled);
+
+  // ── Kéo thả điền ô kho từ / sắp xếp (BR-P15) ──
+  const handleDrop = useCallback(
+    (p: DragPayload, target: string) => {
+      const [kind, qid, rest] = target.split("|");
+      if (qid !== p.qid) return;
+      const cur = answers[qid];
+      if (p.t === "bank") {
+        const n = p.gapCount || 0;
+        if (kind === "gap") onChange(qid, dropOnGap(Array.isArray(cur) ? cur : [], n, p.d, Number(rest)));
+        else if (kind === "bank") onChange(qid, dropOnBank(Array.isArray(cur) ? cur : [], n, p.d));
+      } else {
+        const order = Array.isArray(cur) ? cur : [];
+        if (kind === "line") onChange(qid, dropOnLine(order, p.d, rest === "end" ? order.length : Number(rest)));
+        else if (kind === "pool") onChange(qid, dropOffLine(order, p.d));
+      }
+    },
+    [answers, onChange]
+  );
+  const { dragProps, ghost, overKey } = usePointerDrag<DragPayload>(handleDrop);
+  const overCls = (key: string) => (overKey === key ? " ring-2 ring-accent-400 bg-accent-50" : "");
+
+  // Số câu theo phần (BR-P06): server gửi number_start / number_count; không có thì đếm như cũ
+  const numLabel = (q: { number_start?: number; number_count?: number }, qIndex: number) => {
+    const a = Number(q.number_start) > 0 ? Number(q.number_start) : startNumber + qIndex;
+    const c = Number(q.number_count) > 1 ? Number(q.number_count) : 1;
+    return c > 1 ? `${a}–${a + c - 1}` : String(a);
+  };
+  const sectionByFirstQ = useMemo(() => {
+    const m = new Map<string, PlayerSection>();
+    for (const s of sections || []) if (s.questions?.[0]?.id) m.set(String(s.questions[0].id), s);
+    return m;
+  }, [sections]);
+  // Phần chỉ đọc (0 câu) hiện ngay trước câu đầu tiên của phần kế tiếp; phần chỉ đọc ở cuối hiện sau cùng (BR-P11)
+  const { readOnlyBefore, readOnlyTail } = useMemo(() => {
+    const before = new Map<string, PlayerSection[]>();
+    let pending: PlayerSection[] = [];
+    for (const s of sections || []) {
+      if (!s.questions?.length) {
+        pending.push(s);
+        continue;
+      }
+      if (pending.length) before.set(String(s.questions[0].id), pending);
+      pending = [];
+    }
+    return { readOnlyBefore: before, readOnlyTail: pending };
+  }, [sections]);
+  const renderReadOnly = (list: PlayerSection[]) =>
+    list.map((sec, i) => (
+      <div key={sec.id || `ro_${i}`} className="space-y-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-ink-muted">
+          <BookOpen className="h-4 w-4" /> Phần đọc
+        </span>
+        {renderSectionHead(sec)}
+      </div>
+    ));
   // Ô đang chọn của từng câu kho từ (OPTION_BANK) — bấm từ trong kho sẽ điền vào ô này
   const [activeGap, setActiveGap] = useState<Record<string, number | null>>({});
 
@@ -109,16 +186,38 @@ export default function LessonPlayer({
     }
   };
 
+  const renderSectionHead = (sec: PlayerSection) => (
+    <div className="space-y-3 rounded-2xl border border-brand-100 bg-brand-50/40 p-5">
+      {sec.instruction && <p className="text-sm font-semibold text-ink whitespace-pre-line">{sec.instruction}</p>}
+      {sec.stimulus_text && (
+        <div
+          className="rounded-xl border border-line bg-white p-4 text-sm leading-relaxed text-ink [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-lg [&_p]:my-1"
+          dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(sec.stimulus_text) }}
+        />
+      )}
+      {sec.stimulus_audio_url && (
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-3">
+          <Volume2 className="h-5 w-5 shrink-0 text-brand-600" />
+          <audio controls src={sec.stimulus_audio_url} className="h-8 w-full" />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+      {ghost}
       {questions.map((q, qIndex) => {
         const qResult = resultsMap.get(q.id);
         const category = q.category || "";
         const content = q.content || {};
+        const secHead = sections ? sectionByFirstQ.get(String(q.id)) : undefined;
 
         return (
+          <div key={q.id || qIndex} className="space-y-3">
+          {sections && renderReadOnly(readOnlyBefore.get(String(q.id)) || [])}
+          {secHead && (secHead.instruction || secHead.stimulus_text || secHead.stimulus_audio_url) && renderSectionHead(secHead)}
           <div
-            key={q.id || qIndex}
             className={`rounded-2xl border bg-white p-6 md:p-8 shadow-xs transition-all ${
               qResult
                 ? qResult.earned === qResult.max && qResult.max > 0
@@ -133,10 +232,10 @@ export default function LessonPlayer({
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft pb-4 mb-5">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-2xs">
-                  {startNumber + qIndex}
+                  {numLabel(q, qIndex).split("–")[0]}
                 </span>
                 <span className="font-headline font-bold text-ink text-base md:text-lg">
-                  Câu {startNumber + qIndex}
+                  Câu {numLabel(q, qIndex)}
                 </span>
                 {q.skill && (
                   <span
@@ -208,7 +307,7 @@ export default function LessonPlayer({
             )}
 
             {/* Stimulus text (Ngữ cảnh văn bản) */}
-            {!hideStimulus && q.stimulus_text && (
+            {!hideStimulus && !sections && q.stimulus_text && (
               <div
                 className="mb-4 rounded-xl border border-line bg-surface-alt p-4 text-sm leading-relaxed text-ink [&_img]:max-w-full [&_img]:h-auto [&_img]:mx-auto [&_img]:rounded-lg [&_p]:my-1"
                 dangerouslySetInnerHTML={{ __html: sanitizeStimulusHtml(q.stimulus_text) }}
@@ -216,7 +315,7 @@ export default function LessonPlayer({
             )}
 
             {/* Stimulus audio (Ngữ cảnh âm thanh) */}
-            {!hideStimulus && q.stimulus_audio_url && (
+            {!hideStimulus && !sections && q.stimulus_audio_url && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-line bg-surface-alt p-3">
                 <Volume2 className="h-5 w-5 text-brand-600 shrink-0" />
                 <audio
@@ -234,12 +333,12 @@ export default function LessonPlayer({
                 <div className="space-y-4">
                   {(Array.isArray(content.sub_questions)
                     ? content.sub_questions
-                    : []
+                    : [{ ...content, id: q.id, __flat: true }] /* FEAT-017 BR-P12: một ý một bản ghi */
                   ).map((sub: any, subIndex: number) => {
                     const subId = String(sub.id);
-                    const currentAnswer = (
-                      (answers[q.id] as Record<string, string>) || {}
-                    )[subId];
+                    const currentAnswer = sub.__flat
+                      ? (typeof answers[q.id] === "string" ? (answers[q.id] as string) : undefined)
+                      : ((answers[q.id] as Record<string, string>) || {})[subId];
                     const itemResult = qResult?.items?.find(
                       (it) => it.key === subId
                     );
@@ -257,10 +356,12 @@ export default function LessonPlayer({
                       >
                         {/* Sub question text */}
                         <div className="flex items-start gap-2 mb-3">
-                          <span className="font-bold text-brand-600 text-sm">
-                            {/* đề nhập từ giấy giữ số câu gốc (BR-I20) */}
-                            {Number(sub.number) > 0 ? Number(sub.number) : subIndex + 1}.
-                          </span>
+                          {!sub.__flat && (
+                            <span className="font-bold text-brand-600 text-sm">
+                              {/* đề nhập từ giấy giữ số câu gốc (BR-I20) */}
+                              {Number(sub.number) > 0 ? Number(sub.number) : subIndex + 1}.
+                            </span>
+                          )}
                           <span
                             className="font-medium text-ink text-sm"
                             // FEAT-015 BR-I14: giữ gạch chân / đậm / nghiêng (đã lọc thẻ)
@@ -312,6 +413,7 @@ export default function LessonPlayer({
                                 disabled={isReadonly}
                                 onClick={() => {
                                   if (isReadonly) return;
+                                  if (sub.__flat) return onChange(q.id, optKey);
                                   const updated = setAnswerPart(
                                     (answers[q.id] as Record<string, unknown>) ||
                                       {},
@@ -375,9 +477,9 @@ export default function LessonPlayer({
                       const used = bankUsage(bank, cur);
                       const gapCount = Number(content.gap_count) || 0;
                       return (
-                        <div className="rounded-xl border border-line bg-surface-alt p-3">
+                        <div data-drop={`bank|${q.id}`} className={`rounded-xl border border-line bg-surface-alt p-3${overCls(`bank|${q.id}`)}`}>
                           <span className="text-xs font-bold uppercase tracking-wider text-brand-600 block mb-2">
-                            Ngân hàng từ{!isReadonly && <span className="normal-case font-medium text-ink-muted"> — chọn một ô rồi bấm từ để điền</span>}:
+                            Ngân hàng từ{!isReadonly && <span className="normal-case font-medium text-ink-muted"> — kéo từ vào ô, hoặc chọn một ô rồi bấm từ</span>}:
                           </span>
                           <div className="flex flex-wrap gap-2">
                             {bank.map((word: string, wIdx: number) => (
@@ -385,6 +487,7 @@ export default function LessonPlayer({
                                 key={wIdx}
                                 type="button"
                                 disabled={isReadonly || used[wIdx]}
+                                {...dragProps({ qid: q.id, gapCount, t: "bank", d: { from: "bank", word } }, word, !isReadonly && !used[wIdx])}
                                 onClick={() => {
                                   const r = pickBankWord(cur, gapCount, activeGap[q.id], word);
                                   onChange(q.id, r.answers);
@@ -460,6 +563,8 @@ export default function LessonPlayer({
                                 <button
                                   type="button"
                                   disabled={isReadonly}
+                                  data-drop={`gap|${q.id}|${gapIdx}`}
+                                  {...dragProps({ qid: q.id, gapCount: Number(content.gap_count) || 0, t: "bank", d: { from: "gap", index: gapIdx } }, gapVal, !isReadonly && !!gapVal)}
                                   onClick={() => {
                                     if (gapVal) {
                                       // bấm ô đã điền → trả từ về kho, ô thành ô đang chọn
@@ -468,7 +573,7 @@ export default function LessonPlayer({
                                     setActiveGap((m) => ({ ...m, [q.id]: gapIdx }));
                                   }}
                                   aria-label={`Ô ${gapIdx + 1}${gapVal ? `: ${gapVal}` : ""}`}
-                                  className={`min-w-20 rounded-lg border-2 px-2.5 py-0.5 text-xs font-bold transition-all ${
+                                  className={`min-w-20 rounded-lg border-2 px-2.5 py-0.5 text-xs font-bold transition-all${overCls(`gap|${q.id}|${gapIdx}`)} ${
                                     gapResult
                                       ? gapResult.correct
                                         ? "border-emerald-600 bg-emerald-100 text-emerald-900"
@@ -550,10 +655,10 @@ export default function LessonPlayer({
                         )}
                       </div>
 
-                      <div className="min-h-12 flex flex-wrap gap-2 items-center rounded-lg border-2 border-dashed border-line bg-white p-2.5">
+                      <div data-drop={`line|${q.id}|end`} className={`min-h-12 flex flex-wrap gap-2 items-center rounded-lg border-2 border-dashed border-line bg-white p-2.5${overCls(`line|${q.id}|end`)}`}>
                         {currentOrder.length === 0 ? (
                           <span className="text-xs text-ink-muted italic">
-                            (Bấm vào các mảnh phía dưới để xếp theo thứ tự)
+                            (Kéo hoặc bấm các mảnh phía dưới để xếp theo thứ tự)
                           </span>
                         ) : (
                           currentOrder.map((piece, pIdx) => (
@@ -561,13 +666,15 @@ export default function LessonPlayer({
                               key={pIdx}
                               type="button"
                               disabled={isReadonly}
+                              data-drop={`line|${q.id}|${pIdx}`}
+                              {...dragProps({ qid: q.id, t: "order", d: { from: "line", index: pIdx } }, piece, !isReadonly)}
                               onClick={() => {
                                 if (isReadonly) return;
                                 const next = [...currentOrder];
                                 next.splice(pIdx, 1);
                                 onChange(q.id, next);
                               }}
-                              className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
+                              className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all${overCls(`line|${q.id}|${pIdx}`)} ${
                                 !isReadonly
                                   ? "bg-brand-50 border-brand-600 text-brand-600 hover:bg-rose-100 hover:border-rose-400 hover:text-rose-800 cursor-pointer"
                                   : "bg-gray-100 border-gray-300 text-gray-700"
@@ -583,9 +690,9 @@ export default function LessonPlayer({
 
                     {/* Danh sách các mảnh để bấm chọn */}
                     {!isReadonly && (
-                      <div className="rounded-xl border border-line-soft bg-surface-alt p-4">
+                      <div data-drop={`pool|${q.id}`} className={`rounded-xl border border-line-soft bg-surface-alt p-4${overCls(`pool|${q.id}`)}`}>
                         <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block mb-2.5">
-                          Các mảnh có sẵn (bấm để thêm vào dòng đáp án):
+                          Các mảnh có sẵn (kéo hoặc bấm để thêm vào dòng đáp án; kéo mảnh ra đây để bỏ):
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {allItems.map((itemStr, itIdx) => {
@@ -602,6 +709,7 @@ export default function LessonPlayer({
                                 key={itIdx}
                                 type="button"
                                 disabled={!isAvailable}
+                                {...dragProps({ qid: q.id, t: "order", d: { from: "pool", item: itemStr } }, itemStr, isAvailable)}
                                 onClick={() => {
                                   if (!isAvailable) return;
                                   onChange(q.id, [...currentOrder, itemStr]);
@@ -1045,15 +1153,14 @@ export default function LessonPlayer({
               {category === "WRITING_SHORT_ANSWER" && (() => {
                 const currentShort =
                   (answers[q.id] as Record<string, string>) || {};
-                const subs: any[] = Array.isArray(content.sub_questions)
-                  ? content.sub_questions
-                  : [];
+                const flat = !Array.isArray(content.sub_questions); // FEAT-017 BR-P12
+                const subs: any[] = flat ? [{ ...content, id: q.id, __flat: true }] : content.sub_questions;
 
                 return (
                   <div className="space-y-3.5">
                     {subs.map((sub: any, sIdx: number) => {
                       const subId = String(sub.id);
-                      const currentVal = currentShort[subId] || "";
+                      const currentVal = flat ? (typeof answers[q.id] === "string" ? (answers[q.id] as string) : "") : currentShort[subId] || "";
                       const itemResult = qResult?.items?.find(
                         (it) => it.key === subId
                       );
@@ -1065,7 +1172,7 @@ export default function LessonPlayer({
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-semibold text-sm text-ink">
-                              {sIdx + 1}. {sub.text}
+                              {flat ? "" : `${sIdx + 1}. `}{sub.text}
                             </span>
                             {sub.max_words && (
                               <span className="text-xs text-ink-muted">
@@ -1079,6 +1186,7 @@ export default function LessonPlayer({
                             disabled={isReadonly}
                             value={currentVal}
                             onChange={(e) => {
+                              if (flat) return onChange(q.id, e.target.value);
                               const next = setAnswerPart(
                                 currentShort,
                                 subId,
@@ -1208,8 +1316,10 @@ export default function LessonPlayer({
               )}
             </div>
           </div>
+          </div>
         );
       })}
+      {sections && renderReadOnly(readOnlyTail)}
     </div>
   );
 }

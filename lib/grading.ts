@@ -104,6 +104,19 @@ export function gradeQuestion(
 
   // 1. *_MC
   if (category.endsWith("_MC")) {
+    // FEAT-017 (BR-P12): trắc nghiệm một ý — answers[questionId] = "B"
+    if (!Array.isArray(content.sub_questions)) {
+      const expected = content.correct_answer ? String(content.correct_answer).toUpperCase() : "";
+      const correct = typeof answer === "string" && !!expected && normalizeString(answer) === normalizeString(expected);
+      return {
+        question_id: q.id,
+        category: q.category,
+        kind: "OBJECTIVE",
+        earned: correct ? 1 : 0,
+        max: 1,
+        items: [{ key: q.id, correct, given: answer, expected }],
+      };
+    }
     const subQuestions: any[] = Array.isArray(content.sub_questions) ? content.sub_questions : [];
     const answerObj =
       typeof answer === "object" && answer !== null && !Array.isArray(answer)
@@ -344,6 +357,16 @@ export function gradeQuestion(
 
   // 9. WRITING_SHORT_ANSWER
   if (category === "WRITING_SHORT_ANSWER") {
+    if (!Array.isArray(content.sub_questions)) {
+      return {
+        question_id: q.id,
+        category: q.category,
+        kind: "AI",
+        earned: 0,
+        max: 1,
+        items: [{ key: q.id, correct: false, given: answer, expected: null }],
+      };
+    }
     const subQuestions: any[] = Array.isArray(content.sub_questions) ? content.sub_questions : [];
     const answerObj =
       typeof answer === "object" && answer !== null && !Array.isArray(answer)
@@ -386,6 +409,7 @@ function sanitizeByCategory(q: GradableQuestion): GradableQuestion {
 
   if (category.endsWith("_MC")) {
     const content = { ...q.content };
+    delete content.correct_answer;
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) => {
         const { correct_answer, ...rest } = sub;
@@ -464,6 +488,7 @@ function sanitizeByCategory(q: GradableQuestion): GradableQuestion {
 
   if (category === "WRITING_SHORT_ANSWER") {
     const content = { ...q.content };
+    delete content.sample_answer;
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) => {
         const { sample_answer, ...rest } = sub;
@@ -563,14 +588,13 @@ export function sanitizeQuestionForStudent(q: GradableQuestion): GradableQuestio
     result.content = content;
   }
 
-  // AI Import lưu đoạn văn điền ô (kèm đáp án trong ngoặc) vào cả cột stimulus_text
+  // Lớp chặn dự phòng: câu điền ô kiểu cũ (AI nhập đề bản đầu) chép đoạn văn có đáp án vào stimulus_text.
+  // FEAT-017: script TASK-061 đã đưa đoạn văn này vào content.passage; nhánh này chỉ còn để không lộ đáp án nếu sót.
   const category = q.category || "";
-  // Câu nhập theo FEAT-015 (có import_meta) dùng stimulus_text cho bài đọc thật — ngoặc tròn trong bài không phải ô trống
   const importedV2 = !!(q.content && typeof q.content === "object" && (q.content as Record<string, unknown>).import_meta);
   if ((category.endsWith("_FILL_IN") || category === "WRITING_FREE_TYPING_BLANKS") && typeof q.stimulus_text === "string" && !importedV2) {
     const { parts, gaps } = parseFillInGaps(q.stimulus_text);
     if (gaps.length > 0) result.stimulus_text = parts.join("____");
   }
-
   return result;
 }

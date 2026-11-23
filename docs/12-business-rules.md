@@ -155,7 +155,7 @@ Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:
 - **BR-W10** Worker báo khi bỏ cuộc sau 5 lần giao (`WORKER:GIVE_UP:*`) và khi mất Redis (`WORKER:REDIS_DOWN`).
 - **BR-W11** Nguồn AI: hết nhà cung cấp khi nhập đề (ERROR); bài `NEEDS_REVIEW` do AI (WARN).
 
-## 9e. Bài học & đề thi theo Phần (P): FEAT-017, DEC-051 → DEC-054; `lib/exam-structure.ts` (dự kiến)
+## 9e. Bài học & đề thi theo Phần (P): FEAT-017, DEC-051 → DEC-055; `lib/exam-structure.ts`, `lib/section-editor.ts`
 Chi tiết ở `docs/features/phan-bai-hoc-de-thi.md` §7. Tóm tắt:
 - **BR-P01** Đề / bài học = danh sách phần có thứ tự; mỗi phần thuộc đúng một cha; dùng lại = sao chép.
 - **BR-P02** ≥ 1 phần; đề thi có ≥ 1 câu tính điểm; bài học có thể chỉ có phần đọc.
@@ -170,6 +170,7 @@ Chi tiết ở `docs/features/phan-bai-hoc-de-thi.md` §7. Tóm tắt:
 - **BR-P11** Một phần một màn theo `position`; phần 0 câu có nút Tiếp tục, không tính vào số câu.
 - **BR-P12** Trắc nghiệm một ý một bản ghi, đáp án A–D; không còn `sub_questions`; code mới không đọc định dạng cũ.
 - **BR-P13** Nhân bản chép sâu; chuyển bài học ↔ đề giữ id.
+- **BR-P15** Điền ô kho từ và sắp xếp: kéo thả (chuột + cảm ứng) và bấm để chọn cùng tồn tại, cho cùng đáp án.
 - **BR-P14** AI nhập đề: mỗi nhóm đề giấy → một phần; nhóm liền nhau cùng bài đọc → chung một phần.
 
 ## 10. Máy trạng thái

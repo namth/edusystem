@@ -2,7 +2,7 @@
 
 > Cập nhật: 2026-11-23.
 > - Bộ test tự động là đặc tả có thể chạy được. Mỗi file `tests/*.test.ts` mở đầu bằng mã task và mục đặc tả mà nó khoá.
-> - Hiện có 71 file với 1269 test, tất cả xanh sau FEAT-015/016 và TASK-054, 055 (23/11/2026).
+> - Hiện có 74 file với 1303 test, tất cả xanh sau FEAT-017 (TASK-056 → 061, 24/11/2026).
 > - Test case chi tiết theo từng tính năng (TC-E…, TC-L…) nằm trong mục "Test case" của `docs/features/*`.
 
 ## 1. Bản đồ test theo miền
@@ -19,7 +19,7 @@
 | Tổng quan admin (BR-D) | `admin-dashboard` |
 | Bảng điểm (BR-B, FEAT-014) | `gradebook` (lõi, TASK-044), `teacher-grading-api` (TASK-045), `teacher-grading-ui`, `student-gradebook-ui` (TASK-046/047). Ca TC-B01 → TC-B16 ở `docs/features/cham-diem-bang-diem.md` §8 |
 | Chuyển dạng câu nhập đề (BR-I, FEAT-015) | `question-conversion` (TASK-051), `ai-import`, `document-parser-html` (TASK-052), `ai-studio-ui`, `lesson-player` (TASK-053), `grading` (đáp án thay thế, TASK-054), `question-editor-mapping` (sửa câu nhập AI, kho từ bấm-điền, TASK-055). Ca TC-I01 → TC-I33 ở `docs/features/chuyen-doi-dang-cau-nhap-de.md` §8 |
-| Bài học & đề theo Phần (BR-P, FEAT-017, dự kiến) | `exam-structure` (TASK-056), `exams-api`, `lessons-api`, `exam-attempts-api`, `student-lessons-api`, `library-convert-duplicate` (TASK-057), `section-editor` (TASK-058), `exam-layout` (TASK-059), `ai-import` (TASK-060), `migrate-sections` (TASK-061). Ca TC-P01 → TC-P20 ở `docs/features/phan-bai-hoc-de-thi.md` §8 |
+| Bài học & đề theo Phần (BR-P, FEAT-017) | `exam-structure` (TASK-056), `exams-api`, `lessons-api`, `exam-attempts-api`, `student-lessons-api`, `library-convert-duplicate` (TASK-057), `section-editor` (TASK-058, TASK-059: màn theo phần + kéo thả), `ai-import` (TASK-060), `migrate-sections` (TASK-061). Dữ liệu test cũ seed bằng `question_ids` được `tests/helpers/pg-fake.ts` tự gom thành phần. Ca TC-P01 → TC-P20 ở `docs/features/phan-bai-hoc-de-thi.md` §8 |
 | Cảnh báo admin (BR-W, FEAT-016) | `admin-alerts`, `server-error`, `env-check` (TASK-048), `server-error-coverage` (TASK-049), `admin-alerts-api`, `admin-alerts-ui`, `admin-dashboard` (thứ tự menu) (TASK-050). Ca TC-W01 → TC-W14 ở `docs/features/canh-bao-admin.md` §8 |
 | Kho, chuyển đổi, nhân bản, flashcard, upload | `library-convert-duplicate`, `flashcards-uploads-api`, `subjects` |
 | Trang học sinh / landing | `student-pages`, `student-home`, `landing` |

@@ -33,7 +33,7 @@ beforeEach(async () => {
   await h.pg.db.exec(`
     ALTER TABLE exams ADD COLUMN IF NOT EXISTS description TEXT;
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, created_by VARCHAR(50), created_at TIMESTAMPTZ DEFAULT NOW());
-    CREATE TABLE lessons (id VARCHAR(50) PRIMARY KEY, question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
+    CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
     CREATE TABLE curriculum_items (id VARCHAR(50) PRIMARY KEY, course_id VARCHAR(50), exam_id VARCHAR(50));
   `);
   await h.pg.db.exec(fs.readFileSync("docs/db-migration-009-scoring-standards.sql", "utf8"));
@@ -48,10 +48,10 @@ describe("API đề thi nhận scoring_standard_id", () => {
   it("POST với chuẩn hợp lệ → lưu; chuẩn không tồn tại → 400", async () => {
     await loginAs("TEACHER", "t1");
     const { POST } = await import("@/app/api/teacher/exams/route");
-    const res = await POST(req("POST", { title: "Đề IELTS", question_ids: ["q1"], scoring_standard_id: "std_ielts" }));
+    const res = await POST(req("POST", { title: "Đề IELTS", sections: [{ skill: "Reading", questions: [{ category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } }] }], scoring_standard_id: "std_ielts" }));
     expect(res.status).toBe(201);
     expect((await res.json()).exam.scoring_standard_id).toBe("std_ielts");
-    expect((await POST(req("POST", { title: "x", question_ids: ["q1"], scoring_standard_id: "std_none" }))).status).toBe(400);
+    expect((await POST(req("POST", { title: "x", sections: [{ skill: "Reading", questions: [{ category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } }] }], scoring_standard_id: "std_none" }))).status).toBe(400);
   });
   it("PUT đổi chuẩn và bỏ chuẩn (null); GET trả scoring_standard_id", async () => {
     await loginAs("TEACHER", "t1");
@@ -82,8 +82,8 @@ describe("API khóa học nhận default_scoring_standard_id", () => {
 });
 
 describe("Giao diện chọn chuẩn", () => {
-  it("QuestionSetEditor (mode EXAM) có select chuẩn chấm từ /api/scoring-standards và gửi scoring_standard_id", () => {
-    const s = fs.readFileSync("components/question-builder/QuestionSetEditor.tsx", "utf8");
+  it("SectionEditor (mode EXAM) có select chuẩn chấm từ /api/scoring-standards và gửi scoring_standard_id", () => {
+    const s = fs.readFileSync("components/section-builder/SectionEditor.tsx", "utf8");
     expect(s).toContain("/api/scoring-standards");
     expect(s).toContain("scoring_standard_id");
   });

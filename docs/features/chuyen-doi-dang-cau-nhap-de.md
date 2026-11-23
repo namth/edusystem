@@ -270,3 +270,4 @@ File *De-thi-1.docx* (đề tiếng Anh THCS 40 câu, có bảng đáp án cuố
 
 Còn hạn chế (chưa làm): Listening không có audio (`AUDIO_MISSING`); Writing Task 1 cần bảng/biểu đồ và Speaking rơi về `UNSUPPORTED` + `NO_ANSWER` (giáo viên xoá nhóm trước khi nhập); "Choose TWO letters" vẫn là trắc nghiệm một đáp án; AI có lúc bỏ ngoặc từ tuỳ chọn trong đáp án (`space race` thay cho `(space) race`).
 
+> **Sau FEAT-017 (24/11):** `QuestionSetEditor` và `lib/question-editor-mapping.ts` (BR-I24) đã được thay bằng `SectionEditor` sửa thẳng content (DEC-054); TC-I30 → I33 còn giữ phần chuẩn hoá content và kho từ bấm-điền trong `tests/question-editor-mapping.test.ts`. AI nhập đề lưu theo phần (BR-P14). FEAT-017 thay cách tổ chức câu.

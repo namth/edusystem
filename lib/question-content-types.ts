@@ -233,6 +233,10 @@ export function splitOrderingItems(
   orderingType: OrderingType
 ): string[] {
   if (orderingType === "WORD_ORDERING") {
+    // FEAT-017: "People thought / the story / was written" → giữ cụm từ (dấu / có khoảng trắng; "and/or" không tách)
+    if (/\s\/|\/\s/.test(correctText)) {
+      return correctText.split(/\s+\/\s*|\s*\/\s+/).map((s) => s.trim()).filter(Boolean);
+    }
     return correctText.split(/\s+/).filter(Boolean);
   }
   return correctText
@@ -387,6 +391,17 @@ export function buildStandardQuestionContent(q: any): any {
   switch (category) {
     case "READING_MC":
     case "LISTENING_MC": {
+      // FEAT-017 (BR-P12): một ý một bản ghi — content phẳng { text, option_a…d, correct_answer }
+      if (!Array.isArray(q.sub_questions) && !Array.isArray(q.subQuestions)) {
+        result.text = q.text ?? q.subQuestionText ?? "";
+        result.option_a = q.option_a ?? q.optA ?? "";
+        result.option_b = q.option_b ?? q.optB ?? "";
+        result.option_c = q.option_c ?? q.optC ?? "";
+        result.option_d = q.option_d ?? q.optD ?? "";
+        result.correct_answer = mcAnswerLetter(q);
+        result.audio_url = q.audio_url || q.audioUrl || null;
+        break;
+      }
       const rawSub = q.sub_questions || q.subQuestions || [];
       const subQuestions = rawSub.map((sq: any, i: number) => {
         const out: any = {
@@ -441,6 +456,14 @@ export function buildStandardQuestionContent(q: any): any {
     }
 
     case "WRITING_SHORT_ANSWER": {
+      // FEAT-017 (BR-P12): một ý một bản ghi — { text, max_words, sample_answer? }
+      if (!Array.isArray(q.sub_questions) && !Array.isArray(q.subQuestions)) {
+        result.text = q.text ?? q.questionText ?? "";
+        result.max_words = Number(q.max_words || q.maxWords) || 50;
+        const sample = q.sample_answer ?? q.sampleAnswer;
+        if (sample) result.sample_answer = sample;
+        break;
+      }
       const rawSub = q.sub_questions || q.subQuestions || [];
       const subQuestions = rawSub.map((sa: any) => ({
         id: sa.id || `sa_${Date.now()}`,

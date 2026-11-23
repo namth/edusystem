@@ -1,5 +1,9 @@
 export function emptyAnswerFor(q: { category: string; content: any; [k: string]: unknown }): unknown {
   const category = q?.category || "";
+  // FEAT-017 (BR-P12): trắc nghiệm / trả lời ngắn một ý — đáp án là chuỗi
+  if ((category.endsWith("_MC") || category === "WRITING_SHORT_ANSWER") && !Array.isArray(q?.content?.sub_questions)) {
+    return "";
+  }
   if (
     category.endsWith("_MC") ||
     category.endsWith("_MATCHING") ||
@@ -113,4 +117,52 @@ export function pickBankWord(
   if (target == null) return { answers: cur, active: null };
   cur[target] = word;
   return { answers: cur, active: nextEmptyGap(cur, gapCount, target + 1) };
+}
+
+// ── Kéo thả (FEAT-017 BR-P15): cho cùng đáp án như khi bấm ─────────────────
+export type BankDrag = { from: "bank"; word: string } | { from: "gap"; index: number };
+
+/** Thả vào ô `target`: từ trong kho → điền ô; từ ô khác → đổi chỗ hai ô. */
+export function dropOnGap(answers: unknown[], gapCount: number, drag: BankDrag, target: number): string[] {
+  const cur = Array.from({ length: gapCount }, (_, i) => String((Array.isArray(answers) ? answers[i] : "") ?? ""));
+  if (target < 0 || target >= gapCount) return cur;
+  if (drag.from === "bank") {
+    cur[target] = drag.word;
+  } else if (drag.index !== target && drag.index >= 0 && drag.index < gapCount) {
+    const t = cur[target];
+    cur[target] = cur[drag.index];
+    cur[drag.index] = t;
+  }
+  return cur;
+}
+
+/** Kéo từ một ô thả về kho → ô đó trống. */
+export function dropOnBank(answers: unknown[], gapCount: number, drag: BankDrag): string[] {
+  const cur = Array.from({ length: gapCount }, (_, i) => String((Array.isArray(answers) ? answers[i] : "") ?? ""));
+  if (drag.from === "gap" && drag.index >= 0 && drag.index < gapCount) cur[drag.index] = "";
+  return cur;
+}
+
+export type OrderDrag = { from: "pool"; item: string } | { from: "line"; index: number };
+
+/** Sắp xếp: thả mảnh vào dòng đáp án ở vị trí `at` (chèn trước mảnh đang ở đó; at = độ dài → cuối dòng). */
+export function dropOnLine(order: unknown[], drag: OrderDrag, at: number): string[] {
+  const cur = (Array.isArray(order) ? order : []).map((x) => String(x ?? ""));
+  let pos = Math.max(0, Math.min(at, cur.length));
+  if (drag.from === "pool") {
+    cur.splice(pos, 0, drag.item);
+    return cur;
+  }
+  if (drag.index < 0 || drag.index >= cur.length) return cur;
+  const [x] = cur.splice(drag.index, 1);
+  if (drag.index < pos) pos -= 1;
+  cur.splice(pos, 0, x);
+  return cur;
+}
+
+/** Kéo mảnh trong dòng đáp án ra ngoài (về hàng có sẵn) → bỏ mảnh đó. */
+export function dropOffLine(order: unknown[], drag: OrderDrag): string[] {
+  const cur = (Array.isArray(order) ? order : []).map((x) => String(x ?? ""));
+  if (drag.from === "line" && drag.index >= 0 && drag.index < cur.length) cur.splice(drag.index, 1);
+  return cur;
 }

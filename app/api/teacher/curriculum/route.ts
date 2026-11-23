@@ -40,7 +40,9 @@ async function validateLessonForCurriculum(
     return { ok: false, error: "LESSON bắt buộc phải có lesson_id." };
   }
   const cleanId = lessonId.trim();
-  const res = await queryPg("SELECT id, created_by, question_ids FROM lessons WHERE id = $1", [cleanId]);
+  const res = await queryPg(`SELECT l.id, l.created_by,
+       (SELECT COUNT(*)::int FROM sections s WHERE s.lesson_id = l.id AND s.deleted_at IS NULL) AS section_count
+     FROM lessons l WHERE l.id = $1`, [cleanId]);
   if (res.rows.length === 0) {
     return { ok: false, error: "Bài học không tồn tại." };
   }
@@ -48,11 +50,9 @@ async function validateLessonForCurriculum(
   if (authUser.role === "TEACHER" && lesson.created_by !== authUser.userId) {
     return { ok: false, error: "Bạn không có quyền sử dụng bài học này." };
   }
-  const qIds = Array.isArray(lesson.question_ids)
-    ? lesson.question_ids
-    : (typeof lesson.question_ids === "string" ? JSON.parse(lesson.question_ids) : []);
-  if (!Array.isArray(qIds) || qIds.length < 1) {
-    return { ok: false, error: "Bài học chưa có câu hỏi nào." };
+  // FEAT-017 (BR-L03 / BR-P02): bài học phải có ít nhất 1 phần
+  if (Number(lesson.section_count) < 1) {
+    return { ok: false, error: "Bài học chưa có nội dung nào." };
   }
   return { ok: true, error: "", lessonId: cleanId };
 }

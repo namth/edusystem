@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions, flashcardIdsOf } from "@/lib/sections-db";
 import { checkLessonAccess } from "@/lib/lesson-access";
 import { assertTrialAttemptAllowed, trialLimitResponse } from "@/lib/teacher-trial";
 import {
@@ -69,50 +70,17 @@ export async function POST(
     return trialLimitResponse("attempts", trialAttempt.error);
   }
 
-  const questionIds: string[] = access.lesson.question_ids;
-  let orderedQuestions: GradableQuestion[] = [];
+  // FEAT-017: chấm các câu đang có trong bài học (câu xoá mềm không chấm, BR-P10)
+  const { questions: orderedQuestions } = await loadParentQuestions("lesson", lessonId);
   const flashcardsMap: Record<string, FlashcardRow> = {};
-
-  if (questionIds.length > 0) {
-    const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-    const qMap = new Map<string, any>(
-      qRes.rows.map((r: any) => [
-        r.id,
-        {
-          ...r,
-          content: typeof r.content === "string" ? JSON.parse(r.content) : r.content,
-        },
-      ])
-    );
-    for (const qid of questionIds) {
-      const q = qMap.get(qid);
-      if (q) orderedQuestions.push(q);
-    }
-
-    const flashcardIdSet = new Set<string>();
-    for (const q of orderedQuestions) {
-      if (typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        const ids = q.content?.flashcard_ids || q.content?.flashcardIds;
-        if (Array.isArray(ids)) {
-          for (const fid of ids) {
-            if (typeof fid === "string" && fid.trim()) {
-              flashcardIdSet.add(fid.trim());
-            }
-          }
-        }
-      }
-    }
-
-    if (flashcardIdSet.size > 0) {
-      const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [
-        [...flashcardIdSet],
-      ]);
-      for (const r of fcRes.rows) {
-        flashcardsMap[r.id] = {
-          ...r,
-          options: typeof r.options === "string" ? JSON.parse(r.options) : r.options || [],
-        };
-      }
+  const fcIds = flashcardIdsOf(orderedQuestions);
+  if (fcIds.length > 0) {
+    const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [fcIds]);
+    for (const r of fcRes.rows) {
+      flashcardsMap[r.id] = {
+        ...r,
+        options: typeof r.options === "string" ? JSON.parse(r.options) : r.options || [],
+      } as FlashcardRow;
     }
   }
 

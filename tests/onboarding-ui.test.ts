@@ -39,7 +39,7 @@ beforeEach(async () => {
   h.pg = await createFakePg();
   await h.pg.db.exec(`
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
-    CREATE TABLE lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
+    CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), created_by VARCHAR(50));
   `);
   for (const m of ["db-migration-012-subjects.sql", "db-migration-013-onboarding.sql"]) {
     await h.pg.db.exec(fs.readFileSync(path.join("docs", m), "utf8"));

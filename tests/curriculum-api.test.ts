@@ -54,8 +54,9 @@ beforeEach(async () => {
       type VARCHAR(20) NOT NULL, exam_id VARCHAR(50), order_index INT DEFAULT 0, created_by VARCHAR(50),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, lesson_id VARCHAR(50)
     );
-    CREATE TABLE lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, skills TEXT[] NOT NULL DEFAULT '{}',
+    CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, skills TEXT[] NOT NULL DEFAULT '{}',
       question_ids JSONB NOT NULL DEFAULT '[]', created_by VARCHAR(50) NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+    INSERT INTO questions (id,skill,category,prompt,content) VALUES ('q1','Reading','READING_MC','Câu 1','{"text":"?","option_a":"a","option_b":"b","correct_answer":"A"}');
     INSERT INTO lessons (id,title,question_ids,created_by) VALUES ('lsn_t1','Bài của t1','["q1"]','t1');
     INSERT INTO courses (id,title,created_by) VALUES ('co1','Khóa t1','t1'), ('co2','Khóa t2','t2'), ('coSys','Khóa chung',NULL);
     INSERT INTO exams (id,title) VALUES ('e1','Đề Một');

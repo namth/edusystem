@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions } from "@/lib/sections-db";
+import { totalNumbered } from "@/lib/exam-structure";
 import { serverError } from "@/lib/api-errors";
 
 export async function GET(
@@ -28,19 +30,9 @@ export async function GET(
     const exam = result.rows[0];
 
     if (auth.user.role === "STUDENT") {
-      let questionIds: unknown[] = [];
-      if (Array.isArray(exam.question_ids)) {
-        questionIds = exam.question_ids;
-      } else if (typeof exam.question_ids === "string") {
-        try {
-          const parsed = JSON.parse(exam.question_ids);
-          if (Array.isArray(parsed)) {
-            questionIds = parsed;
-          }
-        } catch {
-          questionIds = [];
-        }
-      }
+      // FEAT-017: số câu = tổng số ý theo phần (BR-P06)
+      const { sections } = await loadParentQuestions("exam", String(exam.id));
+      const questionCount = totalNumbered(sections);
 
       return NextResponse.json({
         success: true,
@@ -51,7 +43,7 @@ export async function GET(
           duration_minutes: exam.duration_minutes,
           skills: exam.skills,
           passing_score: exam.passing_score ?? null,
-          question_count: questionIds.length,
+          question_count: questionCount,
         },
       });
     }

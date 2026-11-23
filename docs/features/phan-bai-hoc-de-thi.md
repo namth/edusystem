@@ -1,6 +1,6 @@
 # FEAT-017: Bài học & đề thi theo Phần (sections)
 
-> Trạng thái: SPEC_APPROVED (2026-11-24) · Quyết định: DEC-051 → DEC-054 (`docs/14-decisions.md`) · Thay: cách tổ chức `question_ids` + `stimulus_*` của FEAT-010 / FEAT-011, `sub_questions` trắc nghiệm · Phụ thuộc: FEAT-015 (bộ chuyển đổi nhập đề)
+> Trạng thái: DONE (2026-11-24, TASK-056 → 061 Claude tự làm; chưa chạy script chuyển dữ liệu trên production, chưa deploy) · Quyết định: DEC-051 → DEC-055 (`docs/14-decisions.md`) · Thay: cách tổ chức `question_ids` + `stimulus_*` của FEAT-010 / FEAT-011, `sub_questions` trắc nghiệm · Phụ thuộc: FEAT-015 (bộ chuyển đổi nhập đề)
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Hiện nay đề thi và bài học là một mảng `question_ids`. Mỗi câu hỏi tự mang ngữ cảnh (`stimulus_text`, `stimulus_audio_url`) và chỉ có **một dạng**. Câu trắc nghiệm gom nhiều ý vào `content.sub_questions`.
@@ -70,7 +70,10 @@ Hai màn dùng chung một component mới `components/section-builder/SectionEd
 │ ☰ Câu 6    Trắc nghiệm  According...✎ 🗑 │ ☰ Phần 4  Điền ô      │
 │ ☰ Câu 7–11 Điền ô (5)   ...         ✎ 🗑 │    Câu 13–22          │
 │ ☰ Câu 12   Sắp xếp      ...         ✎ 🗑 │ [+ Thêm phần]         │
-│ [+ Thêm câu: dạng ▾]                  │ Tổng: 22 câu · 4 phần │
+│ + Thêm câu vào Phần 2 (Reading)       │ Tổng: 22 câu · 4 phần │
+│ [Trắc nghiệm][Điền ô][Sắp xếp]        │                       │
+│ [Nối cặp][Bộ flashcard]               │                       │
+│ 22 câu · 4 phần   [Xem như HS][Lưu đề]│                       │
 └───────────────────────────────────────┴───────────────────────┘
 ```
 
@@ -86,7 +89,30 @@ Hai màn dùng chung một component mới `components/section-builder/SectionEd
   - Thu gọn: số câu, dạng, ~60 ký tự đầu.
   - Bấm ✎ mở form sửa **tại chỗ**, dùng lại các form dạng câu hiện có trong `QuestionSetEditor` (đã ánh xạ đủ trường ở DEC-050), tách thành component theo dạng.
   - Chỉ mở một thẻ một lúc. Mở thẻ khác thì thẻ đang mở được giữ nguyên dữ liệu (không mất như lỗi cũ).
-- **"+ Thêm câu":** chỉ liệt kê các dạng thuộc kỹ năng của phần (BR-P04). Câu mới thêm vào cuối phần và mở sẵn form.
+- **Thêm câu:** dưới danh sách câu là một hàng **nút theo dạng**, bấm là thêm ngay (không có menu thả xuống). Chỉ hiện các dạng thuộc kỹ năng của phần (BR-P04):
+  - Reading: Trắc nghiệm, Điền ô trống, Sắp xếp, Nối cặp, Bộ flashcard;
+  - Listening: Trắc nghiệm, Điền ô trống, Sắp xếp, Nối cặp;
+  - Writing: Bài luận, Trả lời ngắn, Viết lại câu, Điền ô (tự gõ), Nối cặp, Bộ flashcard;
+  - Speaking: Nói theo chủ đề, Đọc to.
+  Câu mới thêm vào cuối phần và mở sẵn form.
+- Nút thêm câu chỉ có nhãn dạng câu, chữ căn giữa, không có dòng mô tả.
+- **Form từng dạng câu** (đủ trường như `QuestionSetEditor` hiện tại, sửa các chỗ còn thiếu; prototype TASK-058 là mẫu):
+
+  | Dạng | Trường | Cải thiện so với trình soạn cũ |
+  | :--- | :--- | :--- |
+  | Trắc nghiệm | Câu hỏi (trống được với ngữ âm), A–D (C, D để trống được), bấm chữ cái chọn đáp án; Listening: audio riêng của câu (dùng audio phần / tải lên / giọng AI) | Đã duyệt bản prototype, giữ nguyên |
+  | Điền ô — kho từ chung | Đoạn văn `[đáp án]`; kho từ = đáp án (tự lấy từ đoạn văn, chip xanh, không xoá được) + từ nhiễu nhập dạng chip (Enter / dấu phẩy, × để bỏ); hiện tổng số từ học sinh thấy | Ô nhập chuỗi phẩy → chip, đáp án luôn nằm trong kho |
+  | Điền ô — chọn trong từng ô | Mỗi ô một dòng: "Ô n" + ✓ đáp án + chip từ nhiễu **riêng của ô đó** | Hiện số câu thật của ô, nhập chip |
+  | Điền ô — tự gõ (cả `WRITING_FREE_TYPING_BLANKS`) | Đoạn văn; mỗi ô hiện các đáp án được chấp nhận (`[a / b]`) và phần có thể bỏ (`(the)`) theo cách chấm của DEC-049 | Trước chỉ có một dòng ghi chú |
+  | Sắp xếp từ | Câu đúng (tách theo khoảng trắng, hoặc theo `/` để giữ cụm); gợi ý hiện cho học sinh (tuỳ chọn, lưu ở `questions.prompt`); xem trước các mảnh xáo trộn | Giữ cụm từ, có gợi ý đề giấy |
+  | Sắp xếp câu | Danh sách câu theo thứ tự đúng, mỗi câu một ô, lên / xuống / xoá / thêm; xem trước | Trước là một ô văn bản tách theo dấu chấm |
+  | Nối cặp | Bảng Cột A / Cột B (đáp án), thêm / xoá dòng tại chỗ, số câu theo cặp | Trước nhập từng cặp qua form riêng |
+  | Bộ flashcard | Tên bộ; thẻ đã chọn (ảnh / chữ cái đầu, từ, nghĩa, Bỏ khỏi bộ); tìm trong thư viện flashcard (SCR-27); tạo thẻ mới (từ, nghĩa, ảnh) lưu vào thư viện rồi thêm vào bộ. Chiếm 1 số, mỗi thẻ 1 điểm (BR-L06) | Bố cục thẻ gọn hơn |
+  | Bài luận | Đề bài, loại bài (`task_type` Task 1 / Task 2), số từ tối thiểu (`min_words`) | Trước thiếu loại bài và số từ |
+  | Trả lời ngắn | Câu hỏi, tối đa số từ (`max_words`), đáp án mẫu (`sample_answer`) | Giữ |
+  | Viết lại câu | Câu gốc, câu viết lại có `[gợi ý]`, xem trước "học sinh thấy: gợi ý ____"; nhiều đáp án ngăn bằng ` / ` | Có xem trước phần gợi ý |
+  | Nói theo chủ đề / Đọc to | Chủ đề / đoạn đọc | Giữ |
+- **Nút Lưu ở cả hai nơi:** thanh trên và cuối vùng soạn phần (kèm tổng số câu / phần, nút Xem như học sinh). Hai nút cùng một hành động.
 - **Kéo câu:** trong một phần, hoặc sang phần **cùng kỹ năng** ở cột phải. Thả vào phần khác kỹ năng thì không nhận (BR-P04).
 - **Thanh trên:** tiêu đề, mô tả, thời gian (đề), chuẩn chấm, khoá học như hiện nay, nút Xem trước, nút Lưu.
 - **Cảnh báo đã có lượt làm** (BR-P09): băng vàng "Đề đã có N lượt làm. Câu / phần bị xoá vẫn hiện trong bài cũ; sửa đáp án không chấm lại bài cũ."
@@ -108,6 +134,12 @@ Hai màn dùng chung một component mới `components/section-builder/SectionEd
 - Lời dẫn của phần hiện đầu màn.
 - Phần 0 câu: hiện lời dẫn / ngữ cảnh và nút **Tiếp tục**. Ô điều hướng hiện phần này bằng biểu tượng 📖, không có số, không tính vào "đã trả lời".
 - Ô điều hướng số câu dùng `numberedCount()`. Câu chiếm N số (điền 10 ô) hiện "21–30" và nhảy tới câu đó.
+- **Kéo thả** (BR-P15). Bấm để chọn vẫn giữ làm cách dự phòng: bàn phím, trình đọc màn hình, máy không kéo được.
+  - Điền ô kho từ: kéo từ trong kho thả vào ô. Kéo từ ô này sang ô khác thì đổi chỗ. Kéo từ trong ô thả về kho thì bỏ. Ô hoặc kho đang nhận được tô sáng.
+    Cách bấm như BR-I26: chọn ô rồi bấm từ, hoặc bấm từ để điền vào ô trống đầu tiên; bấm ô đã điền để trả từ về.
+  - Sắp xếp: kéo mảnh từ hàng có sẵn vào dòng đáp án, thả lên một mảnh thì chèn trước mảnh đó. Kéo trong dòng đáp án để đổi thứ tự, kéo ra ngoài để bỏ. Vẫn bấm được để thêm hoặc gỡ.
+  - Dùng Pointer Events nên chạy cả chuột lẫn cảm ứng. HTML5 drag-and-drop không chạy trên điện thoại.
+  - `LessonPlayer` hiện chỉ có bấm để chọn, chưa có kéo thả. Trong code, kéo thả chỉ có ở trình soạn cũ, dùng để sắp lại danh sách câu.
 - SCR-14 (xem lại) và Review Studio / xem trước (SCR-24) hiện theo phần, kể cả câu đã xoá mềm có trong bài nộp đó.
 
 ## 5. Tác động dữ liệu (migration 019, 020)
@@ -242,6 +274,7 @@ Nộp bài (`POST /api/student/exam-attempts/[id]/submit`, `POST /api/student/le
 - **BR-P11** Màn học sinh: một phần một màn theo `position`. Phần 0 câu có nút Tiếp tục, không tính vào số câu đã trả lời.
 - **BR-P12** Trắc nghiệm là một ý một bản ghi, `correct_answer` là chữ cái A–D (DEC-050). Không còn `content.sub_questions` ở bất kỳ dạng nào. Code mới không đọc `sub_questions` (DEC-053).
 - **BR-P13** Nhân bản đề / bài học chép sâu phần + câu (id mới). Chuyển bài học ↔ đề giữ nguyên id phần / câu.
+- **BR-P15** Màn học sinh: điền ô kho từ và sắp xếp hỗ trợ kéo thả (chuột + cảm ứng) **và** bấm để chọn. Hai cách cho cùng một đáp án: cùng dạng `answers`, cùng cách chấm.
 - **BR-P14** AI nhập đề: mỗi nhóm đề giấy → một phần:
   - `instruction` = lời dẫn nhóm, ngữ cảnh = bài đọc / audio của nhóm;
   - các câu `convertGroup` sinh ra nằm trong phần đó, trắc nghiệm tách mỗi ý một câu.
@@ -272,6 +305,7 @@ Máy trạng thái: không thêm trạng thái mới. Xoá mềm là cờ `delet
 | TC-P18 | Code không còn đọc `sub_questions`, `question_ids`, `questions.stimulus_text` (quét mã nguồn) | P12, DEC-053 | `docs-sync` hoặc `exam-structure` |
 | TC-P19 | Trình soạn: kéo câu sang phần khác kỹ năng bị từ chối; mở thẻ câu B khi thẻ A đang sửa → dữ liệu A còn nguyên | P04, DEC-054 | `section-editor` (logic thuần) |
 | TC-P20 | Màn học sinh: phần 0 câu hiện nút Tiếp tục, ô điều hướng không đếm phần đó là chưa trả lời | P11 | `exam-layout` |
+| TC-P21 | Kéo thả (hàm thuần trong `lib/lesson-player.ts`): thả từ kho vào ô 2 → `answers[1]`; kéo ô 1 sang ô 3 → đổi chỗ; thả ô về kho → rỗng; sắp xếp: thả mảnh lên vị trí 0 → chèn đầu, kéo trong dòng đổi thứ tự; kết quả giống hệt khi bấm cùng thứ tự | P15 | `lesson-player` |
 
 **Review Focus** (người dùng thật dễ gặp):
 1. Lưu khi có một phần trống hoàn toàn (mới bấm "+ Thêm phần" rồi quên): phần đó tô đỏ, báo "Phần N trống", không lưu. → TC-P04
@@ -285,8 +319,8 @@ Máy trạng thái: không thêm trạng thái mới. Xoá mềm là cờ `delet
 | :--- | :--- | :--- | :--- |
 | TASK-056 | Migration 019 + `ensureSchema`; `lib/exam-structure.ts`: `numberedCount`, `numberQuestions`, `validateTree`, `loadTree`, `saveTree` (transaction, xoá mềm / hẳn, 409); bỏ nhánh `sub_questions` trong `buildStandardQuestionContent` / `grading.ts` | — | TC-P01 → 09; `npm test`, `tsc` |
 | TASK-057 | API giáo viên GET / POST / PUT cây (đề, bài học); bỏ `/api/teacher/questions*`; API học sinh, nộp bài, chấm nền, xem lại, trang chấm, preview, `library-ops` theo phần | 056 | TC-P10 → 13, 15, 18; `docs-sync` |
-| TASK-058 | Prototype trình soạn (duyệt trước, đổi `Design: APPROVED`) → `components/section-builder/SectionEditor.tsx` thay `QuestionSetEditor` ở SCR-23, SCR-25; form từng dạng tách component | 057 | TC-P19; `next build`; thử tay tạo đề 3 phần 4 dạng |
-| TASK-059 | Màn học sinh: `buildScreens` theo phần, `LessonPlayer` theo phần, phần 0 câu, ô điều hướng `number_start`; SCR-14, Review Studio, xem trước | 057 | TC-P14, 20; `next build` |
+| TASK-058 | Prototype trình soạn (đã dựng 24/11: https://claude.ai/artifact/SkpMK2tdJ3rDiwSKDsuGaR — duyệt xong thì đổi `Design: APPROVED`) → `components/section-builder/SectionEditor.tsx` thay `QuestionSetEditor` ở SCR-23, SCR-25; form từng dạng tách component | 057 | TC-P19; `next build`; thử tay tạo đề 3 phần 4 dạng |
+| TASK-059 | Màn học sinh: `buildScreens` theo phần, `LessonPlayer` theo phần, phần 0 câu, ô điều hướng `number_start`; kéo thả điền ô kho từ / sắp xếp (Pointer Events, giữ bấm để chọn); SCR-14, Review Studio, xem trước | 057 | TC-P14, 20, 21; `next build`; thử kéo thả trên điện thoại |
 | TASK-060 | AI nhập đề → phần (`lib/exam-import.ts`, `ai-import`, Review Studio hiện theo phần) | 056, 057 | TC-P16 |
 | TASK-061 | `scripts/migrate-sections.ts` (`--dry-run`, báo cáo) + migration 020; chạy trên production **chỉ khi người dùng đồng ý**, cùng đợt deploy code FEAT-017 | 056 → 060 | TC-P17; báo cáo dry-run trên bản sao DB |
 
@@ -298,3 +332,13 @@ Máy trạng thái: không thêm trạng thái mới. Xoá mềm là cờ `delet
   - học sinh làm, nộp, xem lại đúng số câu.
 - Đề Cambridge sau chuyển: tổng `numberedCount` mỗi đề bằng trước khi chuyển.
 - Docs cập nhật theo code thật (`docs/03` `Code: DONE`, trạng thái FEAT → DONE).
+
+## 10. Đối chiếu sau khi code (2026-11-24)
+- **File chính:** `docs/db-migration-019-sections.sql`, `docs/db-migration-020-drop-question-ids.sql`, `lib/exam-structure.ts` (đánh số, kiểm cây, đọc / ghi cây, `importToSections`), `lib/sections-db.ts` (cầu nối API), `lib/section-migration.ts` + `scripts/migrate-sections.ts` (chuyển dữ liệu), `lib/section-editor.ts` + `components/section-builder/*` (trình soạn), `lib/exam-layout.ts` `buildSectionScreens`, `components/lesson-player/usePointerDrag.tsx` (kéo thả).
+- **Đã gỡ:** `components/question-builder/QuestionSetEditor.tsx`, `lib/question-editor-mapping.ts`, `/api/teacher/questions*`, nhánh chấm đọc đoạn văn điền ô từ `questions.stimulus_text`.
+- **Khác đặc tả:**
+  - PUT cây nhận cả trường phẳng ở gốc body (ngoài `{ exam | lesson, sections }`); PUT không gửi `sections` thì chỉ đổi thông tin đề. POST đề bắt buộc có `sections`; POST bài học tạo bài trống rồi PUT cây.
+  - Đề thi `exams.stimulus_*` không còn được chép khi nhân bản; bài đọc chung của đề cũ thành phần chỉ đọc đầu đề (script) — nên chuyển đề có bài đọc chung sang bài học không còn bị chặn `HAS_STIMULUS`.
+  - Chấm / `LessonPlayer` vẫn đọc `sub_questions` (dữ liệu chưa chuyển) — gỡ sau khi script chạy trên production (DEC-055 mục 5). TC-P18 mới khoá `question_ids` và ghi `stimulus_*` vào câu.
+  - Kéo câu giữa các phần: kéo thả trên cột Cấu trúc bài, kèm nút "Chuyển sang phần" trong thẻ câu.
+- **Chưa làm:** chạy `scripts/migrate-sections.ts` (dry-run rồi thật) và migration 020 trên production; thử trên trình duyệt với tài khoản thật.

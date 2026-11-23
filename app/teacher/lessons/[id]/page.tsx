@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TeacherLayout from "@/components/TeacherLayout";
-import QuestionSetEditor, {
-  QuestionSetSavePayload,
-} from "@/components/question-builder/QuestionSetEditor";
+import SectionEditor, { type SectionEditorSavePayload, type SaveResult } from "@/components/section-builder/SectionEditor";
+import type { TreeSection } from "@/lib/exam-structure";
 import { StudentPreviewButton } from "@/components/teacher/StudentPreviewModal";
 import {
   ArrowLeft,
@@ -20,8 +19,11 @@ import {
 interface LessonData {
   title: string;
   description: string;
-  questions: any[];
+  sections: TreeSection[];
   flashcards: any[];
+  version: string | null;
+  attemptCount: number;
+  loadKey: number;
 }
 
 export default function TeacherLessonDetailPage() {
@@ -38,8 +40,11 @@ export default function TeacherLessonDetailPage() {
   const [lessonData, setLessonData] = useState<LessonData>({
     title: "",
     description: "",
-    questions: [],
+    sections: [],
     flashcards: [],
+    version: null,
+    attemptCount: 0,
+    loadKey: 0,
   });
 
   const loadLesson = useCallback(async () => {
@@ -76,12 +81,15 @@ export default function TeacherLessonDetailPage() {
         return;
       }
 
-      setLessonData({
+      setLessonData((prev) => ({
         title: json.lesson?.title || "",
         description: json.lesson?.description || "",
-        questions: Array.isArray(json.questions) ? json.questions : [],
+        sections: Array.isArray(json.sections) ? json.sections : [],
         flashcards: Array.isArray(json.flashcards) ? json.flashcards : [],
-      });
+        version: json.lesson?.updated_at || null,
+        attemptCount: Number(json.lesson?.attempt_count) || 0,
+        loadKey: prev.loadKey + 1,
+      }));
     } catch (err: any) {
       console.error("Load lesson error:", err);
       setErrorCode(500);
@@ -95,63 +103,42 @@ export default function TeacherLessonDetailPage() {
     loadLesson();
   }, [loadLesson]);
 
-  const handleSave = async (
-    payload: QuestionSetSavePayload
-  ): Promise<{ ok: boolean; error?: string }> => {
+  // FEAT-017: lưu cả cây (bài học → phần → câu) trong một lần gọi
+  const handleSave = async (payload: SectionEditorSavePayload): Promise<SaveResult> => {
     try {
-      if (id === "new") {
-        // Step 1: POST /api/teacher/lessons { title, description }
+      let lessonId = id;
+      if (isNew) {
         const createRes = await fetch("/api/teacher/lessons", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: payload.title,
-            description: payload.description,
-          }),
+          body: JSON.stringify({ title: payload.meta.title, description: payload.meta.description }),
         });
-
         const createJson = await createRes.json().catch(() => null);
         if (!createRes.ok || !createJson?.success) {
-          return { ok: false, error: createJson?.error || "Lỗi tạo bài học mới." };
+          return { ok: false, error: createJson?.error || "Lỗi tạo bài học mới.", status: createRes.status };
         }
-
-        const newLessonId = createJson.lesson.id;
-
-        // Step 2: PUT /api/teacher/lessons/{id} { question_ids }
-        const putRes = await fetch(`/api/teacher/lessons/${newLessonId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question_ids: payload.question_ids,
-          }),
-        });
-
-        const putJson = await putRes.json().catch(() => null);
-        if (!putRes.ok || !putJson?.success) {
-          return { ok: false, error: putJson?.error || "Lỗi lưu danh sách câu hỏi." };
-        }
-
-        router.replace(`/teacher/lessons/${newLessonId}`);
-        return { ok: true };
-      } else {
-        // id có sẵn: PUT /api/teacher/lessons/{id} { title, description, question_ids }
-        const res = await fetch(`/api/teacher/lessons/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: payload.title,
-            description: payload.description,
-            question_ids: payload.question_ids,
-          }),
-        });
-
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.success) {
-          return { ok: false, error: json?.error || "Lỗi cập nhật bài học." };
-        }
-
-        return { ok: true };
+        lessonId = createJson.lesson.id;
       }
+      const res = await fetch(`/api/teacher/lessons/${lessonId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lesson: {
+            title: payload.meta.title,
+            description: payload.meta.description,
+            updated_at: isNew ? null : payload.meta.updated_at,
+          },
+          sections: payload.sections,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        return { ok: false, error: json?.error || "Lỗi cập nhật bài học.", status: res.status, errors: json?.errors };
+      }
+      if (isNew) {
+        router.replace(`/teacher/lessons/${lessonId}`);
+      }
+      return { ok: true, sections: json.sections, version: json.lesson?.updated_at ?? null };
     } catch (err: any) {
       console.error("Save lesson error:", err);
       return { ok: false, error: err.message || "Lỗi kết nối khi lưu bài học." };
@@ -254,15 +241,17 @@ export default function TeacherLessonDetailPage() {
 
         {/* Main Editor Component */}
         {!isLoading && !errorMessage && (
-          <div className="bg-white rounded-2xl border border-line shadow-sm p-6">
-            <QuestionSetEditor
+          <div>
+            <SectionEditor
+              key={lessonData.loadKey}
               mode="LESSON"
-              initialTitle={lessonData.title}
-              initialDescription={lessonData.description}
-              initialQuestions={lessonData.questions}
+              initialMeta={{ title: lessonData.title, description: lessonData.description }}
+              initialSections={lessonData.sections}
               initialFlashcards={lessonData.flashcards}
-              saveLabel={isNew ? "Tạo bài học" : "Lưu bài học"}
+              version={lessonData.version}
+              attemptCount={lessonData.attemptCount}
               onSave={handleSave}
+              onReload={loadLesson}
             />
           </div>
         )}

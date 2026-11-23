@@ -19,6 +19,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/db-pg", () => ({
   queryPg: (sql: string, params?: unknown[]) => h.pg.queryPg(sql, params),
+  // FEAT-017: tạo đề lưu cả cây trong transaction (inPgTx)
+  getPgPool: () => ({ connect: async () => ({ query: (sql: string, params?: unknown[]) => h.pg.queryPg(sql, params), release: () => {} }) }),
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({
@@ -48,7 +50,7 @@ const n = async (sql: string, params: unknown[] = []) => Number((await rows(sql,
 const createClass = async (name = "Lớp mới") => (await import("@/app/api/teacher/classes/route")).POST(req("/api/teacher/classes", { name }));
 const createLesson = async (title = "Bài mới") => (await import("@/app/api/teacher/lessons/route")).POST(req("/api/teacher/lessons", { title }));
 const createExam = async (title = "Đề mới") =>
-  (await import("@/app/api/teacher/exams/route")).POST(req("/api/teacher/exams", { title, duration_minutes: 30, question_ids: ["q1"] }));
+  (await import("@/app/api/teacher/exams/route")).POST(req("/api/teacher/exams", { title, duration_minutes: 30, sections: [{ skill: "Reading", questions: [{ category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "A" } }] }] }));
 const addStudent = async (classId: string, email: string) =>
   (await import("@/app/api/teacher/classes/[classId]/students/route")).POST(
     req(`/api/teacher/classes/${classId}/students`, { name: "HS " + email, email }),
