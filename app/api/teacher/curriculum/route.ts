@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { queryPg, getPgPool } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 async function checkCourseAccess(
   courseId: string,
@@ -95,8 +96,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, items });
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp chương trình học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "GET", message: err.message || "Lỗi nạp chương trình học." });
   }
 }
 
@@ -213,8 +213,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo bài học/đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "POST", message: err.message || "Lỗi tạo bài học/đề thi." });
   }
 }
 
@@ -378,8 +377,7 @@ export async function PUT(req: Request) {
       client.release();
     }
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật chương trình học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "PUT", message: err.message || "Lỗi cập nhật chương trình học." });
   }
 }
 
@@ -418,7 +416,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: true, deletedIds: [id] });
     }
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa mục." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "DELETE", message: err.message || "Lỗi xóa mục." });
   }
 }

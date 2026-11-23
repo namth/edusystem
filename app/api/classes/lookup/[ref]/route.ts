@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserFromCookie } from "@/lib/auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   request: Request,
@@ -59,10 +60,6 @@ export async function GET(
       class: classData,
     });
   } catch (err: any) {
-    console.error(`GET /api/classes/lookup/${ref} error:`, err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tra cứu lớp học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/classes/lookup/[ref]", method: "GET", message: err.message || "Lỗi tra cứu lớp học." });
   }
 }

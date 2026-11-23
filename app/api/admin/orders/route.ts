@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { createOrder, formatOrder } from "@/lib/slot-orders";
+import { serverError } from "@/lib/api-errors";
 
 const VALID_STATUSES = new Set(["PENDING", "APPROVED", "REJECTED", "CANCELLED"]);
 const VALID_SOURCES = new Set(["TEACHER", "ADMIN"]);
@@ -89,11 +90,7 @@ export async function GET(req: Request) {
       counts,
     });
   } catch (err: any) {
-    console.error("GET /api/admin/orders error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi lấy danh sách đơn hàng." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/orders", method: "GET", message: err.message || "Lỗi hệ thống khi lấy danh sách đơn hàng." });
   }
 }
 

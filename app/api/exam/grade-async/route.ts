@@ -9,6 +9,7 @@ import {
 import { gradeExamOpenAnswer } from "@/lib/exam-ai-grading";
 import { tallyAndScoreSections } from "@/lib/exam-attempts";
 import { notifyExamGraded, notifyNeedsReview } from "@/lib/notifications";
+import { reportAlert } from "@/lib/admin-alerts";
 
 export async function POST(req: Request) {
   if (!hasValidInternalToken(req)) {
@@ -204,6 +205,14 @@ export async function POST(req: Request) {
         );
 
         await notifyNeedsReview(sub.id);
+        // FEAT-016 BR-W11: bài chuyển NEEDS_REVIEW vì AI lỗi → báo admin (WARN, gộp theo loại)
+        void reportAlert({
+          level: "WARN",
+          source: "AI",
+          title: "AI chấm đề thi lỗi, bài chuyển giáo viên chấm tay",
+          fingerprint: "AI:GRADING:NEEDS_REVIEW:EXAM",
+          detail: { message: String(finalGradingError), extra: { submissionId } },
+        });
 
         return NextResponse.json({
           success: true,

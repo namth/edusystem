@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { buildStandardQuestionContent } from "@/lib/question-content-types";
+import { serverError } from "@/lib/api-errors";
 
 export const VALID_QUESTION_CATEGORIES = new Set([
   "READING_MC",
@@ -88,7 +89,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, question }, { status: 201 });
   } catch (err: any) {
-    console.error("API /api/teacher/questions POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo câu hỏi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/questions", method: "POST", message: err.message || "Lỗi tạo câu hỏi." });
   }
 }

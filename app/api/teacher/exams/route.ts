@@ -7,6 +7,7 @@ import { syncCourseExam } from "@/lib/neo4j";
 import { pushRedisStreamEvent } from "@/lib/redis-queue";
 import { canUseSubject } from "@/lib/subjects";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { serverError } from "@/lib/api-errors";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -81,8 +82,7 @@ export async function GET(req?: Request) {
 
     return NextResponse.json({ success: true, exams });
   } catch (err: any) {
-    console.error("API /api/teacher/exams GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp danh sách đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams", method: "GET", message: err.message || "Lỗi nạp danh sách đề thi." });
   }
 }
 
@@ -257,7 +257,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, exam }, { status: 201 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams", method: "POST", message: err.message || "Lỗi tạo đề thi." });
   }
 }

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getServerSupabaseClient } from "@/lib/supabase-server";
+import { serverError } from "@/lib/api-errors";
 
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/png",
@@ -157,10 +158,6 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("POST /api/uploads error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi xử lý file upload" },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/uploads", method: "POST", message: err.message || "Lỗi xử lý file upload" });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { runCypherQuery } from "@/lib/neo4j";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -46,10 +47,6 @@ export async function POST(req: Request) {
       message: `Đã xóa thành công tài khoản ID ${targetUserId} khỏi CSDL PostgreSQL & Neo4j.`,
     });
   } catch (err: any) {
-    console.error("API /api/admin/delete-user Exception:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi xóa người dùng." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/delete-user", method: "POST", message: err.message || "Lỗi hệ thống khi xóa người dùng." });
   }
 }

@@ -5,6 +5,7 @@ import { withAiUsageContext } from "@/lib/ai-usage";
 import { gradeOpenAnswer } from "@/lib/lesson-ai-grading";
 import { computeScorePercent, type GradeResult } from "@/lib/grading";
 import { notifyLessonNeedsReview } from "@/lib/notifications";
+import { reportAlert } from "@/lib/admin-alerts";
 
 async function callGradeWithRetry(input: {
   category: string;
@@ -205,6 +206,14 @@ export async function POST(req: Request) {
           [JSON.stringify(results), gradingError, attempt.id]
         );
         await notifyLessonNeedsReview(attempt.id);
+        // FEAT-016 BR-W11: AI chấm bài học lỗi → báo admin (WARN, gộp theo loại)
+        void reportAlert({
+          level: "WARN",
+          source: "AI",
+          title: "AI chấm bài học lỗi, bài chuyển giáo viên chấm tay",
+          fingerprint: "AI:GRADING:NEEDS_REVIEW:LESSON",
+          detail: { message: String(gradingError), extra: { attemptId: attempt.id } },
+        });
         return NextResponse.json({ success: true, status: "NEEDS_REVIEW" });
       }
 

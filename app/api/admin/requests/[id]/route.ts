@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { approveOrder, rejectOrder } from "@/lib/slot-orders";
+import { serverError } from "@/lib/api-errors";
 
 export async function PUT(
   req: Request,
@@ -45,10 +46,6 @@ export async function PUT(
       slot_request: result.order,
     });
   } catch (err: any) {
-    console.error("API /api/admin/requests/[id] PUT Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi duyệt yêu cầu mua slot." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/requests/[id]", method: "PUT", message: err.message || "Lỗi hệ thống khi duyệt yêu cầu mua slot." });
   }
 }

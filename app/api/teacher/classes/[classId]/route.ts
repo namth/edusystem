@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg, getPgPool } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   _req: Request,
@@ -195,11 +196,7 @@ export async function DELETE(
     );
   } catch (err: any) {
     await client.query("ROLLBACK");
-    console.error("DELETE /api/teacher/classes/[classId] error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi xóa lớp học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/classes/[classId]", method: "DELETE", message: err.message || "Lỗi xóa lớp học." });
   } finally {
     client.release();
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { getAuthenticatedUserFromCookie } from "@/lib/auth";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET() {
   try {
@@ -34,6 +35,6 @@ export async function GET() {
 
     return NextResponse.json({ success: true, user });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return serverError(err, { route: "/api/auth/me", method: "GET", message: err.message });
   }
 }

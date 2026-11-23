@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN"]);
@@ -119,8 +120,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       aiLogs,
     });
   } catch (err: any) {
-    console.error("API /api/admin/teachers/[id] GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi hệ thống khi tải thông tin." }, { status: 500 });
+    return serverError(err, { route: "/api/admin/teachers/[id]", method: "GET", message: err.message || "Lỗi hệ thống khi tải thông tin." });
   }
 }
 
@@ -152,7 +152,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     return NextResponse.json({ success: true, message: "Cập nhật thông tin giảng viên thành công!" });
   } catch (err: any) {
-    console.error("API /api/admin/teachers/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi hệ thống khi cập nhật." }, { status: 500 });
+    return serverError(err, { route: "/api/admin/teachers/[id]", method: "PUT", message: err.message || "Lỗi hệ thống khi cập nhật." });
   }
 }

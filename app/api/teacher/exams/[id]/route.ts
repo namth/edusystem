@@ -3,6 +3,7 @@ import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery, syncCourseExam, getExamCourseMapping } from "@/lib/neo4j";
 import { canUseSubject } from "@/lib/subjects";
+import { serverError } from "@/lib/api-errors";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -97,8 +98,7 @@ export async function GET(
       course_id,
     }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp thông tin đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "GET", message: err.message || "Lỗi nạp thông tin đề thi." });
   }
 }
 
@@ -280,8 +280,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, exam }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "PUT", message: err.message || "Lỗi cập nhật đề thi." });
   }
 }
 
@@ -336,7 +335,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "DELETE", message: err.message || "Lỗi xóa đề thi." });
   }
 }

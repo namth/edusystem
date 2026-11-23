@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { validateSections, validateAggregation, parseJsonField } from "../route";
+import { serverError } from "@/lib/api-errors";
 
 export async function PUT(
   req: Request,
@@ -111,8 +112,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, standard }, { status: 200 });
   } catch (err: any) {
-    console.error("PUT /api/scoring-standards/[id] error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật chuẩn chấm." }, { status: 500 });
+    return serverError(err, { route: "/api/scoring-standards/[id]", method: "PUT", message: err.message || "Lỗi cập nhật chuẩn chấm." });
   }
 }
 
@@ -166,7 +166,6 @@ export async function DELETE(
     await queryPg("DELETE FROM scoring_standards WHERE id = $1", [id]);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("DELETE /api/scoring-standards/[id] error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa chuẩn chấm." }, { status: 500 });
+    return serverError(err, { route: "/api/scoring-standards/[id]", method: "DELETE", message: err.message || "Lỗi xóa chuẩn chấm." });
   }
 }

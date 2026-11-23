@@ -5,6 +5,7 @@ import { syncStudentEnrolledInClass, syncTeacherManagesClass } from "@/lib/neo4j
 import { requireRole } from "@/lib/api-auth";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
 import { assertStudentSlotAvailable } from "@/lib/student-slots";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -99,10 +100,7 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      return NextResponse.json(
-        { success: false, error: `Lỗi CSDL PostgreSQL: ${dbErr.message}` },
-        { status: 500 }
-      );
+      return serverError(dbErr, { route: "/api/admin/create-user", method: "POST", message: `Lỗi CSDL PostgreSQL: ${dbErr.message}` });
     }
 
     // 2. Insert Enrollments if classIds provided
@@ -134,10 +132,6 @@ export async function POST(req: Request) {
       },
     });
   } catch (err: any) {
-    console.error("API /api/admin/create-user Exception:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi tạo tài khoản." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/create-user", method: "POST", message: err.message || "Lỗi hệ thống khi tạo tài khoản." });
   }
 }

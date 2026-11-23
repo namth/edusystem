@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   _req: Request,
@@ -94,10 +95,6 @@ export async function GET(
 
     return NextResponse.json({ students, assignments });
   } catch (err: any) {
-    console.error("GET /api/teacher/classes/[classId]/members error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải danh sách thành viên." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/classes/[classId]/members", method: "GET", message: err.message || "Lỗi tải danh sách thành viên." });
   }
 }

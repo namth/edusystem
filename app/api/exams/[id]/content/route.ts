@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   request: Request,
@@ -109,10 +110,6 @@ export async function GET(
       flashcards,
     });
   } catch (err: any) {
-    console.error(`GET /api/exams/${id}/content error:`, err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải nội dung đề thi." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/exams/[id]/content", method: "GET", message: err.message || "Lỗi tải nội dung đề thi." });
   }
 }

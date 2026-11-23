@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -134,11 +135,7 @@ export async function PUT(req: Request, context: RouteContext) {
 
     return NextResponse.json({ success: true, flashcard }, { status: 200 });
   } catch (err: any) {
-    console.error("PUT /api/teacher/flashcards/[id] error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi cập nhật flashcard" },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/flashcards/[id]", method: "PUT", message: err.message || "Lỗi cập nhật flashcard" });
   }
 }
 
@@ -195,10 +192,6 @@ export async function DELETE(req: Request, context: RouteContext) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("DELETE /api/teacher/flashcards/[id] error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi xóa flashcard" },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/flashcards/[id]", method: "DELETE", message: err.message || "Lỗi xóa flashcard" });
   }
 }

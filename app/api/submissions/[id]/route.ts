@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   request: Request,
@@ -84,10 +85,6 @@ export async function GET(
       questions,
     });
   } catch (err: any) {
-    console.error(`GET /api/submissions/${id} error:`, err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải thông tin bài nộp." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/submissions/[id]", method: "GET", message: err.message || "Lỗi tải thông tin bài nộp." });
   }
 }

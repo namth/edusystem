@@ -408,6 +408,25 @@ export async function ensureSchema() {
         UNIQUE (class_id, item_kind, item_id, student_id)
       );
       CREATE INDEX IF NOT EXISTS idx_class_grades_student ON class_grades (student_id, class_id);
+
+      -- Migration 018: Kênh cảnh báo admin (FEAT-016, DEC-047, DEC-048)
+      CREATE TABLE IF NOT EXISTS admin_alerts (
+        id TEXT PRIMARY KEY,
+        fingerprint TEXT NOT NULL UNIQUE,
+        level TEXT NOT NULL CHECK (level IN ('ERROR','WARN','INFO')),
+        source TEXT NOT NULL CHECK (source IN ('API','SERVER','AI','WORKER','EXAM_IMPORT')),
+        title TEXT NOT NULL,
+        detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+        occurrences INTEGER NOT NULL DEFAULT 1,
+        unsent_count INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW','RESOLVED')),
+        first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_notified_at TIMESTAMPTZ,
+        resolved_at TIMESTAMPTZ,
+        resolved_by TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_alerts_status_last ON admin_alerts (status, last_seen_at DESC);
     `);
     schemaInitialized = true;
   } catch (err) {

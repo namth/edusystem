@@ -6,6 +6,7 @@ import {
   recordRateLimitHit,
   clearRateLimit,
 } from "@/lib/rate-limit";
+import { serverError } from "@/lib/api-errors";
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILURES = 10;
@@ -102,7 +103,6 @@ export async function POST(req: Request) {
       user: authenticatedUser,
     });
   } catch (err: any) {
-    console.error("API /api/auth/login Exception:", err);
-    return NextResponse.json({ success: false, error: "Đã xảy ra lỗi hệ thống trong quá trình xác thực." }, { status: 500 });
+    return serverError(err, { route: "/api/auth/login", method: "POST", message: "Đã xảy ra lỗi hệ thống trong quá trình xác thực." });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getPgPool, queryPg } from "@/lib/db-pg";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -259,11 +260,7 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     await client.query("ROLLBACK");
-    console.error("AI Exam Import transaction error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Lỗi giao dịch khi lưu câu hỏi vào hệ thống." },
-      { status: 500 }
-    );
+    return serverError(error, { route: "/api/teacher/exams/ai-import", method: "POST", message: error.message || "Lỗi giao dịch khi lưu câu hỏi vào hệ thống." });
   } finally {
     client.release();
   }

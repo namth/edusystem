@@ -4,6 +4,7 @@ import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { canUseSubject } from "@/lib/subjects";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -71,8 +72,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, lessons });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp danh sách bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons", method: "GET", message: err.message || "Lỗi nạp danh sách bài học." });
   }
 }
 
@@ -148,7 +148,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, lesson }, { status: 201 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons", method: "POST", message: err.message || "Lỗi tạo bài học." });
   }
 }

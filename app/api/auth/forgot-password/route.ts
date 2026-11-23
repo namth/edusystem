@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { checkRateLimit, recordRateLimitHit } from "@/lib/rate-limit";
 import crypto from "crypto";
+import { serverError } from "@/lib/api-errors";
 
 const FORGOT_WINDOW_MS = 15 * 60 * 1000;
 const FORGOT_MAX_REQUESTS = 5;
@@ -70,7 +71,6 @@ export async function POST(req: Request) {
       resetUrl,
     });
   } catch (err: any) {
-    console.error("API /api/auth/forgot-password Exception:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi hệ thống khi yêu cầu đặt lại mật khẩu." }, { status: 500 });
+    return serverError(err, { route: "/api/auth/forgot-password", method: "POST", message: err.message || "Lỗi hệ thống khi yêu cầu đặt lại mật khẩu." });
   }
 }

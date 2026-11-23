@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 export async function PUT(
   req: Request,
@@ -132,11 +133,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, subject }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/subjects/[id] PUT Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi cập nhật môn học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/subjects/[id]", method: "PUT", message: err.message || "Lỗi cập nhật môn học." });
   }
 }
 
@@ -204,10 +201,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/subjects/[id] DELETE Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi xóa môn học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/subjects/[id]", method: "DELETE", message: err.message || "Lỗi xóa môn học." });
   }
 }

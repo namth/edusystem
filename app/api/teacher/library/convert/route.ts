@@ -5,6 +5,7 @@ import {
   convertLessonToExamItem,
   ConvertItemResult,
 } from "@/lib/library-ops";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -70,10 +71,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, results }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/library/convert POST Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi chuyển đổi mục thư viện." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/library/convert", method: "POST", message: err.message || "Lỗi chuyển đổi mục thư viện." });
   }
 }

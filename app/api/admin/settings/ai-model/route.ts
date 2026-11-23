@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getAiIngestionModelConfig, updateAiIngestionModelConfig } from "@/lib/ai-model-resolver";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET() {
   const auth = await requireRole(["ADMIN"]);
@@ -19,7 +20,7 @@ export async function GET() {
       ],
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return serverError(error, { route: "/api/admin/settings/ai-model", method: "GET", message: error.message });
   }
 }
 
@@ -47,6 +48,6 @@ export async function PUT(req: Request) {
       config: updated,
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return serverError(error, { route: "/api/admin/settings/ai-model", method: "PUT", message: error.message });
   }
 }

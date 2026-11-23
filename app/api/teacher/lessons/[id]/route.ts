@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { canUseSubject } from "@/lib/subjects";
+import { serverError } from "@/lib/api-errors";
 
 function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
   if (authUser.role === "ADMIN") return true;
@@ -85,8 +86,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, lesson, questions, flashcards }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "GET", message: err.message || "Lỗi nạp bài học." });
   }
 }
 
@@ -218,8 +218,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, lesson }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "PUT", message: err.message || "Lỗi cập nhật bài học." });
   }
 }
 
@@ -271,7 +270,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "DELETE", message: err.message || "Lỗi xóa bài học." });
   }
 }

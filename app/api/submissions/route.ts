@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 // DEC-018 / TC-E09: đường nộp cũ (trình duyệt tự chấm, gọi AI đồng bộ) đã ngừng hoàn toàn
 export async function POST(request: Request) {
@@ -46,10 +47,6 @@ export async function GET(request: Request) {
     const result = await queryPg(sql, params);
     return NextResponse.json({ success: true, data: result.rows });
   } catch (error: any) {
-    console.error("Error fetching submissions:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch submissions" },
-      { status: 500 }
-    );
+    return serverError(error, { route: "/api/submissions", method: "GET", message: error.message || "Failed to fetch submissions" });
   }
 }

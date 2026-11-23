@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -122,10 +123,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ users });
   } catch (err: any) {
-    console.error("API /api/admin/users GET Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi tải danh sách người dùng." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/users", method: "GET", message: err.message || "Lỗi hệ thống khi tải danh sách người dùng." });
   }
 }

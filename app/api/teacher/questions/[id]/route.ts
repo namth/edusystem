@@ -3,6 +3,7 @@ import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { buildStandardQuestionContent } from "@/lib/question-content-types";
 import { VALID_QUESTION_CATEGORIES } from "../route";
+import { serverError } from "@/lib/api-errors";
 
 async function canEditQuestion(question: any, authUser: { userId: string; role: string }): Promise<boolean> {
   if (authUser.role === "ADMIN") return true;
@@ -131,7 +132,6 @@ export async function PUT(
 
     return NextResponse.json({ success: true, question: updated }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/questions/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật câu hỏi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/questions/[id]", method: "PUT", message: err.message || "Lỗi cập nhật câu hỏi." });
   }
 }

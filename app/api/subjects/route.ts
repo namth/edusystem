@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { slugifySubjectCode } from "@/lib/subjects";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole();
@@ -74,11 +75,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, subjects });
   } catch (err: any) {
-    console.error("API /api/subjects GET Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải danh sách môn học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/subjects", method: "GET", message: err.message || "Lỗi tải danh sách môn học." });
   }
 }
 
@@ -183,10 +180,6 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
-    console.error("API /api/subjects POST Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tạo môn học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/subjects", method: "POST", message: err.message || "Lỗi tạo môn học." });
   }
 }

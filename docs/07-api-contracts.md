@@ -6,7 +6,7 @@
 - **Xác thực:** cookie httpOnly `auth_token` (JWT HS256, `lib/jwt.ts`). Payload gồm `userId`, `email`, `role`, và `mcp` khi bắt buộc đổi mật khẩu. Danh tính luôn lấy từ token, không bao giờ lấy từ body hay query.
 - **Phân quyền:** `requireRole([...])` chạy trước mọi truy vấn. Không có phiên trả **401**, sai vai trò trả **403**.
 - **Route công khai có chủ đích:** `auth/*` (có giới hạn tần suất), `leads` POST (giới hạn theo IP), `classes/lookup/[ref]` (chỉ trả trường công khai).
-- **Gọi máy – máy:** `exam/grade-async`, `lessons/grade-async` dùng header `x-internal-token` = `INTERNAL_API_TOKEN`.
+- **Gọi máy – máy:** `exam/grade-async`, `lessons/grade-async`, `internal/alerts` dùng header `x-internal-token` = `INTERNAL_API_TOKEN`.
 - **Dạng phản hồi:** thành công là `{ success: true, ... }`, lỗi là `{ success: false, error: "<tiếng Việt>" }`.
 
   | Mã | Ý nghĩa |
@@ -118,6 +118,9 @@ Test: `slot-orders-api`, `admin-api`.
 | GET / PUT | `/api/admin/settings/ai-model` | Model AI nhập đề | `ai-import` |
 | GET / PUT | `/api/admin/settings/ai-pricing` | `{ pricing, unpriced_models }` | `ai-usage` |
 | POST | `/api/admin/parse-exam-text`, `/api/admin/test-portkey` | Công cụ AI (ghi log) | — |
+| GET | `/api/admin/alerts?status=NEW\|RESOLVED\|ALL&level=&source=&page=` | FEAT-016: `{ items, total, page, pageSize, counts: { NEW }, telegram: { configured } }`, 50 dòng/trang, mặc định `NEW`; tham số sai → 400 | `admin-alerts-api` |
+| PATCH | `/api/admin/alerts/[id]` | `{ status: RESOLVED\|NEW }` → `{ alert }`; RESOLVED ghi `resolved_by`; id lạ → 404 | `admin-alerts-api` |
+| POST | `/api/admin/alerts/test` | Gửi tin Telegram thử; chưa cấu hình → 400; Telegram từ chối → 502 (không lộ token); không tạo dòng cảnh báo | `admin-alerts-api` |
 
 ### 2.6 Dùng chung & nội bộ
 | Method | Route | Vai trò | Ghi chú | Test |
@@ -129,11 +132,8 @@ Test: `slot-orders-api`, `admin-api`.
 | POST | `/api/leads` | công khai | Form landing; bẫy bot; 5 lần / giờ / IP | `landing` |
 | GET | `/api/classes/lookup/[ref]` | công khai | Xem trước lớp qua link mời | `exam-flow` |
 | POST | `/api/exam/grade-async` | 🔑 nội bộ | `{ submissionId, giveUp? }` | `exam-attempts-api`, `ai-usage` |
+| POST | `/api/internal/alerts` | 🔑 nội bộ | FEAT-016: worker gửi `{ level, title, fingerprint?, detail? }`; nguồn luôn `WORKER`, fingerprint thêm tiền tố `WORKER:` | `admin-alerts-api` |
 | POST | `/api/lessons/grade-async` | 🔑 nội bộ | `{ attemptId }` (FEAT-014 thêm `giveUp?`; AI lỗi → `NEEDS_REVIEW` thay vì 0) | `student-lessons-api`, `ai-usage` |
 
-## 3. Đang đặc tả, chưa có code
-Route mới chỉ được thêm vào các bảng ở §2 khi code xong (`tests/docs-sync.test.ts` từ chối route chưa có trong code).
-- **FEAT-016** (`docs/features/canh-bao-admin.md` §6.2):
-  - 3 route ADMIN: danh sách cảnh báo có lọc và `counts.NEW`; đổi trạng thái một cảnh báo; gửi tin Telegram thử (TASK-050);
-  - 1 route nội bộ 🔑 cho worker gửi sự kiện (TASK-049).
-- **FEAT-016 helper `serverError(err, ctx)`**: mọi nhánh 500 của `app/api/**` trả `{ success:false, error }` qua helper này và ghi `admin_alerts` (BR-W08, TASK-049). Dạng phản hồi 500 ở §1 không đổi.
+## 3. Lỗi 500 (FEAT-016)
+Mọi nhánh 500 của `app/api/**` đi qua `serverError(err, ctx)` (`lib/api-errors.ts`): log, ghi `admin_alerts` + Telegram, trả `{ success:false, error }` với thông điệp riêng của route (BR-W08, khoá bằng `server-error-coverage`). Riêng `/api/tts` giữ thân `{ error: "TTS_FAILED", message }`.

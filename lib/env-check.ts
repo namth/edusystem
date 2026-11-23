@@ -1,7 +1,11 @@
 // Kiểm tra biến môi trường lúc khởi động server (gọi từ instrumentation.ts).
 // Thiếu biến bắt buộc ở production → ném lỗi để container không chạy với cấu hình hỏng.
 const REQUIRED = ["DATABASE_URL", "JWT_SECRET", "INTERNAL_API_TOKEN", "REDIS_URL"];
-const RECOMMENDED = ["PORTKEY_API_KEY", "GOOGLE_API_KEY", "NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "NEO4J_URI"];
+// TELEGRAM_*: thiếu thì cảnh báo admin chỉ ghi DB, không gửi tin (FEAT-016, BR-W07).
+const RECOMMENDED = [
+  "PORTKEY_API_KEY", "GOOGLE_API_KEY", "NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "NEO4J_URI",
+  "TELEGRAM_BOT_TOKEN", "TELEGRAM_ALERT_CHAT_ID",
+];
 
 export function findEnvProblems(env: Record<string, string | undefined> = process.env) {
   const errors: string[] = [];

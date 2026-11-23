@@ -4,6 +4,7 @@ import { queryPg, getPgPool } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { syncStudentEnrolledInClass } from "@/lib/neo4j";
 import { assertStudentSlotAvailable } from "@/lib/student-slots";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   req: Request,
@@ -73,11 +74,7 @@ export async function GET(
       submissions: subRes.rows,
     });
   } catch (err: any) {
-    console.error("API /api/admin/users/[id] GET Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi tải thông tin người dùng." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/users/[id]", method: "GET", message: err.message || "Lỗi hệ thống khi tải thông tin người dùng." });
   }
 }
 
@@ -288,10 +285,6 @@ export async function PUT(
       },
     });
   } catch (err: any) {
-    console.error("API /api/admin/users/[id] PUT Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi cập nhật người dùng." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/users/[id]", method: "PUT", message: err.message || "Lỗi hệ thống khi cập nhật người dùng." });
   }
 }

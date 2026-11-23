@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -51,11 +52,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ flashcards }, { status: 200 });
   } catch (err: any) {
-    console.error("GET /api/teacher/flashcards error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi nạp danh sách flashcards" },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/flashcards", method: "GET", message: err.message || "Lỗi nạp danh sách flashcards" });
   }
 }
 
@@ -128,10 +125,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, flashcard }, { status: 201 });
   } catch (err: any) {
-    console.error("POST /api/teacher/flashcards error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tạo flashcard mới" },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/flashcards", method: "POST", message: err.message || "Lỗi tạo flashcard mới" });
   }
 }

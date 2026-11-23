@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { syncTeacherManagesClass } from "@/lib/neo4j";
 import { assertTrialAllows, isTrialTeacher, trialLimitResponse } from "@/lib/teacher-trial";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(_req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -49,11 +50,7 @@ export async function GET(_req?: Request) {
 
     return NextResponse.json({ classes });
   } catch (err: any) {
-    console.error("GET /api/teacher/classes error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải danh sách lớp học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/classes", method: "GET", message: err.message || "Lỗi tải danh sách lớp học." });
   }
 }
 
@@ -128,10 +125,11 @@ export async function POST(req: Request) {
       }
     }
     if (!code) {
-      return NextResponse.json(
-        { success: false, error: "Không thể sinh mã lớp duy nhất, vui lòng thử lại." },
-        { status: 500 }
-      );
+      return serverError(new Error("Không sinh được mã lớp duy nhất sau nhiều lần thử"), {
+        route: "/api/teacher/classes",
+        method: "POST",
+        message: "Không thể sinh mã lớp duy nhất, vui lòng thử lại.",
+      });
     }
 
     const teacherId = user.userId;
@@ -179,10 +177,6 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("POST /api/teacher/classes error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tạo lớp học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/classes", method: "POST", message: err.message || "Lỗi tạo lớp học." });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { parseDocumentFile } from "@/lib/document-parser";
 import { withAiUsageContext } from "@/lib/ai-usage";
+import { serverError } from "@/lib/api-errors";
 
 export const maxDuration = 60; // 60 seconds max execution for AI parsing
 
@@ -65,10 +66,6 @@ export async function POST(req: Request) {
       extractedData: parseResult.structuredData,
     });
   } catch (error: any) {
-    console.error("AI Document Ingestion parse error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Đã xảy ra lỗi trong quá trình bóc tách tài liệu." },
-      { status: 500 }
-    );
+    return serverError(error, { route: "/api/teacher/exams/ai-parse", method: "POST", message: error.message || "Đã xảy ra lỗi trong quá trình bóc tách tài liệu." });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(_request?: Request) {
   const auth = await requireRole();
@@ -18,10 +19,6 @@ export async function GET(_request?: Request) {
 
     return NextResponse.json({ success: true, classes: result.rows });
   } catch (err: any) {
-    console.error("GET /api/student/classes error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải danh sách lớp học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/student/classes", method: "GET", message: err.message || "Lỗi tải danh sách lớp học." });
   }
 }

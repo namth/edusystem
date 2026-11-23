@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { getAiPricing } from "@/lib/ai-usage";
 import { findModelPrice, validateAiPricing } from "@/lib/ai-pricing";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -24,11 +25,7 @@ export async function GET(req: Request) {
       unpriced_models,
     });
   } catch (err: any) {
-    console.error("GET /api/admin/settings/ai-pricing error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi khi lấy bảng giá AI." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/settings/ai-pricing", method: "GET", message: err.message || "Lỗi khi lấy bảng giá AI." });
   }
 }
 
@@ -61,10 +58,6 @@ export async function PUT(req: Request) {
       pricing: validation.value,
     });
   } catch (err: any) {
-    console.error("PUT /api/admin/settings/ai-pricing error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi khi cập nhật bảng giá AI." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/settings/ai-pricing", method: "PUT", message: err.message || "Lỗi khi cập nhật bảng giá AI." });
   }
 }

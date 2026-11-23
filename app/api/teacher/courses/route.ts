@@ -3,6 +3,7 @@ import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery } from "@/lib/neo4j";
 import { canUseSubject } from "@/lib/subjects";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -48,8 +49,7 @@ export async function GET(req?: Request) {
 
     return NextResponse.json({ success: true, courses });
   } catch (err: any) {
-    console.error("API /api/teacher/courses GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp danh sách khóa học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/courses", method: "GET", message: err.message || "Lỗi nạp danh sách khóa học." });
   }
 }
 
@@ -137,8 +137,7 @@ export async function POST(req: Request) {
       message: "Đã tạo Khóa học mới thành công!",
     });
   } catch (err: any) {
-    console.error("API /api/teacher/courses POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi hệ thống khi tạo Khóa học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/courses", method: "POST", message: err.message || "Lỗi hệ thống khi tạo Khóa học." });
   }
 }
 
@@ -228,8 +227,7 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({ success: true, message: "Đã cập nhật Khóa học thành công!" });
   } catch (err: any) {
-    console.error("API /api/teacher/courses PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật Khóa học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/courses", method: "PUT", message: err.message || "Lỗi cập nhật Khóa học." });
   }
 }
 
@@ -276,7 +274,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, message: "Đã xóa Khóa học thành công!" });
   } catch (err: any) {
-    console.error("API /api/teacher/courses DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa Khóa học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/courses", method: "DELETE", message: err.message || "Lỗi xóa Khóa học." });
   }
 }

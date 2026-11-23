@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 // Helper to encode strings to Base64URL
 function base64UrlEncode(str: string): string {
@@ -236,5 +237,9 @@ export async function GET(request: Request) {
     console.error("TTS proxy fallback exception:", e);
   }
 
-  return NextResponse.json({ error: "TTS_FAILED", message: "Không thể tạo âm thanh." }, { status: 500 });
+  return serverError(new Error("Mọi nguồn TTS đều lỗi"), {
+    route: "/api/tts",
+    method: "GET",
+    body: { error: "TTS_FAILED", message: "Không thể tạo âm thanh." },
+  });
 }
