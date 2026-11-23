@@ -91,7 +91,7 @@ describe("TC-P17: script chuyển dữ liệu (DEC-053)", () => {
     const sql = fs.readFileSync("docs/db-migration-020-drop-question-ids.sql", "utf8");
     for (const c of ["exams DROP COLUMN IF EXISTS question_ids", "lessons DROP COLUMN IF EXISTS question_ids", "questions DROP COLUMN IF EXISTS stimulus_text"]) expect(sql).toContain(c);
     expect(sql).toMatch(/section_id IS NULL[\s\S]*RAISE EXCEPTION/);
-    expect(fs.readFileSync("scripts/migrate-sections.ts", "utf8")).toMatch(/--dry-run[\s\S]*ROLLBACK/);
+    expect(fs.readFileSync("scripts/migrate-sections.ts", "utf8")).toMatch(/DRY = !process\.argv\.includes\("--commit"\)/);
   });
 });
 

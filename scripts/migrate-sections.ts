@@ -1,7 +1,7 @@
 // FEAT-017 TASK-061 (DEC-053) — chuyển dữ liệu cũ sang Phần, chạy MỘT LẦN cùng đợt deploy code FEAT-017.
 //
-//   npx vite-node --config vitest.config.ts scripts/migrate-sections.ts -- --dry-run   # chạy thử, ROLLBACK, in báo cáo
-//   npx vite-node --config vitest.config.ts scripts/migrate-sections.ts                # chạy thật, COMMIT
+//   npx vite-node --config vitest.config.ts scripts/migrate-sections.ts                # mặc định CHẠY THỬ: ROLLBACK, in báo cáo
+//   npx vite-node --config vitest.config.ts scripts/migrate-sections.ts -- --commit    # chạy thật, COMMIT (chỉ khi người dùng đồng ý)
 //
 // Việc làm (trong MỘT transaction):
 //   1. Chạy DDL migration 019 (idempotent).
@@ -16,7 +16,8 @@ import { Client } from "pg";
 import { migrateAllToSections } from "../lib/section-migration";
 import { loadTree, totalNumbered, type Queryable } from "../lib/exam-structure";
 
-const DRY = process.argv.includes("--dry-run");
+// An toàn: phải ghi rõ --commit mới ghi thật; thiếu / sai tham số luôn là chạy thử
+const DRY = !process.argv.includes("--commit");
 const KEEP_ATTEMPTS = process.argv.includes("--keep-attempts");
 
 async function main() {
