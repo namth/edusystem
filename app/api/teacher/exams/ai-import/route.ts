@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getPgPool, queryPg } from "@/lib/db-pg";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
-import { validateQuestionContent } from "@/lib/question-conversion";
+import { validateQuestionContent, skillOfCategory } from "@/lib/question-conversion";
 import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
@@ -29,7 +29,8 @@ export async function POST(req: Request) {
     if (!check.ok) invalid.push({ index, tempId: typeof q?.tempId === "string" ? q.tempId : undefined, reason: check.reason });
     const meta = content?.import_meta && typeof content.import_meta === "object" ? (content.import_meta as Record<string, unknown>) : {};
     return {
-      skill: typeof q?.skill === "string" && q.skill ? q.skill : "Reading",
+      // BR-I23: không tin nhãn kỹ năng client gửi ("Phonetics"…) — suy từ dạng câu để thứ tự màn thi giữ nguyên đề giấy
+      skill: skillOfCategory(category),
       category,
       prompt: typeof q?.prompt === "string" ? q.prompt : "",
       stimulus_text: typeof q?.stimulus_text === "string" && q.stimulus_text ? q.stimulus_text : null,

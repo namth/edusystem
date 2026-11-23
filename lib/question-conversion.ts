@@ -2,9 +2,9 @@
 // Hàm THUẦN: không gọi mạng, không đọc DB, chạy được ở cả trình duyệt (Review Studio) và server (ai-parse/ai-import).
 // Cùng đầu vào → cùng kết quả. Đặc tả: docs/features/chuyen-doi-dang-cau-nhap-de.md §7.
 import { parseFillInGaps, splitOrderingItems } from "./question-content-types";
-import { sanitizeInlineHtml, sanitizeStimulusHtml, stripHtml } from "./stimulus-html";
+import { sanitizeStimulusHtml, stripHtml } from "./stimulus-html";
 
-export const CONVERTER_VERSION = 1;
+export const CONVERTER_VERSION = 2;
 
 export const PAPER_FORMATS = [
   "PRONUNCIATION",
@@ -82,9 +82,23 @@ export type WarningCode =
   | "GAP_NOT_FOUND"
   | "UNDERLINE_MISSING"
   | "CONVERSION_FAILED"
-  | "DISTRACTORS_DROPPED"
+  | "DISTRACTORS_DROPPED" // chỉ còn ở dữ liệu nhập theo converter v1 (thay bởi BR-I15)
   | "LOW_CONFIDENCE"
-  | "AUDIO_MISSING";
+  | "AUDIO_MISSING"
+  | "PASSAGE_MISSING";
+
+/** Lời dẫn nhắc tới một bài đọc ("Reading Passage 1", "paragraphs A–F"…) — dùng để phát hiện AI làm rơi bài đọc (BR-I17). */
+// "Read the following passage…" (đề Việt Nam), "Reading Passage 1" (IELTS), "đoạn văn/bài đọc" — BR-I17
+export const PASSAGE_REFERENCE_RE = /\bpassage\b|the (?:following )?text\b|paragraphs?\s+[A-H]\b|đoạn văn|bài đọc/i;
+// bài đọc đề THCS/THPT chỉ 400–1000 ký tự; dưới ngưỡng này coi như chưa chép bài
+const MIN_PASSAGE_CHARS = 200;
+
+/** Nhóm nhắc tới bài đọc nhưng không có bài đọc chung lẫn đoạn dẫn đủ dài. */
+export function groupMissesPassage(g: RawGroup): boolean {
+  if (/listen|writ|speak/i.test(g.skill || "")) return false;
+  if (!PASSAGE_REFERENCE_RE.test(g.prompt || "")) return false;
+  return plain(g.passage_html).length < MIN_PASSAGE_CHARS && plain(g.stimulus_html).length < MIN_PASSAGE_CHARS;
+}
 
 export const BLOCKING_WARNINGS: WarningCode[] = ["NO_ANSWER"];
 
@@ -113,6 +127,8 @@ export interface RawGroup {
   skill: string;
   prompt: string;
   stimulus_html?: string | null;
+  /** Bài đọc dài dùng chung cho nhiều nhóm (kiểu IELTS: một passage, nhiều dạng câu) — thành stimulus_text của mọi câu trong nhóm. */
+  passage_html?: string | null;
   word_box?: string[];
   matching?: { left: { key: string; text: string }[]; right: { key: string; text: string }[] };
   sub_questions: RawSubQuestion[];
@@ -132,6 +148,16 @@ export interface ImportMeta {
   confidence: number;
   answer_source: AnswerSource;
   warnings: ConvertWarning[];
+  /** Nhãn phần thi trên giấy do AI đặt ("Phonetics", "Grammar & Vocabulary"…) — chỉ để hiển thị/tra cứu. */
+  paper_skill?: string;
+}
+
+/** BR-I23: kỹ năng hệ thống luôn suy ra từ tiền tố dạng câu (exam-player xếp màn theo 4 kỹ năng chuẩn). */
+export function skillOfCategory(category: string): "Reading" | "Listening" | "Writing" | "Speaking" {
+  if (category.startsWith("LISTENING_")) return "Listening";
+  if (category.startsWith("WRITING_")) return "Writing";
+  if (category.startsWith("SPEAKING_")) return "Speaking";
+  return "Reading";
 }
 
 export interface ConvertedQuestion {
@@ -143,7 +169,7 @@ export interface ConvertedQuestion {
   content: Record<string, unknown> & { import_meta: ImportMeta };
 }
 
-export type NeedsAiReason = "GAP_NOT_FOUND" | "UNDERLINE_MISSING";
+export type NeedsAiReason = "GAP_NOT_FOUND";
 
 export interface GroupConversion {
   tempId: string;
@@ -155,8 +181,15 @@ export interface GroupConversion {
 
 // ── Tiện ích chữ ─────────────────────────────────────────────────────────
 const plain = (html: string | null | undefined) => stripHtml(html || "");
+/** Như plain nhưng giữ xuống dòng (dòng văn bản, <br>, hết đoạn/ô/hàng) — cho danh sách lựa chọn, bảng, ghi chú. */
+const plainLines = (html: string | null | undefined) =>
+  (html || "")
+    .replace(/<br\s*\/?>|<\/(?:p|div|li|tr|h\d)>/gi, "\n")
+    .split("\n")
+    .map((l) => stripHtml(l))
+    .filter(Boolean)
+    .join("\n");
 const norm = (s: string) => plain(s).toLowerCase().replace(/[.,!?;:"'()]/g, "").replace(/\s+/g, " ").trim();
-const hasUnderline = (html: string | null | undefined) => /<u\b[^>]*>/i.test(html || "");
 /** Ngoặc vuông có sẵn trong văn bản gốc → ngoặc tròn, để parseFillInGaps chỉ thấy ô do bộ chuyển đổi chèn (BR-I06). */
 const neutralizeBrackets = (s: string) => s.replace(/\[/g, "(").replace(/\]/g, ")");
 const BLANK_RE = /_{2,}|…+|\.{3,}/g;
@@ -225,12 +258,14 @@ function buildMc(group: RawGroup, subs: RawSubQuestion[], format: PaperFormat, e
     const opts: Record<string, string> = {};
     LETTERS.forEach((L, i) => {
       const o = s.options.find((x) => x.key.toUpperCase() === L) ?? s.options[i];
-      opts[`option_${L.toLowerCase()}`] = o ? sanitizeInlineHtml(o.text_html) : "";
+      // chữ trơn: bỏ gạch chân / thẻ HTML khỏi câu và phương án (BR-I25)
+      opts[`option_${L.toLowerCase()}`] = o ? plain(o.text_html) : "";
     });
     return {
       id: `${group.tempId}_q${s.number}`,
       number: s.number,
-      text: sanitizeInlineHtml(s.text_html) || `Câu ${s.number}`,
+      // để trống được: LessonPlayer hiện số câu đề giấy (BR-I20)
+      text: plain(s.text_html),
       ...opts,
       correct_answer: s.correct_answer ? s.correct_answer.toUpperCase() : null,
     };
@@ -256,14 +291,15 @@ function fillIn(
   idx: number
 ): ConvertedQuestion {
   const warnings = commonWarnings(group, subs);
-  const useBank = bank !== null;
+  // bank → kho từ chung; perGap → danh sách chọn từng ô; không có cả hai → học sinh tự gõ (FEAT-015 BR-I16)
+  const subtype = bank !== null ? "OPTION_BANK" : perGap !== null ? "INLINE_SELECT" : "FREE_TYPING";
   const content: Record<string, unknown> = {
-    fill_subtype: useBank ? "OPTION_BANK" : "INLINE_SELECT",
+    fill_subtype: subtype,
     passage,
     correct_answers: answers,
   };
-  if (useBank) content.option_bank = bank;
-  else content.inline_options_per_gap = (perGap || []).map((options, gap_index) => ({ gap_index, options }));
+  if (subtype === "OPTION_BANK") content.option_bank = bank;
+  if (subtype === "INLINE_SELECT") content.inline_options_per_gap = (perGap || []).map((options, gap_index) => ({ gap_index, options }));
   return {
     tempId: `${group.tempId}_${idx}`,
     skill: group.skill || "Reading",
@@ -293,16 +329,16 @@ function findGapMarker(text: string, n: number, from: number): [number, number] 
   return null;
 }
 
-function convertCloze(group: RawGroup, subs: RawSubQuestion[], idx: number): ConvertedQuestion | "GAP_NOT_FOUND" {
-  let text = plain(group.stimulus_html || "");
-  if (!text) return "GAP_NOT_FOUND";
-  const sorted = [...subs].sort((a, b) => a.number - b.number);
+/** Thay dấu ô của từng câu (đã sắp theo số) bằng "(n) [đáp án]". Thiếu một ô → null. */
+function markGaps(source: string, sorted: RawSubQuestion[], answers: string[]): string | null {
+  let text = source;
+  if (!text) return null;
   // 1) thay dấu ô bằng chỗ giữ tạm, theo đúng thứ tự xuất hiện
   let cursor = 0;
   const holders: string[] = [];
   for (const s of sorted) {
     const pos = findGapMarker(text, s.number, cursor);
-    if (!pos) return "GAP_NOT_FOUND";
+    if (!pos) return null;
     const holder = `\u0000${holders.length}\u0000`;
     text = text.slice(0, pos[0]) + holder + text.slice(pos[1]);
     cursor = pos[0] + holder.length;
@@ -310,13 +346,38 @@ function convertCloze(group: RawGroup, subs: RawSubQuestion[], idx: number): Con
   }
   // 2) ngoặc vuông gốc → ngoặc tròn; 3) chèn "(n) [đáp án]"
   text = neutralizeBrackets(text);
-  const answers = sorted.map((s) => answerText(s) ?? "");
   sorted.forEach((s, i) => {
     text = text.replace(holders[i], `(${s.number}) [${neutralizeBrackets(answers[i]) || "?"}]`);
   });
+  return text;
+}
+
+/** Câu FILL_IN dựng ô trống ngay trên bài đọc chung → không gắn lại bài đó làm stimulus_text (tránh hiện hai lần). */
+const BUILT_ON_SHARED_PASSAGE = new WeakSet<ConvertedQuestion>();
+
+/**
+ * Đánh dấu ô trên đoạn dẫn riêng của nhóm; không có thì thử bài đọc chung (AI đôi khi để đoạn điền từ ở
+ * "passages" thay vì stimulus_html — BR-I22). Trả văn bản đã đánh dấu và nguồn đã dùng.
+ */
+function markGapsInGroup(group: RawGroup, sorted: RawSubQuestion[], answers: string[], lines = false): { text: string; shared: boolean } | null {
+  const read = (h: string | null | undefined) => (h ? (lines ? plainLines(h) : plain(h)) : "");
+  const own = markGaps(read(group.stimulus_html), sorted, answers);
+  if (own !== null) return { text: own, shared: false };
+  const shared = markGaps(read(group.passage_html), sorted, answers);
+  return shared !== null ? { text: shared, shared: true } : null;
+}
+
+function convertCloze(group: RawGroup, subs: RawSubQuestion[], idx: number): ConvertedQuestion | "GAP_NOT_FOUND" {
+  const sorted = [...subs].sort((a, b) => a.number - b.number);
+  const answers = sorted.map((s) => answerText(s) ?? "");
+  const marked = markGapsInGroup(group, sorted, answers);
+  if (marked === null) return "GAP_NOT_FOUND";
   const perGap = sorted.map((s) => s.options.map((o) => neutralizeBrackets(plain(o.text_html))));
-  if (sorted.length === 1) return fillIn(group, sorted, "CLOZE_PASSAGE", text, answers, perGap[0], null, idx);
-  return fillIn(group, sorted, "CLOZE_PASSAGE", text, answers, null, perGap, idx);
+  const q = sorted.length === 1
+    ? fillIn(group, sorted, "CLOZE_PASSAGE", marked.text, answers, perGap[0], null, idx)
+    : fillIn(group, sorted, "CLOZE_PASSAGE", marked.text, answers, null, perGap, idx);
+  if (marked.shared) BUILT_ON_SHARED_PASSAGE.add(q);
+  return q;
 }
 
 const PAIR_SEPARATORS = [/\s*\/\s*/, /\s+[–—]\s+/, /\s*;\s*/, /\s+-\s+/, /\s*…\s*/, /\s*\.{3}\s*/];
@@ -406,12 +467,18 @@ function convertSentenceArrangement(group: RawGroup, sub: RawSubQuestion, idx: n
   return orderingQuestion(group, sub, "SENTENCE_ARRANGEMENT", "SENTENCE_ORDERING", correct_text, idx);
 }
 
-function convertWordArrangement(group: RawGroup, sub: RawSubQuestion, idx: number): ConvertedQuestion | "FAILED" {
+function convertWordArrangement(group: RawGroup, sub: RawSubQuestion, idx: number): ConvertedQuestion | "FAILED" | "KEEP_MC" {
   const correct = optionText(sub, sub.correct_answer);
   if (!correct) return "FAILED";
   const chunks = plain(sub.text_html).split("/").map((c) => c.trim()).filter(Boolean);
   const bag = (s: string) => norm(s).split(" ").filter(Boolean).sort().join(" ");
-  if (chunks.length < 2 || bag(chunks.join(" ")) !== bag(correct)) return "FAILED";
+  if (chunks.length < 2) return "FAILED";
+  // BR-I21 (sửa): gợi ý thiếu từ nối ("People / thought / story" → "People thought the story was written…") vẫn
+  // thành sắp xếp từ — học sinh xếp toàn bộ từ của câu đúng. Gợi ý và đáp án lệch nhau quá xa (không chung nửa số
+  // từ gợi ý) thì giữ trắc nghiệm.
+  const answerWords = new Set(bag(correct).split(" "));
+  const cueWords = bag(chunks.join(" ")).split(" ").filter(Boolean);
+  if (cueWords.filter((w) => answerWords.has(w)).length * 2 < cueWords.length) return sub.options.length >= 2 ? "KEEP_MC" : "FAILED";
   return orderingQuestion(group, sub, "WORD_ARRANGEMENT", "WORD_ORDERING", correct.replace(/\s+/g, " ").trim(), idx);
 }
 
@@ -434,24 +501,71 @@ function orderingQuestion(
   };
 }
 
+/** Cột phải của ghép nối: matching.right → phương án của từng câu → danh sách "A …" / "vii …" trong đoạn dẫn. */
+function matchingChoices(group: RawGroup, subs: RawSubQuestion[]): { key: string; text: string }[] {
+  if (group.matching?.right?.length) return group.matching.right.map((r) => ({ key: r.key, text: plain(r.text) }));
+  const fromOpts = new Map<string, string>();
+  for (const s of subs) for (const o of s.options) if (!fromOpts.has(o.key.toUpperCase())) fromOpts.set(o.key.toUpperCase(), plain(o.text_html));
+  if (fromOpts.size >= 2) return [...fromOpts].map(([key, text]) => ({ key, text }));
+  const out: { key: string; text: string }[] = [];
+  for (const seg of plainLines(group.stimulus_html).split(/\n|\|/)) {
+    const m = seg.trim().match(/^([A-Z]|[ivx]{1,5})[.)]?\s+(\S.*)$/);
+    if (m && !out.some((o) => o.key.toLowerCase() === m[1].toLowerCase())) out.push({ key: m[1], text: m[2].trim() });
+  }
+  return out;
+}
+
+/** Nhãn hiển thị của một lựa chọn: "D" + "Paragraph D" → "Paragraph D"; "vii" + "Why …" → "vii. Why …". */
+function choiceLabel(c: { key: string; text: string }): string {
+  const t = neutralizeBrackets(c.text.trim());
+  if (!t) return c.key;
+  return new RegExp(`\\b${c.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(t) ? t : `${c.key}. ${t}`;
+}
+
+/**
+ * Ghép nối (BR-I08, BR-I15): đúng 1-1 và không có phương án thừa → READING_MATCHING;
+ * có phương án nhiễu, đáp án lặp (phân loại) hoặc thiếu đáp án → mỗi mục một danh sách chọn (INLINE_SELECT) giữ đủ lựa chọn.
+ */
 function convertMatching(group: RawGroup, subs: RawSubQuestion[], idx: number): ConvertedQuestion | "FAILED" {
-  const right = group.matching?.right || [];
-  const pairs = subs.map((s) => {
-    const r = right.find((x) => x.key.toLowerCase() === (s.correct_answer || "").toLowerCase());
-    return { id: `${group.tempId}_m${s.number}`, left: plain(s.text_html), right: r ? plain(r.text) : "" };
+  const choices = matchingChoices(group, subs);
+  if (choices.length < 2 || subs.some((s) => !plain(s.text_html))) return "FAILED";
+  const sorted = [...subs].sort((a, b) => a.number - b.number);
+  const pick = (s: RawSubQuestion) => choices.find((c) => c.key.toLowerCase() === (s.correct_answer || "").trim().toLowerCase());
+  const keys = sorted.map((s) => (s.correct_answer || "").trim().toLowerCase());
+  const oneToOne = sorted.length >= 2 && sorted.every((s) => pick(s)) && new Set(keys).size === sorted.length && choices.length === sorted.length;
+  const warnings = commonWarnings(group, sorted);
+  if (oneToOne) {
+    return {
+      tempId: `${group.tempId}_${idx}`,
+      skill: group.skill || "Reading",
+      category: cat(group.skill, "MATCHING"),
+      prompt: group.prompt,
+      stimulus_text: group.stimulus_html ? sanitizeStimulusHtml(group.stimulus_html) : null,
+      content: {
+        pairs: sorted.map((s) => ({ id: `${group.tempId}_m${s.number}`, left: plain(s.text_html), right: choiceLabel(pick(s)!) })),
+        import_meta: meta("MATCHING", sorted, warnings),
+      },
+    };
+  }
+  const labels = choices.map(choiceLabel);
+  const answers = sorted.map((s) => {
+    const c = pick(s);
+    return c ? choiceLabel(c) : "";
   });
-  if (pairs.length < 2 || pairs.some((p) => !p.left || !p.right)) return "FAILED";
-  const used = new Set(subs.map((s) => (s.correct_answer || "").toLowerCase()));
-  const extra = right.filter((r) => !used.has(r.key.toLowerCase())).length;
-  const warnings = commonWarnings(group, subs);
-  if (extra > 0) warnings.unshift({ code: "DISTRACTORS_DROPPED", message: `Bỏ ${extra} phương án nhiễu ở cột phải (dạng ghép nối chưa hỗ trợ phương án thừa).` });
+  const passage = sorted.map((s, i) => `${s.number}. ${neutralizeBrackets(plain(s.text_html))} [${answers[i] || "?"}]`).join("\n");
   return {
     tempId: `${group.tempId}_${idx}`,
     skill: group.skill || "Reading",
-    category: cat(group.skill, "MATCHING"),
+    category: cat(group.skill, "FILL_IN"),
     prompt: group.prompt,
-    stimulus_text: group.stimulus_html ? sanitizeStimulusHtml(group.stimulus_html) : null,
-    content: { pairs, import_meta: meta("MATCHING", subs, warnings) },
+    stimulus_text: null,
+    content: {
+      fill_subtype: "INLINE_SELECT",
+      passage,
+      correct_answers: answers,
+      inline_options_per_gap: sorted.map((_, gap_index) => ({ gap_index, options: labels })),
+      import_meta: meta("MATCHING", sorted, warnings),
+    },
   };
 }
 
@@ -494,7 +608,37 @@ function convertEssay(group: RawGroup, sub: RawSubQuestion, idx: number): Conver
   };
 }
 
+/**
+ * Hoàn thành câu / tóm tắt / bảng / ghi chú (kiểu IELTS "NO MORE THAN TWO WORDS") có đáp án → READING|LISTENING_FILL_IN
+ * FREE_TYPING (BR-I16). Ô lấy từ đoạn dẫn đánh số "(8) ____"; không có đoạn dẫn thì mỗi câu một dòng. Không dựng được → null.
+ */
+function convertTypedCompletion(group: RawGroup, subs: RawSubQuestion[], idx: number): ConvertedQuestion | null {
+  const sorted = [...subs].sort((a, b) => a.number - b.number);
+  const answers = sorted.map((s) => neutralizeBrackets(plain(s.correct_answer || "")));
+  if (answers.some((a) => !a)) return null;
+  const marked = markGapsInGroup(group, sorted, answers, true);
+  let passage = marked?.text ?? null;
+  if (passage === null) {
+    const lines: string[] = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const t = neutralizeBrackets(plain(sorted[i].text_html)).replace(/^\s*\d+\s*[.)]\s*/, "");
+      if (!t || /^Câu \d+$/.test(t)) return null;
+      const blanks = (t.match(BLANK_RE) || []).length;
+      if (blanks > 1) return null;
+      lines.push(`${sorted[i].number}. ${blanks === 1 ? t.replace(BLANK_RE, `[${answers[i]}]`) : `${t} [${answers[i]}]`}`);
+    }
+    passage = lines.join("\n");
+  }
+  const q = fillIn(group, sorted, "SHORT_ANSWER", passage, answers, null, null, idx);
+  if (marked?.shared) BUILT_ON_SHARED_PASSAGE.add(q);
+  return q;
+}
+
 function convertShortAnswer(group: RawGroup, subs: RawSubQuestion[], idx: number): ConvertedQuestion {
+  if (!/writ/i.test(group.skill || "")) {
+    const typed = convertTypedCompletion(group, subs, idx);
+    if (typed) return typed;
+  }
   const warnings = commonWarnings(group, subs).filter((w) => w.code !== "NO_ANSWER");
   return {
     tempId: `${group.tempId}_${idx}`,
@@ -515,11 +659,23 @@ function convertShortAnswer(group: RawGroup, subs: RawSubQuestion[], idx: number
 }
 
 // ── Điểm vào ─────────────────────────────────────────────────────────────
-const UNDERLINE_FORMATS: PaperFormat[] = ["PRONUNCIATION", "ERROR_IDENTIFICATION", "SYNONYM_ANTONYM"];
 const GROUP_LEVEL: PaperFormat[] = ["CLOZE_PASSAGE", "WORD_BOX", "MATCHING"];
 
 function normalizeFormat(f: unknown): PaperFormat {
   return (PAPER_FORMATS as readonly string[]).includes(String(f)) ? (f as PaperFormat) : "GENERAL_MC";
+}
+
+/** Dạng AI hay gắn nhầm cho câu gợi ý từ "People / thought / story / …" (BR-I21). */
+const CUE_RELABEL: PaperFormat[] = ["GENERAL_MC", "SENTENCE_TRANSFORMATION", "SENTENCE_COMBINATION", "REWRITE_WITH_CUE"];
+
+/** Câu là dãy ≥ 3 cụm từ ngăn bởi "/" (không có chỗ trống) và có phương án A–D → sắp xếp từ thành câu. */
+function looksLikeWordCues(s: RawSubQuestion): boolean {
+  if (!CUE_RELABEL.includes(normalizeFormat(s.paper_format))) return false;
+  if (!Array.isArray(s.options) || s.options.length < 2) return false;
+  const t = plain(s.text_html);
+  if ((t.match(BLANK_RE) || []).length > 0) return false;
+  const chunks = t.split("/").map((c) => c.trim()).filter(Boolean);
+  return chunks.length >= 3 && chunks.every((c) => c.split(/\s+/).length <= 4);
 }
 
 /** Chuyển một nhóm câu gốc. `override` = giáo viên chọn "Đổi dạng" (áp cho cả nhóm). */
@@ -527,7 +683,14 @@ export function convertGroup(raw: RawGroup, opts: { override?: PaperFormat } = {
   const subs = raw.sub_questions.map((s) => ({
     ...s,
     options: Array.isArray(s.options) ? s.options : [],
-    paper_format: opts.override ?? normalizeFormat(s.paper_format),
+    // > 4 phương án (vd "đoạn nào A–G", danh sách heading) không vừa trắc nghiệm A–D → dựng như ghép nối (BR-I15)
+    paper_format:
+      opts.override ??
+      (Array.isArray(s.options) && s.options.length > 4
+        ? "MATCHING"
+        : looksLikeWordCues(s)
+        ? "WORD_ARRANGEMENT"
+        : normalizeFormat(s.paper_format)),
   }));
   const questions: ConvertedQuestion[] = [];
   const groupWarnings: ConvertWarning[] = [];
@@ -594,7 +757,9 @@ export function convertGroup(raw: RawGroup, opts: { override?: PaperFormat } = {
         }
       } else if (format === "SENTENCE_ARRANGEMENT" || format === "WORD_ARRANGEMENT") {
         const r = format === "SENTENCE_ARRANGEMENT" ? convertSentenceArrangement(raw, s, idx) : convertWordArrangement(raw, s, idx);
-        if (r === "FAILED") {
+        if (r === "KEEP_MC") {
+          mcRun.push(s);
+        } else if (r === "FAILED") {
           mcRun.push(s);
           mcRunWarnings.push({ code: "CONVERSION_FAILED", message: `Không chuyển được câu ${s.number} sang dạng sắp xếp — tạm để trắc nghiệm.`, numbers: [s.number] });
         } else {
@@ -616,19 +781,33 @@ export function convertGroup(raw: RawGroup, opts: { override?: PaperFormat } = {
             message: `Câu ${s.number}: dạng chưa có trên hệ thống${s.unsupported_reason ? ` (${s.unsupported_reason})` : ""} — tạm để trắc nghiệm, admin đã được báo.`,
             numbers: [s.number],
           });
-        } else if (UNDERLINE_FORMATS.includes(format)) {
-          const ok = format === "PRONUNCIATION" ? s.options.some((o) => hasUnderline(o.text_html)) : hasUnderline(s.text_html) || s.options.some((o) => hasUnderline(o.text_html));
-          if (!ok) {
-            needsAi.add("UNDERLINE_MISSING");
-            mcRunWarnings.push({ code: "UNDERLINE_MISSING", message: `Câu ${s.number} cần chữ gạch chân nhưng file không giữ được — kiểm lại.`, numbers: [s.number] });
-          }
         }
       }
     }
     flushMc();
   }
 
-  for (const q of questions) groupWarnings.push(...q.content.import_meta.warnings);
+  const passage = raw.passage_html && plain(raw.passage_html) ? sanitizeStimulusHtml(raw.passage_html) : null;
+  if (passage) {
+    // BR-I17: bài đọc chung là stimulus_text của mọi câu trong nhóm → các câu liền nhau cùng bài đọc thành một màn chia đôi.
+    // Đoạn dẫn riêng của nhóm (danh sách heading, bảng…) chưa được dùng trong content thì nối vào lời dẫn.
+    for (const q of questions) {
+      if (q.category.startsWith("WRITING_") || BUILT_ON_SHARED_PASSAGE.has(q)) continue;
+      if (q.stimulus_text && q.stimulus_text !== passage) {
+        const own = stripHtml(q.stimulus_text);
+        if (own && !q.prompt.includes(own)) q.prompt = `${q.prompt}\n\n${own}`;
+      }
+      q.stimulus_text = passage;
+    }
+  }
+  for (const q of questions) {
+    q.skill = skillOfCategory(q.category);
+    if (raw.skill && raw.skill !== q.skill) q.content.import_meta.paper_skill = raw.skill;
+    groupWarnings.push(...q.content.import_meta.warnings);
+  }
+  if (groupMissesPassage(raw)) {
+    groupWarnings.push({ code: "PASSAGE_MISSING", message: "Lời dẫn nhắc tới bài đọc nhưng chưa có nội dung bài đọc — nhập lại file hoặc thêm bài đọc trước khi giao cho học sinh." });
+  }
   return { tempId: raw.tempId, questions, warnings: dedupeWarnings(groupWarnings), needsAi: [...needsAi] };
 }
 
@@ -727,7 +906,7 @@ export function switchableFormats(raw: RawGroup): PaperFormat[] {
   if (raw.stimulus_html) out.push("CLOZE_PASSAGE", "READING_COMPREHENSION");
   if (raw.word_box?.length) out.push("WORD_BOX");
   if (hasOptions) out.push("SENTENCE_BLANK", "SENTENCE_MULTI_BLANK", "SENTENCE_ARRANGEMENT", "WORD_ARRANGEMENT", "PRONUNCIATION", "STRESS", "ERROR_IDENTIFICATION", "SYNONYM_ANTONYM", "SENTENCE_TRANSFORMATION", "DIALOGUE_RESPONSE");
-  if (raw.matching) out.push("MATCHING");
+  if (raw.matching || matchingChoices(raw, raw.sub_questions).length >= 2) out.push("MATCHING");
   out.push("REWRITE_WITH_CUE", "ESSAY", "SHORT_ANSWER", "UNSUPPORTED");
   return [...new Set(out)];
 }

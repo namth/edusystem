@@ -15,6 +15,7 @@ const h = vi.hoisted(() => {
     refineResult: null as any,
     alerts: [] as any[],
     throwAi: false,
+    throwTooLong: false,
   };
 });
 
@@ -40,11 +41,16 @@ vi.mock("@/lib/document-parser", async () => {
   class AiUnavailableError extends Error {
     code = "AI_UNAVAILABLE";
   }
+  class DocumentTooLongError extends Error {
+    code = "DOCUMENT_TOO_LONG";
+  }
   return {
     AiUnavailableError,
+    DocumentTooLongError,
     parseDocumentFile: async () => {
       h.parseCalls++;
       if (h.throwAi) throw new AiUnavailableError("AI đang bận, vui lòng thử lại sau ít phút.");
+      if (h.throwTooLong) throw new DocumentTooLongError("File scan có 158 trang, vượt giới hạn 40 trang mỗi lần nhập.");
       const { normalizeGroup } = await vi.importActual<typeof import("@/lib/document-parser")>("@/lib/document-parser");
       return { engineUsed: "mammoth", structuredData: { examTitle: "Đề", suggestedDurationMinutes: 45, groups: h.parsedQuestions.map((g, i) => normalizeGroup(g, i)) } };
     },
@@ -87,6 +93,7 @@ beforeEach(async () => {
   h.refineResult = null;
   h.alerts = [];
   h.throwAi = false;
+  h.throwTooLong = false;
   h.parsedQuestions = [
     { skill: "Reading", prompt: "Q", sub_questions: [
       { number: 1, text_html: "a", options: ["x", "y", "z", "t"], correct_answer: "A", answer_source: "KEY", paper_format: "GENERAL_MC", confidence: 0.9 },
@@ -128,7 +135,7 @@ describe("POST /api/teacher/exams/ai-parse", () => {
     const body = await res.json();
     expect(body).toMatchObject({ success: true, fileType: "docx", engineUsed: "mammoth", groupsCount: 1, questionsCount: 2 });
     expect(body.extractedData.groups[0].sub_questions[1]).toMatchObject({ number: 2, paper_format: "GENERAL_MC" });
-    expect(body.conversion).toMatchObject({ converterVersion: 1, scoreItems: 2, paperQuestions: 2, warningsCount: 0 });
+    expect(body.conversion).toMatchObject({ converterVersion: 2, scoreItems: 2, paperQuestions: 2, warningsCount: 0 });
     expect(body.conversion.groups[0].questions[0]).toMatchObject({ category: "READING_MC" });
   });
 
@@ -179,6 +186,15 @@ describe("POST /api/teacher/exams/ai-parse", () => {
     const res = await post(docx());
     expect(res.status).toBe(503);
     expect(h.alerts).toEqual([expect.objectContaining({ level: "ERROR", source: "AI", fingerprint: "AI:EXAM_IMPORT:ALL_PROVIDERS_FAILED" })]);
+  });
+
+  it("BR-I18: file quá dài → 400 DOCUMENT_TOO_LONG kèm hướng dẫn tách file, không báo admin", async () => {
+    h.throwTooLong = true;
+    await loginAs("TEACHER", "t1");
+    const res = await post(docx());
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ success: false, code: "DOCUMENT_TOO_LONG", error: expect.stringContaining("40 trang") });
+    expect(h.alerts).toEqual([]);
   });
 
   it("cắt còn tối đa 50 nhóm câu hỏi", async () => {

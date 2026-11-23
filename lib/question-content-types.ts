@@ -388,23 +388,20 @@ export function buildStandardQuestionContent(q: any): any {
     case "READING_MC":
     case "LISTENING_MC": {
       const rawSub = q.sub_questions || q.subQuestions || [];
-      const subQuestions = rawSub.map((sq: any) => {
-        let correctVal = sq.correct_answer || sq.correctAnswer || sq.optA || "";
-        if (sq.correctAnswer === "A" && sq.optA) correctVal = sq.optA;
-        if (sq.correctAnswer === "B" && sq.optB) correctVal = sq.optB;
-        if (sq.correctAnswer === "C" && sq.optC) correctVal = sq.optC;
-        if (sq.correctAnswer === "D" && sq.optD) correctVal = sq.optD;
-
-        return {
-          id: sq.id || `sub_${Date.now()}`,
-          text: sq.text || sq.subQuestionText || "",
-          option_a: sq.option_a || sq.optA || "",
-          option_b: sq.option_b || sq.optB || "",
-          option_c: sq.option_c || sq.optC || "",
-          option_d: sq.option_d || sq.optD || "",
-          correct_answer: correctVal,
+      const subQuestions = rawSub.map((sq: any, i: number) => {
+        const out: any = {
+          id: sq.id || `sub_${Date.now()}_${i}`,
+          text: sq.text ?? sq.subQuestionText ?? "",
+          option_a: sq.option_a ?? sq.optA ?? "",
+          option_b: sq.option_b ?? sq.optB ?? "",
+          option_c: sq.option_c ?? sq.optC ?? "",
+          option_d: sq.option_d ?? sq.optD ?? "",
+          // Màn thi gửi chữ cái A–D → đáp án luôn lưu dạng chữ cái (BR-I24)
+          correct_answer: mcAnswerLetter(sq),
           audio_url: sq.audio_url || sq.audioUrl || null,
         };
+        if (Number(sq.number) > 0) out.number = Number(sq.number);
+        return out;
       });
 
       result.sub_questions = subQuestions;
@@ -413,11 +410,7 @@ export function buildStandardQuestionContent(q: any): any {
 
     case "READING_FILL_IN":
     case "LISTENING_FILL_IN": {
-      result.passage = q.passage || q.parenthesesRawText || "";
-      result.fill_subtype = q.fill_subtype || q.fillInSubtype || "OPTION_BANK";
-      result.option_bank = q.option_bank || q.optionBank || [];
-      result.option_banks = q.option_banks || q.optionBanks || [];
-      result.correct_answers = q.correct_answers || q.correctAnswers || [];
+      Object.assign(result, standardFillIn(q));
       break;
     }
 
@@ -453,6 +446,7 @@ export function buildStandardQuestionContent(q: any): any {
         id: sa.id || `sa_${Date.now()}`,
         text: sa.text || sa.questionText || "",
         max_words: Number(sa.max_words || sa.maxWords) || 50,
+        ...((sa.sample_answer ?? sa.sampleAnswer) ? { sample_answer: sa.sample_answer ?? sa.sampleAnswer } : {}),
       }));
       result.sub_questions = subQuestions;
       break;
@@ -460,6 +454,7 @@ export function buildStandardQuestionContent(q: any): any {
 
     case "WRITING_ESSAY": {
       result.min_words = Number(q.min_words || q.minWords) || 250;
+      if (q.task_type || q.taskType) result.task_type = q.task_type || q.taskType;
       result.rubric = q.rubric || "Task Achievement (25%), Coherence & Cohesion (25%), Lexical Resource (25%), Grammatical Range (25%)";
       break;
     }
@@ -470,9 +465,11 @@ export function buildStandardQuestionContent(q: any): any {
     }
 
     case "WRITING_SENTENCE_REWRITE": {
-      result.original_sentence = q.original_sentence || q.originalSentence || "";
-      result.starting_cue = q.starting_cue || q.startingCue || "";
-      result.correct_answer = q.correct_answer || q.correctAnswer || "";
+      // Một câu = một mục chấm (grading đọc trường phẳng); trình sửa cũ gửi sub_questions → lấy câu đầu
+      const first = (Array.isArray(q.sub_questions) ? q.sub_questions : Array.isArray(q.subQuestions) ? q.subQuestions : [])[0] || {};
+      result.original_sentence = q.original_sentence || q.originalSentence || first.original_sentence || first.originalSentence || "";
+      result.correct_answer = q.correct_answer || q.correctAnswer || first.correct_answer || first.correctAnswer || "";
+      result.starting_cue = q.starting_cue || q.startingCue || parseSentenceRewriteCue(result.correct_answer).cue || "";
       break;
     }
 
@@ -492,7 +489,64 @@ export function buildStandardQuestionContent(q: any): any {
       break;
   }
 
+  // Giữ dấu vết nhập đề AI (FEAT-015) khi giáo viên sửa câu
+  if (q.import_meta && typeof q.import_meta === "object") result.import_meta = q.import_meta;
   return result;
+}
+
+const normOpt = (s: unknown) =>
+  String(s ?? "").replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").toLowerCase().replace(/\s+/g, " ").trim();
+
+/** Đáp án câu con trắc nghiệm → chữ cái A–D. Chấp nhận chữ cái, hoặc nội dung phương án (dữ liệu trình sửa cũ). */
+export function mcAnswerLetter(sq: any): string | null {
+  const opts: Record<string, unknown> = {
+    A: sq.option_a ?? sq.optA,
+    B: sq.option_b ?? sq.optB,
+    C: sq.option_c ?? sq.optC,
+    D: sq.option_d ?? sq.optD,
+  };
+  for (const v of [sq.correctAnswer, sq.correct_answer]) {
+    const t = String(v ?? "").trim();
+    if (!t) continue;
+    if (/^[A-D]$/i.test(t)) return t.toUpperCase();
+    const hit = Object.keys(opts).find((k) => normOpt(opts[k]) && normOpt(opts[k]) === normOpt(t));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Chuẩn hoá câu điền ô (BR-I24): đoạn văn là nguồn đáp án duy nhất (correct_answers suy từ [..]);
+ * INLINE_SELECT luôn lưu inline_options_per_gap (trình sửa cũ lưu option_banks — màn thi không đọc);
+ * mỗi ô/kho từ luôn chứa đáp án đúng.
+ */
+export function standardFillIn(q: any): Record<string, unknown> {
+  const passage: string = q.passage || q.parenthesesRawText || "";
+  const answers = parseFillInGaps(passage).gaps;
+  const subtypeRaw = String(q.fill_subtype || q.fillInSubtype || "OPTION_BANK");
+  const fill_subtype = ["OPTION_BANK", "INLINE_SELECT", "FREE_TYPING"].includes(subtypeRaw) ? subtypeRaw : "OPTION_BANK";
+  const out: Record<string, unknown> = { passage, fill_subtype, correct_answers: answers };
+  const uniq = (xs: string[]) => {
+    const seen = new Set<string>();
+    return xs.map((x) => String(x ?? "").trim()).filter((x) => x && !seen.has(normOpt(x)) && seen.add(normOpt(x)));
+  };
+  if (fill_subtype === "OPTION_BANK") {
+    const bank: string[] = Array.isArray(q.option_bank) ? q.option_bank : Array.isArray(q.optionBank) ? q.optionBank : [];
+    out.option_bank = uniq([...bank, ...answers]);
+  } else if (fill_subtype === "INLINE_SELECT") {
+    const per: any[] = Array.isArray(q.inline_options_per_gap)
+      ? q.inline_options_per_gap
+      : Array.isArray(q.option_banks)
+      ? q.option_banks
+      : Array.isArray(q.optionBanks)
+      ? q.optionBanks
+      : [];
+    out.inline_options_per_gap = answers.map((ans, gap_index) => {
+      const g = per.find((p) => p && Number(p.gap_index) === gap_index);
+      return { gap_index, options: uniq([...(g && Array.isArray(g.options) ? g.options : []), ans]) };
+    });
+  }
+  return out;
 }
 
 

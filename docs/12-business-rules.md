@@ -112,7 +112,7 @@ Chi tiết đầy đủ ở `docs/features/cham-diem-bang-diem.md` §7. Tóm t�
 - **BR-B12** AI chấm bài học lỗi 3 lần / `giveUp` → `NEEDS_REVIEW`, không cho 0.
 - **BR-B13** AI chấm xong ghi `ai_score`, `ai_feedback` cùng `score`.
 
-## 9c. Chuyển dạng câu khi nhập đề (I): FEAT-015, DEC-042 → DEC-046; `lib/question-conversion.ts`
+## 9c. Chuyển dạng câu khi nhập đề (I): FEAT-015, DEC-042 → DEC-046, DEC-049; `lib/question-conversion.ts`
 Chi tiết, bảng dạng giấy và mã cảnh báo ở `docs/features/chuyen-doi-dang-cau-nhap-de.md` §7. Tóm tắt:
 - **BR-I01** AI chỉ gắn nhãn `paper_format`, `answer_source`, `confidence`; `convertGroup` (hàm thuần) dựng content.
 - **BR-I02** 1 ô → `OPTION_BANK` 4 phương án, mỗi câu một bản ghi.
@@ -127,7 +127,19 @@ Chi tiết, bảng dạng giấy và mã cảnh báo ở `docs/features/chuyen-d
 - **BR-I11** Nhóm lẫn dạng → tách thành khối liền nhau, giữ chung `prompt`.
 - **BR-I12** Listening dùng tiền tố `LISTENING_` + cảnh báo `AUDIO_MISSING`.
 - **BR-I13** `confidence < 0.6` → `LOW_CONFIDENCE`.
-- **BR-I14** Chỉ giữ `<u> <b> <strong> <i> <em> <br>`; đáp án chấm luôn là chữ trơn.
+- **BR-I14** Bóc tách giữ `<u> <b> <strong> <i> <em> <br>` để AI nhận dạng; câu con và phương án lưu chữ trơn (BR-I25); đáp án chấm luôn là chữ trơn.
+- **BR-I15** Ghép nối đúng 1-1 không thừa → `READING_MATCHING`; có nhiễu / đáp án lặp / > 4 phương án → `INLINE_SELECT` giữ đủ lựa chọn (thay `DISTRACTORS_DROPPED`, DEC-049).
+- **BR-I16** `SHORT_ANSWER` Reading/Listening có đáp án → `FILL_IN · FREE_TYPING`; chấm ô điền nhận ` / ` và từ tuỳ chọn trong ngoặc tròn.
+- **BR-I17** Bài đọc chung (`passages` + `passage_id`) → `stimulus_text` mọi câu của nhóm; thiếu bài đọc → cấu trúc lại một lần rồi `PASSAGE_MISSING`.
+- **BR-I18** PDF scan (kể cả có watermark) → OCR theo cụm 4 trang; thiếu trang → 503, không tạo đề thiếu; > 40 trang hoặc quá dài → 400 `DOCUMENT_TOO_LONG`.
+- **BR-I19** AI trả thiếu > 10 % số câu đề tự khai → cấu trúc lại một lần; đáp án ghi bằng nội dung phương án → khoá chữ cái.
+- **BR-I20** Bỏ tiền tố số câu khỏi chữ câu; câu chỉ có dãy phương án để trống; LessonPlayer hiện số câu gốc.
+- **BR-I21** Câu gợi ý từ `a / b / c` có đáp án → sắp xếp từ (`WORD_ORDERING`, học sinh xếp toàn bộ từ của câu đúng), kể cả khi AI gắn nhầm `GENERAL_MC`; lệch quá xa → giữ trắc nghiệm (DEC-050).
+- **BR-I22** Không bịa đoạn văn: cloze dựng được trên bài đọc chung; AI lượt 2 thêm > 10 % từ mới bị loại; "the following passage" cũng là nhắc bài đọc.
+- **BR-I23** Kỹ năng câu nhập đề suy từ tiền tố dạng câu (không dùng nhãn AI), để thứ tự màn thi giữ đúng đề giấy; nhãn AI lưu ở `import_meta.paper_skill`.
+- **BR-I24** Câu nhập AI mở Sửa hiện đủ trường như câu tạo tay, lưu lại không mất dữ liệu; đáp án trắc nghiệm luôn lưu chữ cái A–D; danh sách chọn lưu `inline_options_per_gap`; đổi dạng trong form không xoá dữ liệu; đề độc lập không bị gắn vào khoá khi lưu (DEC-050).
+- **BR-I25** Câu con và phương án nhập AI lưu chữ trơn, không giữ gạch chân; bỏ `UNDERLINE_MISSING` (DEC-050).
+- **BR-I26** `OPTION_BANK` trên màn học sinh là kho từ bấm để điền vào ô, không phải danh sách chọn (DEC-050).
 
 ## 9d. Cảnh báo admin (W): FEAT-016, DEC-047, DEC-048; `lib/admin-alerts.ts`
 Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:

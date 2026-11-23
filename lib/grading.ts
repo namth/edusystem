@@ -45,6 +45,28 @@ function normalizeString(val: unknown): string {
   return String(val ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+/**
+ * Các cách viết được chấp nhận của một đáp án điền ô (FEAT-015 BR-I16, kiểu đáp án IELTS):
+ * "half an hour / 30 minutes" → hai phương án; "(space) race" → "space race" hoặc "race".
+ * Chỉ tách ở " / " có khoảng trắng hai bên để "and/or" vẫn là một đáp án.
+ */
+export function acceptedAnswers(expected: unknown): string[] {
+  const alts = String(expected ?? "").split(/\s+\/\s+/);
+  const out = new Set<string>();
+  for (const alt of alts) {
+    out.add(normalizeString(alt.replace(/[()]/g, "")));
+    out.add(normalizeString(alt.replace(/\([^)]*\)/g, " ")));
+  }
+  out.delete("");
+  return [...out];
+}
+
+function matchesAnswer(given: unknown, expected: unknown): boolean {
+  if (typeof given !== "string" || !given.trim()) return false;
+  const g = normalizeString(given);
+  return g === normalizeString(expected) || acceptedAnswers(expected).includes(g);
+}
+
 function sortStrings(arr: string[]): string[] {
   return [...arr].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
 }
@@ -123,7 +145,7 @@ export function gradeQuestion(
     const items: GradeItem[] = expectedGaps.map((expected, idx) => {
       const key = `gap_${idx}`;
       const given = Array.isArray(answer) && idx < answer.length ? answer[idx] : undefined;
-      const correct = typeof given === "string" && normalizeString(given) === normalizeString(expected);
+      const correct = matchesAnswer(given, expected);
 
       return {
         key,
@@ -251,7 +273,7 @@ export function gradeQuestion(
     const items: GradeItem[] = gaps.map((expected, idx) => {
       const key = `gap_${idx}`;
       const given = Array.isArray(answer) && idx < answer.length ? answer[idx] : undefined;
-      const correct = typeof given === "string" && normalizeString(given) === normalizeString(expected);
+      const correct = matchesAnswer(given, expected);
 
       return {
         key,
@@ -543,7 +565,9 @@ export function sanitizeQuestionForStudent(q: GradableQuestion): GradableQuestio
 
   // AI Import lưu đoạn văn điền ô (kèm đáp án trong ngoặc) vào cả cột stimulus_text
   const category = q.category || "";
-  if ((category.endsWith("_FILL_IN") || category === "WRITING_FREE_TYPING_BLANKS") && typeof q.stimulus_text === "string") {
+  // Câu nhập theo FEAT-015 (có import_meta) dùng stimulus_text cho bài đọc thật — ngoặc tròn trong bài không phải ô trống
+  const importedV2 = !!(q.content && typeof q.content === "object" && (q.content as Record<string, unknown>).import_meta);
+  if ((category.endsWith("_FILL_IN") || category === "WRITING_FREE_TYPING_BLANKS") && typeof q.stimulus_text === "string" && !importedV2) {
     const { parts, gaps } = parseFillInGaps(q.stimulus_text);
     if (gaps.length > 0) result.stimulus_text = parts.join("____");
   }

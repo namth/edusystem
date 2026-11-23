@@ -18,7 +18,7 @@
 | M7 Quản trị (FEAT-013) | Token và chi phí AI, slot = học sinh, gộp tiêu chí, đơn hàng + VietQR, tổng quan | TASK-038 → 043 | ✅ đã deploy 03/11 (`docs/15` §6) |
 | M8 Chấm & Bảng điểm (FEAT-014) | Migration 017, lõi bảng điểm, API chấm theo lớp, UI giáo viên, tab Bảng điểm học sinh | TASK-044 → 047 | ✅ 06/11, chưa deploy |
 | M9 Cảnh báo admin (FEAT-016) | Migration 018, `reportAlert` + Telegram, `serverError` cho mọi 500, worker, trang `/admin/alerts` | TASK-048 → 050 | ✅ 23/11, chưa deploy |
-| M10 Chuyển dạng câu nhập đề (FEAT-015) | Bộ chuyển đổi, parser giữ gạch chân + AI gắn nhãn, Review Studio | TASK-051 → 053 | ✅ 23/11, chưa deploy, chưa thử file thật (N2) |
+| M10 Chuyển dạng câu nhập đề (FEAT-015) | Bộ chuyển đổi, parser giữ gạch chân + AI gắn nhãn, Review Studio | TASK-051 → 054 | ✅ 23/11, chưa deploy; đã thử PDF scan IELTS (FEAT-015 §10), còn thiếu thử DOCX thật (N2) |
 
 ⚠️ Có 2 thư mục cùng mã TASK-035 (`TASK-035-chuyen-loai-nhan-ban`, `TASK-035-dang-ky-api`), do đánh số trùng khi hai task chạy song song. Không đổi tên để giữ lịch sử.
 
@@ -88,6 +88,8 @@
 | 051 | `lib/question-conversion.ts` + `sanitizeInlineHtml` + ẩn `import_meta` | — | TC-I01 → 09, 13, 15 |
 | 052 | Parser DOCX HTML + AI gắn nhãn + lượt 2 + `ai-parse` / `ai-import` mới | 048, 051 | TC-I10, 11, 12, 14 |
 | 053 | Review Studio chuyển dạng + `LessonPlayer` thẻ inline | 051, 052 | TC-I16, 17; `next build` |
+| 055 | Sửa câu nhập AI mượt như câu tạo tay (trình soạn đọc/ghi đủ trường, đáp án chữ cái, `inline_options_per_gap`, giữ dữ liệu khi đổi dạng, đề độc lập không bị gắn khoá), chữ trơn thay gạch chân, câu gợi ý "/" → sắp xếp từ, kho từ bấm-điền (BR-I21, I24 → I26, DEC-050) | 054 | TC-I07, I28 → 33 |
+| 054 | Thử file thật FEAT-015 (IELTS scan + đề DOCX THCS): OCR scan theo trang, bài đọc chung, ghép nối/tóm tắt, chấm đáp án thay thế, kiểm đủ câu, số câu gốc, chống bịa đoạn văn (BR-I15 → I23) | 051 → 053 | TC-I18 → 27 |
 
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash
@@ -98,7 +100,7 @@ npx vitest run && npx tsc --noEmit && npx next build
 | # | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | N1 | Sau deploy FEAT-013: nhập cấu hình thanh toán (`/admin/orders`) và bảng giá model (`/admin/settings`); kiểm trình duyệt các trang mới. (Đã deploy, timezone UTC; migration 015 không cần — không đổi giá trị nào) | Người dùng |
-| N2 | Thử AI nhập đề với file DOCX/PDF thật trên server | Từ kế hoạch 31/10; làm sau TASK-053 (FEAT-015), ghi báo cáo QA |
+| N2 | Thử AI nhập đề với file DOCX thật và đề THPT trên server | PDF scan IELTS đã thử 23/11 (FEAT-015 §10, TASK-054). Hạn mức Gemini của khoá hiện tại hay báo 429; khoá Portkey dự phòng báo "Invalid API Key" — cần kiểm lại trước khi giáo viên dùng nhiều |
 | N5 | Tạo bot Telegram + nhóm admin, đặt biến trên server, bấm Gửi tin thử | Sau deploy FEAT-016 (`docs/15` §4) — người dùng |
 | N3 | Webhook ngân hàng tự duyệt đơn (SePay / Casso) | Gọi `approveOrder(id, "WEBHOOK", ref)` |
 | N4 | Dump lại `e2e/schema.sql` từ DB thật sau khi deploy | Bản hiện tại là ngày 01/11 |

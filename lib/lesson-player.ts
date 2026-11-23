@@ -73,3 +73,44 @@ export function countAnswered(
   }
   return count;
 }
+
+// ── Kho từ OPTION_BANK: bấm từ để điền vào ô (BR-I26) ─────────────────────
+const sameWord = (a: unknown, b: unknown) =>
+  String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
+/** Từ thứ i trong kho đã được dùng chưa (kho có thể lặp từ: mỗi lần dùng chiếm một thẻ). */
+export function bankUsage(bank: string[], answers: unknown[]): boolean[] {
+  const left = (Array.isArray(answers) ? answers : []).filter((a) => String(a ?? "").trim() !== "");
+  return bank.map((w) => {
+    const k = left.findIndex((a) => sameWord(a, w));
+    if (k < 0) return false;
+    left.splice(k, 1);
+    return true;
+  });
+}
+
+/** Ô trống đầu tiên từ vị trí `from` (vòng lại đầu); hết ô trống → null. */
+export function nextEmptyGap(answers: unknown[], gapCount: number, from = 0): number | null {
+  for (let k = 0; k < gapCount; k++) {
+    const i = (from + k) % gapCount;
+    if (!String((Array.isArray(answers) ? answers[i] : "") ?? "").trim()) return i;
+  }
+  return null;
+}
+
+/**
+ * Bấm một từ trong kho: điền vào ô đang chọn (hoặc ô trống đầu tiên), rồi chuyển sang ô trống kế tiếp.
+ * Không còn ô để điền → giữ nguyên.
+ */
+export function pickBankWord(
+  answers: unknown[],
+  gapCount: number,
+  active: number | null | undefined,
+  word: string
+): { answers: string[]; active: number | null } {
+  const cur = Array.from({ length: gapCount }, (_, i) => String((Array.isArray(answers) ? answers[i] : "") ?? ""));
+  const target = active != null && active >= 0 && active < gapCount ? active : nextEmptyGap(cur, gapCount);
+  if (target == null) return { answers: cur, active: null };
+  cur[target] = word;
+  return { answers: cur, active: nextEmptyGap(cur, gapCount, target + 1) };
+}

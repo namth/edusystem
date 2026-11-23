@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { emptyAnswerFor, setAnswerPart } from "@/lib/lesson-player";
+import { useMemo, useState } from "react";
+import { emptyAnswerFor, setAnswerPart, bankUsage, pickBankWord } from "@/lib/lesson-player";
 import SpeakingRecorder from "./SpeakingRecorder";
 import { sanitizeInlineHtml, sanitizeStimulusHtml } from "@/lib/stimulus-html";
 import {
@@ -67,6 +67,8 @@ export default function LessonPlayer({
   startNumber = 1,
 }: LessonPlayerProps) {
   const isReadonly = Boolean(results || disabled);
+  // Ô đang chọn của từng câu kho từ (OPTION_BANK) — bấm từ trong kho sẽ điền vào ô này
+  const [activeGap, setActiveGap] = useState<Record<string, number | null>>({});
 
   const resultsMap = useMemo(() => {
     const map = new Map<string, GradeResult>();
@@ -256,7 +258,8 @@ export default function LessonPlayer({
                         {/* Sub question text */}
                         <div className="flex items-start gap-2 mb-3">
                           <span className="font-bold text-brand-600 text-sm">
-                            {subIndex + 1}.
+                            {/* đề nhập từ giấy giữ số câu gốc (BR-I20) */}
+                            {Number(sub.number) > 0 ? Number(sub.number) : subIndex + 1}.
                           </span>
                           <span
                             className="font-medium text-ink text-sm"
@@ -363,29 +366,46 @@ export default function LessonPlayer({
               {/* 2. *_FILL_IN */}
               {category.endsWith("_FILL_IN") && (
                 <div className="space-y-4">
-                  {/* Option Bank Preview if applicable */}
+                  {/* Kho từ: bấm một từ để điền vào ô đang chọn (BR-I26) */}
                   {content.fill_subtype === "OPTION_BANK" &&
                     Array.isArray(content.option_bank) &&
-                    content.option_bank.length > 0 && (
-                      <div className="rounded-xl border border-line bg-surface-alt p-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-brand-600 block mb-2">
-                          Ngân hàng từ:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {content.option_bank.map((word: string, wIdx: number) => (
-                            <span
-                              key={wIdx}
-                              className="rounded-lg border border-line bg-white px-2.5 py-1 text-xs font-semibold text-brand-600 shadow-2xs"
-                            >
-                              {word}
-                            </span>
-                          ))}
+                    content.option_bank.length > 0 && (() => {
+                      const bank: string[] = content.option_bank;
+                      const cur = Array.isArray(answers[q.id]) ? (answers[q.id] as string[]) : [];
+                      const used = bankUsage(bank, cur);
+                      const gapCount = Number(content.gap_count) || 0;
+                      return (
+                        <div className="rounded-xl border border-line bg-surface-alt p-3">
+                          <span className="text-xs font-bold uppercase tracking-wider text-brand-600 block mb-2">
+                            Ngân hàng từ{!isReadonly && <span className="normal-case font-medium text-ink-muted"> — chọn một ô rồi bấm từ để điền</span>}:
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {bank.map((word: string, wIdx: number) => (
+                              <button
+                                key={wIdx}
+                                type="button"
+                                disabled={isReadonly || used[wIdx]}
+                                onClick={() => {
+                                  const r = pickBankWord(cur, gapCount, activeGap[q.id], word);
+                                  onChange(q.id, r.answers);
+                                  setActiveGap((m) => ({ ...m, [q.id]: r.active }));
+                                }}
+                                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-2xs transition-all ${
+                                  used[wIdx]
+                                    ? "border-line bg-line-soft text-ink-subtle line-through"
+                                    : "border-brand-300 bg-white text-brand-600 hover:bg-brand-50 cursor-pointer"
+                                }`}
+                              >
+                                {word}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                   {/* Passage with gaps */}
-                  <div className="rounded-xl border border-line-soft bg-surface-alt p-4 text-sm leading-loose text-ink">
+                  <div className="rounded-xl border border-line-soft bg-surface-alt p-4 text-sm leading-loose text-ink whitespace-pre-line">
                     {(Array.isArray(content.passage_parts)
                       ? content.passage_parts
                       : []
@@ -437,34 +457,31 @@ export default function LessonPlayer({
                                   ))}
                                 </select>
                               ) : content.fill_subtype === "OPTION_BANK" ? (
-                                <select
+                                <button
+                                  type="button"
                                   disabled={isReadonly}
-                                  value={gapVal}
-                                  onChange={(e) => {
-                                    const next = setAnswerPart(
-                                      currentAnswers,
-                                      gapIdx,
-                                      e.target.value
-                                    );
-                                    onChange(q.id, next);
+                                  onClick={() => {
+                                    if (gapVal) {
+                                      // bấm ô đã điền → trả từ về kho, ô thành ô đang chọn
+                                      onChange(q.id, setAnswerPart(currentAnswers, gapIdx, ""));
+                                    }
+                                    setActiveGap((m) => ({ ...m, [q.id]: gapIdx }));
                                   }}
-                                  className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-all ${
+                                  aria-label={`Ô ${gapIdx + 1}${gapVal ? `: ${gapVal}` : ""}`}
+                                  className={`min-w-20 rounded-lg border-2 px-2.5 py-0.5 text-xs font-bold transition-all ${
                                     gapResult
                                       ? gapResult.correct
                                         ? "border-emerald-600 bg-emerald-100 text-emerald-900"
                                         : "border-rose-600 bg-rose-100 text-rose-900"
-                                      : "border-brand-600 bg-white text-brand-600"
+                                      : !isReadonly && activeGap[q.id] === gapIdx
+                                      ? "border-brand-600 bg-brand-50 text-brand-600 ring-2 ring-brand-300"
+                                      : gapVal
+                                      ? "border-brand-300 bg-white text-brand-600 cursor-pointer"
+                                      : "border-dashed border-line bg-white text-ink-subtle cursor-pointer"
                                   }`}
                                 >
-                                  <option value="">-- Chọn từ --</option>
-                                  {(content.option_bank || []).map(
-                                    (opt: string, oIdx: number) => (
-                                      <option key={oIdx} value={opt}>
-                                        {opt}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
+                                  {gapVal || "\u00a0".repeat(8)}
+                                </button>
                               ) : (
                                 <input
                                   type="text"

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
-import { parseDocumentFile, AiUnavailableError } from "@/lib/document-parser";
+import { parseDocumentFile, AiUnavailableError, DocumentTooLongError } from "@/lib/document-parser";
 import { withAiUsageContext } from "@/lib/ai-usage";
 import { serverError } from "@/lib/api-errors";
 import { reportAlert } from "@/lib/admin-alerts";
@@ -66,6 +66,10 @@ export async function POST(req: Request) {
       conversion: result.conversion,
     });
   } catch (error) {
+    if (error instanceof DocumentTooLongError) {
+      // BR-I18: lỗi do file quá dài, giáo viên tự xử lý được (tách file) — không báo admin
+      return NextResponse.json({ success: false, code: error.code, error: error.message }, { status: 400 });
+    }
     if (error instanceof AiUnavailableError) {
       // BR-W11: hết mọi nhà cung cấp AI → báo admin một lần theo loại, trả 503 cho giáo viên
       void reportAlert({

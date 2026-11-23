@@ -50,6 +50,13 @@ const clozeSubs = () => [
 ];
 
 describe("Cloze & ô trống (BR-I02 → BR-I06)", () => {
+  it("BR-I22: đoạn điền từ chỉ nằm ở bài đọc chung (passage_html) → vẫn dựng INLINE_SELECT trên bài đó, không gắn lại làm stimulus, không cần AI", () => {
+    const r = convertGroup(group(clozeSubs(), { stimulus_html: null, passage_html: CLOZE_HTML }));
+    expect(r.needsAi).toEqual([]);
+    expect(r.questions[0]).toMatchObject({ category: "READING_FILL_IN", stimulus_text: null });
+    expect(parseFillInGaps(String(r.questions[0].content.passage)).gaps).toEqual(["increasingly", "has", "used", "in", "even", "far"]);
+  });
+
   it("TC-I01: cloze 6 ô nhiều kiểu dấu → INLINE_SELECT, 6 danh sách phương án, đáp án đúng chữ, không còn '25' làm đáp án", () => {
     const r = convertGroup(group(clozeSubs(), { stimulus_html: CLOZE_HTML }));
     expect(r.needsAi).toEqual([]);
@@ -170,15 +177,42 @@ describe("Sắp xếp, ghép nối, tự luận", () => {
     expect(validateQuestionContent(q.category, q.content)).toEqual({ ok: true });
   });
 
-  it("TC-I07: sắp xếp từ có tập từ lệch → READING_MC + CONVERSION_FAILED; khớp → WORD_ORDERING", () => {
+  it("TC-I07: sắp xếp từ → WORD_ORDERING, kể cả gợi ý thiếu từ nối (học sinh xếp toàn bộ từ của câu đúng, BR-I21); lệch quá xa → MC; không có đáp án → CONVERSION_FAILED", () => {
     const ok = convertGroup(group([sub(41, "WORD_ARRANGEMENT", { text_html: "school / go / I / to", options: opts("I go to school.", "Go I school to.", "To school I go.", "I to go school."), correct_answer: "A" })]));
     expect(ok.questions[0]).toMatchObject({ category: "READING_ORDERING", content: { ordering_type: "WORD_ORDERING", correct_text: "I go to school." } });
-    const bad = convertGroup(group([sub(41, "WORD_ARRANGEMENT", { text_html: "school / go / I", options: opts("I go to school.", "x", "y", "z"), correct_answer: "A" })]));
-    expect(bad.questions[0].category).toBe("READING_MC");
-    expect(codes(bad)).toContain("CONVERSION_FAILED");
+    // đề Việt Nam: "People / thought / story / written…" — đáp án thêm "the", "was", "by"
+    const cue = convertGroup(group([sub(39, "WORD_ARRANGEMENT", { text_html: "People / thought / story / written / the / princess / herself.", options: opts("People thought the book written by the princess herself.", "People thought the story was written by the princess herself.", "y", "z"), correct_answer: "B" })]));
+    expect(cue.questions[0]).toMatchObject({ category: "READING_ORDERING", content: { ordering_type: "WORD_ORDERING", correct_text: "People thought the story was written by the princess herself." } });
+    expect(codes(cue)).not.toContain("CONVERSION_FAILED");
+    const far = convertGroup(group([sub(41, "WORD_ARRANGEMENT", { text_html: "apple / banana / cherry", options: opts("I go to school.", "x", "y", "z"), correct_answer: "A" })]));
+    expect(far.questions[0].category).toBe("READING_MC");
+    expect(codes(far)).not.toContain("CONVERSION_FAILED");
+    const none = convertGroup(group([sub(41, "WORD_ARRANGEMENT", { text_html: "school / go / I", options: [], correct_answer: null })]));
+    expect(codes(none)).toContain("CONVERSION_FAILED");
   });
 
-  it("ghép nối: bỏ phương án nhiễu + DISTRACTORS_DROPPED", () => {
+  it("TC-I29: AI gắn nhầm GENERAL_MC cho câu gợi ý từ có dấu \"/\" → vẫn thành sắp xếp từ (BR-I21)", () => {
+    const r = convertGroup(group([sub(39, "GENERAL_MC", { text_html: "People / thought / story / written / the / princess / herself.", options: opts("People thought the book written by the princess herself.", "People thought the story was written by the princess herself.", "y", "z"), correct_answer: "B" })]));
+    expect(r.questions[0]).toMatchObject({ category: "READING_ORDERING", content: { ordering_type: "WORD_ORDERING" } });
+    // câu có chỗ trống hoặc phương án dạng "at / on" ở phần lựa chọn → không đổi
+    const blank = convertGroup(group([sub(5, "GENERAL_MC", { text_html: "He / ____ / to school / yesterday", options: opts("go", "went", "goes", "going"), correct_answer: "B" })]));
+    expect(blank.questions[0].category).toBe("READING_MC");
+  });
+
+  it("ghép nối đúng 1-1, không phương án thừa → READING_MATCHING", () => {
+    const r = convertGroup(
+      group(
+        [sub(1, "MATCHING", { text_html: "Doctor", options: [], correct_answer: "b" }), sub(2, "MATCHING", { text_html: "Teacher", options: [], correct_answer: "a" })],
+        { matching: { left: [], right: [{ key: "a", text: "school" }, { key: "b", text: "hospital" }] } }
+      )
+    );
+    const q = r.questions[0];
+    expect(q.category).toBe("READING_MATCHING");
+    expect((q.content.pairs as any[]).map((p) => [p.left, p.right])).toEqual([["Doctor", "b. hospital"], ["Teacher", "a. school"]]);
+    expect(codes(r)).not.toContain("CONVERSION_FAILED");
+  });
+
+  it("BR-I15: ghép nối có phương án nhiễu → mỗi mục một danh sách chọn giữ đủ lựa chọn; chấm đúng", () => {
     const r = convertGroup(
       group(
         [sub(1, "MATCHING", { text_html: "Doctor", options: [], correct_answer: "b" }), sub(2, "MATCHING", { text_html: "Teacher", options: [], correct_answer: "a" })],
@@ -186,9 +220,83 @@ describe("Sắp xếp, ghép nối, tự luận", () => {
       )
     );
     const q = r.questions[0];
-    expect(q.category).toBe("READING_MATCHING");
-    expect((q.content.pairs as any[]).map((p) => [p.left, p.right])).toEqual([["Doctor", "hospital"], ["Teacher", "school"]]);
-    expect(codes(r)).toContain("DISTRACTORS_DROPPED");
+    expect(q).toMatchObject({ category: "READING_FILL_IN", content: { fill_subtype: "INLINE_SELECT", correct_answers: ["b. hospital", "a. school"] } });
+    expect((q.content.inline_options_per_gap as any[])[0].options).toEqual(["a. school", "b. hospital", "c. farm"]);
+    expect(q.content.passage).toBe("1. Doctor [b. hospital]\n2. Teacher [a. school]");
+    expect(validateQuestionContent(q.category, q.content)).toEqual({ ok: true });
+    expect(gradeQuestion(asGradable(q), ["b. hospital", "c. farm"])).toMatchObject({ earned: 1, max: 2 });
+  });
+
+  it("BR-I15: phân loại (đáp án lặp) và heading số La Mã lấy từ phương án từng câu; nhãn 'Paragraph D' không lặp khoá", () => {
+    const romans = ["i", "ii", "iii"].map((k, i) => ({ key: k.toUpperCase(), text_html: ["Causes", "Effects", "Solutions"][i] }));
+    const h = convertGroup(group([sub(30, "MATCHING", { text_html: "Paragraph B", options: romans, correct_answer: "ii" }), sub(31, "MATCHING", { text_html: "Paragraph C", options: romans, correct_answer: "ii" })])).questions[0];
+    expect(h.category).toBe("READING_FILL_IN");
+    expect(h.content.correct_answers).toEqual(["II. Effects", "II. Effects"]);
+    const paras = ["A", "B"].map((k) => ({ key: k, text_html: `Paragraph ${k}` }));
+    const p = convertGroup(group([sub(13, "MATCHING", { text_html: "a rocket", options: paras, correct_answer: "B" })])).questions[0];
+    expect(p.content.correct_answers).toEqual(["Paragraph B"]);
+  });
+
+  it("BR-I15: câu đọc hiểu có > 4 phương án (đoạn A–F) → danh sách chọn, không cắt còn A–D", () => {
+    const six = ["A", "B", "C", "D", "E", "F"].map((k) => ({ key: k, text_html: `Paragraph ${k}` }));
+    const q = convertGroup(group([sub(13, "READING_COMPREHENSION", { text_html: "a rocket", options: six, correct_answer: "F" })])).questions[0];
+    expect(q.category).toBe("READING_FILL_IN");
+    expect(q.content.correct_answers).toEqual(["Paragraph F"]);
+    expect((q.content.inline_options_per_gap as any[])[0].options).toHaveLength(6);
+  });
+
+  it("BR-I15: lựa chọn chỉ có trong bảng đoạn dẫn ('| E came with water…') vẫn dựng được", () => {
+    const stim = "Animal | Reason\n4 mitten crab | A was a predator\n5 rabbit | B escaped as a pet\n| E came with water";
+    const q = convertGroup(group([sub(4, "MATCHING", { text_html: "mitten crab", options: [], correct_answer: "E" }), sub(5, "MATCHING", { text_html: "rabbit", options: [], correct_answer: "B" })], { stimulus_html: stim })).questions[0];
+    expect(q.content.correct_answers).toEqual(["E. came with water", "B. escaped as a pet"]);
+    expect((q.content.inline_options_per_gap as any[])[0].options).toHaveLength(3);
+  });
+
+  it("BR-I16: hoàn thành tóm tắt (Reading, có đáp án) → FILL_IN FREE_TYPING; chấm nhận ' / ' và từ tuỳ chọn trong ngoặc", () => {
+    const stim = "<p>Rabbits led to the loss of (10) ________.</p><p>The space (11) ________ began in 1957.</p>";
+    const q = convertGroup(
+      group([sub(10, "SHORT_ANSWER", { options: [], correct_answer: "land / soil" }), sub(11, "SHORT_ANSWER", { options: [], correct_answer: "[space] race" })], { stimulus_html: stim })
+    ).questions[0];
+    expect(q).toMatchObject({ skill: "Reading", category: "READING_FILL_IN", content: { fill_subtype: "FREE_TYPING" } });
+    expect(q.content.passage).toBe("Rabbits led to the loss of (10) [land / soil].\nThe space (11) [(space) race] began in 1957.");
+    expect(validateQuestionContent(q.category, q.content)).toEqual({ ok: true });
+    expect(gradeQuestion(asGradable(q), ["Soil", "race"])).toMatchObject({ earned: 2, max: 2 });
+    expect(gradeQuestion(asGradable(q), ["land", "space race"])).toMatchObject({ earned: 2 });
+    expect(gradeQuestion(asGradable(q), ["sand", "space"])).toMatchObject({ earned: 0 });
+  });
+
+  it("BR-I16: câu hỏi ngắn không có đoạn dẫn → mỗi câu một dòng; Writing hoặc thiếu đáp án → giữ WRITING_SHORT_ANSWER", () => {
+    const q = convertGroup(group([sub(5, "SHORT_ANSWER", { text_html: "Which month is the deadline?", options: [], correct_answer: "August" })], { skill: "Listening" })).questions[0];
+    expect(q).toMatchObject({ category: "LISTENING_FILL_IN", content: { passage: "5. Which month is the deadline? [August]" } });
+    const w = convertGroup(group([sub(6, "SHORT_ANSWER", { text_html: "Why?", options: [], correct_answer: null, answer_source: "NONE" })])).questions[0];
+    expect(w.category).toBe("WRITING_SHORT_ANSWER");
+  });
+
+  it("BR-I17: lời dẫn nhắc 'Reading Passage' mà không có bài đọc → cảnh báo PASSAGE_MISSING (không chặn); Listening thì không", () => {
+    const g = (o: Partial<RawGroup>) => group([sub(1, "READING_COMPREHENSION", { options: opts("TRUE", "FALSE", "NOT GIVEN") })], { prompt: "Do the following statements agree with Reading Passage 1?", ...o });
+    expect(codes(convertGroup(g({})))).toContain("PASSAGE_MISSING");
+    expect(codes(convertGroup(g({ passage_html: "x ".repeat(400) })))).not.toContain("PASSAGE_MISSING");
+    expect(codes(convertGroup(g({ skill: "Listening" })))).not.toContain("PASSAGE_MISSING");
+    // đề Việt Nam: "Read the following passage…", bài đọc ngắn (~300 ký tự) vẫn tính là có bài
+    const vn = (o: Partial<RawGroup>) => group([sub(31, "READING_COMPREHENSION")], { prompt: "Read the following passage and mark the letter A, B, C, or D to indicate the correct answer to each of the questions.", ...o });
+    expect(codes(convertGroup(vn({})))).toContain("PASSAGE_MISSING");
+    expect(codes(convertGroup(vn({ passage_html: "Every year people in many countries learn English. ".repeat(6) })))).not.toContain("PASSAGE_MISSING");
+    expect(codes(convertGroup(group([sub(9, "SENTENCE_BLANK")], { prompt: "Mark the letter A, B, C, or D to indicate the correct answer." })))).not.toContain("PASSAGE_MISSING");
+  });
+
+  it("BR-I17: bài đọc chung → stimulus_text của mọi câu; đoạn dẫn riêng nối vào lời dẫn; ngoặc tròn trong bài không bị ẩn thành ô", () => {
+    const passage = "<p>The mitten crab (Eriocheir sinensis) spread fast.</p>";
+    const r = convertGroup(
+      group([sub(1, "READING_COMPREHENSION", { options: opts("TRUE", "FALSE", "NOT GIVEN"), correct_answer: "B" })], { passage_html: passage, stimulus_html: "Statements about crabs" })
+    );
+    const q = r.questions[0];
+    expect(q.stimulus_text).toContain("(Eriocheir sinensis)");
+    expect(q.prompt).toContain("Statements about crabs");
+    const t = convertGroup(group([sub(8, "SHORT_ANSWER", { options: [], correct_answer: "competition" })], { passage_html: passage, stimulus_html: "They compete: (8) ____." })).questions[0];
+    expect(t.stimulus_text).toContain("(Eriocheir sinensis)");
+    const safe = sanitizeQuestionForStudent({ id: "x", category: t.category, content: t.content, stimulus_text: t.stimulus_text } as any);
+    expect(safe.stimulus_text).toContain("(Eriocheir sinensis)");
+    expect(JSON.stringify(safe)).not.toContain("competition");
   });
 
   it("viết lại câu có gợi ý → WRITING_SENTENCE_REWRITE, đáp án kèm cue trong ngoặc vuông", () => {
@@ -231,15 +339,15 @@ describe("Đáp án, dạng chưa hỗ trợ, gạch chân, Listening", () => {
     expect(codes(r)).toContain("UNSUPPORTED_FORMAT");
   });
 
-  it("phát âm: có <u> trong phương án thì giữ (đã làm sạch); không có → UNDERLINE_MISSING + needsAi", () => {
-    const withU = convertGroup(group([sub(1, "PRONUNCIATION", { options: opts("h<u>a</u>t", "c<u>a</u>t", "n<u>a</u>me", "b<u>a</u>d<script>x</script>") })]));
-    const s = (withU.questions[0].content.sub_questions as any[])[0];
-    expect(s.option_a).toBe("h<u>a</u>t");
-    expect(s.option_d).not.toContain("script");
-    expect(withU.needsAi).toEqual([]);
-    const noU = convertGroup(group([sub(1, "PRONUNCIATION", { options: opts("hat", "cat", "name", "bad") })]));
-    expect(codes(noU)).toContain("UNDERLINE_MISSING");
-    expect(noU.needsAi).toEqual(["UNDERLINE_MISSING"]);
+  it("TC-I28: phát âm / tìm lỗi sai → chữ trơn, bỏ gạch chân và thẻ HTML; không cảnh báo, không gọi AI lượt 2 (BR-I25)", () => {
+    const r = convertGroup(group([sub(1, "PRONUNCIATION", { text_html: "Choose <b>the</b> word", options: opts("h<u>a</u>t", "c<u>a</u>t", "n<u>a</u>me", "b<u>a</u>d<script>x</script>") })]));
+    const s = (r.questions[0].content.sub_questions as any[])[0];
+    expect(s).toMatchObject({ text: "Choose the word", option_a: "hat", option_c: "name" });
+    expect(s.option_d).not.toMatch(/[<>]|script/);
+    expect(r.needsAi).toEqual([]);
+    const noU = convertGroup(group([sub(1, "ERROR_IDENTIFICATION", { options: opts("hat", "cat", "name", "bad") })]));
+    expect(noU.needsAi).toEqual([]);
+    expect(codes(noU)).not.toContain("UNDERLINE_MISSING");
   });
 
   it("TC-I15: Listening → tiền tố LISTENING_ + AUDIO_MISSING", () => {
@@ -277,6 +385,19 @@ describe("Đáp án, dạng chưa hỗ trợ, gạch chân, Listening", () => {
     const student = sanitizeQuestionForStudent(asGradable(q));
     expect(student.content.import_meta).toBeUndefined();
     expect(q.content.import_meta).toBeDefined(); // không làm hỏng bản gốc
+  });
+});
+
+describe("Kỹ năng hệ thống (BR-I23)", () => {
+  it("skill suy từ dạng câu, nhãn AI ('Phonetics', 'Communication') giữ ở import_meta.paper_skill", () => {
+    const r = convertGroup(group([sub(1, "PRONUNCIATION", { options: opts("<u>e</u>nd", "g<u>e</u>t", "x", "y") })], { skill: "Phonetics", prompt: "Choose the word." }));
+    expect(r.questions[0]).toMatchObject({ category: "READING_MC", skill: "Reading" });
+    expect(r.questions[0].content.import_meta.paper_skill).toBe("Phonetics");
+    const w = convertGroup(group([sub(35, "SENTENCE_TRANSFORMATION")], { skill: "Writing", prompt: "Choose the sentence closest in meaning." }));
+    expect(w.questions[0]).toMatchObject({ category: "READING_MC", skill: "Reading" });
+    const l = convertGroup(group([sub(1, "GENERAL_MC")], { skill: "Listening" }));
+    expect(l.questions[0].skill).toBe("Listening");
+    expect(l.questions[0].content.import_meta.paper_skill).toBeUndefined();
   });
 });
 

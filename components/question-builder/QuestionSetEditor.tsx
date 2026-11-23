@@ -8,7 +8,19 @@ import {
   buildStandardQuestionContent,
   parseSentenceRewriteCue,
   parseFillInGaps,
+  splitOrderingItems,
 } from "@/lib/question-content-types";
+import {
+  editorMcSubs,
+  mcSubsToContent,
+  editorFillIn,
+  inlineOptionsFromEditor,
+  editorOrdering,
+  editorRewriteSubs,
+  editorShortAnswers,
+  type EditorMcSub,
+} from "@/lib/question-editor-mapping";
+import { skillOfCategory } from "@/lib/question-conversion";
 import {
   Sparkles,
   Save,
@@ -65,30 +77,22 @@ interface FlashcardItem {
   correctEnglishWord: string;
 }
 
-interface SubQuestionMC {
-  id: string;
-  subQuestionText: string;
-  audioSource?: "TTS" | "UPLOAD" | "NONE";
-  audioText?: string;
-  audioVoice?: string;
-  audioUrl?: string;
-  optA: string;
-  optB: string;
-  optC: string;
-  optD: string;
-  correctAnswer: "A" | "B" | "C" | "D";
+type SubQuestionMC = EditorMcSub;
+
+/** "A. hat · B. cat · C. name" — tóm tắt phương án trong danh sách câu con. */
+function mcOptionSummary(sub: SubQuestionMC): string {
+  return (["A", "B", "C", "D"] as const)
+    .map((L) => [L, (sub as any)[`opt${L}`] as string] as const)
+    .filter(([, t]) => t && t.trim())
+    .map(([L, t]) => `${L}. ${t}`)
+    .join(" · ");
 }
 
 interface ShortAnswerPrompt {
   id: string;
   questionText: string;
   maxWords: number;
-}
-
-interface SentenceRewriteSubItem {
-  id: string;
-  originalSentence: string;
-  correctAnswer: string;
+  sampleAnswer?: string;
 }
 
 export interface QuestionSetSavePayload {
@@ -193,9 +197,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
   const [parenthesesRawText, setParenthesesRawText] = useState(
     "Artificial Intelligence is [slowly] transforming the landscape of language teaching. Students can learn [flexibly]."
   );
-  const [fillInSubtype, setFillInSubtype] = useState<"OPTION_BANK" | "INLINE_SELECT">("OPTION_BANK");
+  const [fillInSubtype, setFillInSubtype] = useState<"OPTION_BANK" | "INLINE_SELECT" | "FREE_TYPING">("OPTION_BANK");
   const [optionBankWords, setOptionBankWords] = useState<string[]>(["slowly", "flexibly", "rarely", "rigidly", "poorly"]);
   const [gapDistractorInputs, setGapDistractorInputs] = useState<Record<number, string>>({});
+  const [bankDraft, setBankDraft] = useState<string | null>(null);
 
   const [orderingType, setOrderingType] = useState<"SENTENCE_ORDERING" | "WORD_ORDERING">("SENTENCE_ORDERING");
   const [orderingRawText, setOrderingRawText] = useState(
@@ -208,20 +213,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       setOrderingItems([]);
       return;
     }
-    if (orderingType === "SENTENCE_ORDERING") {
-      const sentences = orderingRawText
-        .split(".")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((s) => (s.endsWith(".") ? s : `${s}.`));
-      setOrderingItems(sentences);
-    } else {
-      const words = orderingRawText
-        .split(/\s+/)
-        .map((s) => s.trim().replace(/^[\.,!\?]+|[\.,!\?]+$/g, ""))
-        .filter(Boolean);
-      setOrderingItems(words);
-    }
+    // cùng cách tách với màn thi / chấm điểm (splitOrderingItems)
+    setOrderingItems(splitOrderingItems(orderingRawText.trim(), orderingType));
   }, [orderingRawText, orderingType]);
 
   const [matchingPairs, setMatchingPairs] = useState<MatchingPair[]>([]);
@@ -243,6 +236,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
   const [editingSaId, setEditingSaId] = useState<string | null>(null);
   const [saQuestionText, setSaQuestionText] = useState("");
   const [saMaxWords, setSaMaxWords] = useState(50);
+  const [saSampleAnswer, setSaSampleAnswer] = useState("");
 
   const [essayPromptText, setEssayPromptText] = useState(
     "Write an essay (at least 250 words) discussing the advantages and disadvantages of online education compared to traditional schooling."
@@ -322,7 +316,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       .then((json) => {
         if (json.success && Array.isArray(json.courses)) {
           setCoursesList(json.courses);
-          if (json.courses.length > 0 && !selectedCourseId) {
+          // Chỉ chọn sẵn khoá đầu tiên khi soạn mới; đề đang sửa có initialCourseId = null là đề độc lập — giữ nguyên
+          if (json.courses.length > 0 && !selectedCourseId && initialCourseId === undefined) {
             setSelectedCourseId(json.courses[0].id);
           }
         }
@@ -579,8 +574,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     setSubQAudioUrl("");
 
     setParenthesesRawText("Artificial Intelligence is [slowly] transforming the landscape of language teaching. Students can learn [flexibly].");
+    setFillInSubtype("OPTION_BANK");
     setOptionBankWords(["slowly", "flexibly", "rarely", "rigidly", "poorly"]);
     setGapDistractorInputs({});
+    setOrderingType("SENTENCE_ORDERING");
 
     setOrderingRawText("Firstly, online education provides flexibility for students. However, face-to-face interaction remains crucial for collaborative learning. Therefore, a blended learning approach is recommended.");
     setMatchingPairs([]);
@@ -598,6 +595,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     setEditingSaId(null);
     setSaQuestionText("");
     setSaMaxWords(50);
+    setSaSampleAnswer("");
 
     setEssayPromptText("Write an essay (at least 250 words) discussing the advantages and disadvantages of online education compared to traditional schooling.");
     setRewriteSubQuestions([
@@ -615,17 +613,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     setReadAloudPassage("Artificial Intelligence in education provides personalized learning pathways for students around the globe.");
   };
 
+  // Đổi kỹ năng / dạng câu KHÔNG xoá dữ liệu đang soạn: mỗi dạng giữ state riêng, đổi qua lại vẫn còn (BR-I24)
   const handleSwitchSkill = (sk: SkillType) => {
     setSkillType(sk);
-    resetCategoryStates();
-    setQuestionPrompt("");
-    setStimulusText("");
-    setStimulusAudioText("");
-    setStimulusAudioUrl("");
-    setStimulusType(sk === "Listening" ? "AUDIO_ONLY" : "TEXT_ONLY");
-    setStimulusAudioSource(sk === "Listening" ? "UPLOAD" : "UPLOAD");
-    setStimulusAudioGender("Female");
-    setEditingQuestionId(null);
+    if (sk === "Listening" && stimulusType === "TEXT_ONLY" && !cleanHtmlText(stimulusText)) setStimulusType("AUDIO_ONLY");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
@@ -659,16 +650,21 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
   };
 
   // SubQ Handlers
+  // Câu con hợp lệ khi có lời dẫn hoặc ≥ 2 phương án (câu ngữ âm / trọng âm nhập AI không có lời dẫn).
+  // Phương án C, D để trống được (đề 3 phương án) — không tự điền "Option C".
+  const mcSubValid = Boolean(subQText.trim()) || [subQOptA, subQOptB, subQOptC, subQOptD].filter((o) => o.trim()).length >= 2;
   const handleAddOrUpdateMcSubQ = () => {
-    if (!subQText.trim()) return;
+    if (!mcSubValid) return;
+    const editingSub = editingSubQId ? mcSubQuestions.find((q) => q.id === editingSubQId) : undefined;
 
     const item: SubQuestionMC = {
       id: editingSubQId || `subq_${Date.now()}`,
+      ...(editingSub?.number ? { number: editingSub.number } : {}),
       subQuestionText: subQText.trim(),
-      optA: subQOptA.trim() || "Option A",
-      optB: subQOptB.trim() || "Option B",
-      optC: subQOptC.trim() || "Option C",
-      optD: subQOptD.trim() || "Option D",
+      optA: subQOptA.trim(),
+      optB: subQOptB.trim(),
+      optC: subQOptC.trim(),
+      optD: subQOptD.trim(),
       correctAnswer: subQCorrect,
       audioSource: subQAudioSource,
       audioText: subQAudioSource === "TTS" ? subQAudioText.trim() : undefined,
@@ -867,6 +863,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       id: editingSaId || `sa_${Date.now()}`,
       questionText: saQuestionText.trim(),
       maxWords: Number(saMaxWords) || 50,
+      ...(saSampleAnswer.trim() ? { sampleAnswer: saSampleAnswer.trim() } : {}),
     };
     if (editingSaId) {
       setShortAnswersList(shortAnswersList.map((sa) => (sa.id === editingSaId ? item : sa)));
@@ -876,12 +873,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     }
     setSaQuestionText("");
     setSaMaxWords(50);
+    setSaSampleAnswer("");
   };
 
   const handleEditShortAnswer = (sa: ShortAnswerPrompt) => {
     setEditingSaId(sa.id);
     setSaQuestionText(sa.questionText);
     setSaMaxWords(sa.maxWords);
+    setSaSampleAnswer(sa.sampleAnswer || "");
   };
 
   const handleDeleteShortAnswer = (id: string) => {
@@ -969,104 +968,82 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     setQuestionsList(questionsList.filter((_, i) => i !== idx));
   };
 
-  const handleAddOrUpdateQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  /** Nội dung ngữ cảnh (chữ / audio) của form theo kiểu ngữ cảnh đang chọn. */
+  const formStimulus = () => {
     const cleanText = cleanHtmlText(stimulusText);
+    const withText = stimulusType === "TEXT_ONLY" || stimulusType === "COMBINED";
+    const withAudio = stimulusType === "AUDIO_ONLY" || stimulusType === "COMBINED";
+    const ttsText = stimulusAudioText.trim();
+    return {
+      text: withText ? cleanText || null : null,
+      audioText: withAudio && stimulusAudioSource === "TTS" ? ttsText || null : null,
+      audioUrl: !withAudio
+        ? null
+        : stimulusAudioSource === "TTS"
+        ? ttsText
+          ? getTtsHdUrl(ttsText, stimulusAudioGender)
+          : null
+        : stimulusAudioUrl.trim() || null,
+    };
+  };
 
-    let finalStimulusText: string | null = null;
-    let finalStimulusAudioUrl: string | null = null;
-    let finalStimulusAudioText: string | null = null;
-
-    if (stimulusType === "TEXT_ONLY") {
-      finalStimulusText = cleanText || null;
-      finalStimulusAudioUrl = null;
-      finalStimulusAudioText = null;
-    } else if (stimulusType === "AUDIO_ONLY") {
-      finalStimulusText = null;
-      if (stimulusAudioSource === "TTS") {
-        finalStimulusAudioText = stimulusAudioText.trim() || null;
-        finalStimulusAudioUrl = stimulusAudioText.trim() ? getTtsHdUrl(stimulusAudioText.trim(), stimulusAudioGender) : null;
-      } else {
-        finalStimulusAudioText = null;
-        finalStimulusAudioUrl = stimulusAudioUrl.trim() || null;
-      }
-    } else if (stimulusType === "COMBINED") {
-      finalStimulusText = cleanText || null;
-      if (stimulusAudioSource === "TTS") {
-        finalStimulusAudioText = stimulusAudioText.trim() || null;
-        finalStimulusAudioUrl = stimulusAudioText.trim() ? getTtsHdUrl(stimulusAudioText.trim(), stimulusAudioGender) : null;
-      } else {
-        finalStimulusAudioText = null;
-        finalStimulusAudioUrl = stimulusAudioUrl.trim() || null;
-      }
-    }
-
+  /**
+   * Dựng câu hỏi từ form đang soạn. `base` = câu đang sửa: giữ các trường form không quản (số câu đề giấy,
+   * import_meta, min_words…). Viết lại câu: mỗi câu con thành một câu hỏi (mỗi câu một mục chấm).
+   */
+  const buildFormQuestions = (base: any | null): any[] => {
+    const st = formStimulus();
     const payload: any = {
-      id: editingQuestionId || `q_${Date.now()}`,
+      ...(base || {}),
+      id: base?.id || `q_${Date.now()}`,
       skill: skillType,
       stimulusType,
       stimulus_type: stimulusType,
-      stimulusText: finalStimulusText || "",
-      stimulus_text: finalStimulusText,
+      stimulusText: st.text || "",
+      stimulus_text: st.text,
       prompt: questionPrompt.trim() || undefined,
-      stimulusAudioText: finalStimulusAudioText || "",
-      stimulusAudioUrl: finalStimulusAudioUrl,
-      stimulus_audio_url: finalStimulusAudioUrl,
+      stimulusAudioText: st.audioText || "",
+      stimulusAudioUrl: st.audioUrl,
+      stimulus_audio_url: st.audioUrl,
     };
 
-    const formattedSubQuestions = mcSubQuestions.map((sq) => {
-      let correctVal = sq.optA;
-      if (sq.correctAnswer === "B") correctVal = sq.optB;
-      if (sq.correctAnswer === "C") correctVal = sq.optC;
-      if (sq.correctAnswer === "D") correctVal = sq.optD;
-      return {
-        id: sq.id,
-        text: sq.subQuestionText,
-        option_a: sq.optA,
-        option_b: sq.optB,
-        option_c: sq.optC,
-        option_d: sq.optD,
-        correct_answer: correctVal,
-        audio_url: sq.audioUrl || null,
-      };
-    });
+    const setFillIn = () => {
+      payload.passage = parenthesesRawText;
+      payload.fillInSubtype = fillInSubtype;
+      payload.fill_subtype = fillInSubtype;
+      payload.correct_answers = parseFillInGaps(parenthesesRawText).gaps;
+      delete payload.option_banks;
+      delete payload.optionBanks;
+      if (fillInSubtype === "OPTION_BANK") {
+        payload.optionBank = optionBankWords;
+        payload.option_bank = optionBankWords;
+        delete payload.inline_options_per_gap;
+      } else if (fillInSubtype === "INLINE_SELECT") {
+        payload.inline_options_per_gap = inlineOptionsFromEditor(parenthesesRawText, gapDistractorInputs);
+      }
+    };
+    const setOrdering = () => {
+      payload.orderingType = orderingType;
+      payload.ordering_type = orderingType;
+      payload.correct_text = orderingRawText.trim();
+      payload.items = splitOrderingItems(orderingRawText.trim(), orderingType);
+    };
+    const setMc = () => {
+      payload.sub_questions = mcSubsToContent(mcSubQuestions);
+      payload.subQuestions = mcSubQuestions;
+    };
 
     if (skillType === "Reading") {
       payload.category = readingCategory;
       if (readingCategory === "READING_MC") {
         payload.questionTitle = "Đọc đoạn văn và trả lời các câu hỏi trắc nghiệm sau:";
-        payload.sub_questions = formattedSubQuestions;
-        payload.subQuestions = mcSubQuestions;
+        setMc();
       } else if (readingCategory === "READING_FILL_IN") {
         payload.questionTitle = "Đọc đoạn văn và điền từ thích hợp vào các chỗ trống:";
-        payload.passage = parenthesesRawText;
-        payload.fillInSubtype = fillInSubtype;
-        payload.fill_subtype = fillInSubtype;
-        if (fillInSubtype === "OPTION_BANK") {
-          payload.optionBank = optionBankWords;
-          payload.option_bank = optionBankWords;
-        } else {
-          const { gaps } = parseFillInGaps(parenthesesRawText);
-          const optionBanks = gaps.map((correctVal: string, gIdx: number) => {
-            const rawDistStr = gapDistractorInputs[gIdx] || "";
-            const dists = rawDistStr.split(",").map((s) => s.trim()).filter(Boolean);
-            const combinedOptions = Array.from(new Set([correctVal, ...dists]));
-            return {
-              gap_index: gIdx,
-              correct_answer: correctVal,
-              options: combinedOptions,
-            };
-          });
-          payload.option_banks = optionBanks;
-          payload.optionBanks = optionBanks;
-        }
+        setFillIn();
       } else if (readingCategory === "READING_ORDERING") {
         payload.questionTitle = "Sắp xếp lại các câu/đoạn sau theo thứ tự đúng logic:";
-        payload.orderingType = orderingType;
-        payload.ordering_type = orderingType;
-        payload.items = orderingItems;
-        payload.correct_text = orderingRawText.trim();
+        setOrdering();
       } else if (readingCategory === "READING_MATCHING") {
         payload.questionTitle = "Nối các từ ở Cột A với định nghĩa phù hợp ở Cột B:";
         payload.pairs = matchingPairs;
@@ -1080,37 +1057,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       payload.category = listeningCategory;
       if (listeningCategory === "LISTENING_MC") {
         payload.questionTitle = "Nghe đoạn băng và trả lời các câu hỏi trắc nghiệm sau:";
-        payload.sub_questions = formattedSubQuestions;
-        payload.subQuestions = mcSubQuestions;
+        setMc();
       } else if (listeningCategory === "LISTENING_FILL_IN") {
         payload.questionTitle = "Nghe đoạn băng và điền từ thích hợp vào các chỗ trống:";
-        payload.passage = parenthesesRawText;
-        payload.fillInSubtype = fillInSubtype;
-        payload.fill_subtype = fillInSubtype;
-        if (fillInSubtype === "OPTION_BANK") {
-          payload.optionBank = optionBankWords;
-          payload.option_bank = optionBankWords;
-        } else {
-          const { gaps } = parseFillInGaps(parenthesesRawText);
-          const optionBanks = gaps.map((correctVal: string, gIdx: number) => {
-            const rawDistStr = gapDistractorInputs[gIdx] || "";
-            const dists = rawDistStr.split(",").map((s) => s.trim()).filter(Boolean);
-            const combinedOptions = Array.from(new Set([correctVal, ...dists]));
-            return {
-              gap_index: gIdx,
-              correct_answer: correctVal,
-              options: combinedOptions,
-            };
-          });
-          payload.option_banks = optionBanks;
-          payload.optionBanks = optionBanks;
-        }
+        setFillIn();
       } else if (listeningCategory === "LISTENING_ORDERING") {
         payload.questionTitle = "Nghe đoạn âm thanh và sắp xếp các câu theo thứ tự đã nghe:";
-        payload.orderingType = orderingType;
-        payload.ordering_type = orderingType;
-        payload.items = orderingItems;
-        payload.correct_text = orderingRawText.trim();
+        setOrdering();
       } else if (listeningCategory === "LISTENING_MATCHING") {
         payload.questionTitle = "Nghe và nối thông tin tương ứng ở hai cột:";
         payload.pairs = matchingPairs;
@@ -1132,19 +1085,24 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         payload.questionTitle = "Trả lời các câu hỏi ngắn sau:";
         payload.sub_questions = shortAnswersList.map((sa) => ({
           id: sa.id,
-          question_text: sa.questionText,
+          text: sa.questionText,
           max_words: sa.maxWords,
+          ...(sa.sampleAnswer ? { sample_answer: sa.sampleAnswer } : {}),
         }));
         payload.subQuestions = shortAnswersList;
       } else if (writingCategory === "WRITING_SENTENCE_REWRITE") {
         payload.questionTitle = "Viết lại các câu sau sử dụng từ gợi ý được cho sẵn trong ngoặc vuông:";
-        const formattedRewriteSubs = rewriteSubQuestions.map((sr) => ({
-          id: sr.id,
-          original_sentence: sr.originalSentence,
-          correct_answer: sr.correctAnswer,
+        const subs = rewriteSubQuestions.filter((sr) => sr.originalSentence.trim() && sr.correctAnswer.trim());
+        if (subs.length === 0) return [payload];
+        return subs.map((sr, i) => ({
+          ...payload,
+          id: i === 0 ? payload.id : `q_${Date.now()}_${i}`,
+          original_sentence: sr.originalSentence.trim(),
+          correct_answer: sr.correctAnswer.trim(),
+          starting_cue: parseSentenceRewriteCue(sr.correctAnswer).cue,
+          sub_questions: [{ id: sr.id, original_sentence: sr.originalSentence.trim(), correct_answer: sr.correctAnswer.trim() }],
+          subQuestions: [sr],
         }));
-        payload.sub_questions = formattedRewriteSubs;
-        payload.subQuestions = rewriteSubQuestions;
       }
     } else if (skillType === "Speaking") {
       payload.category = speakingCategory;
@@ -1156,29 +1114,29 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         payload.passage = readAloudPassage.trim();
       }
     }
+    return [payload];
+  };
 
-    if (editingQuestionId) {
-      setQuestionsList(questionsList.map((q) => (q.id === editingQuestionId ? payload : q)));
-      setEditingQuestionId(null);
-    } else {
-      setQuestionsList([...questionsList, payload]);
-    }
+  /** Áp form vào danh sách: đang sửa → thay đúng vị trí câu đó; không → thêm cuối. */
+  const applyFormToList = (list: any[]): any[] => {
+    const idx = editingQuestionId ? list.findIndex((q) => q.id === editingQuestionId) : -1;
+    const built = buildFormQuestions(idx >= 0 ? list[idx] : null);
+    if (idx < 0) return [...list, ...built];
+    return [...list.slice(0, idx), ...built, ...list.slice(idx + 1)];
+  };
 
-    // Reset Form Fields
+  const handleAddOrUpdateQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    const wasEditing = Boolean(editingQuestionId);
+    setQuestionsList(applyFormToList(questionsList));
+    setEditingQuestionId(null);
+
+    // Làm sạch form cho câu kế tiếp (thêm mới thì giữ chỉ dẫn để soạn tiếp cùng nhóm)
+    resetCategoryStates();
     setStimulusText("");
     setStimulusAudioText("");
     setStimulusAudioUrl("");
-    setMcSubQuestions([]);
-    setMatchingPairs([]);
-    setFlashcardsList([]);
-    setShortAnswersList([]);
-    setRewriteSubQuestions([
-      {
-        id: "sr_init_1",
-        originalSentence: "It is impossible to finish this project without team collaboration.",
-        correctAnswer: "[Unless] you collaborate with your team, it is impossible to finish this project.",
-      },
-    ]);
+    if (wasEditing) setQuestionPrompt("");
   };
 
   const handleEditMainQuestion = async (q: any) => {
@@ -1192,11 +1150,19 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       else derivedType = "TEXT_ONLY";
     }
 
+    // Xoá dữ liệu câu đang soạn trước, rồi nạp đủ trường của câu được chọn (BR-I24)
+    resetCategoryStates();
+    const category: string = q.category || "";
+    const skill: SkillType = (["Reading", "Listening", "Writing", "Speaking"] as const).includes(q.skill)
+      ? q.skill
+      : skillOfCategory(category);
+
     setEditingQuestionId(q.id);
-    setSkillType(q.skill);
+    setSkillType(skill);
     setStimulusType(derivedType);
     setStimulusText(sText);
-    setStimulusAudioText(q.stimulusAudioText || "");
+    setStimulusAudioText(q.stimulusAudioText || q.stimulus_audio_text || "");
+    setStimulusAudioSource(q.stimulusAudioText || q.stimulus_audio_text ? "TTS" : "UPLOAD");
     setStimulusAudioUrl(sAudio);
     setQuestionPrompt(q.prompt || q.customPrompt || q.questionTitle || "");
 
@@ -1223,95 +1189,39 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       }
     }
 
-    if (q.skill === "Reading") {
-      setReadingCategory(q.category);
-      if (q.category === "READING_MC") setMcSubQuestions(q.subQuestions || q.sub_questions || []);
-      if (q.category === "READING_FILL_IN") {
-        const pText = q.passage || (q.content && q.content.passage) || "";
-        setParenthesesRawText(pText);
-        const subType = q.fillInSubtype || q.fill_subtype || (q.content && q.content.fill_subtype) || "OPTION_BANK";
-        setFillInSubtype(subType);
-        setOptionBankWords(q.optionBank || q.option_bank || (q.content && q.content.option_bank) || []);
+    if (skill === "Reading") setReadingCategory(category as ReadingQType);
+    if (skill === "Listening") setListeningCategory(category as ListeningQType);
+    if (skill === "Writing") setWritingCategory(category as WritingQType);
+    if (skill === "Speaking") setSpeakingCategory(category as SpeakingQType);
 
-        const rawOptionBanks = q.option_banks || q.optionBanks || (q.content && q.content.option_banks) || [];
-        const distMap: Record<number, string> = {};
-        if (Array.isArray(rawOptionBanks)) {
-          const { gaps } = parseFillInGaps(pText);
-          rawOptionBanks.forEach((item: any) => {
-            const gIdx = item.gap_index;
-            const opts: string[] = item.options || [];
-            const correctVal = gaps[gIdx] || "";
-            const distractors = opts.filter((o) => o !== correctVal);
-            distMap[gIdx] = distractors.join(", ");
-          });
-        }
-        setGapDistractorInputs(distMap);
-      }
-      if (q.category === "READING_ORDERING") setOrderingRawText(q.items?.join(". ") || q.correct_text || "");
-      if (q.category === "READING_MATCHING") setMatchingPairs(q.pairs || []);
-      if (q.category === "READING_FLASHCARD_SET") setFlashcardsList(fcList);
-    } else if (q.skill === "Listening") {
-      setListeningCategory(q.category);
-      if (q.category === "LISTENING_MC") setMcSubQuestions(q.subQuestions || q.sub_questions || []);
-      if (q.category === "LISTENING_FILL_IN") {
-        const pText = q.passage || (q.content && q.content.passage) || "";
-        setParenthesesRawText(pText);
-        const subType = q.fillInSubtype || q.fill_subtype || (q.content && q.content.fill_subtype) || "OPTION_BANK";
-        setFillInSubtype(subType);
-        setOptionBankWords(q.optionBank || q.option_bank || (q.content && q.content.option_bank) || []);
-
-        const rawOptionBanks = q.option_banks || q.optionBanks || (q.content && q.content.option_banks) || [];
-        const distMap: Record<number, string> = {};
-        if (Array.isArray(rawOptionBanks)) {
-          const { gaps } = parseFillInGaps(pText);
-          rawOptionBanks.forEach((item: any) => {
-            const gIdx = item.gap_index;
-            const opts: string[] = item.options || [];
-            const correctVal = gaps[gIdx] || "";
-            const distractors = opts.filter((o) => o !== correctVal);
-            distMap[gIdx] = distractors.join(", ");
-          });
-        }
-        setGapDistractorInputs(distMap);
-      }
-    } else if (q.skill === "Writing") {
-      setWritingCategory(q.category);
-      if (q.category === "WRITING_ESSAY") setEssayPromptText(q.prompt || "");
-      if (q.category === "WRITING_FREE_TYPING_BLANKS") setParenthesesRawText(q.passage || "");
-      if (q.category === "WRITING_FLASHCARD_SET") setFlashcardsList(fcList);
-      if (q.category === "WRITING_SHORT_ANSWER") setShortAnswersList(q.subQuestions || q.sub_questions || []);
-      if (q.category === "WRITING_SENTENCE_REWRITE") {
-        const rawSub = q.subQuestions || q.sub_questions || (q.content && q.content.sub_questions) || [];
-        let formattedSub: SentenceRewriteSubItem[] = [];
-
-        if (Array.isArray(rawSub) && rawSub.length > 0) {
-          formattedSub = rawSub.map((sr: any) => ({
-            id: sr.id || `sr_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-            originalSentence: sr.original_sentence || sr.originalSentence || "",
-            correctAnswer: sr.correct_answer || sr.correctAnswer || "",
-          }));
-        } else if (q.original_sentence || q.originalSentence || (q.content && q.content.original_sentence)) {
-          const orig = q.original_sentence || q.originalSentence || (q.content && q.content.original_sentence) || "";
-          const oldCue = q.starting_cue || q.startingCue || (q.content && q.content.starting_cue) || "";
-          let ans = q.correct_answer || q.correctAnswer || (q.content && q.content.correct_answer) || "";
-          if (oldCue && !ans.includes("[")) {
-            ans = `[${oldCue.replace(/\.+$/, "").trim()}] ${ans.replace(new RegExp(`^${oldCue.replace(/\.+$/, "").trim()}\\s*`, "i"), "")}`;
-          }
-          formattedSub = [
-            {
-              id: `sr_${Date.now()}`,
-              originalSentence: orig,
-              correctAnswer: ans,
-            },
-          ];
-        }
-
-        setRewriteSubQuestions(formattedSub);
-      }
-    } else if (q.skill === "Speaking") {
-      setSpeakingCategory(q.category);
-      if (q.category === "SPEAKING_TOPIC_PROMPT") setSpeakingCuePrompt(q.prompt || "");
-      if (q.category === "SPEAKING_READ_ALOUD") setReadAloudPassage(q.passage || "");
+    if (category.endsWith("_MC")) {
+      setMcSubQuestions(editorMcSubs(Array.isArray(q.subQuestions) && q.subQuestions.length ? q.subQuestions : q.sub_questions));
+    } else if (category.endsWith("_FILL_IN")) {
+      const f = editorFillIn(q);
+      setParenthesesRawText(f.passage);
+      setFillInSubtype(f.subtype);
+      setOptionBankWords(f.bank);
+      setGapDistractorInputs(f.distractors);
+    } else if (category.endsWith("_ORDERING")) {
+      const o = editorOrdering(q);
+      setOrderingType(o.type);
+      setOrderingRawText(o.text);
+    } else if (category.endsWith("_MATCHING")) {
+      setMatchingPairs(Array.isArray(q.pairs) ? q.pairs : []);
+    } else if (category.endsWith("_FLASHCARD_SET")) {
+      setFlashcardsList(fcList);
+    } else if (category === "WRITING_ESSAY") {
+      setEssayPromptText(q.prompt || "");
+    } else if (category === "WRITING_FREE_TYPING_BLANKS") {
+      setParenthesesRawText(q.passage || "");
+    } else if (category === "WRITING_SHORT_ANSWER") {
+      setShortAnswersList(editorShortAnswers(q));
+    } else if (category === "WRITING_SENTENCE_REWRITE") {
+      setRewriteSubQuestions(editorRewriteSubs(q));
+    } else if (category === "SPEAKING_TOPIC_PROMPT") {
+      setSpeakingCuePrompt(q.prompt || "");
+    } else if (category === "SPEAKING_READ_ALOUD") {
+      setReadAloudPassage(q.passage || "");
     }
   };
 
@@ -1323,73 +1233,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
     setIsSubmitting(true);
 
     try {
-      let currentQuestionsList = [...questionsList];
-      if (editingQuestionId) {
-        const cleanText = cleanHtmlText(stimulusText);
-
-        let finalStimulusText: string | null = null;
-        let finalStimulusAudioUrl: string | null = null;
-        let finalStimulusAudioText: string | null = null;
-
-        if (stimulusType === "TEXT_ONLY") {
-          finalStimulusText = cleanText || null;
-          finalStimulusAudioUrl = null;
-          finalStimulusAudioText = null;
-        } else if (stimulusType === "AUDIO_ONLY") {
-          finalStimulusText = null;
-          if (stimulusAudioSource === "TTS") {
-            finalStimulusAudioText = stimulusAudioText.trim() || null;
-            finalStimulusAudioUrl = stimulusAudioText.trim() ? getTtsHdUrl(stimulusAudioText.trim(), stimulusAudioGender) : null;
-          } else {
-            finalStimulusAudioText = null;
-            finalStimulusAudioUrl = stimulusAudioUrl.trim() || null;
-          }
-        } else if (stimulusType === "COMBINED") {
-          finalStimulusText = cleanText || null;
-          if (stimulusAudioSource === "TTS") {
-            finalStimulusAudioText = stimulusAudioText.trim() || null;
-            finalStimulusAudioUrl = stimulusAudioText.trim() ? getTtsHdUrl(stimulusAudioText.trim(), stimulusAudioGender) : null;
-          } else {
-            finalStimulusAudioText = null;
-            finalStimulusAudioUrl = stimulusAudioUrl.trim() || null;
-          }
-        }
-
-        const formattedSubQuestions = mcSubQuestions.map((sq) => {
-          let correctVal = sq.optA;
-          if (sq.correctAnswer === "B") correctVal = sq.optB;
-          if (sq.correctAnswer === "C") correctVal = sq.optC;
-          if (sq.correctAnswer === "D") correctVal = sq.optD;
-          return {
-            id: sq.id,
-            text: sq.subQuestionText,
-            option_a: sq.optA,
-            option_b: sq.optB,
-            option_c: sq.optC,
-            option_d: sq.optD,
-            correct_answer: correctVal,
-            audio_url: sq.audioUrl || null,
-          };
-        });
-
-        const activeQ = currentQuestionsList.find((q) => q.id === editingQuestionId);
-        if (activeQ) {
-          const updatedActiveQ = {
-            ...activeQ,
-            stimulusType,
-            stimulus_type: stimulusType,
-            stimulusText: finalStimulusText || "",
-            stimulus_text: finalStimulusText,
-            prompt: questionPrompt.trim() || activeQ.prompt || activeQ.questionTitle || "",
-            stimulusAudioText: finalStimulusAudioText || "",
-            stimulusAudioUrl: finalStimulusAudioUrl,
-            stimulus_audio_url: finalStimulusAudioUrl,
-            sub_questions: formattedSubQuestions,
-            subQuestions: mcSubQuestions,
-          };
-          currentQuestionsList = currentQuestionsList.map((q) => (q.id === editingQuestionId ? updatedActiveQ : q));
-        }
-      }
+      // Câu đang mở sửa mà chưa bấm "Cập nhật" → vẫn lưu đủ thay đổi của form
+      const currentQuestionsList = editingQuestionId ? applyFormToList(questionsList) : [...questionsList];
 
       const savedIdByLocalId = new Map<string, string>();
       const qIdsArray: string[] = [];
@@ -1520,14 +1365,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
         qIdsArray.push(savedId);
       }
 
-      if (savedIdByLocalId.size > 0) {
-        setQuestionsList((prev) =>
-          prev.map((item) =>
-            savedIdByLocalId.has(item.id)
-              ? { ...item, id: savedIdByLocalId.get(item.id)! }
-              : item
-          )
-        );
+      setQuestionsList(
+        currentQuestionsList.map((item) =>
+          savedIdByLocalId.has(item.id) ? { ...item, id: savedIdByLocalId.get(item.id)! } : item
+        )
+      );
+      if (editingQuestionId && savedIdByLocalId.has(editingQuestionId)) {
+        setEditingQuestionId(savedIdByLocalId.get(editingQuestionId)!);
       }
 
       const savePayload: QuestionSetSavePayload = {
@@ -1555,6 +1399,54 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
       setIsSubmitting(false);
     }
   };
+
+  // Khối soạn dùng chung cho Reading và Listening (trước đây Listening thiếu chọn kiểu sắp xếp / danh sách cặp nối)
+  const renderOrderingForm = () => (
+                        <div className="space-y-3">
+                          <select value={orderingType} onChange={(e: any) => setOrderingType(e.target.value)} className="w-full px-3 py-2 bg-brand-50 border border-brand-300 rounded-xl text-xs font-bold text-brand-600">
+                            <option value="SENTENCE_ORDERING">Sắp xếp CÂU (Tách theo dấu chấm .)</option>
+                            <option value="WORD_ORDERING">Sắp xếp TỪ (Tách theo khoảng trắng Space)</option>
+                          </select>
+                          <label className="block text-[11px] font-bold text-ink">
+                            {orderingType === "WORD_ORDERING" ? "Câu đúng (học sinh xếp lại các từ của câu này):" : "Các câu theo thứ tự đúng:"}
+                          </label>
+                          <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
+                          <div className="p-3.5 rounded-2xl bg-brand-50/60 border border-brand-300/60 space-y-1.5">
+                            <span className="text-[11px] font-bold text-brand-600 uppercase block">Kết Quả Tách Câu/Từ Preview:</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {orderingItems.map((item, i) => (
+                                <span key={i} className="px-2.5 py-1 bg-white border border-line rounded-lg text-xs text-ink font-medium shadow-sm">
+                                  #{i + 1}: {item}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+  );
+
+  const renderMatchingForm = () => (
+                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
+                          <span className="text-xs font-bold text-brand-600 block">Cặp Từ Đã Nhập ({matchingPairs.length})</span>
+                          <div className="space-y-2">
+                            {matchingPairs.map((pair) => (
+                              <div key={pair.id} className="flex items-center justify-between p-2.5 rounded-xl border border-brand-300 bg-white text-xs">
+                                <span className="font-bold text-ink">{pair.left} ↔ {pair.right}</span>
+                                <div className="flex space-x-2">
+                                  <button type="button" onClick={() => handleEditMatchingPair(pair)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button type="button" onClick={() => handleDeleteMatchingPair(pair.id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                          </div>
+                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
+                            {editingPairId ? "Cập Nhật Cặp Nối" : "Thêm Cặp Nối"}
+                          </button>
+                        </div>
+  );
 
   if (isLoading) {
     return (
@@ -1687,13 +1579,14 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                     <>
                       <div>
                         <label className="block text-xs font-bold uppercase text-ink mb-1">
-                          Khóa Học / Category (*)
+                          Khóa Học
                         </label>
                         <select
                           value={selectedCourseId}
                           onChange={(e) => setSelectedCourseId(e.target.value)}
                           className="w-full px-3.5 py-2.5 bg-surface-alt border border-line rounded-xl text-sm focus:outline-none focus:border-brand-600 font-medium text-brand-600"
                         >
+                          <option value="">— Đề độc lập (không thuộc khóa học) —</option>
                           {coursesList.map((course) => (
                             <option key={course.id} value={course.id}>
                               {course.title}
@@ -1804,12 +1697,12 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                     <label className="block text-[12px] font-bold text-brand-600 mb-1">
                       Chỉ Dẫn / Hướng Dẫn Bài Tập
                     </label>
-                    <input
-                      type="text"
+                    <textarea
+                      rows={2}
                       placeholder="Ví dụ: Đọc đoạn văn sau và hoàn thành các câu hỏi trắc nghiệm..."
                       value={questionPrompt}
                       onChange={(e) => setQuestionPrompt(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-line rounded-xl text-xs font-bold text-brand-600 focus:outline-none focus:border-brand-600 shadow-2xs"
+                      className="w-full px-3.5 py-2 bg-white border border-line rounded-xl text-xs font-bold text-brand-600 focus:outline-none focus:border-brand-600 shadow-2xs resize-y"
                     />
                   </div>
 
@@ -1952,7 +1845,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           <button
                             key={c.id}
                             type="button"
-                            onClick={() => { setReadingCategory(c.id as ReadingQType); resetCategoryStates(); }}
+                            onClick={() => setReadingCategory(c.id as ReadingQType)}
                             className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               readingCategory === c.id
                                 ? "bg-brand-50 border-brand-300 text-brand-600"
@@ -1970,8 +1863,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           <div className="space-y-2">
                             {mcSubQuestions.map((sub, idx) => (
                               <div key={sub.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
-                                <div>
-                                  <span className="font-bold text-brand-600">Câu {idx + 1}: {sub.subQuestionText}</span>
+                                <div className="min-w-0">
+                                  <span className="font-bold text-brand-600">Câu {sub.number || idx + 1}: {sub.subQuestionText || <em className="font-normal text-ink-subtle">(không có lời dẫn)</em>}</span>
+                                  <div className="text-[11px] text-ink-muted mt-0.5">{mcOptionSummary(sub)}</div>
                                   <div className="text-[11px] text-ink-muted mt-0.5">Đáp án đúng: <strong>{sub.correctAnswer}</strong></div>
                                 </div>
                                 <div className="flex space-x-2">
@@ -1983,12 +1877,13 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           </div>
 
                           <div className="pt-2 border-t border-line space-y-2">
-                            <input type="text" placeholder="Nội dung câu hỏi con..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
+                            {editingSubQId && <span className="text-[11px] font-bold text-brand-600 block">Đang sửa câu con {mcSubQuestions.find((x) => x.id === editingSubQId)?.number || ""}</span>}
+                            <input type="text" placeholder="Nội dung câu hỏi con (để trống được nếu là câu ngữ âm / trọng âm)..." value={subQText} onChange={(e) => setSubQText(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
                             <div className="grid grid-cols-2 gap-2">
                               <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                               <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="C (để trống nếu không có)" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="D (để trống nếu không có)" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
                             <div>
                               <label className="block text-[11px] font-bold text-ink mb-1">Đáp Án Đúng:</label>
@@ -1999,7 +1894,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                                 <option value="D">Lựa chọn D</option>
                               </select>
                             </div>
-                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
+                            <button type="button" onClick={handleAddOrUpdateMcSubQ} disabled={!mcSubValid} className="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-50">
                               <Plus className="w-4 h-4 text-white" />
                               <span>{editingSubQId ? "Cập Nhật Câu Hỏi Con" : "Thêm Câu Hỏi Con"}</span>
                             </button>
@@ -2009,7 +1904,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                       {readingCategory === "READING_FILL_IN" && (
                         <div className="space-y-4">
-                          <div className="flex space-x-4 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
                             <label className="flex items-center space-x-1.5 cursor-pointer">
                               <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-brand-600" />
                               <span>Ngân hàng từ chung (Option Bank)</span>
@@ -2017,6 +1912,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             <label className="flex items-center space-x-1.5 cursor-pointer">
                               <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-brand-600" />
                               <span>Dropdown riêng từng ô (Inline Select)</span>
+                            </label>
+                            <label className="flex items-center space-x-1.5 cursor-pointer">
+                              <input type="radio" checked={fillInSubtype === "FREE_TYPING"} onChange={() => setFillInSubtype("FREE_TYPING")} className="accent-brand-600" />
+                              <span>Học sinh tự gõ (Free Typing)</span>
                             </label>
                           </div>
 
@@ -2033,15 +1932,24 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             />
                           </div>
 
-                          {fillInSubtype === "OPTION_BANK" ? (
+                          {fillInSubtype === "FREE_TYPING" ? (
+                            <p className="text-[11px] text-ink-muted bg-surface-alt p-2.5 rounded-xl border border-line">
+                              Học sinh tự gõ từ vào từng ô; đáp án đúng là từ trong ngoặc vuông.
+                            </p>
+                          ) : fillInSubtype === "OPTION_BANK" ? (
                             <div>
                               <label className="block text-xs font-bold uppercase text-ink mb-1">
                                 Ngân Hàng Từ Dùng Chung (Phân cách bằng dấu phẩy)
                               </label>
                               <input
                                 type="text"
-                                value={optionBankWords.join(", ")}
-                                onChange={(e) => setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
+                                value={bankDraft ?? optionBankWords.join(", ")}
+                                onChange={(e) => {
+                                  // giữ nguyên chuỗi đang gõ (kể cả dấu phẩy cuối) — trước đây gõ "," bị mất ngay
+                                  setBankDraft(e.target.value);
+                                  setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
+                                }}
+                                onBlur={() => setBankDraft(null)}
                                 className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs font-medium"
                               />
                             </div>
@@ -2090,49 +1998,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                         </div>
                       )}
 
-                      {readingCategory === "READING_ORDERING" && (
-                        <div className="space-y-3">
-                          <select value={orderingType} onChange={(e: any) => setOrderingType(e.target.value)} className="w-full px-3 py-2 bg-brand-50 border border-brand-300 rounded-xl text-xs font-bold text-brand-600">
-                            <option value="SENTENCE_ORDERING">Sắp xếp CÂU (Tách theo dấu chấm .)</option>
-                            <option value="WORD_ORDERING">Sắp xếp TỪ (Tách theo khoảng trắng Space)</option>
-                          </select>
-                          <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
-                          <div className="p-3.5 rounded-2xl bg-brand-50/60 border border-brand-300/60 space-y-1.5">
-                            <span className="text-[11px] font-bold text-brand-600 uppercase block">Kết Quả Tách Câu/Từ Preview:</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {orderingItems.map((item, i) => (
-                                <span key={i} className="px-2.5 py-1 bg-white border border-line rounded-lg text-xs text-ink font-medium shadow-sm">
-                                  #{i + 1}: {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      {readingCategory === "READING_ORDERING" && renderOrderingForm()}
 
-                      {readingCategory === "READING_MATCHING" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
-                          <span className="text-xs font-bold text-brand-600 block">Cặp Từ Đã Nhập ({matchingPairs.length})</span>
-                          <div className="space-y-2">
-                            {matchingPairs.map((pair) => (
-                              <div key={pair.id} className="flex items-center justify-between p-2.5 rounded-xl border border-brand-300 bg-white text-xs">
-                                <span className="font-bold text-ink">{pair.left} ↔ {pair.right}</span>
-                                <div className="flex space-x-2">
-                                  <button type="button" onClick={() => handleEditMatchingPair(pair)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
-                                  <button type="button" onClick={() => handleDeleteMatchingPair(pair.id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                          </div>
-                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
-                            {editingPairId ? "Cập Nhật Cặp Nối" : "Thêm Cặp Nối"}
-                          </button>
-                        </div>
-                      )}
+                      {readingCategory === "READING_MATCHING" && renderMatchingForm()}
 
                       {readingCategory === "READING_FLASHCARD_SET" && (
                         <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
@@ -2218,7 +2086,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           <button
                             key={c.id}
                             type="button"
-                            onClick={() => { setListeningCategory(c.id as ListeningQType); resetCategoryStates(); }}
+                            onClick={() => setListeningCategory(c.id as ListeningQType)}
                             className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               listeningCategory === c.id
                                 ? "bg-brand-50 border-brand-300 text-brand-600"
@@ -2242,7 +2110,8 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               return (
                                 <div key={sub.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                   <div>
-                                    <span className="font-bold text-ink">Câu {idx + 1}: {sub.subQuestionText}</span>
+                                    <span className="font-bold text-ink">Câu {sub.number || idx + 1}: {sub.subQuestionText || <em className="font-normal text-ink-subtle">(không có lời dẫn)</em>}</span>
+                                    <div className="text-[11px] text-ink-muted mt-0.5">{mcOptionSummary(sub)} · Đáp án: <strong>{sub.correctAnswer}</strong></div>
                                     <div className="pt-1.5">
                                       <button
                                         type="button"
@@ -2345,11 +2214,20 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             <div className="grid grid-cols-2 gap-2">
                               <input type="text" placeholder="A" value={subQOptA} onChange={(e) => setSubQOptA(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                               <input type="text" placeholder="B" value={subQOptB} onChange={(e) => setSubQOptB(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                              <input type="text" placeholder="C" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                              <input type="text" placeholder="D" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="C (để trống nếu không có)" value={subQOptC} onChange={(e) => setSubQOptC(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
+                              <input type="text" placeholder="D (để trống nếu không có)" value={subQOptD} onChange={(e) => setSubQOptD(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
 
-                            <button type="button" onClick={handleAddOrUpdateMcSubQ} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
+                            <div>
+                              <label className="block text-[11px] font-bold text-ink mb-1">Đáp Án Đúng:</label>
+                              <select value={subQCorrect} onChange={(e: any) => setSubQCorrect(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs font-bold text-emerald-800">
+                                <option value="A">Lựa chọn A</option>
+                                <option value="B">Lựa chọn B</option>
+                                <option value="C">Lựa chọn C</option>
+                                <option value="D">Lựa chọn D</option>
+                              </select>
+                            </div>
+                            <button type="button" onClick={handleAddOrUpdateMcSubQ} disabled={!mcSubValid} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">
                               {editingSubQId ? "Cập Nhật Câu Con" : "Thêm Câu Con"}
                             </button>
                           </div>
@@ -2358,7 +2236,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
 
                       {listeningCategory === "LISTENING_FILL_IN" && (
                         <div className="space-y-4 font-sans">
-                          <div className="flex space-x-4 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 p-2 bg-surface-alt rounded-xl border border-line text-xs font-bold">
                             <label className="flex items-center space-x-1.5 cursor-pointer">
                               <input type="radio" checked={fillInSubtype === "OPTION_BANK"} onChange={() => setFillInSubtype("OPTION_BANK")} className="accent-brand-600" />
                               <span>Ngân hàng từ chung (Option Bank)</span>
@@ -2366,6 +2244,10 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             <label className="flex items-center space-x-1.5 cursor-pointer">
                               <input type="radio" checked={fillInSubtype === "INLINE_SELECT"} onChange={() => setFillInSubtype("INLINE_SELECT")} className="accent-brand-600" />
                               <span>Dropdown riêng từng ô (Inline Select)</span>
+                            </label>
+                            <label className="flex items-center space-x-1.5 cursor-pointer">
+                              <input type="radio" checked={fillInSubtype === "FREE_TYPING"} onChange={() => setFillInSubtype("FREE_TYPING")} className="accent-brand-600" />
+                              <span>Học sinh tự gõ (Free Typing)</span>
                             </label>
                           </div>
 
@@ -2382,15 +2264,24 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                             />
                           </div>
 
-                          {fillInSubtype === "OPTION_BANK" ? (
+                          {fillInSubtype === "FREE_TYPING" ? (
+                            <p className="text-[11px] text-ink-muted bg-surface-alt p-2.5 rounded-xl border border-line">
+                              Học sinh tự gõ từ vào từng ô; đáp án đúng là từ trong ngoặc vuông.
+                            </p>
+                          ) : fillInSubtype === "OPTION_BANK" ? (
                             <div>
                               <label className="block text-xs font-bold uppercase text-ink mb-1">
                                 Ngân Hàng Từ Dùng Chung
                               </label>
                               <input
                                 type="text"
-                                value={optionBankWords.join(", ")}
-                                onChange={(e) => setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
+                                value={bankDraft ?? optionBankWords.join(", ")}
+                                onChange={(e) => {
+                                  // giữ nguyên chuỗi đang gõ (kể cả dấu phẩy cuối) — trước đây gõ "," bị mất ngay
+                                  setBankDraft(e.target.value);
+                                  setOptionBankWords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
+                                }}
+                                onBlur={() => setBankDraft(null)}
                                 className="w-full px-3 py-2 bg-surface-alt border border-line rounded-xl text-xs font-medium"
                               />
                             </div>
@@ -2423,22 +2314,9 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                         </div>
                       )}
 
-                      {listeningCategory === "LISTENING_ORDERING" && (
-                        <textarea rows={3} value={orderingRawText} onChange={(e) => setOrderingRawText(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
-                      )}
+                      {listeningCategory === "LISTENING_ORDERING" && renderOrderingForm()}
 
-                      {listeningCategory === "LISTENING_MATCHING" && (
-                        <div className="space-y-3 p-4 rounded-2xl bg-surface-alt border border-line">
-                          <span className="text-xs font-bold text-brand-600 block">Cặp Nối Từ Listening</span>
-                          <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Cột A" value={matchLeft} onChange={(e) => setMatchLeft(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                            <input type="text" placeholder="Cột B" value={matchRight} onChange={(e) => setMatchRight(e.target.value)} className="px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
-                          </div>
-                          <button type="button" onClick={handleAddOrUpdateMatchingPair} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
-                            Thêm Cặp Nối
-                          </button>
-                        </div>
-                      )}
+                      {listeningCategory === "LISTENING_MATCHING" && renderMatchingForm()}
                     </div>
                   )}
 
@@ -2453,7 +2331,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                           { id: "WRITING_SHORT_ANSWER", label: "Trả Lời Câu Hỏi Ngắn" },
                           { id: "WRITING_SENTENCE_REWRITE", label: "Viết Lại Câu" },
                         ].map((c) => (
-                          <button key={c.id} type="button" onClick={() => { setWritingCategory(c.id as WritingQType); resetCategoryStates(); }} className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${writingCategory === c.id ? "bg-brand-50 border-brand-300 text-brand-600" : "bg-surface-alt border-line text-ink-muted"}`}>
+                          <button key={c.id} type="button" onClick={() => setWritingCategory(c.id as WritingQType)} className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${writingCategory === c.id ? "bg-brand-50 border-brand-300 text-brand-600" : "bg-surface-alt border-line text-ink-muted"}`}>
                             {c.label}
                           </button>
                         ))}
@@ -2554,7 +2432,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               <div key={sa.id} className="p-3 bg-white rounded-xl border border-line text-xs flex justify-between items-center">
                                 <div>
                                   <span className="font-bold text-ink">Q{idx + 1}: {sa.questionText}</span>
-                                  <span className="text-[10px] text-ink-subtle block">Giới hạn: {sa.maxWords} từ</span>
+                                  <span className="text-[10px] text-ink-subtle block">Giới hạn: {sa.maxWords} từ{sa.sampleAnswer ? ` · Mẫu: ${sa.sampleAnswer}` : ""}</span>
                                 </div>
                                 <div className="flex space-x-2">
                                   <button type="button" onClick={() => handleEditShortAnswer(sa)} className="text-brand-600"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -2570,6 +2448,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                               <label className="block text-[11px] font-bold text-ink mb-1">Giới hạn tối đa số từ:</label>
                               <input type="number" value={saMaxWords} onChange={(e) => setSaMaxWords(Number(e.target.value))} className="w-24 px-3 py-1.5 bg-white border border-line rounded-lg text-xs" />
                             </div>
+                            <input type="text" placeholder="Đáp án mẫu (tuỳ chọn — giúp AI chấm)..." value={saSampleAnswer} onChange={(e) => setSaSampleAnswer(e.target.value)} className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs" />
                             <button type="button" onClick={handleAddOrUpdateShortAnswer} className="w-full py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">
                               {editingSaId ? "Cập Nhật Câu Hỏi Tự Luận" : "Thêm Câu Hỏi Tự Luận"}
                             </button>
@@ -2657,6 +2536,16 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                   {/* SPEAKING */}
                   {skillType === "Speaking" && (
                     <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: "SPEAKING_TOPIC_PROMPT", label: "Nói Theo Chủ Đề" },
+                          { id: "SPEAKING_READ_ALOUD", label: "Đọc Thành Tiếng" },
+                        ].map((c) => (
+                          <button key={c.id} type="button" onClick={() => setSpeakingCategory(c.id as SpeakingQType)} className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${speakingCategory === c.id ? "bg-brand-50 border-brand-300 text-brand-600" : "bg-surface-alt border-line text-ink-muted"}`}>
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
                       {speakingCategory === "SPEAKING_TOPIC_PROMPT" && (
                         <textarea rows={3} value={speakingCuePrompt} onChange={(e) => setSpeakingCuePrompt(e.target.value)} className="w-full p-3 bg-surface-alt border border-line rounded-xl text-xs" />
                       )}
@@ -2748,7 +2637,7 @@ export default function QuestionSetEditor(props: QuestionSetEditorProps) {
                         </div>
 
                         <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-300 text-[10px] font-bold inline-block">{q.category}</span>
-                        <p className="text-xs text-ink font-bold">{q.questionTitle}</p>
+                        <p className="text-xs text-ink font-bold line-clamp-3 whitespace-pre-line">{q.prompt || q.questionTitle}</p>
                       </div>
                     );
                   })}
