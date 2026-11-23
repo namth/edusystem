@@ -1,6 +1,6 @@
 # 07 — Hợp đồng API
 
-> Cập nhật: 2026-11-03 · Nguồn: `app/api/**/route.ts`. Hợp đồng chi tiết (payload, mã lỗi từng nhánh) được khoá bằng test trong `tests/*.test.ts` (cột "Test"). Test thắng nếu tài liệu này thiếu.
+> Cập nhật: 2026-11-23 · Nguồn: `app/api/**/route.ts`. Hợp đồng chi tiết (payload, mã lỗi từng nhánh) được khoá bằng test trong `tests/*.test.ts` (cột "Test"). Test thắng nếu tài liệu này thiếu.
 
 ## 1. Quy ước chung
 - **Xác thực:** cookie httpOnly `auth_token` (JWT HS256, `lib/jwt.ts`). Payload gồm `userId`, `email`, `role`, và `mcp` khi bắt buộc đổi mật khẩu. Danh tính luôn lấy từ token, không bao giờ lấy từ body hay query.
@@ -62,8 +62,8 @@
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
 | GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
 | GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học) | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
-| POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT` | `ai-import`, `ai-usage` |
-| POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch) | `ai-import` |
+| POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT`. FEAT-015 (TASK-052) thêm `extractedData.groups` (dữ liệu gốc có `paper_format`) và `conversion` (câu đã chuyển dạng, cảnh báo, `scoreItems`) | `ai-import`, `ai-usage` |
+| POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch). FEAT-015 (TASK-052): nhận `ConvertedQuestion[]`, kiểm từng câu, sai → 400 `INVALID_CONTENT` kèm `invalid[]` | `ai-import` |
 | POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |
 | GET / POST / PUT / DELETE | `/api/teacher/flashcards`, `/api/teacher/flashcards/[id]` | | `flashcards-uploads-api` |
 | POST | `/api/teacher/library/convert` | Bài học ↔ đề | `library-convert-duplicate` |
@@ -130,3 +130,10 @@ Test: `slot-orders-api`, `admin-api`.
 | GET | `/api/classes/lookup/[ref]` | công khai | Xem trước lớp qua link mời | `exam-flow` |
 | POST | `/api/exam/grade-async` | 🔑 nội bộ | `{ submissionId, giveUp? }` | `exam-attempts-api`, `ai-usage` |
 | POST | `/api/lessons/grade-async` | 🔑 nội bộ | `{ attemptId }` (FEAT-014 thêm `giveUp?`; AI lỗi → `NEEDS_REVIEW` thay vì 0) | `student-lessons-api`, `ai-usage` |
+
+## 3. Đang đặc tả, chưa có code
+Route mới chỉ được thêm vào các bảng ở §2 khi code xong (`tests/docs-sync.test.ts` từ chối route chưa có trong code).
+- **FEAT-016** (`docs/features/canh-bao-admin.md` §6.2):
+  - 3 route ADMIN: danh sách cảnh báo có lọc và `counts.NEW`; đổi trạng thái một cảnh báo; gửi tin Telegram thử (TASK-050);
+  - 1 route nội bộ 🔑 cho worker gửi sự kiện (TASK-049).
+- **FEAT-016 helper `serverError(err, ctx)`**: mọi nhánh 500 của `app/api/**` trả `{ success:false, error }` qua helper này và ghi `admin_alerts` (BR-W08, TASK-049). Dạng phản hồi 500 ở §1 không đổi.

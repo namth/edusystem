@@ -1,6 +1,6 @@
 # 06 — Lược đồ cơ sở dữ liệu (PostgreSQL)
 
-> Cập nhật: 2026-11-03.
+> Cập nhật: 2026-11-23.
 > **Nguồn sự thật, theo thứ tự ưu tiên:**
 > 1. Các file `docs/db-migration-0NN-*.sql`.
 > 2. `ensureSchema()` trong `lib/db-pg.ts`.
@@ -28,6 +28,7 @@
 | 015 | `…-015-student-slots.sql` | Trả lại slot đã bị trừ khi chấm AI (DEC-031) | **Chạy tay một lần** |
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
 | 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema |
+| 018 | `…-018-admin-alerts.sql` | FEAT-016: `admin_alerts` + index (`status`, `last_seen_at`). *Chưa có file, tạo ở TASK-048* | ensureSchema |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền
@@ -50,7 +51,9 @@
 - **`curriculum_items`** (003): `id`, `course_id` FK, `parent_id` (cây), `title`, `type` (`UNIT`/`LESSON`/`EXAM`), `exam_id`, `lesson_id` (006), `order_index`, `teacher_id`, `created_by`, `created_at`.
 
 ### 2.3 Nội dung
-- **`questions`**: `id`, `skill`, `category` (15 dạng, xem `lib/question-content-types.ts`), `prompt`, `content` JSONB (có đáp án, không bao giờ gửi cho học sinh trước khi nộp), `stimulus_text`, `stimulus_audio_url`, `created_by` (007), `created_at`.
+- **`questions`**: `id`, `skill`, `category` (17 dạng, xem `lib/question-content-types.ts`), `prompt`, `content` JSONB (có đáp án, không bao giờ gửi cho học sinh trước khi nộp), `stimulus_text`, `stimulus_audio_url`, `created_by` (007), `created_at`.
+  - FEAT-015 (khoá JSON, không cần migration): `content.import_meta = { source: "AI_IMPORT", converter_version, paper_format, paper_numbers[], confidence, answer_source, warnings[] }` cho câu nhập bằng AI; `sanitizeQuestionForStudent` bỏ khoá này.
+  - Câu điền ô trống tạo từ AI nhập đề: `stimulus_text = NULL`, đoạn văn nằm ở `content.passage` dạng `(n) [đáp án]`.
 - **`flashcards`**: `id`, `vietnamese_name`, `correct_english_word`, `options` JSONB, `image_url`, `audio_url`, `created_by` (008), `created_at`.
 - **`lessons`** (006): `id`, `title`, `description`, `skills` TEXT[], `question_ids` JSONB (thứ tự khối), `subject_id`, `created_by`, `created_at`, `updated_at`.
 - **`exams`**: `id`, `title`, `description`, `duration_minutes`, `skills` TEXT[], `question_ids` JSONB, `stimulus_type`, `stimulus_text`, `stimulus_audio_url`, `passing_score`, `scoring_standard_id` (009), `subject_id` (012), `created_by`, `created_at`. Các cột `scoring_rubric_id`, `scoring_rubric_override` (001) đã cũ, không đọc nữa.
@@ -85,6 +88,7 @@
   - `TEACHER_SIGNUP`, `TEACHER_VERIFIED`;
   - `ORDER_CREATED`, `ORDER_APPROVED`, `ORDER_REJECTED`, `ORDER_PAID_REPORTED`.
 - **`leads`** (011): `id`, `name`, `phone`, `email`, `role`, `message`, `status` (`NEW`/`CONTACTED`/`DONE`), `source`, `ip`, `created_at`.
+- **`admin_alerts`** (018, FEAT-016): `id` (`alr_…`), `fingerprint` UNIQUE, `level` (`ERROR`/`WARN`/`INFO`), `source` (`API`/`SERVER`/`AI`/`WORKER`/`EXAM_IMPORT`), `title`, `detail` JSONB (mẫu gần nhất, đã làm sạch PII), `occurrences`, `unsent_count`, `status` (`NEW`/`RESOLVED`), `first_seen_at`, `last_seen_at`, `last_notified_at`, `resolved_at`, `resolved_by`; index (`status`, `last_seen_at` DESC). Dòng `RESOLVED` quá 90 ngày bị dọn (BR-W09).
 - **`system_settings`** (005): `key` PK, `value` JSONB, `description`, `updated_by`, `updated_at`.
 
   | Khoá | Giá trị |

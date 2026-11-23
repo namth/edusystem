@@ -1,6 +1,6 @@
 # 15 — Vận hành: deploy, migration, rollback, sao lưu
 
-> Cập nhật: 2026-11-03 · Nguồn: `scripts/deploy.sh`, `docker-compose.yml`, `docs/qa/checklist-production.md`.
+> Cập nhật: 2026-11-23 · Nguồn: `scripts/deploy.sh`, `docker-compose.yml`, `docs/qa/checklist-production.md`.
 > **Luôn hỏi người dùng trước mỗi lần deploy.** Không build trên server.
 
 ## 1. Môi trường
@@ -29,7 +29,7 @@
 **Sau khi deploy:** xem log `docker logs edusystem-nextjs-1` để chắc không có lỗi `[env]` hay lỗi `ensureSchema`. Đi các mục liên quan trong `docs/qa/checklist-production.md`.
 
 ## 3. Migration
-- Migration 001–014 và 016 chạy cùng `ensureSchema()` khi app khởi động; viết để chạy lặp được.
+- Migration 001–014, 016, 017 và 018 (FEAT-016) chạy cùng `ensureSchema()` khi app khởi động; viết để chạy lặp được.
 - **Migration chạy tay một lần** (không nằm trong `ensureSchema`, vì chạy lại sẽ ghi đè dữ liệu admin đã sửa):
 
   | File | Khi nào | Ghi chú |
@@ -50,6 +50,14 @@
 | Bảng giá model AI + tỷ giá USD→VND | `/admin/settings` | Trước khi xem chi phí AI. Dashboard cảnh báo khi có model chưa có giá |
 | Model AI nhập đề | `/admin/settings` | Tuỳ chọn |
 | Kiểm múi giờ Postgres là UTC (`show timezone;`) | DB server | Một lần. Dashboard coi `ai_usage_logs.created_at` là UTC (`docs/11` D4) |
+| Kênh cảnh báo Telegram (FEAT-016) | `.env` trên server + `/admin/alerts` | Sau deploy FEAT-016, các bước ở dưới bảng |
+
+**Cấu hình Telegram (FEAT-016):** biến chỉ nằm trong `.env` của server, không lưu DB (bất biến 7).
+1. Trên Telegram, nhắn `@BotFather` lệnh `/newbot` → nhận token.
+2. Tạo nhóm admin, thêm bot vào nhóm, gửi một tin bất kỳ trong nhóm.
+3. Mở `https://api.telegram.org/bot<token>/getUpdates` → lấy `chat.id` (nhóm có dạng `-100…`).
+4. Thêm `TELEGRAM_BOT_TOKEN=…` và `TELEGRAM_ALERT_CHAT_ID=…` vào `.env` server, rồi `docker compose up -d` (không cần build lại).
+5. Vào `/admin/alerts`, bấm **Gửi tin thử**; tin phải tới nhóm.
 
 ## 5. Sao lưu & rollback
 - **Sao lưu mã nguồn trước lần ghi đè lớn:** dùng `tar` thư mục app trên server, ví dụ `edusystem-backup-20261031.tar.gz`.
@@ -77,3 +85,5 @@
 | Build image lỗi `module-not-found` ở `next/font/google` | log build | Mạng tới Google Fonts chập chờn lúc build — chạy lại `deploy.sh` |
 | Chi phí AI hiện 0 | `/admin/settings`, mục `unpriced_models` | Thêm giá cho model |
 | QR không hiện | `/admin/orders`, tab Cấu hình thanh toán | Nhập BIN, STK, chủ tài khoản |
+| Không nhận tin Telegram cảnh báo | `/admin/alerts` (trạng thái Telegram, Gửi tin thử) | Kiểm 2 biến Telegram; bot còn trong nhóm; quá trần 20 tin/giờ thì xem trực tiếp trang |
+| Telegram báo dồn một lỗi | `/admin/alerts`, cột Số lần | Sửa nguyên nhân rồi *Đánh dấu đã xử lý*; tái phát sẽ báo lại |

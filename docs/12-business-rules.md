@@ -112,6 +112,37 @@ Chi tiết đầy đủ ở `docs/features/cham-diem-bang-diem.md` §7. Tóm t�
 - **BR-B12** AI chấm bài học lỗi 3 lần / `giveUp` → `NEEDS_REVIEW`, không cho 0.
 - **BR-B13** AI chấm xong ghi `ai_score`, `ai_feedback` cùng `score`.
 
+## 9c. Chuyển dạng câu khi nhập đề (I): FEAT-015, DEC-042 → DEC-046; `lib/question-conversion.ts`
+Chi tiết, bảng dạng giấy và mã cảnh báo ở `docs/features/chuyen-doi-dang-cau-nhap-de.md` §7. Tóm tắt:
+- **BR-I01** AI chỉ gắn nhãn `paper_format`, `answer_source`, `confidence`; `convertGroup` (hàm thuần) dựng content.
+- **BR-I02** 1 ô → `OPTION_BANK` 4 phương án, mỗi câu một bản ghi.
+- **BR-I03** ≥ 2 ô → `INLINE_SELECT`, mỗi ô 4 phương án của ô đó.
+- **BR-I04** Phương án dạng cặp, cả 4 tách được đúng k phần → k ô, mỗi ô 1 điểm; không tách được → `READING_MC`.
+- **BR-I05** Hộp từ chung → `OPTION_BANK` chung.
+- **BR-I06** Đoạn văn ghi `(n) [đáp án]`; ngoặc vuông gốc đổi thành ngoặc tròn; số ô = số đáp án.
+- **BR-I07** Không có đáp án → `null` + `NO_ANSWER`, không tự gán "A"; phải chọn đáp án mới nhập được.
+- **BR-I08** Dạng chưa hỗ trợ → `READING_MC` + cảnh báo + `reportAlert` WARN, không chặn nhập.
+- **BR-I09** Nhóm code không dựng được → AI lượt 2 (≤ 10 nhóm, 20 giây/lần); vẫn lỗi → `READING_MC` + cảnh báo.
+- **BR-I10** Học sinh không nhận `import_meta`.
+- **BR-I11** Nhóm lẫn dạng → tách thành khối liền nhau, giữ chung `prompt`.
+- **BR-I12** Listening dùng tiền tố `LISTENING_` + cảnh báo `AUDIO_MISSING`.
+- **BR-I13** `confidence < 0.6` → `LOW_CONFIDENCE`.
+- **BR-I14** Chỉ giữ `<u> <b> <strong> <i> <em> <br>`; đáp án chấm luôn là chữ trơn.
+
+## 9d. Cảnh báo admin (W): FEAT-016, DEC-047, DEC-048; `lib/admin-alerts.ts`
+Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:
+- **BR-W01** `reportAlert` không bao giờ ném lỗi, không gọi đệ quy.
+- **BR-W02** Upsert theo `fingerprint`; dòng `RESOLVED` tái phát thì về `NEW` và gửi ngay.
+- **BR-W03** Telegram: lần đầu, tái phát, hoặc ≥ 15 phút từ tin trước; tin ghi số lần lặp.
+- **BR-W04** Trần 20 tin / 60 phút toàn hệ thống; chạm trần thì gửi 1 tin báo.
+- **BR-W05** DB lỗi → gửi thẳng Telegram, chống spam trong bộ nhớ.
+- **BR-W06** Không PII, không bí mật (`redactSensitive`); không body, cookie, header, tên file.
+- **BR-W07** Thiếu biến Telegram → chỉ ghi DB.
+- **BR-W08** Mọi nhánh 500 trong `app/api/**` đi qua `serverError` (có test khoá).
+- **BR-W09** Dọn dòng `RESOLVED` quá 90 ngày, tối đa 1 lần/24 giờ.
+- **BR-W10** Worker báo khi gọi API thất bại sau 3 lần thử, khi `giveUp`, khi mất Redis.
+- **BR-W11** Nguồn AI: hết nhà cung cấp khi nhập đề (ERROR); bài `NEEDS_REVIEW` do AI (WARN).
+
 ## 10. Máy trạng thái
 ```text
 submissions.status      IN_PROGRESS ─submit─▶ GRADED (toàn câu khách quan)
@@ -125,4 +156,5 @@ slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
 users.teacher_status    TRIAL ─verify─▶ VERIFIED | REJECTED ; REJECTED ─verify─▶ VERIFIED   (NULL = coi như VERIFIED)
 leads.status            NEW ─▶ CONTACTED ─▶ DONE
+admin_alerts.status     (mới) ─▶ NEW ─admin đánh dấu─▶ RESOLVED ─tái phát / mở lại─▶ NEW      (FEAT-016)
 ```

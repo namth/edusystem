@@ -1,7 +1,7 @@
 # 03 — Màn hình & giao diện
 
-> Cập nhật: 2026-11-03 · Nguồn: `app/**/page.tsx`. Code status: `DONE` có trong code và test; `PARTIAL` có trong code nhưng còn tồn đọng (xem `docs/11` §4); `REDIRECT` là trang chỉ chuyển hướng.
-> Design status: `APPROVED` (đã duyệt mock / prototype) · `CODE-ONLY` (làm thẳng trong code, chưa có mock duyệt).
+> Cập nhật: 2026-11-23 · Nguồn: `app/**/page.tsx`. Code status: `DONE` có trong code và test; `PARTIAL` có trong code nhưng còn tồn đọng (xem `docs/11` §4); `REDIRECT` là trang chỉ chuyển hướng.
+> Design status: `APPROVED` (đã duyệt mock / prototype) · `CODE-ONLY` (làm thẳng trong code, chưa có mock duyệt) · `SPEC_ONLY` (mới có đặc tả).
 
 ## 1. Kiểm kê màn hình
 ### Công khai
@@ -15,6 +15,8 @@
 | SCR-06 | `/join/[classId]` | Xem trước lớp qua link mời, đăng nhập / đăng ký rồi vào lớp | CODE-ONLY | DONE |
 | SCR-07 | `/change-password` | Đổi mật khẩu (bắt buộc khi `must_change_password`) | CODE-ONLY | DONE |
 | SCR-08 | `/profile` | Hồ sơ cá nhân | CODE-ONLY | DONE |
+| SCR-09 | `/for-teachers` | Giới thiệu KitoKit cho giáo viên & trung tâm (SEO) | CODE-ONLY | DONE |
+| SCR-09b | `/about`, `/terms`, `/privacy`, `/payment-policy` | Trang pháp lý: thông tin đơn vị vận hành, điều khoản, bảo vệ thông tin cá nhân, chính sách thanh toán & hoàn tiền | CODE-ONLY | DONE |
 | — | `/teacher/login` | Chuyển về `/login` | — | REDIRECT |
 
 ### Học sinh
@@ -35,8 +37,8 @@
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
 | SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
-| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
-| SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
+| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn); tab AI nhập đề dùng chung Review Studio với SCR-24 | CODE-ONLY | DONE |
+| SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi. FEAT-015: Review Studio có nhãn "Trên giấy → Hệ thống", cảnh báo, Đổi dạng, Xem như học sinh, tổng điểm, khoá khi thiếu đáp án | CODE-ONLY | PARTIAL (FEAT-015 TODO, TASK-053) |
 | SCR-25 | `/teacher/lessons`, `/teacher/lessons/[id]` | Kho bài học, soạn bài học, xem trước | CODE-ONLY | DONE |
 | SCR-26 | `/teacher/subjects` | Môn học | CODE-ONLY | DONE |
 | SCR-27 | `/teacher/flashcards` | Thư viện flashcard | CODE-ONLY | DONE |
@@ -50,6 +52,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-40 | `/admin` | Tổng quan: thẻ số liệu, chọn tháng, biểu đồ, top giáo viên | CODE-ONLY | DONE |
+| SCR-52 | `/admin/alerts` | Cảnh báo hệ thống: lọc mức / nguồn / trạng thái, ngăn chi tiết, đánh dấu đã xử lý, trạng thái Telegram + Gửi tin thử (FEAT-016) | SPEC_ONLY | TODO (TASK-050) |
 | SCR-41 | `/admin/orders` | Đơn hàng (lọc, duyệt / từ chối / huỷ) + tab Cấu hình thanh toán | CODE-ONLY | DONE |
 | SCR-42 | `/admin/orders/[id]` | Trang thanh toán + duyệt / từ chối | CODE-ONLY | DONE |
 | SCR-43 | `/admin/teachers` | Danh sách giáo viên, lọc chờ xác minh (`?status=TRIAL`) | CODE-ONLY | DONE |
@@ -81,7 +84,9 @@
   - học sinh: `/student/exam/review/<id>`;
   - giáo viên: `/teacher/grading/<classId>/<kind>/<itemId>` (`EXAM_NEEDS_REVIEW` của bài lớp, `LESSON_NEEDS_REVIEW`), `/teacher/grading` (bài luyện tự do), `/teacher/orders/<id>`;
   - học sinh (chốt bảng điểm): `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
-  - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`.
+  - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`;
+  - tin Telegram cảnh báo (FEAT-016): `<APP_URL>/admin/alerts`.
+- Menu admin: "Cảnh Báo Hệ Thống" ngay sau "Tổng quan", có huy hiệu số cảnh báo `NEW` (FEAT-016).
 
 ## 3. Quy tắc giao diện (bắt buộc, có test)
 | Quy tắc | Nguồn | Test |
