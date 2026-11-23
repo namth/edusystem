@@ -81,6 +81,7 @@
 | 2026-10-31 | build local | Code chuẩn đầu tiên, ghi đè server cũ; migration 006–009, seed 4 chuẩn chấm | — | người dùng |
 | 2026-11-01 | — | Đợt sửa media Cambridge (volume `/app/public/media`) | — | người dùng |
 | 2026-11-03 23:15 | `2a4a9b3` (PR #5–#9) | FEAT-013 quản trị, tài liệu chuẩn, logo + mascot 3D, cấu hình MCP. Sao lưu DB trước: `~/edusystem-backups/db-truoc-feat013-20261103-2309.dump`. Migration 014/016 tự áp qua `ensureSchema` (đã kiểm cột + 4 khoá `system_settings`). Postgres `timezone = UTC` (D4 đúng). Build lần 1 lỗi tải Google Fonts (mạng), build lại OK | 015: xem trước không đổi giá trị nào (3 GV VERIFIED đều 250 slot, chưa có đơn duyệt) — **chưa chạy** | người dùng |
+| 2026-11-24 06:11 | `12489b7` (nhánh `claude/question-type-conversion-import-764eaf`, chưa merge `main`) | FEAT-015, FEAT-016, FEAT-017. Sao lưu trước: `~/edusystem-backups/db-truoc-feat017-20261124-0601.dump` (máy local, toàn DB) + `~/edusystem-backup-truoc-feat017-20261124.tar.gz` (mã nguồn trên server). Telegram FEAT-016 chưa cấu hình | `migrate-sections.ts --commit`: 321 đề + 2 bài học → 704 phần (10 chỉ đọc), 796 → 1088 câu (tách 237 câu gom ý), 0 lệch, xoá 4 bài nộp thử. 020: đã chạy 2026-11-24 (bỏ `question_ids` / `stimulus_*`, `section_id` + `position` NOT NULL) | người dùng |
 
 ## 7. Theo dõi & sự cố thường gặp
 | Triệu chứng | Kiểm | Xử lý |
