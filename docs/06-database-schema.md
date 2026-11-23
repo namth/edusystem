@@ -29,6 +29,8 @@
 | 016 | `…-016-slot-orders.sql` | Cột đơn hàng ở `slot_requests`; `payment_account`, `slot_pricing` | ensureSchema |
 | 017 | `…-017-gradebook.sql` | FEAT-014: `class_grade_items`, `class_grades`; `reviewed_at`/`reviewed_by` ở `submissions`, `lesson_attempts` (+ `teacher_feedback`, `last_grading_error`) | ensureSchema |
 | 018 | `…-018-admin-alerts.sql` | FEAT-016: `admin_alerts` + index (`status`, `last_seen_at`) | ensureSchema |
+| 019 | `…-019-sections.sql` *(dự kiến, TASK-056)* | FEAT-017: `sections`; `section_id`, `position`, `deleted_at` ở `questions`; `exams.updated_at` | ensureSchema |
+| 020 | `…-020-drop-question-ids.sql` *(dự kiến, TASK-061)* | FEAT-017: bỏ `question_ids`, `stimulus_*` ở `exams` / `questions`; `section_id` NOT NULL | **Chạy tay**, sau script chuyển dữ liệu |
 
 ## 2. Bảng theo miền
 ### 2.1 Người dùng & phân quyền
@@ -51,6 +53,8 @@
 - **`curriculum_items`** (003): `id`, `course_id` FK, `parent_id` (cây), `title`, `type` (`UNIT`/`LESSON`/`EXAM`), `exam_id`, `lesson_id` (006), `order_index`, `teacher_id`, `created_by`, `created_at`.
 
 ### 2.3 Nội dung
+> **FEAT-017 (dự kiến, `docs/features/phan-bai-hoc-de-thi.md` §5):** đề / bài học → `sections` (lời dẫn, kỹ năng, ngữ cảnh) → `questions` (`section_id`, `position`). Bỏ `question_ids`, `stimulus_*` ở `exams` / `questions` và `content.sub_questions`. Mô tả dưới đây là schema hiện tại cho tới khi TASK-061 chạy xong.
+- **`sections`** (019, dự kiến): `id`, `exam_id` | `lesson_id` (đúng một, CHECK), `position`, `skill`, `instruction`, `stimulus_type` (`NONE`/`TEXT_ONLY`/`AUDIO_ONLY`/`COMBINED`), `stimulus_text`, `stimulus_audio_url`, `stimulus_audio_text`, `stimulus_audio_gender`, `deleted_at`, `created_at`, `updated_at`.
 - **`questions`**: `id`, `skill`, `category` (17 dạng, xem `lib/question-content-types.ts`), `prompt`, `content` JSONB (có đáp án, không bao giờ gửi cho học sinh trước khi nộp), `stimulus_text`, `stimulus_audio_url`, `created_by` (007), `created_at`.
   - FEAT-015 (khoá JSON, không cần migration): `content.import_meta = { source: "AI_IMPORT", converter_version, paper_format, paper_numbers[], confidence, answer_source, warnings[] }` cho câu nhập bằng AI; `sanitizeQuestionForStudent` bỏ khoá này.
   - Câu điền ô trống tạo từ AI nhập đề: `stimulus_text = NULL`, đoạn văn nằm ở `content.passage` dạng `(n) [đáp án]`.
@@ -116,7 +120,7 @@
 users(TEACHER) 1─n classes ─n enrollments n─1 users(STUDENT)
 classes n─1 courses 1─n curriculum_items ─▶ lessons | exams
 classes 1─n class_assignments n─1 exams ; classes 1─n class_unlocks n─1 curriculum_items
-exams.question_ids / lessons.question_ids ─▶ questions ; questions(flashcard) ─▶ flashcards
+exams.question_ids / lessons.question_ids ─▶ questions   (FEAT-017: exams|lessons 1─n sections 1─n questions) ; questions(flashcard) ─▶ flashcards
 exams n─1 scoring_standards(sections[].rubric_id) ─▶ scoring_rubrics ; courses.default_scoring_standard_id
 submissions n─1 exams, users(STUDENT), classes(class_ref) ; lesson_attempts n─1 lessons, classes, users
 classes 1─n class_grade_items (LESSON|EXAM) ; classes 1─n class_grades n─1 users(STUDENT) ─▶ submissions | lesson_attempts

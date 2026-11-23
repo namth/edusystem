@@ -47,7 +47,7 @@
 ## 5. Bài học & lộ trình (L): FEAT-010
 - **BR-L01** Bài học thuộc `created_by`. TEACHER chỉ thao tác bài học của mình.
 - **BR-L02** Không xoá bài học đang được `curriculum_items.lesson_id` tham chiếu; trả 409 kèm danh sách nơi dùng.
-- **BR-L03** Gắn vào lộ trình yêu cầu bài học có ít nhất 1 khối.
+- **BR-L03** Gắn vào lộ trình yêu cầu bài học có ít nhất 1 khối. *(FEAT-017: ≥ 1 phần, BR-P02)*
 - **BR-L04** Trạng thái mục theo `unlock_mode`:
 
   | Chế độ | Mục `OPEN` khi |
@@ -58,7 +58,7 @@
 
   `COMPLETED`: bài học có `best_percent ≥ pass_percent`; đề thi có bài nộp đạt `passing_score`, hoặc chỉ cần có bài nộp nếu đề không có `passing_score`.
 - **BR-L05** Đổi `unlock_mode` lúc nào cũng được; các dòng `class_unlocks` giữ nguyên.
-- **BR-L06** Chấm khách quan trên server theo điểm thành phần: mỗi câu con, ô trống, cặp nối, thẻ = 1 điểm.
+- **BR-L06** Chấm khách quan trên server theo điểm thành phần: mỗi câu con, ô trống, cặp nối, thẻ = 1 điểm. *(FEAT-017: hết câu con — mỗi ý trắc nghiệm là một câu, BR-P12)*
 - **BR-L07** Tự luận và trả lời ngắn chấm bằng AI, mỗi mục tối đa 1 điểm = band / 9.
 - **BR-L08** `score_percent = (objective_earned + ai_earned) / (objective_max + ai_max) × 100`, làm tròn 1 chữ số; tổng tối đa = 0 thì lấy 100.
 - **BR-L09** Đáp án không bao giờ có trong phản hồi cho học sinh trước khi nộp.
@@ -68,7 +68,7 @@
 
 ## 6. Đề thi & chuẩn chấm (E): FEAT-011
 - **BR-E01** Chuẩn áp dụng: `exams.scoring_standard_id`; không có thì `courses.default_scoring_standard_id` của khoá chứa đề; không có nữa thì `std_internal_10`. Chuẩn được chụp vào `standard_snapshot` lúc bắt đầu thi.
-- **BR-E02** Điểm phần nhóm theo `questions.skill`. Quy đổi `LINEAR` hoặc `TABLE` (đề khác số câu chuẩn thì quy tỷ lệ về số câu chuẩn rồi tra bảng). Làm tròn theo `step`.
+- **BR-E02** Điểm phần nhóm theo `questions.skill` (FEAT-017: luôn bằng `sections.skill`, BR-P04). Quy đổi `LINEAR` hoặc `TABLE` (đề khác số câu chuẩn thì quy tỷ lệ về số câu chuẩn rồi tra bảng). Làm tròn theo `step`.
 - **BR-E03** Có `classId`: học sinh phải đã ghi danh, và đề phải được giao cho lớp hoặc là mục EXAM đang mở trong lộ trình.
 - **BR-E04** Số lần làm: theo `class_assignments.max_attempts`, mục lộ trình mặc định 1, lớp dùng thử 1. Đề trong ngân hàng luyện tập không giới hạn.
 - **BR-E05** `deadline_at = started_at + duration_minutes`. Nộp sau `deadline_at + 2 phút` vẫn được chấm nhưng `is_late = true`. Lưu nháp sau hạn trả 409.
@@ -154,6 +154,23 @@ Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:
 - **BR-W09** Dọn dòng `RESOLVED` quá 90 ngày, tối đa 1 lần/24 giờ.
 - **BR-W10** Worker báo khi bỏ cuộc sau 5 lần giao (`WORKER:GIVE_UP:*`) và khi mất Redis (`WORKER:REDIS_DOWN`).
 - **BR-W11** Nguồn AI: hết nhà cung cấp khi nhập đề (ERROR); bài `NEEDS_REVIEW` do AI (WARN).
+
+## 9e. Bài học & đề thi theo Phần (P): FEAT-017, DEC-051 → DEC-054; `lib/exam-structure.ts` (dự kiến)
+Chi tiết ở `docs/features/phan-bai-hoc-de-thi.md` §7. Tóm tắt:
+- **BR-P01** Đề / bài học = danh sách phần có thứ tự; mỗi phần thuộc đúng một cha; dùng lại = sao chép.
+- **BR-P02** ≥ 1 phần; đề thi có ≥ 1 câu tính điểm; bài học có thể chỉ có phần đọc.
+- **BR-P03** Phần có thể 0 câu nhưng phải có lời dẫn, chữ hoặc audio.
+- **BR-P04** Dạng câu thuộc kỹ năng của phần; `questions.skill` = `sections.skill`.
+- **BR-P05** Ngữ cảnh khớp `stimulus_type`; phần Listening có câu phải có audio.
+- **BR-P06** Số câu tính bằng `numberedCount` (điền ô = số ô, nối = số cặp, còn lại 1), liên tục qua các phần; không lưu.
+- **BR-P07** Lưu cả cây trong một transaction, `position` = chỉ số mảng; lỗi → rollback.
+- **BR-P08** `updated_at` lệch → 409.
+- **BR-P09** Đã có lượt làm → xoá mềm, không chấm lại bài cũ, trình soạn hiện số lượt; chưa có → xoá hẳn.
+- **BR-P10** Học sinh không thấy phần / câu xoá mềm; xem lại bài nộp thì thấy câu có trong bài đó.
+- **BR-P11** Một phần một màn theo `position`; phần 0 câu có nút Tiếp tục, không tính vào số câu.
+- **BR-P12** Trắc nghiệm một ý một bản ghi, đáp án A–D; không còn `sub_questions`; code mới không đọc định dạng cũ.
+- **BR-P13** Nhân bản chép sâu; chuyển bài học ↔ đề giữ id.
+- **BR-P14** AI nhập đề: mỗi nhóm đề giấy → một phần; nhóm liền nhau cùng bài đọc → chung một phần.
 
 ## 10. Máy trạng thái
 ```text

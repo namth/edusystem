@@ -41,6 +41,12 @@
   psql "$DATABASE_URL" -f docs/db-migration-015-student-slots.sql
   ```
   Chạy xong thì ghi ngày chạy vào bảng §6.
+- **FEAT-017 (dự kiến, TASK-061) — đổi cấu trúc nội dung, làm trong một đợt deploy, phải được người dùng đồng ý:**
+  1. Sao lưu `exams`, `lessons`, `questions`, `submissions`, `lesson_attempts` (`pg_dump -t …`).
+  2. Deploy code FEAT-017; migration 019 chạy cùng `ensureSchema`.
+  3. `npx tsx scripts/migrate-sections.ts --dry-run`, đọc báo cáo (tổng `numberedCount` mỗi đề trước = sau), rồi chạy thật.
+  4. `psql "$DATABASE_URL" -f docs/db-migration-020-drop-question-ids.sql`.
+  5. Thử một đề Cambridge trên trình duyệt (giáo viên mở sửa, học sinh làm), ghi ngày vào §6.
 - Thêm migration mới: tạo `docs/db-migration-0NN-*.sql`, thêm DDL vào `ensureSchema` (trừ khi là migration chạy tay), cập nhật `docs/06` §1 và bảng §3 ở trên. Không sửa file migration cũ.
 
 ## 4. Cấu hình sau deploy (lưu trong DB, admin nhập trong app)

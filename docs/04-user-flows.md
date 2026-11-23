@@ -89,6 +89,14 @@ Mỗi bước không đạt đều trả 409.
 5. "Chốt bảng điểm": chặn khi còn `GRADING` / `NEEDS_REVIEW`; còn bài chưa xem thì hỏi xác nhận. Chốt xong điểm được chụp lại, học sinh nhận `GRADEBOOK_FINALIZED` và xem ở tab Bảng điểm của lớp. "Mở chốt" để sửa tiếp.
 6. Tab "Tổng kết lớp": học sinh × bài đã chốt, trung bình thang 10.
 
+## UF-13 Giáo viên soạn đề / bài học theo Phần (FEAT-017)
+1. Mở `/teacher/tests/create` hoặc `/teacher/lessons/[id]`: `GET` cây đề → phần → câu. Đề mới có sẵn một Phần 1 trống.
+2. Ở cột **Cấu trúc bài**, thêm / chọn / kéo thả phần. Với phần đang chọn: đặt kỹ năng, lời dẫn, ngữ cảnh (không / chữ / audio / cả hai).
+3. Bấm **+ Thêm câu**, chọn dạng thuộc kỹ năng của phần, rồi sửa tại chỗ trong thẻ câu. Một phần có thể chứa nhiều dạng, hoặc không có câu nào (phần chỉ để đọc).
+4. Số câu tự tính liên tục qua các phần (đoạn điền 10 ô chiếm 10 số).
+5. **Lưu**: kiểm cây ở client, rồi `PUT` cả cây kèm `updated_at`. Lỗi → tô đỏ phần / câu; `409` → tải lại. Đề đã có lượt làm thì câu / phần bị bỏ được xoá mềm.
+6. Học sinh làm: mỗi phần một màn, phần chỉ đọc bấm **Tiếp tục**.
+
 ## UF-12 Admin nhận & xử lý cảnh báo hệ thống (FEAT-016)
 1. Server gặp lỗi (500 của API, lỗi chưa bắt, AI lỗi, worker lỗi, dạng câu nhập đề chưa hỗ trợ) → `reportAlert` ghi `admin_alerts` (gộp theo fingerprint) và gửi Telegram, mỗi lỗi tối đa 1 tin/15 phút, toàn hệ thống tối đa 20 tin/giờ.
 2. Admin mở đường dẫn ghi trong tin, hoặc vào menu "Cảnh Báo Hệ Thống" → `/admin/alerts`, lọc rồi xem chi tiết.

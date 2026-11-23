@@ -48,6 +48,7 @@ Chuẩn duy nhất (DEC-036) — code lệch tài liệu thì sửa tài liệu 
 - `docs/features/quan-tri-he-thong.md` — FEAT-013 Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh (TASK-038 → TASK-043).
 - `docs/features/cham-diem-bang-diem.md` — FEAT-014 Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết thang 10 (TASK-044 → TASK-047, DONE 06/11).
 - `docs/features/chuyen-doi-dang-cau-nhap-de.md` — FEAT-015 Chuyển dạng câu khi AI nhập đề: ABCD trên giấy → điền ô trống / sắp xếp / ghép nối, giữ gạch chân, cảnh báo dạng chưa hỗ trợ (TASK-051 → TASK-053).
+- `docs/features/phan-bai-hoc-de-thi.md` — FEAT-017 Bài học & đề thi theo Phần: `sections` (lời dẫn + ngữ cảnh tuỳ chọn) chứa nhiều câu khác dạng hoặc 0 câu, số câu theo số ý, `SectionEditor`, màn học sinh theo phần (TASK-056 → 061, SPEC_APPROVED 24/11).
 - `docs/features/canh-bao-admin.md` — FEAT-016 Kênh cảnh báo admin: `admin_alerts`, Telegram, `/admin/alerts`, `serverError` cho mọi 500 (TASK-048 → TASK-050).
 - `docs/db-migration-00N-*.sql` — migration theo thứ tự; `lib/db-pg.ts` `ensureSchema()` chạy cùng DDL.
 - `handoff/KE-HOACH.md` — kế hoạch và tiến độ.

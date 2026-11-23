@@ -19,6 +19,7 @@
 | Tổng quan admin (BR-D) | `admin-dashboard` |
 | Bảng điểm (BR-B, FEAT-014) | `gradebook` (lõi, TASK-044), `teacher-grading-api` (TASK-045), `teacher-grading-ui`, `student-gradebook-ui` (TASK-046/047). Ca TC-B01 → TC-B16 ở `docs/features/cham-diem-bang-diem.md` §8 |
 | Chuyển dạng câu nhập đề (BR-I, FEAT-015) | `question-conversion` (TASK-051), `ai-import`, `document-parser-html` (TASK-052), `ai-studio-ui`, `lesson-player` (TASK-053), `grading` (đáp án thay thế, TASK-054), `question-editor-mapping` (sửa câu nhập AI, kho từ bấm-điền, TASK-055). Ca TC-I01 → TC-I33 ở `docs/features/chuyen-doi-dang-cau-nhap-de.md` §8 |
+| Bài học & đề theo Phần (BR-P, FEAT-017, dự kiến) | `exam-structure` (TASK-056), `exams-api`, `lessons-api`, `exam-attempts-api`, `student-lessons-api`, `library-convert-duplicate` (TASK-057), `section-editor` (TASK-058), `exam-layout` (TASK-059), `ai-import` (TASK-060), `migrate-sections` (TASK-061). Ca TC-P01 → TC-P20 ở `docs/features/phan-bai-hoc-de-thi.md` §8 |
 | Cảnh báo admin (BR-W, FEAT-016) | `admin-alerts`, `server-error`, `env-check` (TASK-048), `server-error-coverage` (TASK-049), `admin-alerts-api`, `admin-alerts-ui`, `admin-dashboard` (thứ tự menu) (TASK-050). Ca TC-W01 → TC-W14 ở `docs/features/canh-bao-admin.md` §8 |
 | Kho, chuyển đổi, nhân bản, flashcard, upload | `library-convert-duplicate`, `flashcards-uploads-api`, `subjects` |
 | Trang học sinh / landing | `student-pages`, `student-home`, `landing` |
@@ -48,6 +49,10 @@ E2E (Playwright, `e2e/`): `auth`, `rbac`, `onboarding`, `student-exam`, `teacher
 | TC-T01 | Dùng thử: lớp thứ 2, nội dung thứ 4, học sinh thứ 4 → bị chặn | BR-T02 | `teacher-trial` |
 | TC-I02 | Câu cloze nhập bằng AI: chuyển đổi → ẩn đáp án → chấm với câu trả lời đúng được điểm tối đa (không còn "(25)" làm đáp án) | BR-I03, BR-I06 | `question-conversion` |
 | TC-I09 | Câu nhập thiếu đáp án không bao giờ thành "A"; nhập khi còn thiếu → 400 | BR-I07 | `question-conversion`, `ai-import` |
+| TC-P07 | Lưu cả cây: đổi thứ tự phần, chuyển câu giữa phần, thêm / bỏ câu → đúng `position`, `section_id`; lỗi giữa chừng → rollback | BR-P07 | `exams-api`, `lessons-api` |
+| TC-P09 | Hai tab sửa cùng đề: `updated_at` cũ → 409, DB không đổi | BR-P08 | `exams-api` |
+| TC-P10 | Đề đã có bài nộp: bỏ câu → xoá mềm; học sinh mới không thấy; xem lại bài cũ vẫn thấy câu và điểm | BR-P09, BR-P10 | `exams-api`, `exam-attempts-api` |
+| TC-P12 | Nội dung học sinh theo phần không lộ đáp án, không có câu xoá mềm | BR-P10, BR-E08 | `exam-attempts-api`, `student-lessons-api` |
 | TC-W04 | 25 lỗi khác nhau trong 1 giờ → tối đa 20 tin Telegram + 1 tin chạm trần, DB đủ 25 dòng | BR-W04 | `admin-alerts` |
 | TC-W06 | Email, SĐT, JWT, mật khẩu trong lỗi bị làm sạch trước khi ghi DB / gửi Telegram | BR-W06 | `admin-alerts` |
 | TC-W09 | Không route nào trả 500 mà không qua `serverError` | BR-W08 | `server-error-coverage` |

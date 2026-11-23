@@ -24,9 +24,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-10 | `/student/dashboard` | Trang chủ học sinh: lớp, việc cần làm, vào lớp bằng mã | CODE-ONLY | DONE |
 | SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; tab Bảng điểm (`?tab=gradebook`) xem điểm chính thức các bài đã chốt | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
-| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại | CODE-ONLY | DONE |
-| SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm | CODE-ONLY | DONE |
-| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm" | CODE-ONLY | DONE |
+| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại. FEAT-017: mỗi phần một màn, phần chỉ đọc có nút Tiếp tục (Design: SPEC_ONLY, Code: TODO) | CODE-ONLY | DONE |
+| SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm. FEAT-017: màn theo phần (không nhóm theo kỹ năng), ô điều hướng `number_start` (Design: SPEC_ONLY, Code: TODO) | CODE-ONLY | DONE |
+| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm". FEAT-017: hiện theo phần, gồm câu đã xoá mềm có trong bài (Code: TODO) | CODE-ONLY | DONE |
 | SCR-15 | `/student/analytics` | Biểu đồ điểm | CODE-ONLY | DONE |
 | SCR-16 | `/student/landing` | Trang chờ (đổi mật khẩu / chưa có lớp) | CODE-ONLY | DONE |
 | — | `/student` | Chuyển hướng | — | REDIRECT |
@@ -37,9 +37,9 @@
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
 | SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
-| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn); tab AI nhập đề dùng chung Review Studio với SCR-24 | CODE-ONLY | DONE |
+| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn); tab AI nhập đề dùng chung Review Studio với SCR-24. FEAT-017: thay bằng `SectionEditor` — cột phải Cấu trúc bài, vùng trái soạn phần đang chọn (Design: SPEC_ONLY, Code: TODO) | CODE-ONLY | DONE |
 | SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi. FEAT-015: Review Studio có nhãn "Trên giấy → Hệ thống", cảnh báo, Đổi dạng, Xem như học sinh, tổng điểm, khoá khi thiếu đáp án | CODE-ONLY | DONE (FEAT-015) |
-| SCR-25 | `/teacher/lessons`, `/teacher/lessons/[id]` | Kho bài học, soạn bài học, xem trước | CODE-ONLY | DONE |
+| SCR-25 | `/teacher/lessons`, `/teacher/lessons/[id]` | Kho bài học, soạn bài học, xem trước. FEAT-017: soạn bài học bằng `SectionEditor` như SCR-23 (Design: SPEC_ONLY, Code: TODO) | CODE-ONLY | DONE |
 | SCR-26 | `/teacher/subjects` | Môn học | CODE-ONLY | DONE |
 | SCR-27 | `/teacher/flashcards` | Thư viện flashcard | CODE-ONLY | DONE |
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |

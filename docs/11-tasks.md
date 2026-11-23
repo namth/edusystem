@@ -1,6 +1,6 @@
 # 11 — Kế hoạch, task & tồn đọng
 
-> Cập nhật: 2026-11-23.
+> Cập nhật: 2026-11-24.
 > - Trạng thái task lấy từ `python3 scripts/handoff.py list`; brief, test và báo cáo từng task nằm ở `handoff/tasks/TASK-NNN-*/`.
 > - Tiến độ chi tiết theo ngày ghi ở `handoff/KE-HOACH.md`.
 > - Từ nay mã task thống nhất là `TASK-NNN` (bỏ dạng `TSK-NN` của khung cũ).
@@ -19,6 +19,7 @@
 | M8 Chấm & Bảng điểm (FEAT-014) | Migration 017, lõi bảng điểm, API chấm theo lớp, UI giáo viên, tab Bảng điểm học sinh | TASK-044 → 047 | ✅ 06/11, chưa deploy |
 | M9 Cảnh báo admin (FEAT-016) | Migration 018, `reportAlert` + Telegram, `serverError` cho mọi 500, worker, trang `/admin/alerts` | TASK-048 → 050 | ✅ 23/11, chưa deploy |
 | M10 Chuyển dạng câu nhập đề (FEAT-015) | Bộ chuyển đổi, parser giữ gạch chân + AI gắn nhãn, Review Studio | TASK-051 → 054 | ✅ 23/11, chưa deploy; đã thử PDF scan IELTS (FEAT-015 §10), còn thiếu thử DOCX thật (N2) |
+| M11 Bài học & đề theo Phần (FEAT-017) | Migration 019/020, `lib/exam-structure.ts`, API cây, `SectionEditor`, màn học sinh theo phần, AI nhập đề ra phần, script chuyển dữ liệu | TASK-056 → 061 | ⏳ đặc tả xong 24/11 |
 
 ⚠️ Có 2 thư mục cùng mã TASK-035 (`TASK-035-chuyen-loai-nhan-ban`, `TASK-035-dang-ky-api`), do đánh số trùng khi hai task chạy song song. Không đổi tên để giữ lịch sử.
 
@@ -90,6 +91,17 @@
 | 053 | Review Studio chuyển dạng + `LessonPlayer` thẻ inline | 051, 052 | TC-I16, 17; `next build` |
 | 055 | Sửa câu nhập AI mượt như câu tạo tay (trình soạn đọc/ghi đủ trường, đáp án chữ cái, `inline_options_per_gap`, giữ dữ liệu khi đổi dạng, đề độc lập không bị gắn khoá), chữ trơn thay gạch chân, câu gợi ý "/" → sắp xếp từ, kho từ bấm-điền (BR-I21, I24 → I26, DEC-050) | 054 | TC-I07, I28 → 33 |
 | 054 | Thử file thật FEAT-015 (IELTS scan + đề DOCX THCS): OCR scan theo trang, bài đọc chung, ghép nối/tóm tắt, chấm đáp án thay thế, kiểm đủ câu, số câu gốc, chống bịa đoạn văn (BR-I15 → I23) | 051 → 053 | TC-I18 → 27 |
+
+**FEAT-017** (chưa giao; chi tiết + DoD ở `docs/features/phan-bai-hoc-de-thi.md` §9):
+
+| Task | Tiêu đề | Phụ thuộc | DoD |
+| :--- | :--- | :--- | :--- |
+| 056 | Migration 019 + `lib/exam-structure.ts` (`numberedCount`, `validateTree`, `loadTree`, `saveTree`); bỏ `sub_questions` ở chuẩn hoá và chấm | — | TC-P01 → 09 |
+| 057 | API cây giáo viên (đề, bài học), bỏ `/api/teacher/questions*`; API học sinh, nộp, chấm nền, xem lại, preview, `library-ops` theo phần | 056 | TC-P10 → 13, 15, 18 |
+| 058 | Prototype rồi `SectionEditor` thay `QuestionSetEditor` (SCR-23, SCR-25) | 057 | TC-P19; `next build` |
+| 059 | Màn học sinh theo phần (`buildScreens`, `LessonPlayer`, phần chỉ đọc), SCR-14, Review Studio, xem trước | 057 | TC-P14, 20; `next build` |
+| 060 | AI nhập đề → phần | 056, 057 | TC-P16 |
+| 061 | `scripts/migrate-sections.ts` (`--dry-run`) + migration 020; chạy production khi người dùng đồng ý | 056 → 060 | TC-P17 |
 
 **Lệnh xác minh chung** cho mọi task (ngoài `verify.sh` riêng):
 ```bash

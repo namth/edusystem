@@ -44,7 +44,7 @@
 | GET / POST | `/api/student/lessons/[lessonId]/attempts` | Nộp bài học, chấm ngay câu khách quan; có câu AI thì `GRADING` | `student-lessons-api` |
 | GET | `/api/student/attempts/[id]` | Kết quả lượt bài học | `student-lessons-api` |
 | POST | `/api/student/exams/[examId]/attempts` | Bắt đầu lượt thi (`classId?`), 409 nếu hết lượt | `exam-attempts-api` |
-| GET | `/api/student/exams/[examId]/content` | Nội dung đề, không có đáp án | `exam-attempts-api` |
+| GET | `/api/student/exams/[examId]/content` | Nội dung đề, không có đáp án. FEAT-017: trả `sections[]`, câu kèm `number_start` / `number_count`, không có câu xoá mềm | `exam-attempts-api` |
 | PUT | `/api/student/exam-attempts/[id]/answers` | Lưu nháp; sau hạn → 409 | `exam-attempts-api` |
 | POST | `/api/student/exam-attempts/[id]/submit` | Nộp và chấm; nộp lần hai → 409 | `exam-attempts-api` |
 | GET | `/api/submissions/[id]` | Đang làm → 409 với học sinh; GV/ADMIN xem được | `exam-attempts-api` |
@@ -60,11 +60,11 @@
 | GET | `/api/teacher/classes/[classId]/members`, `/api/teacher/classes/[classId]/progress`, `/api/teacher/classes/[classId]/roadmap` | | `class-roadmap-api` |
 | POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
-| GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
-| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học) | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
+| GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409. FEAT-017 (TASK-057): GET / POST / PUT trả và nhận cả cây `sections[].questions[]` kèm `updated_at`, lệch → 409 (`docs/features/phan-bai-hoc-de-thi.md` §6) | `lessons-api`, `lesson-preview` |
+| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học). FEAT-017 (TASK-057): cây phần như bài học | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
 | POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT`. FEAT-015 (TASK-052) thêm `extractedData.groups` (dữ liệu gốc có `paper_format`, `passage_html`) và `conversion` (câu đã chuyển dạng, cảnh báo, `scoreItems`). 400 `DOCUMENT_TOO_LONG` khi PDF scan > 40 trang hoặc đề quá dài cho một lần (BR-I18); 503 `AI_UNAVAILABLE` khi AI lỗi hoặc OCR thiếu trang | `ai-import`, `ai-usage` |
 | POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch). FEAT-015 (TASK-052): nhận `ConvertedQuestion[]`, kiểm từng câu, sai → 400 `INVALID_CONTENT` kèm `invalid[]`; `skill` lưu suy từ tiền tố `category`, bỏ qua `skill` client gửi (BR-I23) | `ai-import` |
-| POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |
+| POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | FEAT-017: **bị bỏ** ở TASK-057 (câu chỉ lưu qua cây đề / bài học) | `lessons-api` |
 | GET / POST / PUT / DELETE | `/api/teacher/flashcards`, `/api/teacher/flashcards/[id]` | | `flashcards-uploads-api` |
 | POST | `/api/teacher/library/convert` | Bài học ↔ đề | `library-convert-duplicate` |
 | GET | `/api/teacher/trial-usage` | `{ status, limits, used, reviewNote }`; đã xác minh → `limits: null` | `teacher-trial` |
