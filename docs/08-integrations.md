@@ -11,7 +11,7 @@
 | **Supabase Storage** | Upload audio, ảnh flashcard, bản ghi Speaking (bucket `audio-assets`, `flashcard-assets`, `speaking-recordings`), chỉ qua server | `app/api/uploads`, `lib/supabase-server.ts` | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (`NEXT_PUBLIC_SUPABASE_ANON_KEY` truyền khi build) | 500 kèm thông điệp |
 | **Redis (Streams)** | Hàng đợi chấm AI `stream:learning:grading` | `lib/redis-queue.ts`, `worker/grading-worker.js` | `REDIS_URL`, `WORKER_ID`, `APP_URL` (worker gọi API) | Đẩy lỗi thì bài chuyển `NEEDS_REVIEW` và báo giáo viên |
 | **Neo4j** | Đồ thị khoá – đề – lớp – học sinh (phụ) | `lib/neo4j.ts` | `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE` | Chỉ log; không ảnh hưởng PostgreSQL (bất biến 10) |
-| **Telegram Bot API** (FEAT-016, chưa code) | Đẩy cảnh báo hệ thống cho admin (`sendMessage`, HTML) | `lib/telegram.ts`, `lib/admin-alerts.ts` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALERT_CHAT_ID` | Chỉ log; sự kiện vẫn ở `admin_alerts`, lần sau thử lại (BR-W03). Thiếu biến → chỉ ghi DB |
+| **Telegram Bot API** (FEAT-016) | Đẩy cảnh báo hệ thống cho admin (`sendMessage`, HTML) | `lib/telegram.ts`, `lib/admin-alerts.ts` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALERT_CHAT_ID` | Chỉ log; sự kiện vẫn ở `admin_alerts`, lần sau thử lại (BR-W03). Thiếu biến → chỉ ghi DB |
 | **VietQR (NAPAS 247)** | Mã QR chuyển khoản cho đơn mua slot | `lib/vietqr.ts` (payload EMVCo + CRC16), `lib/vietqr-banks.ts` (BIN), gói `qrcode` vẽ ở client | — (tài khoản lưu ở `system_settings.payment_account`) | Chưa cấu hình tài khoản thì không vẽ QR, báo "chưa cấu hình" |
 
 ## Theo dõi chi phí AI

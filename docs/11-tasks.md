@@ -17,8 +17,8 @@
 | M6 Đăng ký & dùng thử (FEAT-012) | Đăng ký phỏng vấn, giáo viên dùng thử, xác minh | TASK-035 (đăng ký API), 036, 037 | ✅ |
 | M7 Quản trị (FEAT-013) | Token và chi phí AI, slot = học sinh, gộp tiêu chí, đơn hàng + VietQR, tổng quan | TASK-038 → 043 | ✅ đã deploy 03/11 (`docs/15` §6) |
 | M8 Chấm & Bảng điểm (FEAT-014) | Migration 017, lõi bảng điểm, API chấm theo lớp, UI giáo viên, tab Bảng điểm học sinh | TASK-044 → 047 | ✅ 06/11, chưa deploy |
-| M9 Cảnh báo admin (FEAT-016) | Migration 018, `reportAlert` + Telegram, `serverError` cho mọi 500, worker, trang `/admin/alerts` | TASK-048 → 050 | ⏳ đặc tả xong 23/11 |
-| M10 Chuyển dạng câu nhập đề (FEAT-015) | Bộ chuyển đổi, parser giữ gạch chân + AI gắn nhãn, Review Studio | TASK-051 → 053 | ⏳ đặc tả xong 23/11 |
+| M9 Cảnh báo admin (FEAT-016) | Migration 018, `reportAlert` + Telegram, `serverError` cho mọi 500, worker, trang `/admin/alerts` | TASK-048 → 050 | ✅ 23/11, chưa deploy |
+| M10 Chuyển dạng câu nhập đề (FEAT-015) | Bộ chuyển đổi, parser giữ gạch chân + AI gắn nhãn, Review Studio | TASK-051 → 053 | ✅ 23/11, chưa deploy, chưa thử file thật (N2) |
 
 ⚠️ Có 2 thư mục cùng mã TASK-035 (`TASK-035-chuyen-loai-nhan-ban`, `TASK-035-dang-ky-api`), do đánh số trùng khi hai task chạy song song. Không đổi tên để giữ lịch sử.
 
@@ -78,7 +78,7 @@
 | 046 | UI giáo viên: hub, bảng điểm bài + ngăn chấm, tổng kết; trang lớp bỏ Sổ điểm | 045 | TC-B16 |
 | 047 | UI học sinh: tab Bảng điểm, hiển thị điểm/nhận xét giáo viên | 045 | test UI học sinh |
 
-**FEAT-016 và FEAT-015** (chưa giao; chi tiết + DoD ở `docs/features/canh-bao-admin.md` §9 và `docs/features/chuyen-doi-dang-cau-nhap-de.md` §9). Thứ tự: 048 và 051 chạy song song được; 052 cần 048 + 051.
+**FEAT-016 và FEAT-015** (✅ 23/11, Claude tự làm cả 6 task để đo hiệu suất mode `self` — không có thư mục `handoff/tasks/`; chi tiết + DoD ở `docs/features/canh-bao-admin.md` §9 và `docs/features/chuyen-doi-dang-cau-nhap-de.md` §9). Thứ tự: 048 và 051 chạy song song được; 052 cần 048 + 051.
 
 | Task | Tiêu đề | Phụ thuộc | DoD |
 | :--- | :--- | :--- | :--- |
@@ -116,5 +116,5 @@ npx vitest run && npx tsc --noEmit && npx next build
 | D8 | Thấp | Rác: `scratch/`, `scratch_inspect_neo4j.cjs` | gốc repo | Xoá |
 | D10 | Cao | Tab "Sổ điểm" trang lớp gọi `grade-override` thiếu `section_scores` → luôn 400, đọc cột cũ (`final_score`, `ai_score`); `members` tính điểm từ bài nộp mọi lớp; AI bài học lỗi → 0 điểm; người tạo đề thấy bài lớp khác | `app/teacher/classes/[classId]/page.tsx`, `app/api/teacher/classes/[classId]/members/route.ts`, `app/api/lessons/grade-async/route.ts`, `app/api/teacher/submissions/route.ts` | ✅ Đã sửa trong FEAT-014 (TASK-044 → 046) |
 | D9 | Thấp | File lớn: `components/question-builder/QuestionSetEditor.tsx` khoảng 2.860 dòng | — | Tách theo dạng câu hỏi khi có dịp |
-| D11 | Cao | AI nhập đề: câu cloze lưu `INLINE_SELECT` nhưng thiếu `inline_options_per_gap` / `correct_answers`, nên `(25)` bị chấm là đáp án "25"; thiếu đáp án thì tự gán "A"; DOCX mất gạch chân | `app/api/teacher/exams/ai-import/route.ts`, `lib/document-parser.ts` | Sửa trong FEAT-015 (TASK-051/052). Câu đã nhập trước đó phải sửa tay bằng trình soạn câu hỏi |
-| D12 | TB | Lỗi 500 chỉ `console.error`, admin không biết | `app/api/**`, `worker/` | FEAT-016 (TASK-048 → 050) |
+| D11 | ✅ 23/11 | AI nhập đề: câu cloze lưu `INLINE_SELECT` nhưng thiếu `inline_options_per_gap` / `correct_answers`, nên `(25)` bị chấm là đáp án "25"; thiếu đáp án thì tự gán "A"; DOCX mất gạch chân | `app/api/teacher/exams/ai-import/route.ts`, `lib/document-parser.ts` | Sửa trong FEAT-015 (TASK-051/052). Câu đã nhập trước đó phải sửa tay bằng trình soạn câu hỏi |
+| D12 | ✅ 23/11 | Lỗi 500 chỉ `console.error`, admin không biết | `app/api/**`, `worker/` | FEAT-016 (TASK-048 → 050) |

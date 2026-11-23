@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { emptyAnswerFor, setAnswerPart } from "@/lib/lesson-player";
 import SpeakingRecorder from "./SpeakingRecorder";
-import { sanitizeStimulusHtml } from "@/lib/stimulus-html";
+import { sanitizeInlineHtml, sanitizeStimulusHtml } from "@/lib/stimulus-html";
 import {
   Volume2,
   CheckCircle2,
@@ -258,9 +258,11 @@ export default function LessonPlayer({
                           <span className="font-bold text-brand-600 text-sm">
                             {subIndex + 1}.
                           </span>
-                          <span className="font-medium text-ink text-sm">
-                            {sub.text}
-                          </span>
+                          <span
+                            className="font-medium text-ink text-sm"
+                            // FEAT-015 BR-I14: giữ gạch chân / đậm / nghiêng (đã lọc thẻ)
+                            dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(sub.text) }}
+                          />
                         </div>
 
                         {/* Sub audio if exists */}
@@ -322,7 +324,7 @@ export default function LessonPlayer({
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-current font-bold text-xs">
                                   {optKey}
                                 </span>
-                                <span className="flex-1">{optText}</span>
+                                <span className="flex-1" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(optText) }} />
                                 {itemResult && (
                                   <>
                                     {isSelected && itemResult.correct && (

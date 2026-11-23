@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getPgPool, queryPg } from "@/lib/db-pg";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { validateQuestionContent } from "@/lib/question-conversion";
 import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
@@ -15,6 +16,30 @@ export async function POST(req: Request) {
   if (!examTitle || !Array.isArray(questions) || questions.length === 0) {
     return NextResponse.json(
       { success: false, error: "Dữ liệu đề thi hoặc danh sách câu hỏi không hợp lệ." },
+      { status: 400 }
+    );
+  }
+
+  // FEAT-015 §6.2: nhận câu đã chuyển dạng, kiểm content từng câu trước khi chạm DB
+  const invalid: { index: number; tempId?: string; reason: string }[] = [];
+  const normalized = questions.map((q: Record<string, unknown>, index: number) => {
+    const category = typeof q?.category === "string" ? q.category : "";
+    const content = q?.content && typeof q.content === "object" && !Array.isArray(q.content) ? { ...(q.content as Record<string, unknown>) } : null;
+    const check = validateQuestionContent(category, content);
+    if (!check.ok) invalid.push({ index, tempId: typeof q?.tempId === "string" ? q.tempId : undefined, reason: check.reason });
+    const meta = content?.import_meta && typeof content.import_meta === "object" ? (content.import_meta as Record<string, unknown>) : {};
+    return {
+      skill: typeof q?.skill === "string" && q.skill ? q.skill : "Reading",
+      category,
+      prompt: typeof q?.prompt === "string" ? q.prompt : "",
+      stimulus_text: typeof q?.stimulus_text === "string" && q.stimulus_text ? q.stimulus_text : null,
+      content: { ...(content || {}), import_meta: { ...meta, source: "AI_IMPORT" } },
+    };
+  });
+  if (invalid.length > 0) {
+    const labels = [...new Set(invalid.map((x) => x.index + 1))].join(", ");
+    return NextResponse.json(
+      { success: false, error: `Câu hỏi số ${labels} có nội dung không hợp lệ.`, code: "INVALID_CONTENT", invalid },
       { status: 400 }
     );
   }
@@ -49,92 +74,21 @@ export async function POST(req: Request) {
     const detectedSkills = new Set<string>();
     let primaryStimulusText = "";
 
-    // 1. Insert each question into `questions` table
-    for (let idx = 0; idx < questions.length; idx++) {
-      const q = questions[idx];
-      const qSkill = q.skill || "Reading";
-      detectedSkills.add(qSkill);
-
+    // 1. Insert each question (đã chuyển dạng ở FEAT-015, đã kiểm ở trên) into `questions` table
+    for (let idx = 0; idx < normalized.length; idx++) {
+      const q = normalized[idx];
+      detectedSkills.add(q.skill);
       if (q.stimulus_text && !primaryStimulusText) {
         primaryStimulusText = q.stimulus_text;
       }
-
       const qId = `q_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`;
-      
-      let formattedSubQuestions = [];
-      if (Array.isArray(q.sub_questions) && q.sub_questions.length > 0) {
-        formattedSubQuestions = q.sub_questions.map((sub: any, sIdx: number) => {
-          const optMap: Record<string, string> = {};
-          if (Array.isArray(sub.options)) {
-            sub.options.forEach((o: any) => {
-              const k = (o.key || "").toLowerCase();
-              if (["a", "b", "c", "d"].includes(k)) {
-                optMap[`option_${k}`] = o.text || "";
-              }
-            });
-          }
-          return {
-            id: sub.id || `sub_${idx + 1}_${sIdx + 1}`,
-            number: Number(sub.number) || sIdx + 1,
-            text: sub.text || `Câu ${sub.number || sIdx + 1}`,
-            option_a: optMap.option_a || sub.option_a || "",
-            option_b: optMap.option_b || sub.option_b || "",
-            option_c: optMap.option_c || sub.option_c || "",
-            option_d: optMap.option_d || sub.option_d || "",
-            options: sub.options || [],
-            correct_answer: (sub.correct_answer || "A").toUpperCase(),
-          };
-        });
-      } else {
-        const optMap: Record<string, string> = {};
-        if (Array.isArray(q.options)) {
-          q.options.forEach((o: any) => {
-            const k = (o.key || "").toLowerCase();
-            if (["a", "b", "c", "d"].includes(k)) {
-              optMap[`option_${k}`] = o.text || "";
-            }
-          });
-        }
-        formattedSubQuestions = [
-          {
-            id: `sub_${idx + 1}_1`,
-            number: Number(q.number) || idx + 1,
-            text: q.prompt || `Câu ${q.number || idx + 1}`,
-            option_a: optMap.option_a || "",
-            option_b: optMap.option_b || "",
-            option_c: optMap.option_c || "",
-            option_d: optMap.option_d || "",
-            options: q.options || [],
-            correct_answer: (q.content?.correct_answer || "A").toUpperCase(),
-          },
-        ];
-      }
-
-      const qContent: any = {
-        ...(q.content || {}),
-        sub_questions: formattedSubQuestions,
-      };
-
-      if (q.category === "READING_FILL_IN" && q.stimulus_text) {
-        qContent.fill_subtype = "INLINE_SELECT";
-        qContent.passage = q.stimulus_text;
-      }
-
       const qRes = await client.query(
         `INSERT INTO questions (
           id, skill, category, prompt, stimulus_text, content, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         RETURNING id`,
-        [
-          qId,
-          qSkill,
-          q.category || "READING_MULTIPLE_CHOICE",
-          q.prompt,
-          q.stimulus_text || null,
-          JSON.stringify(qContent),
-        ]
+        [qId, q.skill, q.category, q.prompt, q.stimulus_text, JSON.stringify(q.content)]
       );
-
       createdQuestionIds.push(qRes.rows[0].id);
     }
 

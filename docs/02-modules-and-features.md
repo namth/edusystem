@@ -17,7 +17,7 @@
 | Menu | Đường dẫn | Tính năng | FEAT / DEC |
 | :--- | :--- | :--- | :--- |
 | Tổng quan | `/admin` | Số tổng, số theo tháng (giờ VN), biểu đồ theo ngày, top giáo viên dùng AI | FEAT-013, DEC-034 |
-| Cảnh Báo Hệ Thống (kèm số cảnh báo mới) — *FEAT-016, chưa code* | `/admin/alerts` | Lỗi 500, lỗi AI, worker, dạng câu nhập đề chưa hỗ trợ; lọc, đánh dấu đã xử lý, gửi tin Telegram thử | FEAT-016, DEC-047/048 |
+| Cảnh Báo Hệ Thống (kèm số cảnh báo mới) | `/admin/alerts` | Lỗi 500, lỗi AI, worker, dạng câu nhập đề chưa hỗ trợ; lọc, đánh dấu đã xử lý, gửi tin Telegram thử | FEAT-016, DEC-047/048 |
 | Đơn hàng (kèm số đơn chờ) | `/admin/orders`, `/admin/orders/[id]` | Lọc, duyệt, từ chối, huỷ đơn mua slot; tab cấu hình thanh toán (ngân hàng, STK, đơn giá) | FEAT-013, DEC-032/033 |
 | Quản Lý Giáo Viên | `/admin/teachers`, `/admin/teachers/[id]` | Danh sách, lọc chờ xác minh, xác minh / từ chối, sửa `slot_limit`, tạo đơn mua slot, nhật ký AI | DEC-028, FEAT-013 |
 | Quản Lý Học Sinh | `/admin/students`, `/admin/students/[id]` | Danh sách, chi tiết, lớp đang học, điểm | — |

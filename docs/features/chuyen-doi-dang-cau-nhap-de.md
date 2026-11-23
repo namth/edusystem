@@ -1,6 +1,6 @@
 # FEAT-015: Chuyển đổi dạng câu hỏi khi AI nhập đề
 
-> Trạng thái: SPEC_APPROVED (2026-11-23) · Quyết định: DEC-042 → DEC-046 (`docs/14-decisions.md`) · Phụ thuộc: FEAT-009 (AI nhập đề), FEAT-016 (cảnh báo admin)
+> Trạng thái: DONE (2026-11-23, TASK-051 → 053 Claude tự làm, chưa deploy, chưa thử file thật — `docs/11` N2) · Quyết định: DEC-042 → DEC-046 (`docs/14-decisions.md`) · Phụ thuộc: FEAT-009 (AI nhập đề), FEAT-016 (cảnh báo admin)
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Phần bóc tách đề của FEAT-009 (`lib/document-parser.ts`) đã chạy ổn, nhưng mọi câu đều bị quy về 3 dạng: `READING_FILL_IN` nếu category có chữ FILL/CLOZE/BLANK, `WRITING_ESSAY` nếu có ESSAY, còn lại là `READING_MC`. Đề giấy gần như luôn trình bày dưới dạng trắc nghiệm ABCD. Khi đưa lên hệ thống thì từng dạng phải chuyển sang đúng dạng câu hệ thống hỗ trợ (17 dạng, `lib/question-content-types.ts`).
@@ -115,11 +115,12 @@ content.import_meta = {
                    paper_format: PaperFormat, unsupported_reason?: string, confidence: number }[] }
 ```
 - `ConvertedQuestion = { tempId, skill, category, prompt, stimulus_text: string|null, content }`. `content` đúng `CategoryContentMap[category]` và có thêm `import_meta`.
-- Lỗi giữ như cũ (400 file sai hoặc quá 15MB, 500 qua `serverError` của FEAT-016). Mọi nhà cung cấp AI đều lỗi → 500 "AI đang bận, thử lại sau" và `reportAlert` ERROR nguồn `AI`.
+- Lỗi giữ như cũ (400 file sai hoặc quá 15MB, 500 qua `serverError` của FEAT-016). Mọi nhà cung cấp AI đều lỗi (`AiUnavailableError`) → **503** "AI đang bận, vui lòng thử lại sau ít phút." và `reportAlert` ERROR `AI:EXAM_IMPORT:ALL_PROVIDERS_FAILED` (không báo thêm lỗi API 500).
+- Code: `lib/document-parser.ts` (đọc file, AI gắn nhãn, `refineGroupWithAi`), `lib/exam-import.ts` (`convertParsedGroups`: chuyển đổi + AI lượt 2 + báo admin), `lib/question-conversion.ts` (hàm thuần).
 
 ### 6.2 `POST /api/teacher/exams/ai-import` (đổi request)
 - Request: `{ examTitle, durationMinutes, destination, questions: ConvertedQuestion[] }`. Server **không** nhận dạng `sub_questions` thô nữa.
-- Server chạy `validateQuestionContent(category, content)` cho từng câu. Có câu sai thì trả **400** `{ success:false, error:"Nhóm 3, 5 có nội dung không hợp lệ.", code:"INVALID_CONTENT", invalid:[{ index, tempId, reason }] }`, không ghi gì vào DB.
+- Server chạy `validateQuestionContent(category, content)` cho từng câu. Có câu sai thì trả **400** `{ success:false, error:"Câu hỏi số 2, 4 có nội dung không hợp lệ.", code:"INVALID_CONTENT", invalid:[{ index, tempId, reason }] }` (số = thứ tự trong `questions[]`), không ghi gì vào DB. Studio đánh dấu nhóm có `tempId` tương ứng.
 - Câu còn `correct_answer` rỗng (`NO_ANSWER`) → 400 cùng mã (BR-I07).
 - Server dùng `skill`, `category`, `prompt`, `stimulus_text`, `content` như client gửi lên sau khi kiểm, và ghi đè `import_meta.source = "AI_IMPORT"`. Phần còn lại (giao dịch, gắn lộ trình, giới hạn dùng thử, quyền khoá học) giữ nguyên FEAT-009.
 

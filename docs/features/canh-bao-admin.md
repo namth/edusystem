@@ -1,6 +1,6 @@
 # FEAT-016: Kênh cảnh báo admin (Telegram + trang Cảnh báo hệ thống)
 
-> Trạng thái: SPEC_APPROVED (2026-11-23) · Quyết định: DEC-047, DEC-048 (`docs/14-decisions.md`) · FEAT-015 là nguồn sự kiện đầu tiên
+> Trạng thái: DONE (2026-11-23, TASK-048 → 050 Claude tự làm, chưa deploy — cấu hình Telegram ở `docs/15` §4) · Quyết định: DEC-047, DEC-048 (`docs/14-decisions.md`) · FEAT-015 là nguồn sự kiện đầu tiên
 
 ## 1. Tổng quan & mục tiêu nghiệp vụ
 Hiện admin không biết khi hệ thống gặp lỗi. Lỗi 500 chỉ được `console.error` trong log container: 56 file route với 86 nhánh `catch` trả 500. Worker chấm bài cũng chỉ log. Lỗi AI và dạng câu nhập đề chưa hỗ trợ (FEAT-015) cũng không có kênh báo.
@@ -93,14 +93,15 @@ Không đụng dữ liệu cũ. Rollback: bảng độc lập, xoá được mà
   - `ctx = { route: string, method: string, userId?, role?, message?: string }`.
   - Hàm `console.error`, gọi `reportAlert` mức ERROR, nguồn `API` theo kiểu không chờ (`void`, có `.catch`), rồi trả **500** `{ success:false, error: ctx.message ?? "Đã xảy ra lỗi hệ thống. Vui lòng thử lại." }`.
   - Fingerprint: `API:<METHOD> <route>:<err.name>[:<err.code>]`, không lấy thông điệp lỗi (vì thông điệp có id thay đổi).
+  - `ctx.body` (tuỳ chọn) thay thân phản hồi cho route có hợp đồng riêng — chỉ `/api/tts` dùng (`{ error: "TTS_FAILED", message }`).
 - `redactSensitive(text)`: thay email → `[email]`; số điện thoại VN (`0` hoặc `+84` + 9–10 số) → `[phone]`; JWT `eyJ…` → `[jwt]`; `Bearer …` → `[token]`; cặp `key|token|secret|password|authorization=…` → `[redacted]`; chuỗi hex/base64 từ 32 ký tự → `[redacted]`.
 - `sendTelegram(text)`: `POST https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body `{ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }`, chờ tối đa 5 giây, text ≤ 3.500 ký tự (đã escape HTML). Trả `{ ok, error? }`, không ném lỗi.
 - `instrumentation.ts` xuất `onRequestError(err, request, context)` → `reportAlert` mức ERROR, nguồn `SERVER`, fingerprint `SERVER:<routePath>:<err.name>`.
 
-### 6.2 Route mới (đường dẫn sẽ thêm vào bảng `docs/07` khi code xong)
+### 6.2 Route mới (đã có trong `docs/07` §2.5, §2.6)
 | Method | Route | Vai trò | Request → Phản hồi |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/admin/alerts?status=NEW\|RESOLVED\|ALL&level=&source=&page=` | ADMIN | `{ success, items: Alert[], total, page, counts: { NEW }, telegram: { configured: boolean } }`; tham số sai → 400 |
+| GET | `/api/admin/alerts?status=NEW\|RESOLVED\|ALL&level=&source=&page=` | ADMIN | `{ success, items: Alert[], total, page, pageSize: 50, counts: { NEW }, telegram: { configured: boolean } }`; tham số sai → 400 |
 | PATCH | `/api/admin/alerts/[id]` | ADMIN | `{ status: "RESOLVED" \| "NEW" }` → `{ success, alert }`; không có → 404; status sai → 400 |
 | POST | `/api/admin/alerts/test` | ADMIN | → `{ success: true }`; chưa cấu hình → 400 "Chưa cấu hình Telegram."; Telegram từ chối → 502 kèm lý do |
 | POST | `/api/internal/alerts` | 🔑 `x-internal-token` | `{ level, title, fingerprint, detail? }` → `{ success: true }`; nguồn luôn là `WORKER` (server đặt); thiếu hoặc sai token → 401; body sai → 400 |
@@ -120,7 +121,7 @@ Không có route nào trả thẳng `detail` chưa làm sạch. `AdminLayout` l�
 - **BR-W07** Thiếu `TELEGRAM_BOT_TOKEN` hoặc `TELEGRAM_ALERT_CHAT_ID` → chỉ ghi DB, không báo lỗi. `env-check` chỉ cảnh báo, không chặn khởi động.
 - **BR-W08** Mọi nhánh trả 500 trong `app/api/**/route.ts` phải đi qua `serverError`. Test khoá: file route nào còn chuỗi `status: 500` thì test đỏ.
 - **BR-W09** Dọn dữ liệu: dòng `RESOLVED` có `last_seen_at` cũ hơn 90 ngày bị xoá. Việc dọn chạy kèm `reportAlert`, tối đa một lần mỗi 24 giờ cho mỗi tiến trình.
-- **BR-W10** Worker gửi sự kiện khi gọi API chấm thất bại sau 3 lần thử, khi `giveUp`, và khi mất kết nối Redis (mỗi lần mất, không lặp theo vòng thử). Gửi lỗi thì worker chỉ log, không thử lại. Fingerprint do worker đặt có tiền tố `WORKER:`.
+- **BR-W10** Worker gửi sự kiện khi bỏ cuộc sau `MAX_DELIVERIES` (5) lần giao (`WORKER:GIVE_UP:EXAM|LESSON`, ERROR) và khi mất kết nối Redis (`WORKER:REDIS_DOWN`, một lần cho mỗi lần mất, mở lại cờ khi Redis `ready`). Gửi lỗi thì worker chỉ log, không thử lại. Server luôn thêm tiền tố `WORKER:` vào fingerprint.
 - **BR-W11** Nguồn `AI`:
   - `document-parser` hết mọi nhà cung cấp → ERROR `AI:EXAM_IMPORT:ALL_PROVIDERS_FAILED`;
   - bài chuyển `NEEDS_REVIEW` vì AI lỗi (BR-G01, BR-B12) → WARN `AI:GRADING:NEEDS_REVIEW:<EXAM|LESSON>`.
@@ -138,9 +139,9 @@ Lần: 12 · lặp lại 11 lần từ tin trước
 Lúc: 23/11 10:42 (giờ VN)
 Cannot read properties of undefined (reading 'id')
 user: usr_ab12 (STUDENT)
-→ <APP_URL>/admin/alerts
+→ Xem: /admin/alerts
 ```
-(🔴 ERROR · 🟠 WARN · 🔵 INFO; `APP_URL` lấy từ biến môi trường, thiếu thì bỏ dòng cuối.)
+(🔴 ERROR · 🟠 WARN · 🔵 INFO. Không ghi tên miền: `APP_URL` của worker là địa chỉ nội bộ docker. Lỗi tái phát sau RESOLVED có thêm dòng nghiêng "Tái phát…"; DB lỗi có "Chưa lưu được vào DB".)
 
 ## 8. Test case (TC-W) & Review Focus
 | TC | Ca kiểm | BR | File test |

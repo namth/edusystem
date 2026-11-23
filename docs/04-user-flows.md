@@ -64,7 +64,7 @@ Mỗi bước không đạt đều trả 409.
 
 ## UF-08 AI nhập đề (FEAT-009, FEAT-015)
 1. `/teacher/library`: tải lên DOCX / PDF / ảnh, tối đa 15MB → `POST /api/teacher/exams/ai-parse`. Server trích văn bản (mammoth / pdf-parse / OCR bằng AI) rồi để AI cấu trúc thành nhóm câu hỏi (tối đa 50 nhóm). Token được ghi với `purpose = EXAM_IMPORT`.
-2. *(FEAT-015, chưa code)* AI gắn nhãn dạng câu trên giấy cho từng câu. `convertGroup` chuyển sang dạng hệ thống (điền ô trống, sắp xếp, ghép nối…). Nhóm code không dựng được thì gọi AI lượt 2. Dạng chưa hỗ trợ thì nhập tạm trắc nghiệm và báo admin (UF-12).
+2. *(FEAT-015)* AI gắn nhãn dạng câu trên giấy cho từng câu. `convertGroup` chuyển sang dạng hệ thống (điền ô trống, sắp xếp, ghép nối…). Nhóm code không dựng được thì gọi AI lượt 2. Dạng chưa hỗ trợ thì nhập tạm trắc nghiệm và báo admin (UF-12).
 3. Giáo viên xem bản xem trước:
    - xem nhãn "Trên giấy → Hệ thống" và các cảnh báo;
    - đổi dạng hoặc sửa dữ liệu gốc (chuyển đổi lại ngay trên trình duyệt);
@@ -89,8 +89,8 @@ Mỗi bước không đạt đều trả 409.
 5. "Chốt bảng điểm": chặn khi còn `GRADING` / `NEEDS_REVIEW`; còn bài chưa xem thì hỏi xác nhận. Chốt xong điểm được chụp lại, học sinh nhận `GRADEBOOK_FINALIZED` và xem ở tab Bảng điểm của lớp. "Mở chốt" để sửa tiếp.
 6. Tab "Tổng kết lớp": học sinh × bài đã chốt, trung bình thang 10.
 
-## UF-12 Admin nhận & xử lý cảnh báo hệ thống (FEAT-016, chưa code)
+## UF-12 Admin nhận & xử lý cảnh báo hệ thống (FEAT-016)
 1. Server gặp lỗi (500 của API, lỗi chưa bắt, AI lỗi, worker lỗi, dạng câu nhập đề chưa hỗ trợ) → `reportAlert` ghi `admin_alerts` (gộp theo fingerprint) và gửi Telegram, mỗi lỗi tối đa 1 tin/15 phút, toàn hệ thống tối đa 20 tin/giờ.
-2. Admin bấm liên kết trong tin, hoặc vào menu "Cảnh Báo Hệ Thống" → `/admin/alerts`, lọc rồi xem chi tiết.
+2. Admin mở đường dẫn ghi trong tin, hoặc vào menu "Cảnh Báo Hệ Thống" → `/admin/alerts`, lọc rồi xem chi tiết.
 3. Xử lý xong thì bấm *Đánh dấu đã xử lý* (`RESOLVED`). Lỗi tái phát thì dòng tự mở lại và Telegram báo ngay.
 4. Lần đầu cấu hình: đặt biến Telegram trên server (`docs/15` §4), rồi bấm *Gửi tin thử*.

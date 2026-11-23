@@ -30,8 +30,8 @@
 | FEAT-012 | Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử | `docs/features/dang-ky-phong-van.md` |
 | FEAT-013 | Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh | `docs/features/quan-tri-he-thong.md` |
 | FEAT-014 | Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết lớp (DONE 06/11) | `docs/features/cham-diem-bang-diem.md` |
-| FEAT-015 | Chuyển đổi dạng câu khi AI nhập đề: ABCD trên giấy → điền ô trống / sắp xếp / ghép nối…, giữ gạch chân, cảnh báo dạng chưa hỗ trợ (SPEC_APPROVED 23/11) | `docs/features/chuyen-doi-dang-cau-nhap-de.md` |
-| FEAT-016 | Kênh cảnh báo admin: bảng `admin_alerts`, Telegram, trang Cảnh báo hệ thống (SPEC_APPROVED 23/11) | `docs/features/canh-bao-admin.md` |
+| FEAT-015 | Chuyển đổi dạng câu khi AI nhập đề: ABCD trên giấy → điền ô trống / sắp xếp / ghép nối…, giữ gạch chân, cảnh báo dạng chưa hỗ trợ (DONE 23/11, chưa deploy) | `docs/features/chuyen-doi-dang-cau-nhap-de.md` |
+| FEAT-016 | Kênh cảnh báo admin: bảng `admin_alerts`, Telegram, trang Cảnh báo hệ thống (DONE 23/11, chưa deploy) | `docs/features/canh-bao-admin.md` |
 
 Không có mã FEAT riêng nhưng đã có trong code: landing `/` và form liên hệ (TASK-033); nền tảng đa môn (TASK-034); thông báo trong app (TASK-030); thương hiệu và token màu (DEC-022).
 

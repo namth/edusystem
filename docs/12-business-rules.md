@@ -140,7 +140,7 @@ Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:
 - **BR-W07** Thiếu biến Telegram → chỉ ghi DB.
 - **BR-W08** Mọi nhánh 500 trong `app/api/**` đi qua `serverError` (có test khoá).
 - **BR-W09** Dọn dòng `RESOLVED` quá 90 ngày, tối đa 1 lần/24 giờ.
-- **BR-W10** Worker báo khi gọi API thất bại sau 3 lần thử, khi `giveUp`, khi mất Redis.
+- **BR-W10** Worker báo khi bỏ cuộc sau 5 lần giao (`WORKER:GIVE_UP:*`) và khi mất Redis (`WORKER:REDIS_DOWN`).
 - **BR-W11** Nguồn AI: hết nhà cung cấp khi nhập đề (ERROR); bài `NEEDS_REVIEW` do AI (WARN).
 
 ## 10. Máy trạng thái

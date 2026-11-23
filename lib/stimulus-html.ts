@@ -77,6 +77,32 @@ export function looksLikeHtml(raw: string): boolean {
  * Văn bản thường: escape và giữ xuống dòng bằng <br>.
  */
 export function sanitizeStimulusHtml(raw: string | null | undefined): string {
+  return sanitizeWith(raw, ALLOWED_TAGS);
+}
+
+// FEAT-015 (BR-I14): câu con & phương án chỉ giữ định dạng chữ trong dòng.
+const INLINE_TAGS = new Set(["u", "b", "strong", "i", "em", "br"]);
+
+/** HTML an toàn cho chữ câu con / phương án: chỉ giữ `<u> <b> <strong> <i> <em> <br>`. */
+export function sanitizeInlineHtml(raw: string | null | undefined): string {
+  return sanitizeWith(raw, INLINE_TAGS);
+}
+
+/** Bỏ mọi thẻ HTML, giải mã thực thể, gộp khoảng trắng — dùng cho đáp án để chấm (chữ trơn). */
+export function stripHtml(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return decodeEntities(
+    raw
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(DROP_WITH_CONTENT, "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/?[a-zA-Z][^>]*>/g, "")
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sanitizeWith(raw: string | null | undefined, allowedTags: Set<string>): string {
   if (!raw) return "";
   if (!looksLikeHtml(raw)) {
     return escapeHtml(raw).replace(/\r?\n/g, "<br>");
@@ -95,7 +121,7 @@ export function sanitizeStimulusHtml(raw: string | null | undefined): string {
 
     const isClose = m[1] === "/";
     const name = m[2].toLowerCase();
-    if (!ALLOWED_TAGS.has(name)) continue;
+    if (!allowedTags.has(name)) continue;
 
     if (isClose) {
       if (VOID_TAGS.has(name)) continue;

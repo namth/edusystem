@@ -532,6 +532,7 @@ export function sanitizeQuestionForStudent(q: GradableQuestion): GradableQuestio
 
   if (result.content && typeof result.content === "object") {
     const content = stripAnswerKeys(result.content);
+    delete content.import_meta; // FEAT-015 BR-I10: vết chuyển đổi khi nhập đề không gửi cho học sinh
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) =>
         sub && typeof sub === "object" ? stripAnswerKeys(sub) : sub
