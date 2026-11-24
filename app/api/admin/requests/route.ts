@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { formatOrder } from "@/lib/slot-orders";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -20,10 +21,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ slot_requests });
   } catch (err: any) {
-    console.error("API /api/admin/requests GET Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi tải danh sách yêu cầu mua slot." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/requests", method: "GET", message: err.message || "Lỗi hệ thống khi tải danh sách yêu cầu mua slot." });
   }
 }

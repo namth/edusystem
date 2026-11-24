@@ -34,7 +34,7 @@ beforeEach(async () => {
   h.token = undefined;
   h.pg = await createFakePg();
   await h.pg.db.exec(`
-    CREATE TABLE lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, skills TEXT[] DEFAULT '{}', question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
+    CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, skills TEXT[] DEFAULT '{}', question_ids JSONB DEFAULT '[]', created_by VARCHAR(50));
     CREATE TABLE lesson_attempts (id VARCHAR(50) PRIMARY KEY);
     INSERT INTO questions (id,skill,category,prompt,content) VALUES
       ('qMC','Reading','READING_MC','P','{"sub_questions":[{"id":"s1","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"}]}'),

@@ -82,7 +82,7 @@ describe("GET /api/exams/[id]/content — đề + câu hỏi + flashcard", () =>
     expect(json.success).toBe(true);
     expect(json.exam).toMatchObject({ id: "e1", title: "Đề Một", duration_minutes: 60 });
     expect(json.questions.map((q: any) => q.id)).toEqual(["q3", "q1", "q2"]);
-    expect(json.questions[1]).toMatchObject({ skill: "Reading", category: "READING_MC", prompt: "Câu 1" });
+    expect(json.questions[1]).toMatchObject({ skill: "Reading", category: "READING_MC", section_instruction: "Câu 1" }); // FEAT-017: lời dẫn chung lên phần
   });
 
   it("không có question_ids → questions rỗng (không trả toàn bộ ngân hàng câu hỏi)", async () => {

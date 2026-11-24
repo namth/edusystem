@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import StudentLayout from "@/components/StudentLayout";
-import LessonPlayer, { GradeResult, FlashcardItem } from "@/components/lesson-player/LessonPlayer";
+import LessonPlayer, { type PlayerSection, GradeResult, FlashcardItem } from "@/components/lesson-player/LessonPlayer";
 import { emptyAnswerFor, countAnswered } from "@/lib/lesson-player";
 import {
   ArrowLeft,
@@ -55,6 +55,8 @@ function StudentLessonContent() {
 
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
+  // FEAT-017: các phần (lời dẫn + ngữ cảnh, kể cả phần chỉ đọc)
+  const [sections, setSections] = useState<PlayerSection[] | undefined>(undefined);
   const [flashcards, setFlashcards] = useState<FlashcardItem[]>([]);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [attempts, setAttempts] = useState<AttemptItem[]>([]);
@@ -103,6 +105,7 @@ function StudentLessonContent() {
       const fcs: FlashcardItem[] = lessonJson.flashcards || [];
       setLesson(lessonJson.lesson || null);
       setQuestions(qs);
+      setSections(Array.isArray(lessonJson.sections) ? lessonJson.sections : undefined);
       setFlashcards(fcs);
 
       // Initialize empty answers for all questions
@@ -520,6 +523,7 @@ function StudentLessonContent() {
           onChange={handleAnswerChange}
           results={currentAttempt ? currentAttempt.results : null}
           disabled={Boolean(currentAttempt)}
+          sections={sections}
         />
 
         {/* Lịch sử các lần làm bài */}

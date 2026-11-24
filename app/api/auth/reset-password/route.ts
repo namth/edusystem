@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { hashPassword } from "@/lib/auth";
 import { validatePasswordStrength } from "@/lib/password-validator";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(req: Request) {
   try {
@@ -64,10 +65,6 @@ export async function POST(req: Request) {
       message: "Đặt lại mật khẩu thành công! Mật khẩu của bạn đã được bảo vệ bằng mã hóa scrypt.",
     });
   } catch (err: any) {
-    console.error("API /api/auth/reset-password Exception:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi đặt lại mật khẩu." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/auth/reset-password", method: "POST", message: err.message || "Lỗi hệ thống khi đặt lại mật khẩu." });
   }
 }

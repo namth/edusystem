@@ -1,6 +1,6 @@
 # 10 — Biến môi trường & bảo mật
 
-> Cập nhật: 2026-11-03 · Nguồn: `process.env.*` trong `app/`, `lib/`, `worker/`; `lib/env-check.ts`; `docker-compose.yml`. Giá trị bên dưới là **giả**. `.env` thật nằm trên server, do người dùng quản lý; không commit `.env*`.
+> Cập nhật: 2026-11-23 · Nguồn: `process.env.*` trong `app/`, `lib/`, `worker/`; `lib/env-check.ts`; `docker-compose.yml`. Giá trị bên dưới là **giả**. `.env` thật nằm trên server, do người dùng quản lý; không commit `.env*`.
 
 ## 1. `.env.example`
 ```dotenv
@@ -31,6 +31,8 @@ GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 SLOT_UNIT_PRICE_VND=0                             # CHỈ là giá khởi tạo khi chưa có system_settings.slot_pricing (DEC-033)
 MEDIA_HOST_DIR=../edusystem-media                 # docker-compose: thư mục media mount vào /app/public/media
 SEED_DEFAULT_PASSWORD=                            # chỉ dùng cho script seed
+TELEGRAM_BOT_TOKEN=123456:ABC-xxxx                # FEAT-016: bot gửi cảnh báo admin (thiếu → chỉ ghi DB)
+TELEGRAM_ALERT_CHAT_ID=-100xxxxxxxxxx             # FEAT-016: id nhóm/kênh admin nhận cảnh báo
 
 # ── Worker ──
 APP_URL=http://nextjs:3000
@@ -56,6 +58,7 @@ Cấu hình nghiệp vụ **không** đặt trong `.env`. Admin sửa trong app,
 9. Giới hạn tần suất (`lib/rate-limit.ts`) ở `auth/login`, `auth/register`, `auth/register/teacher`, `auth/forgot-password`, `auth/username-available`, `auth/email-available`, `leads`.
 10. `next` sau khi đăng nhập chỉ nhận đường dẫn nội bộ (`safeNextPath`, chống open-redirect).
 11. Tiền và điểm do server tính. Client gửi `total_cost` hay `score` lên thì server bỏ qua.
+12. Cảnh báo admin (FEAT-016) không chứa thông tin cá nhân hay bí mật: mọi chuỗi qua `redactSensitive`, không ghi body request, cookie, header hay tên file; danh tính chỉ gồm `userId` + `role` (DEC-048).
 
 ## 3. Rủi ro còn mở (theo dõi ở `docs/11` §4)
 | Mức | Rủi ro | Chỗ |
@@ -64,3 +67,4 @@ Cấu hình nghiệp vụ **không** đặt trong `.env`. Admin sửa trong app,
 | Thấp | `ai_usage_logs.created_at` là TIMESTAMP không có múi giờ; dashboard đúng chỉ khi Postgres chạy múi giờ UTC | `lib/admin-dashboard.ts` |
 | Thấp | 4 tài khoản học sinh trên server còn mật khẩu plaintext từ dữ liệu cũ, cần đặt lại | DB server |
 | Thấp | `/api/admin/test-portkey` gọi AI thật (chỉ ADMIN, có ghi log chi phí) | `app/api/admin/test-portkey` |
+| Thấp | Nhiều route trả nguyên `err.message` cho client ở nhánh 500; FEAT-016 gom về `serverError` nhưng giữ thông điệp của từng route | `app/api/**` |

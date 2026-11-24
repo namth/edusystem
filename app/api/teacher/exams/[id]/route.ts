@@ -3,11 +3,9 @@ import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { runCypherQuery, syncCourseExam, getExamCourseMapping } from "@/lib/neo4j";
 import { canUseSubject } from "@/lib/subjects";
-
-function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
-  if (authUser.role === "ADMIN") return true;
-  return question.created_by === authUser.userId || question.created_by === null || question.created_by === undefined;
-}
+import { serverError } from "@/lib/api-errors";
+import { pgDb, inPgTx, flatQuestions, flashcardIdsOf, sectionsFromBody, treeErrorResponse } from "@/lib/sections-db";
+import { loadTree, saveTreeInTx, getVersion, hasAttempts } from "@/lib/exam-structure";
 
 export async function GET(
   req: Request,
@@ -30,38 +28,10 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Bạn không có quyền truy cập đề thi này." }, { status: 403 });
     }
 
-    const questionIds: string[] = Array.isArray(examRow.question_ids)
-      ? examRow.question_ids
-      : (typeof examRow.question_ids === "string" ? JSON.parse(examRow.question_ids) : []);
-
-    let questions: any[] = [];
-    if (questionIds.length > 0) {
-      const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-      const qMap = new Map(
-        qRes.rows.map((r: any) => [
-          r.id,
-          {
-            ...r,
-            content: typeof r.content === "string" ? JSON.parse(r.content) : r.content,
-          },
-        ])
-      );
-      questions = questionIds.map((qid) => qMap.get(qid)).filter(Boolean);
-    }
-
-    const flashcardIdSet = new Set<string>();
-    for (const q of questions) {
-      if (typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        const ids = q.content?.flashcard_ids || q.content?.flashcardIds;
-        if (Array.isArray(ids)) {
-          for (const fid of ids) {
-            if (typeof fid === "string" && fid.trim()) {
-              flashcardIdSet.add(fid.trim());
-            }
-          }
-        }
-      }
-    }
+    // FEAT-017: đề → phần → câu (giáo viên thấy cả đáp án)
+    const sections = await loadTree(pgDb, "exam", id);
+    const questions = flatQuestions(sections);
+    const flashcardIdSet = new Set<string>(flashcardIdsOf(questions));
 
     let flashcards: any[] = [];
     if (flashcardIdSet.size > 0) {
@@ -85,20 +55,21 @@ export async function GET(
 
     const exam = {
       ...examRow,
-      question_ids: questionIds,
       skills: Array.isArray(examRow.skills) ? examRow.skills : [],
+      updated_at: await getVersion(pgDb, "exam", id),
+      attempt_count: await hasAttempts(pgDb, "exam", id),
     };
 
     return NextResponse.json({
       success: true,
       exam,
+      sections,
       questions,
       flashcards,
       course_id,
     }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp thông tin đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "GET", message: err.message || "Lỗi nạp thông tin đề thi." });
   }
 }
 
@@ -128,7 +99,11 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id, subject_id } = body;
+    // FEAT-017: nhận { exam: {...}, sections: [...] }; vẫn đọc trường phẳng ở gốc body
+    const meta = body.exam && typeof body.exam === "object" ? body.exam : body;
+    const { title, description, duration_minutes, course_id, scoring_standard_id, subject_id } = meta;
+    const sections = sectionsFromBody(body);
+    const expectedVersion = typeof meta.updated_at === "string" ? meta.updated_at : null;
     const sets: string[] = [];
     const params: any[] = [];
     let pIdx = 1;
@@ -186,42 +161,6 @@ export async function PUT(
       }
     }
 
-    if (question_ids !== undefined) {
-      if (!Array.isArray(question_ids) || question_ids.length === 0 || question_ids.some((qid) => typeof qid !== "string" || !qid.trim())) {
-        return NextResponse.json({ success: false, error: "question_ids phải là mảng chuỗi ID câu hỏi không rỗng." }, { status: 400 });
-      }
-
-      const cleanQIds: string[] = question_ids.map((q) => q.trim());
-      const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
-      const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
-
-      for (const qid of cleanQIds) {
-        const qRow = qMap.get(qid);
-        if (!qRow || !canUseQuestion(qRow, authUser)) {
-          return NextResponse.json(
-            { success: false, error: "Câu hỏi không tồn tại hoặc bạn không có quyền sử dụng." },
-            { status: 400 }
-          );
-        }
-      }
-
-      const seenSkills = new Set<string>();
-      const newSkills: string[] = [];
-      for (const qid of cleanQIds) {
-        const qRow = qMap.get(qid);
-        if (qRow && qRow.skill && !seenSkills.has(qRow.skill)) {
-          seenSkills.add(qRow.skill);
-          newSkills.push(qRow.skill);
-        }
-      }
-
-      sets.push(`question_ids = $${pIdx++}`);
-      params.push(JSON.stringify(cleanQIds));
-
-      sets.push(`skills = $${pIdx++}`);
-      params.push(newSkills);
-    }
-
     let courseTitle: string | null = null;
     let cleanCourseId: string | null = null;
     if (course_id !== undefined && course_id !== null) {
@@ -246,13 +185,25 @@ export async function PUT(
     }
 
     let updatedExamRow = examRow;
-    if (sets.length > 0) {
-      params.push(id);
-      const updateRes = await queryPg(
-        `UPDATE exams SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING *;`,
-        params
-      );
-      updatedExamRow = updateRes.rows[0];
+    try {
+      updatedExamRow = await inPgTx(async (db) => {
+        if (sections) {
+          await saveTreeInTx(db, { kind: "exam", id, userId: authUser.userId, expectedVersion, sections });
+        }
+        if (sets.length > 0) {
+          params.push(id);
+          const updateRes = await db.query(
+            `UPDATE exams SET ${sets.join(", ")}, updated_at = date_trunc('milliseconds', NOW()) WHERE id = $${pIdx} RETURNING *;`,
+            params
+          );
+          return updateRes.rows[0];
+        }
+        return (await db.query("SELECT * FROM exams WHERE id = $1", [id])).rows[0];
+      });
+    } catch (e) {
+      const res = treeErrorResponse(e);
+      if (res) return res;
+      throw e;
     }
 
     if (course_id !== undefined) {
@@ -271,17 +222,14 @@ export async function PUT(
 
     const exam = {
       ...updatedExamRow,
-      question_ids: Array.isArray(updatedExamRow.question_ids)
-        ? updatedExamRow.question_ids
-        : (typeof updatedExamRow.question_ids === "string" ? JSON.parse(updatedExamRow.question_ids) : []),
       skills: Array.isArray(updatedExamRow.skills) ? updatedExamRow.skills : [],
       subject_id: updatedExamRow.subject_id || "english",
+      updated_at: await getVersion(pgDb, "exam", id),
     };
 
-    return NextResponse.json({ success: true, exam }, { status: 200 });
+    return NextResponse.json({ success: true, exam, sections: await loadTree(pgDb, "exam", id) }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "PUT", message: err.message || "Lỗi cập nhật đề thi." });
   }
 }
 
@@ -336,7 +284,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams/[id] DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams/[id]", method: "DELETE", message: err.message || "Lỗi xóa đề thi." });
   }
 }

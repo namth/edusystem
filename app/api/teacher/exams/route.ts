@@ -7,11 +7,9 @@ import { syncCourseExam } from "@/lib/neo4j";
 import { pushRedisStreamEvent } from "@/lib/redis-queue";
 import { canUseSubject } from "@/lib/subjects";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
-
-function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
-  if (authUser.role === "ADMIN") return true;
-  return question.created_by === authUser.userId || question.created_by === null || question.created_by === undefined;
-}
+import { serverError } from "@/lib/api-errors";
+import { pgDb, inPgTx, sectionsFromBody, treeErrorResponse } from "@/lib/sections-db";
+import { loadTree, saveTreeInTx, getVersion } from "@/lib/exam-structure";
 
 export async function GET(req?: Request) {
   try {
@@ -57,7 +55,8 @@ export async function GET(req?: Request) {
     const sql = `
       SELECT
         e.*,
-        COALESCE(jsonb_array_length(CASE WHEN jsonb_typeof(e.question_ids) = 'array' THEN e.question_ids ELSE '[]'::jsonb END), 0) AS question_count,
+        (SELECT COUNT(*)::int FROM questions q JOIN sections s ON s.id = q.section_id
+          WHERE s.exam_id = e.id AND s.deleted_at IS NULL AND q.deleted_at IS NULL) AS question_count,
         (SELECT COUNT(*)::int FROM curriculum_items ci WHERE ci.exam_id = e.id) AS usage_count
       FROM exams e
       ${whereClause}
@@ -81,8 +80,7 @@ export async function GET(req?: Request) {
 
     return NextResponse.json({ success: true, exams });
   } catch (err: any) {
-    console.error("API /api/teacher/exams GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp danh sách đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams", method: "GET", message: err.message || "Lỗi nạp danh sách đề thi." });
   }
 }
 
@@ -97,7 +95,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, duration_minutes, question_ids, course_id, scoring_standard_id, subject_id } = body;
+    // FEAT-017: nhận { exam: {...}, sections: [...] }; vẫn đọc trường phẳng ở gốc body
+    const meta = body.exam && typeof body.exam === "object" ? body.exam : body;
+    const { title, description, duration_minutes, course_id, scoring_standard_id, subject_id } = meta;
+    const sections = sectionsFromBody(body);
+    if (!sections) {
+      return NextResponse.json({ success: false, error: "Thiếu danh sách phần (sections)." }, { status: 400 });
+    }
 
     const cleanTitle = typeof title === "string" ? title.trim() : "";
     if (!cleanTitle || cleanTitle.length > 255) {
@@ -110,34 +114,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Thời gian làm bài phải là số nguyên ≥ 1." }, { status: 400 });
       }
       finalDuration = duration_minutes;
-    }
-
-    if (!Array.isArray(question_ids) || question_ids.length === 0 || question_ids.some((qid) => typeof qid !== "string" || !qid.trim())) {
-      return NextResponse.json({ success: false, error: "question_ids phải là mảng chuỗi ID câu hỏi không rỗng." }, { status: 400 });
-    }
-
-    const cleanQIds: string[] = question_ids.map((q) => q.trim());
-    const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
-    const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
-
-    for (const qid of cleanQIds) {
-      const qRow = qMap.get(qid);
-      if (!qRow || !canUseQuestion(qRow, authUser)) {
-        return NextResponse.json(
-          { success: false, error: "Câu hỏi không tồn tại hoặc bạn không có quyền sử dụng." },
-          { status: 400 }
-        );
-      }
-    }
-
-    const skills: string[] = [];
-    const seenSkills = new Set<string>();
-    for (const qid of cleanQIds) {
-      const qRow = qMap.get(qid);
-      if (qRow && qRow.skill && !seenSkills.has(qRow.skill)) {
-        seenSkills.add(qRow.skill);
-        skills.push(qRow.skill);
-      }
     }
 
     let courseTitle: string | null = null;
@@ -196,14 +172,13 @@ export async function POST(req: Request) {
       return trialLimitResponse("contents", trial.error);
     }
 
-    const cols = ["id", "title", "description", "duration_minutes", "skills", "question_ids", "created_by"];
+    const cols = ["id", "title", "description", "duration_minutes", "skills", "created_by"];
     const insertParams: any[] = [
       examId,
       cleanTitle,
       cleanDesc,
       finalDuration,
-      skills,
-      JSON.stringify(cleanQIds),
+      [],
       authUser.userId,
     ];
 
@@ -220,14 +195,22 @@ export async function POST(req: Request) {
     const placeholders = cols.map((_, idx) => `$${idx + 1}`).join(", ");
     const insertSql = `INSERT INTO exams (${cols.join(", ")}, created_at) VALUES (${placeholders}, NOW()) RETURNING *;`;
 
-    const insertRes = await queryPg(insertSql, insertParams);
+    let examRow: any;
+    try {
+      examRow = await inPgTx(async (db) => {
+        await db.query(insertSql, insertParams);
+        await saveTreeInTx(db, { kind: "exam", id: examId, userId: authUser.userId, sections });
+        return (await db.query("SELECT * FROM exams WHERE id = $1", [examId])).rows[0];
+      });
+    } catch (e) {
+      const res = treeErrorResponse(e);
+      if (res) return res;
+      throw e;
+    }
 
-    const examRow = insertRes.rows[0];
     const exam = {
       ...examRow,
-      question_ids: Array.isArray(examRow.question_ids)
-        ? examRow.question_ids
-        : (typeof examRow.question_ids === "string" ? JSON.parse(examRow.question_ids) : []),
+      updated_at: await getVersion(pgDb, "exam", examId),
       skills: Array.isArray(examRow.skills) ? examRow.skills : [],
       scoring_standard_id: examRow.scoring_standard_id ?? null,
       subject_id: examRow.subject_id || cleanSubjectId,
@@ -255,9 +238,8 @@ export async function POST(req: Request) {
       console.warn("pushRedisStreamEvent warning:", err);
     }
 
-    return NextResponse.json({ success: true, exam }, { status: 201 });
+    return NextResponse.json({ success: true, exam, sections: await loadTree(pgDb, "exam", examId) }, { status: 201 });
   } catch (err: any) {
-    console.error("API /api/teacher/exams POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/exams", method: "POST", message: err.message || "Lỗi tạo đề thi." });
   }
 }

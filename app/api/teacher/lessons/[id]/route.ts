@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
 import { canUseSubject } from "@/lib/subjects";
-
-function canUseQuestion(question: any, authUser: { userId: string; role: string }): boolean {
-  if (authUser.role === "ADMIN") return true;
-  return question.created_by === authUser.userId || question.created_by === null || question.created_by === undefined;
-}
+import { serverError } from "@/lib/api-errors";
+import { pgDb, inPgTx, flatQuestions, flashcardIdsOf, sectionsFromBody, treeErrorResponse } from "@/lib/sections-db";
+import { loadTree, saveTreeInTx, getVersion, hasAttempts } from "@/lib/exam-structure";
 
 export async function GET(
   req: Request,
@@ -29,38 +27,10 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Bạn không có quyền truy cập bài học này." }, { status: 403 });
     }
 
-    const questionIds: string[] = Array.isArray(lessonRow.question_ids)
-      ? lessonRow.question_ids
-      : (typeof lessonRow.question_ids === "string" ? JSON.parse(lessonRow.question_ids) : []);
-
-    let questions: any[] = [];
-    if (questionIds.length > 0) {
-      const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-      const qMap = new Map(
-        qRes.rows.map((r: any) => [
-          r.id,
-          {
-            ...r,
-            content: typeof r.content === "string" ? JSON.parse(r.content) : r.content,
-          },
-        ])
-      );
-      questions = questionIds.map((qid) => qMap.get(qid)).filter(Boolean);
-    }
-
-    const flashcardIdSet = new Set<string>();
-    for (const q of questions) {
-      if (typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        const ids = q.content?.flashcard_ids || q.content?.flashcardIds;
-        if (Array.isArray(ids)) {
-          for (const fid of ids) {
-            if (typeof fid === "string" && fid.trim()) {
-              flashcardIdSet.add(fid.trim());
-            }
-          }
-        }
-      }
-    }
+    // FEAT-017: bài học → phần → câu
+    const sections = await loadTree(pgDb, "lesson", id);
+    const questions = flatQuestions(sections);
+    const flashcardIdSet = new Set<string>(flashcardIdsOf(questions));
 
     let flashcards: any[] = [];
     if (flashcardIdSet.size > 0) {
@@ -76,17 +46,16 @@ export async function GET(
       title: lessonRow.title,
       description: lessonRow.description,
       skills: Array.isArray(lessonRow.skills) ? lessonRow.skills : [],
-      question_ids: questionIds,
       subject_id: lessonRow.subject_id || "english",
       created_by: lessonRow.created_by,
       created_at: lessonRow.created_at,
-      updated_at: lessonRow.updated_at,
+      updated_at: await getVersion(pgDb, "lesson", id),
+      attempt_count: await hasAttempts(pgDb, "lesson", id),
     };
 
-    return NextResponse.json({ success: true, lesson, questions, flashcards }, { status: 200 });
+    return NextResponse.json({ success: true, lesson, sections, questions, flashcards }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "GET", message: err.message || "Lỗi nạp bài học." });
   }
 }
 
@@ -116,7 +85,11 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Dữ liệu không hợp lệ." }, { status: 400 });
     }
 
-    const { title, description, question_ids, subject_id } = body;
+    // FEAT-017: nhận { lesson: {...}, sections: [...] }; vẫn đọc trường phẳng ở gốc body
+    const meta = body.lesson && typeof body.lesson === "object" ? body.lesson : body;
+    const { title, description, subject_id } = meta;
+    const sections = sectionsFromBody(body);
+    const expectedVersion = typeof meta.updated_at === "string" ? meta.updated_at : null;
 
     const sets: string[] = [];
     const params: any[] = [];
@@ -151,75 +124,40 @@ export async function PUT(
       params.push(description !== null ? String(description) : null);
     }
 
-    if (question_ids !== undefined) {
-      if (!Array.isArray(question_ids) || question_ids.some((qid) => typeof qid !== "string")) {
-        return NextResponse.json(
-          { success: false, error: "question_ids phải là mảng chuỗi ID câu hỏi." },
-          { status: 400 }
+    let updated: any;
+    try {
+      updated = await inPgTx(async (db) => {
+        if (sections) {
+          await saveTreeInTx(db, { kind: "lesson", id, userId: authUser.userId, expectedVersion, sections });
+        }
+        sets.push(`updated_at = date_trunc('milliseconds', NOW())`);
+        params.push(id);
+        const updateRes = await db.query(
+          `UPDATE lessons SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING *;`,
+          params
         );
-      }
-
-      const cleanQIds: string[] = question_ids.map((q) => q.trim());
-      const skills: string[] = [];
-
-      if (cleanQIds.length > 0) {
-        const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [cleanQIds]);
-        const qMap = new Map(qRes.rows.map((r: any) => [r.id, r]));
-
-        for (const qid of cleanQIds) {
-          const qRow = qMap.get(qid);
-          if (!qRow || !canUseQuestion(qRow, authUser)) {
-            return NextResponse.json(
-              { success: false, error: "Câu hỏi không tồn tại hoặc bạn không có quyền sử dụng." },
-              { status: 400 }
-            );
-          }
-        }
-
-        const seenSkills = new Set<string>();
-        for (const qid of cleanQIds) {
-          const qRow = qMap.get(qid);
-          if (qRow && qRow.skill && !seenSkills.has(qRow.skill)) {
-            seenSkills.add(qRow.skill);
-            skills.push(qRow.skill);
-          }
-        }
-      }
-
-      sets.push(`question_ids = $${pIdx++}`);
-      params.push(JSON.stringify(cleanQIds));
-
-      sets.push(`skills = $${pIdx++}`);
-      params.push(skills);
+        return updateRes.rows[0];
+      });
+    } catch (e) {
+      const res = treeErrorResponse(e);
+      if (res) return res;
+      throw e;
     }
 
-    sets.push(`updated_at = NOW()`);
-
-    params.push(id);
-    const updateRes = await queryPg(
-      `UPDATE lessons SET ${sets.join(", ")} WHERE id = $${pIdx} RETURNING *;`,
-      params
-    );
-
-    const updated = updateRes.rows[0];
     const lesson = {
       id: updated.id,
       title: updated.title,
       description: updated.description,
       skills: Array.isArray(updated.skills) ? updated.skills : [],
-      question_ids: Array.isArray(updated.question_ids)
-        ? updated.question_ids
-        : (typeof updated.question_ids === "string" ? JSON.parse(updated.question_ids) : []),
       subject_id: updated.subject_id || "english",
       created_by: updated.created_by,
       created_at: updated.created_at,
-      updated_at: updated.updated_at,
+      updated_at: await getVersion(pgDb, "lesson", id),
     };
 
-    return NextResponse.json({ success: true, lesson }, { status: 200 });
+    return NextResponse.json({ success: true, lesson, sections: await loadTree(pgDb, "lesson", id) }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "PUT", message: err.message || "Lỗi cập nhật bài học." });
   }
 }
 
@@ -271,7 +209,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id] DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa bài học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/lessons/[id]", method: "DELETE", message: err.message || "Lỗi xóa bài học." });
   }
 }

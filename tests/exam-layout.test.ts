@@ -157,7 +157,9 @@ describe("Trang làm đề dùng bố cục mới", () => {
     expect(s()).toMatch(/fixed inset-0/);
   });
   it("bảng câu hỏi dùng navStatus, có đánh dấu xem lại và nhảy câu", () => {
-    expect(s()).toMatch(/navStatus\(/);
+    // FEAT-017: bảng câu hỏi tách sang components/exam/ExamNavigatorGrid.tsx (trang làm đề < 700 dòng)
+    expect(s()).toContain("ExamNavigatorGrid");
+    expect(fs.readFileSync("components/exam/ExamNavigatorGrid.tsx", "utf8")).toMatch(/navStatus\(/);
     expect(s()).toMatch(/Đánh dấu/);
     expect(s()).toMatch(/screenIndexOfQuestion\(/);
   });

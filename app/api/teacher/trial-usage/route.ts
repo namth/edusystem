@@ -6,6 +6,7 @@ import {
   getTrialUsage,
   isTrialTeacher,
 } from "@/lib/teacher-trial";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(_req?: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -44,10 +45,6 @@ export async function GET(_req?: Request) {
       reviewNote: row?.review_note ?? null,
     });
   } catch (err: any) {
-    console.error("GET /api/teacher/trial-usage error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải tiến độ dùng thử." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/trial-usage", method: "GET", message: err.message || "Lỗi tải tiến độ dùng thử." });
   }
 }

@@ -1,6 +1,7 @@
 // TASK-008 — API câu hỏi dùng chung + Kho bài học + lộ trình nhận lesson_id (FEAT-010, TC-L03/L04).
 // File do trưởng phòng viết, bị khoá.
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import fs from "fs";
 import { createFakePg } from "./helpers/pg-fake";
 
 const h = vi.hoisted(() => {
@@ -74,53 +75,10 @@ beforeEach(async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe("POST/PUT /api/teacher/questions", () => {
-  const post = async (body: unknown) => (await import("@/app/api/teacher/questions/route")).POST(req("POST", "/api/teacher/questions", body));
-  const put = async (id: string, body: unknown) =>
-    (await import("@/app/api/teacher/questions/[id]/route")).PUT(req("PUT", `/api/teacher/questions/${id}`, body), ctx(id));
-  const valid = { skill: "Reading", category: "READING_MC", prompt: "Mới", content: { sub_questions: [{ id: "s1", text: "?", option_a: "a", option_b: "b", option_c: "c", option_d: "d", correct_answer: "C" }] } };
-
-  it("chưa đăng nhập 401; STUDENT 403", async () => {
-    expect((await post(valid)).status).toBe(401);
-    await loginAs("STUDENT", "s1");
-    expect((await post(valid)).status).toBe(403);
-  });
-
-  it("tạo câu hỏi: 201, id 'q_' + uuid, created_by = người gọi, content đã chuẩn hoá vẫn giữ đáp án", async () => {
-    await loginAs("TEACHER", "t1");
-    const res = await post(valid);
-    expect(res.status).toBe(201);
-    const { question } = await res.json();
-    expect(question.id).toMatch(/^q_[0-9a-f-]{36}$/);
-    expect(question).toMatchObject({ skill: "Reading", category: "READING_MC", prompt: "Mới", created_by: "t1" });
-    const db = (await rows(`SELECT content, created_by FROM questions WHERE id='${question.id}'`))[0];
-    expect(db.created_by).toBe("t1");
-    expect(db.content.sub_questions[0].correct_answer).toBe("C");
-  });
-
-  it("dạng câu không hợp lệ / thiếu skill → 400", async () => {
-    await loginAs("TEACHER", "t1");
-    expect((await post({ ...valid, category: "QUIZ_X" })).status).toBe(400);
-    expect((await post({ ...valid, skill: "" })).status).toBe(400);
-    expect((await post({ ...valid, content: "abc" })).status).toBe(400);
-  });
-
-  it("sửa câu hỏi của mình → 200; của giáo viên khác → 403; không có → 404", async () => {
-    await loginAs("TEACHER", "t1");
-    const res = await put("q1", { prompt: "Câu 1 sửa" });
-    expect(res.status).toBe(200);
-    expect((await res.json()).question.prompt).toBe("Câu 1 sửa");
-    expect((await put("q3", { prompt: "x" })).status).toBe(403);
-    expect((await put("qX", { prompt: "x" })).status).toBe(404);
-  });
-
-  it("câu hỏi cũ (created_by NULL): sửa được nếu nằm trong đề/bài học của mình, ngược lại 403; ADMIN sửa mọi câu", async () => {
-    await loginAs("TEACHER", "t1");
-    expect((await put("qLegacy", { prompt: "ok" })).status).toBe(200);
-    await loginAs("TEACHER", "t2");
-    expect((await put("qLegacy", { prompt: "no" })).status).toBe(403);
-    await loginAs("ADMIN", "a1");
-    expect((await put("q3", { prompt: "admin" })).status).toBe(200);
+describe("API câu hỏi riêng lẻ đã bỏ (FEAT-017, DEC-051)", () => {
+  it("không còn /api/teacher/questions — câu chỉ tạo / sửa qua lần lưu cả cây đề / bài học", () => {
+    expect(fs.existsSync("app/api/teacher/questions/route.ts")).toBe(false);
+    expect(fs.existsSync("app/api/teacher/questions/[id]/route.ts")).toBe(false);
   });
 });
 
@@ -160,7 +118,7 @@ describe("/api/teacher/lessons — danh sách & tạo", () => {
     expect(res.status).toBe(201);
     const { lesson } = await res.json();
     expect(lesson.id).toMatch(/^lsn_[0-9a-f-]{36}$/);
-    expect(lesson).toMatchObject({ title: "Bài mới", description: "Mô tả", created_by: "t1", question_ids: [], skills: [] });
+    expect(lesson).toMatchObject({ title: "Bài mới", description: "Mô tả", created_by: "t1", skills: [] });
     expect((await POST(req("POST", "/api/teacher/lessons", { title: "  " }))).status).toBe(400);
     expect((await POST(req("POST", "/api/teacher/lessons", { title: "x".repeat(256) }))).status).toBe(400);
   });
@@ -193,24 +151,37 @@ describe("/api/teacher/lessons/[id] — xem, sửa, xoá", () => {
     expect((await GET(req("GET", "/x"), ctx("lsn_t2"))).status).toBe(200);
   });
 
-  it("PUT question_ids: lưu thứ tự, tự tính skills theo thứ tự xuất hiện, cập nhật updated_at", async () => {
+  const mcQ = { category: "READING_MC", content: { text: "?", option_a: "a", option_b: "b", correct_answer: "B" } };
+  const fillQ = { category: "LISTENING_FILL_IN", content: { fill_subtype: "FREE_TYPING", passage: "I [am] ok" } };
+
+  it("PUT cây phần (FEAT-017): lưu thứ tự, tự tính skills theo phần, cập nhật updated_at, trả cây mới", async () => {
     await loginAs("TEACHER", "t1");
     const before = (await rows(`SELECT updated_at FROM lessons WHERE id='lsn_empty'`))[0].updated_at;
-    const res = await (await api()).PUT(req("PUT", "/x", { title: "Đổi tên", question_ids: ["q2", "q1", "qFc"] }), ctx("lsn_empty"));
+    const res = await (await api()).PUT(req("PUT", "/x", {
+      lesson: { title: "Đổi tên" },
+      sections: [
+        { skill: "Listening", stimulus_type: "AUDIO_ONLY", stimulus_audio_url: "/a.mp3", questions: [fillQ] },
+        { skill: "Reading", instruction: "Chọn đáp án", questions: [mcQ] },
+      ],
+    }), ctx("lsn_empty"));
     expect(res.status).toBe(200);
-    const { lesson } = await res.json();
-    expect(lesson).toMatchObject({ title: "Đổi tên", question_ids: ["q2", "q1", "qFc"], skills: ["Listening", "Reading"] });
+    const { lesson, sections } = await res.json();
+    expect(lesson).toMatchObject({ title: "Đổi tên", skills: ["Listening", "Reading"] });
+    expect(sections.map((s: any) => s.questions[0].category)).toEqual(["LISTENING_FILL_IN", "READING_MC"]);
+    expect(sections[1].questions[0].number_start).toBe(2);
     const after = (await rows(`SELECT updated_at FROM lessons WHERE id='lsn_empty'`))[0].updated_at;
     expect(new Date(after).getTime()).toBeGreaterThanOrEqual(new Date(before).getTime());
   });
 
-  it("PUT question_ids chứa câu không tồn tại hoặc của giáo viên khác → 400, không ghi", async () => {
+  it("PUT cây sai (dạng khác kỹ năng / câu của bài khác) → 400 kèm vị trí lỗi, không ghi", async () => {
     await loginAs("TEACHER", "t1");
     const { PUT } = await api();
-    expect((await PUT(req("PUT", "/x", { question_ids: ["q1", "qX"] }), ctx("lsn_empty"))).status).toBe(400);
-    expect((await PUT(req("PUT", "/x", { question_ids: ["q3"] }), ctx("lsn_empty"))).status).toBe(400);
-    expect((await PUT(req("PUT", "/x", { question_ids: "q1" }), ctx("lsn_empty"))).status).toBe(400);
-    expect((await rows(`SELECT question_ids FROM lessons WHERE id='lsn_empty'`))[0].question_ids).toEqual([]);
+    const bad = await PUT(req("PUT", "/x", { sections: [{ skill: "Reading", questions: [fillQ] }] }), ctx("lsn_empty"));
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).errors[0]).toMatchObject({ section_index: 0, question_index: 0 });
+    const otherQ = (await rows(`SELECT q.id FROM questions q JOIN sections s ON s.id = q.section_id WHERE s.lesson_id = 'lsn_t2'`));
+    expect((await PUT(req("PUT", "/x", { sections: [{ skill: "Writing", questions: [{ id: otherQ[0]?.id || "q3", category: "WRITING_ESSAY", prompt: "x", content: {} }] }] }), ctx("lsn_empty"))).status).toBe(400);
+    expect(await rows(`SELECT id FROM sections WHERE lesson_id='lsn_empty'`)).toEqual([]);
   });
 
   it("DELETE bài đang được gắn trong lộ trình → 409 kèm usages, không xoá (DEC-005)", async () => {
@@ -223,11 +194,15 @@ describe("/api/teacher/lessons/[id] — xem, sửa, xoá", () => {
     expect(await rows(`SELECT id FROM lessons WHERE id='lsn_a'`)).toHaveLength(1);
   });
 
-  it("DELETE bài không dùng → 200 và xoá; câu hỏi dùng chung không bị xoá", async () => {
-    await h.pg!.db.exec(`UPDATE lessons SET question_ids='["q1"]' WHERE id='lsn_empty'`);
+  it("DELETE bài không dùng → 200, xoá cả phần và câu của bài (BR-P01); câu của bài khác giữ nguyên", async () => {
     await loginAs("TEACHER", "t1");
-    expect((await (await api()).DELETE(req("DELETE", "/x"), ctx("lsn_empty"))).status).toBe(200);
+    const { PUT, DELETE } = await api();
+    await PUT(req("PUT", "/x", { sections: [{ skill: "Reading", questions: [mcQ] }] }), ctx("lsn_empty"));
+    const mine = await rows(`SELECT q.id FROM questions q JOIN sections s ON s.id = q.section_id WHERE s.lesson_id = 'lsn_empty'`);
+    expect(mine).toHaveLength(1);
+    expect((await DELETE(req("DELETE", "/x"), ctx("lsn_empty"))).status).toBe(200);
     expect(await rows(`SELECT id FROM lessons WHERE id='lsn_empty'`)).toHaveLength(0);
+    expect(await rows(`SELECT id FROM questions WHERE id='${mine[0].id}'`)).toHaveLength(0);
     expect(await rows(`SELECT id FROM questions WHERE id='q1'`)).toHaveLength(1);
   });
 });

@@ -192,24 +192,27 @@ describe("POST /api/uploads — upload qua server (service role)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Gỡ Supabase phía trình duyệt cho flashcard/upload", () => {
   const read = (p: string) => fs.readFileSync(p, "utf8");
-  for (const file of ["app/teacher/flashcards/page.tsx", "components/question-builder/QuestionSetEditor.tsx"]) {
+  // FEAT-017: trình soạn câu hỏi là components/section-builder/* (thay QuestionSetEditor)
+  const EDITOR = ["components/section-builder/SectionEditor.tsx", "components/section-builder/QuestionForm.tsx"];
+  for (const file of ["app/teacher/flashcards/page.tsx", ...EDITOR]) {
     it(file, () => {
       const s = read(file);
       expect(s).not.toContain('"@/lib/supabase"');
       expect(s).not.toContain("supabase.");
     });
   }
-  it("trang flashcard và QuestionSetEditor dùng /api/teacher/flashcards và /api/uploads", () => {
-    for (const file of ["app/teacher/flashcards/page.tsx", "components/question-builder/QuestionSetEditor.tsx"]) {
-      expect(read(file), file).toContain("/api/teacher/flashcards");
-      expect(read(file), file).toContain("/api/uploads");
-    }
+  it("trang flashcard và trình soạn theo Phần dùng /api/teacher/flashcards và /api/uploads", () => {
+    expect(read("app/teacher/flashcards/page.tsx")).toContain("/api/teacher/flashcards");
+    expect(read("app/teacher/flashcards/page.tsx")).toContain("/api/uploads");
+    const editor = EDITOR.map(read).join("\n");
+    expect(editor).toContain("/api/teacher/flashcards");
+    expect(editor).toContain("/api/uploads");
   });
   it("không còn ảnh mặc định viết cứng từ Unsplash cho flashcard", () => {
     expect(read("app/teacher/flashcards/page.tsx")).not.toContain("images.unsplash.com");
   });
-  it("QuestionSetEditor: sau khi POST câu hỏi mới, cập nhật id cục bộ để lần lưu sau dùng PUT (không tạo trùng)", () => {
-    const s = read("components/question-builder/QuestionSetEditor.tsx");
-    expect(s).toMatch(/savedIdByLocalId|idMap|setQuestions\(\s*\(?prev/);
+  it("SectionEditor: lưu xong thay cây cục bộ bằng cây server trả (id thật) để lần lưu sau không tạo trùng (BR-P07)", () => {
+    const s = read("components/section-builder/SectionEditor.tsx");
+    expect(s).toMatch(/fromTree\(r\.sections\)/);
   });
 });

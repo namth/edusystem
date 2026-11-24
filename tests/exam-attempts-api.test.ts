@@ -86,13 +86,17 @@ beforeEach(async () => {
       ('r1','Reading','READING_MC','R','{"sub_questions":[{"id":"a","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"A"},{"id":"b","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"}]}'),
       ('l1','Listening','LISTENING_FILL_IN','L','{"fill_subtype":"FREE_TYPING","passage":"I (am) ok and (you) too."}'),
       ('w1','Writing','WRITING_ESSAY','Viết đoạn văn','{"min_words":50}'),
+      -- FEAT-017 (DEC-051): mỗi câu thuộc đúng một đề → mỗi đề có bản câu riêng
+      ('rA','Reading','READING_MC','R','{"sub_questions":[{"id":"a","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"A"},{"id":"b","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"}]}'), ('rH','Reading','READING_MC','R','{"sub_questions":[{"id":"a","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"A"},{"id":"b","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"}]}'), ('rP','Reading','READING_MC','R','{"sub_questions":[{"id":"a","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"A"},{"id":"b","text":"?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"}]}'),
+      ('lH','Listening','LISTENING_FILL_IN','L','{"fill_subtype":"FREE_TYPING","passage":"I (am) ok and (you) too."}'),
+      ('wF','Writing','WRITING_ESSAY','Viết đoạn văn','{"min_words":50}'),
       ('sp1','Speaking','SPEAKING_TOPIC_PROMPT','Nói về gia đình','{"prep_time_seconds":30,"speaking_time_seconds":60}');
     INSERT INTO exams (id,title,duration_minutes,question_ids,created_by,scoring_standard_id) VALUES
       ('eObj','Đề khách quan',30,'["r1","l1"]','t1','std_ielts'),
-      ('eAI','Đề có tự luận',60,'["r1","w1","sp1"]','t1','std_ielts'),
-      ('eHsk','Đề trong khóa HSK',20,'["r1","l1"]','t1',NULL),
-      ('ePlain','Đề không chuẩn',20,'["r1"]','t2',NULL),
-      ('eFree','Đề AI luyện tập',20,'["w1"]','t2','std_ielts');
+      ('eAI','Đề có tự luận',60,'["rA","w1","sp1"]','t1','std_ielts'),
+      ('eHsk','Đề trong khóa HSK',20,'["rH","lH"]','t1',NULL),
+      ('ePlain','Đề không chuẩn',20,'["rP"]','t2',NULL),
+      ('eFree','Đề AI luyện tập',20,'["wF"]','t2','std_ielts');
     INSERT INTO class_assignments (id,class_id,exam_id,max_attempts) VALUES ('as1','c1','eObj',2), ('as2','c1','eAI',1);
     INSERT INTO curriculum_items (id,course_id,parent_id,title,type,exam_id,order_index) VALUES ('X','coH',NULL,'Đề HSK','EXAM','eHsk',1);
   `);
@@ -214,7 +218,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
   it("HSK (SUM + điểm đạt): passed được tính", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eHsk")).json()).attempt;
-    const { attempt } = await (await submit(a.id, { r1: { a: "A", b: "B" }, l1: ["am", "x"] })).json();
+    const { attempt } = await (await submit(a.id, { rH: { a: "A", b: "B" }, lH: ["am", "x"] })).json();
     expect(attempt.section_scores.Reading.score).toBe(100);
     expect(attempt.section_scores.Listening.score).toBe(50);
     expect(Number(attempt.total_score)).toBe(150);
@@ -234,7 +238,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
   it("có Writing/Speaking → GRADING, KHÔNG trừ slot GV lớp (DEC-031), đẩy GRADING_REQUESTED (TC-E07)", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    const { attempt } = await (await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay text", sp1: "https://cdn/x.webm" })).json();
+    const { attempt } = await (await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay text", sp1: "https://cdn/x.webm" })).json();
     expect(attempt.status).toBe("GRADING");
     expect(attempt.section_scores.Reading.score).toBe(9);
     expect(attempt.total_score).toBeNull();
@@ -246,7 +250,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
     await h.pg.db.exec(`UPDATE users SET slot_limit=0 WHERE id='t1'`);
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    const { attempt } = await (await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" })).json();
+    const { attempt } = await (await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" })).json();
     expect(attempt.status).toBe("GRADING");
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(0);
   });
@@ -254,7 +258,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
   it("đẩy sự kiện chấm SAU khi đã lưu trạng thái GRADING (tránh worker bỏ qua) (TASK-029)", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
     const ev = h.events.find((e) => e[0] === "grading");
     expect(ev).toBeTruthy();
     expect(ev[ev.length - 1]).toBe("GRADING");
@@ -265,7 +269,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    const res = await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    const res = await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
     expect(res.status).toBe(200);
     expect((await res.json()).attempt.status).toBe("NEEDS_REVIEW");
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
@@ -277,7 +281,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eFree")).json()).attempt;
-    await submit(a.id, { w1: "Essay" });
+    await submit(a.id, { wF: "Essay" });
     expect(await rows(`SELECT user_id FROM notifications WHERE ref_id=$1 AND type='EXAM_NEEDS_REVIEW'`, [a.id])).toEqual([{ user_id: "t2" }]);
   });
 
@@ -291,7 +295,7 @@ describe("POST submit — chấm trên server theo chuẩn", () => {
   it("đề luyện tập có AI, người tạo đề slot_limit = 0 → vẫn GRADING và đẩy sự kiện chấm (DEC-031)", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eFree")).json()).attempt;
-    const { attempt } = await (await submit(a.id, { w1: "Essay" })).json();
+    const { attempt } = await (await submit(a.id, { wF: "Essay" })).json();
     expect(attempt.status).toBe("GRADING");
     expect(JSON.stringify(h.events)).toContain(a.id);
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t2'`))[0].slot_limit).toBe(0);
@@ -306,7 +310,7 @@ describe("POST /api/exam/grade-async — worker chấm AI theo thang phần", ()
   async function gradingAttempt() {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay text", sp1: "https://cdn/x.webm" });
+    await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay text", sp1: "https://cdn/x.webm" });
     h.token = undefined;
     return a.id as string;
   }
@@ -380,7 +384,7 @@ describe("PUT /api/teacher/grading/attempts/exam/[attemptId] — giáo viên ch�
     vi.spyOn(console, "error").mockImplementation(() => {});
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
     await loginAs("TEACHER", "t1");
     const res = await editAttempt(a.id, {
       items: [
@@ -401,11 +405,11 @@ describe("PUT /api/teacher/grading/attempts/exam/[attemptId] — giáo viên ch�
     vi.spyOn(console, "error").mockImplementation(() => {});
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
 
     await loginAs("TEACHER", "t1");
     expect((await editAttempt(a.id, { items: [{ question_id: "w1", teacher_score: 12 }] })).status).toBe(400);
-    expect((await editAttempt(a.id, { items: [{ question_id: "r1", teacher_score: 8 }] })).status).toBe(400);
+    expect((await editAttempt(a.id, { items: [{ question_id: "rA", teacher_score: 8 }] })).status).toBe(400);
 
     await loginAs("TEACHER", "t2");
     expect((await editAttempt(a.id, { items: [{ question_id: "w1", teacher_score: 5 }] })).status).toBe(403);
@@ -467,7 +471,7 @@ describe("Worker bỏ cuộc sau nhiều lần giao (giveUp) — không để b�
   it("giveUp với token nội bộ → NEEDS_REVIEW, slot không đổi, báo GV; gọi lại vẫn vậy", async () => {
     await loginAs("STUDENT", "s1");
     const a = (await (await start("eAI", { classId: "c1" })).json()).attempt;
-    await submit(a.id, { r1: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
+    await submit(a.id, { rA: { a: "A", b: "B" }, w1: "Essay", sp1: "u" });
     h.token = undefined;
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(3);
 

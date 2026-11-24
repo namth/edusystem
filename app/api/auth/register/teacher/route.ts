@@ -17,6 +17,7 @@ import {
   validateUsername,
   HONORIFICS,
 } from "@/lib/onboarding";
+import { serverError } from "@/lib/api-errors";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const MAX_REGISTERS_PER_HOUR = 5;
@@ -318,10 +319,7 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      return NextResponse.json(
-        { success: false, error: `Lỗi CSDL PostgreSQL: ${dbErr.message}` },
-        { status: 500 }
-      );
+      return serverError(dbErr, { route: "/api/auth/register/teacher", method: "POST", message: `Lỗi CSDL PostgreSQL: ${dbErr.message}` });
     }
 
     // Gửi thông báo cho mọi tài khoản ADMIN
@@ -363,9 +361,6 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi hệ thống khi đăng ký giáo viên." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/auth/register/teacher", method: "POST", message: err.message || "Lỗi hệ thống khi đăng ký giáo viên." });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 // Helper to deduce framework and language safely
 function inferFrameworkAndLanguage(id: string, name: string) {
@@ -68,8 +69,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, rubrics });
   } catch (err: any) {
-    console.error("Error fetching rubrics:", err);
-    return NextResponse.json({ success: false, error: err?.message || "Internal error" }, { status: 500 });
+    return serverError(err, { route: "/api/exam/rubrics", method: "GET", message: err?.message || "Internal error" });
   }
 }
 
@@ -137,8 +137,7 @@ export async function POST(request: Request) {
       rubric: formatRubric(res.rows[0]),
     }, { status: 201 });
   } catch (err: any) {
-    console.error("Error creating rubric:", err);
-    return NextResponse.json({ success: false, error: err?.message || "Internal error" }, { status: 500 });
+    return serverError(err, { route: "/api/exam/rubrics", method: "POST", message: err?.message || "Internal error" });
   }
 }
 
@@ -216,8 +215,7 @@ export async function PUT(request: Request) {
       rubric: formatRubric(res.rows[0]),
     });
   } catch (err: any) {
-    console.error("Error updating rubric:", err);
-    return NextResponse.json({ success: false, error: err?.message || "Internal error" }, { status: 500 });
+    return serverError(err, { route: "/api/exam/rubrics", method: "PUT", message: err?.message || "Internal error" });
   }
 }
 
@@ -258,7 +256,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Error deleting rubric:", err);
-    return NextResponse.json({ success: false, error: err?.message || "Internal error" }, { status: 500 });
+    return serverError(err, { route: "/api/exam/rubrics", method: "DELETE", message: err?.message || "Internal error" });
   }
 }

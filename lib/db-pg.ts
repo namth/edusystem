@@ -408,6 +408,52 @@ export async function ensureSchema() {
         UNIQUE (class_id, item_kind, item_id, student_id)
       );
       CREATE INDEX IF NOT EXISTS idx_class_grades_student ON class_grades (student_id, class_id);
+
+      -- Migration 018: Kênh cảnh báo admin (FEAT-016, DEC-047, DEC-048)
+      CREATE TABLE IF NOT EXISTS admin_alerts (
+        id TEXT PRIMARY KEY,
+        fingerprint TEXT NOT NULL UNIQUE,
+        level TEXT NOT NULL CHECK (level IN ('ERROR','WARN','INFO')),
+        source TEXT NOT NULL CHECK (source IN ('API','SERVER','AI','WORKER','EXAM_IMPORT')),
+        title TEXT NOT NULL,
+        detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+        occurrences INTEGER NOT NULL DEFAULT 1,
+        unsent_count INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW','RESOLVED')),
+        first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_notified_at TIMESTAMPTZ,
+        resolved_at TIMESTAMPTZ,
+        resolved_by TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_alerts_status_last ON admin_alerts (status, last_seen_at DESC);
+
+      -- Migration 019: Bài học & đề thi theo Phần (FEAT-017, DEC-051 → DEC-054)
+      CREATE TABLE IF NOT EXISTS sections (
+        id VARCHAR(50) PRIMARY KEY,
+        exam_id VARCHAR(50) REFERENCES exams(id) ON DELETE CASCADE,
+        lesson_id VARCHAR(50) REFERENCES lessons(id) ON DELETE CASCADE,
+        position INTEGER NOT NULL DEFAULT 0,
+        skill VARCHAR(20) NOT NULL DEFAULT 'Reading',
+        instruction TEXT,
+        stimulus_type VARCHAR(20) NOT NULL DEFAULT 'NONE' CHECK (stimulus_type IN ('NONE','TEXT_ONLY','AUDIO_ONLY','COMBINED')),
+        stimulus_text TEXT,
+        stimulus_audio_url TEXT,
+        stimulus_audio_text TEXT,
+        stimulus_audio_gender VARCHAR(10),
+        deleted_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT sections_one_parent CHECK ((exam_id IS NULL) <> (lesson_id IS NULL))
+      );
+      CREATE INDEX IF NOT EXISTS idx_sections_exam ON sections (exam_id, position) WHERE deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_sections_lesson ON sections (lesson_id, position) WHERE deleted_at IS NULL;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS section_id VARCHAR(50) REFERENCES sections(id) ON DELETE CASCADE;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS position INTEGER;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+      CREATE INDEX IF NOT EXISTS idx_questions_section ON questions (section_id, position) WHERE deleted_at IS NULL;
+      ALTER TABLE exams ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+      ALTER TABLE lessons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
     `);
     schemaInitialized = true;
   } catch (err) {
@@ -415,9 +461,10 @@ export async function ensureSchema() {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- hàng trả về dùng tự do ở nhiều route
 export async function queryPg<T extends QueryResultRow = any>(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<QueryResult<T>> {
   await ensureSchema();
   const p = getPgPool();

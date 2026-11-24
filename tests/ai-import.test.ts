@@ -1,4 +1,6 @@
 // FEAT-009 AI Exam Ingestion (khôi phục 31/10/2026) — phân quyền, kiểm tra file, giao dịch import.
+// FEAT-015 (TASK-052): ai-parse trả conversion, AI lượt 2, báo admin; ai-import nhận câu đã chuyển dạng + kiểm content.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createFakePg } from "./helpers/pg-fake";
 
@@ -9,6 +11,11 @@ const h = vi.hoisted(() => {
     pg: null as null | Awaited<ReturnType<typeof import("./helpers/pg-fake").createFakePg>>,
     parseCalls: 0,
     parsedQuestions: [] as any[],
+    refineCalls: [] as any[],
+    refineResult: null as any,
+    alerts: [] as any[],
+    throwAi: false,
+    throwTooLong: false,
   };
 });
 
@@ -30,10 +37,33 @@ vi.mock("@/lib/db-pg", () => ({
   ensureSchema: async () => {},
 }));
 vi.mock("@/lib/neo4j", () => ({ syncCourseExam: async () => {} }));
-vi.mock("@/lib/document-parser", () => ({
-  parseDocumentFile: async () => {
-    h.parseCalls++;
-    return { engineUsed: "mammoth", structuredData: { questions: h.parsedQuestions } };
+vi.mock("@/lib/document-parser", async () => {
+  class AiUnavailableError extends Error {
+    code = "AI_UNAVAILABLE";
+  }
+  class DocumentTooLongError extends Error {
+    code = "DOCUMENT_TOO_LONG";
+  }
+  return {
+    AiUnavailableError,
+    DocumentTooLongError,
+    parseDocumentFile: async () => {
+      h.parseCalls++;
+      if (h.throwAi) throw new AiUnavailableError("AI đang bận, vui lòng thử lại sau ít phút.");
+      if (h.throwTooLong) throw new DocumentTooLongError("File scan có 158 trang, vượt giới hạn 40 trang mỗi lần nhập.");
+      const { normalizeGroup } = await vi.importActual<typeof import("@/lib/document-parser")>("@/lib/document-parser");
+      return { engineUsed: "mammoth", structuredData: { examTitle: "Đề", suggestedDurationMinutes: 45, groups: h.parsedQuestions.map((g, i) => normalizeGroup(g, i)) } };
+    },
+    refineGroupWithAi: async (group: any, reasons: any) => {
+      h.refineCalls.push({ tempId: group.tempId, reasons });
+      return h.refineResult ? h.refineResult(group) : null;
+    },
+  };
+});
+vi.mock("@/lib/admin-alerts", async (orig) => ({
+  ...(await orig<any>()),
+  reportAlert: async (a: any) => {
+    h.alerts.push(a);
   },
 }));
 
@@ -59,7 +89,17 @@ function upload(file?: File) {
 beforeEach(async () => {
   h.token = undefined;
   h.parseCalls = 0;
-  h.parsedQuestions = [{ skill: "Reading", category: "READING_MULTIPLE_CHOICE", prompt: "Q", sub_questions: [{ id: "a" }, { id: "b" }] }];
+  h.refineCalls = [];
+  h.refineResult = null;
+  h.alerts = [];
+  h.throwAi = false;
+  h.throwTooLong = false;
+  h.parsedQuestions = [
+    { skill: "Reading", prompt: "Q", sub_questions: [
+      { number: 1, text_html: "a", options: ["x", "y", "z", "t"], correct_answer: "A", answer_source: "KEY", paper_format: "GENERAL_MC", confidence: 0.9 },
+      { number: 2, text_html: "b", options: ["x", "y", "z", "t"], correct_answer: "B", answer_source: "KEY", paper_format: "GENERAL_MC", confidence: 0.9 },
+    ] },
+  ];
   h.pg = await createFakePg(["db-migration-005-system-settings.sql"]);
   await h.pg.db.exec(`
     CREATE TABLE courses (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), curriculum JSONB, created_by VARCHAR(50));
@@ -94,10 +134,71 @@ describe("POST /api/teacher/exams/ai-parse", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toMatchObject({ success: true, fileType: "docx", engineUsed: "mammoth", groupsCount: 1, questionsCount: 2 });
+    expect(body.extractedData.groups[0].sub_questions[1]).toMatchObject({ number: 2, paper_format: "GENERAL_MC" });
+    expect(body.conversion).toMatchObject({ converterVersion: 2, scoreItems: 2, paperQuestions: 2, warningsCount: 0 });
+    expect(body.conversion.groups[0].questions[0]).toMatchObject({ category: "READING_MC" });
+  });
+
+  it("TC-I10: dạng chưa hỗ trợ → READING_MC + cảnh báo + đúng một reportAlert WARN, không lộ tên file", async () => {
+    h.parsedQuestions = [{ skill: "Reading", prompt: "Look at the sign", sub_questions: [
+      { number: 3, text_html: "[HÌNH ẢNH] What does the sign say?", options: ["a", "b", "c", "d"], correct_answer: "C", answer_source: "KEY", paper_format: "UNSUPPORTED", unsupported_reason: "NEEDS_IMAGE", confidence: 0.8 },
+    ] }];
+    await loginAs("TEACHER", "t1");
+    const body = await (await post(docx())).json();
+    expect(body.conversion.groups[0].questions[0].category).toBe("READING_MC");
+    expect(body.conversion.groups[0].warnings.map((w: any) => w.code)).toContain("UNSUPPORTED_FORMAT");
+    const unsupported = h.alerts.filter((a) => a.fingerprint === "EXAM_IMPORT:UNSUPPORTED:NEEDS_IMAGE");
+    expect(unsupported).toHaveLength(1);
+    expect(unsupported[0]).toMatchObject({ level: "WARN", source: "EXAM_IMPORT", detail: { userId: "t1", extra: { fileExt: "docx" } } });
+    expect(JSON.stringify(h.alerts)).not.toContain("de-thi.docx");
+    expect(unsupported[0].detail.extra.sample).toContain("What does the sign say?");
+  });
+
+  it("TC-I11: không tìm thấy ô → gọi AI lượt 2 đúng một lần cho nhóm đó; lượt 2 sửa được → INLINE_SELECT; lỗi → READING_MC + GAP_NOT_FOUND + báo admin", async () => {
+    const cloze = {
+      skill: "Reading", prompt: "Cloze", stimulus_html: "People rely on machines, which have changed lives.",
+      sub_questions: [
+        { number: 25, text_html: "Câu 25", options: ["increasingly", "b", "c", "d"], correct_answer: "A", answer_source: "KEY", paper_format: "CLOZE_PASSAGE", confidence: 0.9 },
+        { number: 26, text_html: "Câu 26", options: ["have", "has", "c", "d"], correct_answer: "B", answer_source: "KEY", paper_format: "CLOZE_PASSAGE", confidence: 0.9 },
+      ],
+    };
+    h.parsedQuestions = [cloze, h.parsedQuestions[0]];
+    await loginAs("TEACHER", "t1");
+    let body = await (await post(docx())).json();
+    expect(h.refineCalls).toEqual([{ tempId: "group_1", reasons: ["GAP_NOT_FOUND"] }]);
+    expect(body.conversion.groups[0].questions[0].category).toBe("READING_MC");
+    expect(body.conversion.groups[0].warnings.map((w: any) => w.code)).toContain("GAP_NOT_FOUND");
+    expect(h.alerts.some((a) => a.fingerprint.startsWith("EXAM_IMPORT:CONVERSION_FAILED:"))).toBe(true);
+
+    h.refineCalls = [];
+    h.alerts = [];
+    h.refineResult = (g: any) => ({ ...g, stimulus_html: "People (25) ____ rely on machines, which (26) ____ changed lives." });
+    body = await (await post(docx())).json();
+    expect(h.refineCalls).toHaveLength(1);
+    expect(body.conversion.groups[0].questions[0].content).toMatchObject({ fill_subtype: "INLINE_SELECT", correct_answers: ["increasingly", "has"] });
+    expect(body.extractedData.groups[0].stimulus_html).toContain("(25) ____");
+    expect(h.alerts.some((a) => a.fingerprint.startsWith("EXAM_IMPORT:CONVERSION_FAILED:"))).toBe(false);
+  });
+
+  it("mọi nhà cung cấp AI lỗi → 503 + reportAlert ERROR nguồn AI", async () => {
+    h.throwAi = true;
+    await loginAs("TEACHER", "t1");
+    const res = await post(docx());
+    expect(res.status).toBe(503);
+    expect(h.alerts).toEqual([expect.objectContaining({ level: "ERROR", source: "AI", fingerprint: "AI:EXAM_IMPORT:ALL_PROVIDERS_FAILED" })]);
+  });
+
+  it("BR-I18: file quá dài → 400 DOCUMENT_TOO_LONG kèm hướng dẫn tách file, không báo admin", async () => {
+    h.throwTooLong = true;
+    await loginAs("TEACHER", "t1");
+    const res = await post(docx());
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ success: false, code: "DOCUMENT_TOO_LONG", error: expect.stringContaining("40 trang") });
+    expect(h.alerts).toEqual([]);
   });
 
   it("cắt còn tối đa 50 nhóm câu hỏi", async () => {
-    h.parsedQuestions = Array.from({ length: 60 }, (_, i) => ({ prompt: `Q${i}` }));
+    h.parsedQuestions = Array.from({ length: 60 }, (_, i) => ({ prompt: `Q${i}`, sub_questions: [{ number: i + 1, text_html: "x", options: ["a", "b"], correct_answer: "A", paper_format: "GENERAL_MC" }] }));
     await loginAs("ADMIN", "a1");
     const body = await (await post(docx())).json();
     expect(body.groupsCount).toBe(50);
@@ -108,9 +209,10 @@ describe("POST /api/teacher/exams/ai-import", () => {
   const post = async (body: unknown) =>
     (await import("@/app/api/teacher/exams/ai-import/route")).POST(json("POST", "/api/teacher/exams/ai-import", body));
   const count = async (t: string) => Number((await h.pg!.db.query<any>(`SELECT COUNT(*) n FROM ${t}`)).rows[0].n);
+  const mc = (id: string, ans: string) => ({ id, number: 1, text: "s", option_a: "x", option_b: "y", option_c: "z", option_d: "t", correct_answer: ans });
   const questions = [
-    { skill: "Reading", category: "READING_MULTIPLE_CHOICE", prompt: "Câu 1", stimulus_text: "Bài đọc", options: [{ key: "A", text: "x" }], content: { correct_answer: "a" } },
-    { skill: "Listening", category: "LISTENING_MULTIPLE_CHOICE", prompt: "Câu 2", sub_questions: [{ number: 1, text: "s1", options: [{ key: "B", text: "y" }], correct_answer: "b" }] },
+    { tempId: "g1_0", skill: "Reading", category: "READING_MC", prompt: "Câu 1", stimulus_text: "Bài đọc", content: { sub_questions: [mc("a", "A")], import_meta: { paper_format: "READING_COMPREHENSION" } } },
+    { tempId: "g2_0", skill: "Listening", category: "LISTENING_MC", prompt: "Câu 2", stimulus_text: null, content: { sub_questions: [mc("b", "B")] } },
   ];
 
   it("chưa đăng nhập → 401; STUDENT → 403; không ghi DB", async () => {
@@ -126,7 +228,13 @@ describe("POST /api/teacher/exams/ai-import", () => {
     expect((await post({ examTitle: "Đề", questions: [] })).status).toBe(400);
   });
 
-  it("vào Kho Đề: tạo câu hỏi + đề, question_ids đúng thứ tự, created_by = người gọi", async () => {
+  // FEAT-017: câu theo phần (sections) — đọc theo thứ tự phần → câu
+  const tree = async (examId: string) =>
+    (await h.pg!.db.query<any>(
+      `SELECT q.id, q.prompt, q.category, q.content, s.id AS section_id, s.instruction, s.stimulus_text, s.skill FROM questions q
+       JOIN sections s ON s.id = q.section_id WHERE s.exam_id = $1 ORDER BY s.position, q.position`, [examId])).rows;
+
+  it("vào Kho Đề: mỗi nhóm đề giấy → một phần, lời dẫn nhóm lên phần, trắc nghiệm một ý một câu; created_by = người gọi", async () => {
     await loginAs("TEACHER", "t1");
     const res = await post({ examTitle: "Đề AI", durationMinutes: 45, destination: { type: "STANDALONE" }, questions });
     expect(res.status).toBe(201);
@@ -134,10 +242,65 @@ describe("POST /api/teacher/exams/ai-import", () => {
     const exam = (await h.pg!.db.query<any>(`SELECT * FROM exams WHERE id = $1`, [body.examId])).rows[0];
     expect(exam).toMatchObject({ title: "Đề AI", duration_minutes: 45, created_by: "t1" });
     expect(exam.skills.sort()).toEqual(["Listening", "Reading"]);
-    const qs = (await h.pg!.db.query<any>(`SELECT id, prompt, content FROM questions`)).rows;
-    const byId = Object.fromEntries(qs.map((q: any) => [q.id, q]));
-    expect(exam.question_ids.map((id: string) => byId[id].prompt)).toEqual(["Câu 1", "Câu 2"]);
-    expect(byId[exam.question_ids[0]].content.sub_questions[0].correct_answer).toBe("A");
+    const rows = await tree(body.examId);
+    expect(rows.map((r: any) => [r.skill, r.instruction])).toEqual([["Reading", "Câu 1"], ["Listening", "Câu 2"]]);
+    expect(rows[0].stimulus_text).toBe("Bài đọc");
+    expect(rows[0].content).toMatchObject({ correct_answer: "A", import_meta: { source: "AI_IMPORT", paper_format: "READING_COMPREHENSION" } });
+    expect(rows[0].content.sub_questions).toBeUndefined();
+    expect(body.importedQuestionsCount).toBe(2);
+  });
+
+  it("TC-P16: nhóm 3 trắc nghiệm + 1 sắp xếp → 1 phần 4 câu; 2 nhóm cùng bài đọc → chung 1 phần; Listening chưa có audio vẫn nhập được", async () => {
+    await loginAs("TEACHER", "t1");
+    const res = await post({ examTitle: "Đề", questions: [
+      { tempId: "gA_0", skill: "Reading", category: "READING_MC", prompt: "Read and choose", stimulus_text: "<p>Passage</p>",
+        content: { sub_questions: [mc("1", "A"), mc("2", "B"), mc("3", "C")] } },
+      { tempId: "gA_1", skill: "Reading", category: "READING_ORDERING", prompt: "Read and choose", stimulus_text: "<p>Passage</p>",
+        content: { ordering_type: "WORD_ORDERING", correct_text: "People thought the story" } },
+      { tempId: "gB_0", skill: "Reading", category: "READING_MC", prompt: "Questions 5-6", stimulus_text: "<p>Passage</p>", content: { sub_questions: [mc("5", "D")] } },
+      { tempId: "gC_0", skill: "Listening", category: "LISTENING_MC", prompt: "Listen", stimulus_text: null, content: { sub_questions: [mc("7", "A")] } },
+    ] });
+    expect(res.status).toBe(201);
+    const rows = await tree((await res.json()).examId);
+    const sections = [...new Set(rows.map((r: any) => r.section_id))];
+    expect(sections).toHaveLength(2);
+    expect(rows.filter((r: any) => r.section_id === sections[0]).map((r: any) => r.category)).toEqual(["READING_MC", "READING_MC", "READING_MC", "READING_ORDERING", "READING_MC"]);
+    expect(rows[0].instruction).toBe("Read and choose\nQuestions 5-6");
+    expect(rows.map((r: any) => r.content.correct_answer).filter(Boolean)).toEqual(["A", "B", "C", "D", "A"]);
+  });
+
+  it("FEAT-015: lưu nguyên câu điền ô đã chuyển dạng, stimulus_text = NULL, chấm được", async () => {
+    await loginAs("TEACHER", "t1");
+    const fill = {
+      tempId: "g3_0", skill: "Reading", category: "READING_FILL_IN", prompt: "Cloze", stimulus_text: null,
+      content: { fill_subtype: "INLINE_SELECT", passage: "A (25) [has] b (26) [in] c", correct_answers: ["has", "in"],
+        inline_options_per_gap: [{ gap_index: 0, options: ["have", "has"] }, { gap_index: 1, options: ["in", "on"] }] },
+    };
+    const res = await post({ examTitle: "Đề", questions: [fill] });
+    expect(res.status).toBe(201);
+    const q = (await h.pg!.db.query<any>(`SELECT * FROM questions`)).rows[0];
+    expect(q).toMatchObject({ category: "READING_FILL_IN", stimulus_text: null });
+    expect((await h.pg!.db.query<any>(`SELECT stimulus_type FROM sections WHERE id = $1`, [q.section_id])).rows[0].stimulus_type).toBe("NONE");
+    expect(q.content).toMatchObject({ fill_subtype: "INLINE_SELECT", correct_answers: ["has", "in"] });
+    const { gradeQuestion } = await import("@/lib/grading");
+    expect(gradeQuestion({ id: q.id, category: q.category, content: q.content }, ["has", "in"])).toMatchObject({ earned: 2, max: 2 });
+  });
+
+  it("TC-I14 + TC-I09: content sai schema / thiếu đáp án → 400 INVALID_CONTENT kèm invalid[], không ghi DB", async () => {
+    await loginAs("TEACHER", "t1");
+    const bad = [
+      questions[0],
+      { tempId: "x1", skill: "Reading", category: "READING_FILL_IN", prompt: "p", content: { fill_subtype: "OPTION_BANK", passage: "a [b] c [d]", correct_answers: ["b"], option_bank: ["b", "d"] } },
+      { tempId: "x2", skill: "Reading", category: "READING_MC", prompt: "p", content: { sub_questions: [mc("c", "")] } },
+      { tempId: "x3", skill: "Reading", category: "READING_MULTIPLE_CHOICE", prompt: "p", content: {} },
+    ];
+    const res = await post({ examTitle: "Đề", questions: bad });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.code).toBe("INVALID_CONTENT");
+    expect(body.invalid.map((x: any) => x.tempId)).toEqual(["x1", "x2", "x3"]);
+    expect(await count("questions")).toBe(0);
+    expect(await count("exams")).toBe(0);
   });
 
   it("bảng ai_usage_logs không tồn tại → đề vẫn được lưu (lỗi log không huỷ giao dịch)", async () => {

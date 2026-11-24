@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queryPg } from "@/lib/db-pg";
 import { getAuthenticatedUserFromCookie, hashPassword, comparePassword, setAuthCookie } from "@/lib/auth";
 import { validatePasswordStrength } from "@/lib/password-validator";
+import { serverError } from "@/lib/api-errors";
 
 // Đổi mật khẩu của chính người đang đăng nhập (bất biến 1, 3: danh tính chỉ lấy từ token).
 // - Lần đầu (must_change_password = TRUE): phiên đăng nhập bằng mật khẩu tạm là đủ.
@@ -71,10 +72,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Đổi mật khẩu thành công." });
   } catch (err: any) {
-    console.error("API /api/auth/change-password Exception:", err);
-    return NextResponse.json(
-      { success: false, error: "Lỗi hệ thống khi đổi mật khẩu." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/auth/change-password", method: "POST", message: "Lỗi hệ thống khi đổi mật khẩu." });
   }
 }

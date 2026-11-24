@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions, flashcardIdsOf } from "@/lib/sections-db";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(
   request: Request,
@@ -38,81 +40,23 @@ export async function GET(
       );
     }
 
-    let questionIds: string[] = [];
-    if (Array.isArray(exam.question_ids)) {
-      questionIds = exam.question_ids;
-    } else if (typeof exam.question_ids === "string") {
-      try {
-        const parsed = JSON.parse(exam.question_ids);
-        if (Array.isArray(parsed)) {
-          questionIds = parsed;
-        }
-      } catch {
-        questionIds = [];
-      }
-    }
-
-    let questions: any[] = [];
-    let flashcards: any[] = [];
-
-    if (questionIds.length > 0) {
-      const placeholders = questionIds.map((_, i) => `$${i + 1}`).join(", ");
-      const qRes = await queryPg(
-        `SELECT * FROM questions WHERE id IN (${placeholders});`,
-        questionIds
-      );
-
-      const qMap = new Map(qRes.rows.map((q: any) => [q.id, q]));
-      questions = questionIds.map((qId) => qMap.get(qId)).filter(Boolean);
-
-      const flashcardIdsSet = new Set<string>();
-      for (const q of questions) {
-        if (q.category && typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-          let contentObj = q.content;
-          if (typeof contentObj === "string") {
-            try {
-              contentObj = JSON.parse(contentObj);
-            } catch {
-              contentObj = null;
-            }
-          }
-          const ids: string[] =
-            (q as any).flashcard_ids ||
-            contentObj?.flashcard_ids ||
-            contentObj?.flashcardIds ||
-            [];
-          if (Array.isArray(ids)) {
-            for (const fcId of ids) {
-              if (fcId && typeof fcId === "string") {
-                flashcardIdsSet.add(fcId);
-              }
-            }
-          }
-        }
-      }
-
-      if (flashcardIdsSet.size > 0) {
-        const fcIdList = Array.from(flashcardIdsSet);
-        const fcPlaceholders = fcIdList.map((_, i) => `$${i + 1}`).join(", ");
-        const fcRes = await queryPg(
-          `SELECT * FROM flashcards WHERE id IN (${fcPlaceholders});`,
-          fcIdList
-        );
-        flashcards = fcRes.rows;
-      }
+    // FEAT-017: câu theo phần (giáo viên / admin, còn đáp án)
+    const { sections, questions } = await loadParentQuestions("exam", String(exam.id));
+    let flashcards: unknown[] = [];
+    const fcIdList = flashcardIdsOf(questions);
+    if (fcIdList.length > 0) {
+      const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [fcIdList]);
+      flashcards = fcRes.rows;
     }
 
     return NextResponse.json({
       success: true,
       exam,
+      sections,
       questions,
       flashcards,
     });
   } catch (err: any) {
-    console.error(`GET /api/exams/${id}/content error:`, err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi tải nội dung đề thi." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/exams/[id]/content", method: "GET", message: err.message || "Lỗi tải nội dung đề thi." });
   }
 }

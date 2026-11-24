@@ -5,6 +5,7 @@ import { findEnvProblems, validateEnvironmentVars } from "@/lib/env-check";
 const OK = {
   DATABASE_URL: "postgres://x", JWT_SECRET: "x".repeat(32), INTERNAL_API_TOKEN: "t", REDIS_URL: "redis://r",
   PORTKEY_API_KEY: "k", GOOGLE_API_KEY: "g", NEXT_PUBLIC_SUPABASE_URL: "u", SUPABASE_SERVICE_ROLE_KEY: "s", NEO4J_URI: "n",
+  TELEGRAM_BOT_TOKEN: "b", TELEGRAM_ALERT_CHAT_ID: "c",
 };
 
 describe("lib/env-check", () => {
@@ -29,5 +30,12 @@ describe("lib/env-check", () => {
     expect(() => validateEnvironmentVars({ ...OK, PORTKEY_API_KEY: "", NODE_ENV: "production" })).not.toThrow();
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it("FEAT-016: thiếu biến Telegram → chỉ cảnh báo, không chặn khởi động", () => {
+    expect(findEnvProblems({ ...OK, TELEGRAM_BOT_TOKEN: "", TELEGRAM_ALERT_CHAT_ID: undefined })).toEqual({
+      errors: [],
+      warnings: ["Thiếu TELEGRAM_BOT_TOKEN", "Thiếu TELEGRAM_ALERT_CHAT_ID"],
+    });
   });
 });

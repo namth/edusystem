@@ -84,11 +84,12 @@ beforeEach(async () => {
     INSERT INTO questions (id,skill,category,prompt,content,stimulus_text) VALUES
       ('qMC','Reading','READING_MC','Chọn đáp án','{"sub_questions":[{"id":"s1","text":"1?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"},{"id":"s2","text":"2?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"C"}]}',NULL),
       ('qFill','Reading','READING_FILL_IN','Điền','{"fill_subtype":"OPTION_BANK","passage":"I (am) here.","option_bank":["is","am"]}','I (am) here.'),
+      ('qMC2','Reading','READING_MC','Chọn đáp án','{"sub_questions":[{"id":"s1","text":"1?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"B"},{"id":"s2","text":"2?","option_a":"a","option_b":"b","option_c":"c","option_d":"d","correct_answer":"C"}]}',NULL),
       ('qEssay','Writing','WRITING_ESSAY','Viết về gia đình','{"min_words":50,"task_type":"Task 2"}',NULL),
       ('qShort','Writing','WRITING_SHORT_ANSWER','Trả lời','{"sub_questions":[{"id":"a1","text":"Why?","max_words":20,"sample_answer":"Because."}]}',NULL);
     INSERT INTO lessons (id,title,description,question_ids,created_by) VALUES
       ('lObj','Bài khách quan','Mô tả','["qMC","qFill"]','t1'),
-      ('lAI','Bài tự luận',NULL,'["qMC","qEssay","qShort"]','t1'),
+      ('lAI','Bài tự luận',NULL,'["qMC2","qEssay","qShort"]','t1'), -- FEAT-017: câu thuộc đúng một bài
       ('lOther','Bài ngoài khóa',NULL,'["qMC"]','t1');
     INSERT INTO curriculum_items (id,course_id,parent_id,title,type,lesson_id,order_index) VALUES
       ('U1','co1',NULL,'Unit 1','UNIT',NULL,1),
@@ -192,7 +193,7 @@ describe("POST /api/student/lessons/[lessonId]/attempts — nộp & chấm", () 
   it("có tự luận: GRADING, score_percent null, KHÔNG trừ slot GV (DEC-031), đẩy sự kiện LESSON_GRADING_REQUESTED", async () => {
     await h.pg!.db.exec(`UPDATE classes SET unlock_mode='ALL_OPEN' WHERE id='c1'`);
     await loginAs("STUDENT", "s1");
-    const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC: { s1: "B", s2: "C" }, qEssay: "My family...", qShort: { a1: "x" } } })).json();
+    const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC2: { s1: "B", s2: "C" }, qEssay: "My family...", qShort: { a1: "x" } } })).json();
     expect(attempt).toMatchObject({ status: "GRADING", objective_earned: 2, objective_max: 2, ai_max: 2, ai_earned: null, score_percent: null });
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(5);
     expect(h.events).toEqual([["stream:learning:grading", "LESSON_GRADING_REQUESTED", { attemptId: attempt.id }]]);
@@ -201,7 +202,7 @@ describe("POST /api/student/lessons/[lessonId]/attempts — nộp & chấm", () 
   it("có tự luận + GV slot_limit = 0: vẫn GRADING và đẩy sự kiện chấm, slot không đổi (DEC-031 thay BR-L11)", async () => {
     await h.pg!.db.exec(`UPDATE classes SET unlock_mode='ALL_OPEN' WHERE id='c1'; UPDATE users SET slot_limit=0 WHERE id='t1';`);
     await loginAs("STUDENT", "s1");
-    const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC: { s1: "B", s2: "C" } } })).json();
+    const { attempt } = await (await post("lAI", { classId: "c1", answers: { qMC2: { s1: "B", s2: "C" } } })).json();
     expect(attempt).toMatchObject({ status: "GRADING", ai_earned: null, score_percent: null });
     expect((await rows(`SELECT slot_limit FROM users WHERE id='t1'`))[0].slot_limit).toBe(0);
     expect(h.events).toEqual([["stream:learning:grading", "LESSON_GRADING_REQUESTED", { attemptId: attempt.id }]]);
@@ -261,7 +262,7 @@ describe("POST /api/lessons/grade-async — worker chấm AI (TC-L07)", () => {
     await h.pg!.db.exec(`UPDATE classes SET unlock_mode='ALL_OPEN' WHERE id='c1'`);
     await loginAs("STUDENT", "s1");
     const { POST } = await import("@/app/api/student/lessons/[lessonId]/attempts/route");
-    const { attempt } = await (await POST(req("POST", "/x", { classId: "c1", answers: { qMC: { s1: "B", s2: "C" }, qEssay: "Essay", qShort: { a1: "Because" } } }), ctx({ lessonId: "lAI" }))).json();
+    const { attempt } = await (await POST(req("POST", "/x", { classId: "c1", answers: { qMC2: { s1: "B", s2: "C" }, qEssay: "Essay", qShort: { a1: "Because" } } }), ctx({ lessonId: "lAI" }))).json();
     h.token = undefined;
     return attempt;
   }

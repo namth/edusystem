@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { queryPg, getPgPool } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 async function checkCourseAccess(
   courseId: string,
@@ -39,7 +40,9 @@ async function validateLessonForCurriculum(
     return { ok: false, error: "LESSON bắt buộc phải có lesson_id." };
   }
   const cleanId = lessonId.trim();
-  const res = await queryPg("SELECT id, created_by, question_ids FROM lessons WHERE id = $1", [cleanId]);
+  const res = await queryPg(`SELECT l.id, l.created_by,
+       (SELECT COUNT(*)::int FROM sections s WHERE s.lesson_id = l.id AND s.deleted_at IS NULL) AS section_count
+     FROM lessons l WHERE l.id = $1`, [cleanId]);
   if (res.rows.length === 0) {
     return { ok: false, error: "Bài học không tồn tại." };
   }
@@ -47,11 +50,9 @@ async function validateLessonForCurriculum(
   if (authUser.role === "TEACHER" && lesson.created_by !== authUser.userId) {
     return { ok: false, error: "Bạn không có quyền sử dụng bài học này." };
   }
-  const qIds = Array.isArray(lesson.question_ids)
-    ? lesson.question_ids
-    : (typeof lesson.question_ids === "string" ? JSON.parse(lesson.question_ids) : []);
-  if (!Array.isArray(qIds) || qIds.length < 1) {
-    return { ok: false, error: "Bài học chưa có câu hỏi nào." };
+  // FEAT-017 (BR-L03 / BR-P02): bài học phải có ít nhất 1 phần
+  if (Number(lesson.section_count) < 1) {
+    return { ok: false, error: "Bài học chưa có nội dung nào." };
   }
   return { ok: true, error: "", lessonId: cleanId };
 }
@@ -95,8 +96,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, items });
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum GET Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp chương trình học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "GET", message: err.message || "Lỗi nạp chương trình học." });
   }
 }
 
@@ -213,8 +213,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum POST Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo bài học/đề thi." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "POST", message: err.message || "Lỗi tạo bài học/đề thi." });
   }
 }
 
@@ -378,8 +377,7 @@ export async function PUT(req: Request) {
       client.release();
     }
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum PUT Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi cập nhật chương trình học." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "PUT", message: err.message || "Lỗi cập nhật chương trình học." });
   }
 }
 
@@ -418,7 +416,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: true, deletedIds: [id] });
     }
   } catch (err: any) {
-    console.error("API /api/teacher/curriculum DELETE Error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi xóa mục." }, { status: 500 });
+    return serverError(err, { route: "/api/teacher/curriculum", method: "DELETE", message: err.message || "Lỗi xóa mục." });
   }
 }

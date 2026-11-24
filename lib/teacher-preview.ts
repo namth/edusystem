@@ -3,6 +3,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions, sectionsForStudent, flashcardIdsOf } from "@/lib/sections-db";
+import type { TreeSection } from "@/lib/exam-structure";
 import {
   gradeQuestion,
   summarizeResults,
@@ -19,24 +21,12 @@ export type PreviewKind = "lesson" | "exam";
 const TABLE: Record<PreviewKind, "lessons" | "exams"> = { lesson: "lessons", exam: "exams" };
 const NOUN: Record<PreviewKind, string> = { lesson: "Bài học", exam: "Đề thi" };
 
-function parseIds(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === "string");
-  if (typeof raw === "string") {
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
 type Loaded =
   | { error: NextResponse }
   | {
       error?: undefined;
       row: Record<string, unknown>;
+      sections: TreeSection[];
       questions: GradableQuestion[];
       flashcards: Record<string, FlashcardRow>;
     };
@@ -63,58 +53,28 @@ async function loadSet(kind: PreviewKind, id: string): Promise<Loaded> {
     };
   }
 
-  const questionIds = parseIds(row.question_ids);
-  const questions: GradableQuestion[] = [];
+  // FEAT-017: nạp theo phần, đúng thứ tự giáo viên xếp
+  const { sections, questions } = await loadParentQuestions(kind, id);
   const flashcards: Record<string, FlashcardRow> = {};
-
-  if (questionIds.length > 0) {
-    const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-    const qMap = new Map<string, GradableQuestion>(
-      qRes.rows.map((r: Record<string, unknown>) => [
-        String(r.id),
-        {
-          ...r,
-          content: typeof r.content === "string" ? JSON.parse(r.content) : r.content,
-        } as GradableQuestion,
-      ])
-    );
-    for (const qid of questionIds) {
-      const q = qMap.get(qid);
-      if (q) questions.push(q);
-    }
-
-    const flashcardIdSet = new Set<string>();
-    for (const q of questions) {
-      if (typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        const content = (q.content ?? {}) as { flashcard_ids?: unknown; flashcardIds?: unknown };
-        const ids = content.flashcard_ids || content.flashcardIds;
-        if (Array.isArray(ids)) {
-          for (const fid of ids) {
-            if (typeof fid === "string" && fid.trim()) flashcardIdSet.add(fid.trim());
-          }
-        }
-      }
-    }
-
-    if (flashcardIdSet.size > 0) {
-      const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [[...flashcardIdSet]]);
-      for (const r of fcRes.rows) {
-        flashcards[r.id] = {
-          ...r,
-          options: typeof r.options === "string" ? JSON.parse(r.options) : r.options || [],
-        };
-      }
+  const fcIds = flashcardIdsOf(questions);
+  if (fcIds.length > 0) {
+    const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [fcIds]);
+    for (const r of fcRes.rows) {
+      flashcards[r.id] = {
+        ...r,
+        options: typeof r.options === "string" ? JSON.parse(r.options) : r.options || [],
+      } as FlashcardRow;
     }
   }
 
-  return { row, questions, flashcards };
+  return { row, sections, questions, flashcards };
 }
 
 /** GET: nội dung đã ẩn đáp án, đúng như học sinh nhìn thấy. */
 export async function previewContent(kind: PreviewKind, id: string): Promise<NextResponse> {
   const loaded = await loadSet(kind, id);
   if (loaded.error) return loaded.error;
-  const { row, questions, flashcards } = loaded;
+  const { row, sections, questions, flashcards } = loaded;
 
   const meta =
     kind === "lesson"
@@ -131,6 +91,7 @@ export async function previewContent(kind: PreviewKind, id: string): Promise<Nex
     {
       success: true,
       [kind]: meta,
+      sections: sectionsForStudent(sections),
       questions: questions.map((q) => sanitizeQuestionForStudent(q)),
       flashcards: Object.values(flashcards).map((fc) => sanitizeFlashcardForStudent(fc)),
     },

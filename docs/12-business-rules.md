@@ -47,7 +47,7 @@
 ## 5. Bài học & lộ trình (L): FEAT-010
 - **BR-L01** Bài học thuộc `created_by`. TEACHER chỉ thao tác bài học của mình.
 - **BR-L02** Không xoá bài học đang được `curriculum_items.lesson_id` tham chiếu; trả 409 kèm danh sách nơi dùng.
-- **BR-L03** Gắn vào lộ trình yêu cầu bài học có ít nhất 1 khối.
+- **BR-L03** Gắn vào lộ trình yêu cầu bài học có ít nhất 1 khối. *(FEAT-017: ≥ 1 phần, BR-P02)*
 - **BR-L04** Trạng thái mục theo `unlock_mode`:
 
   | Chế độ | Mục `OPEN` khi |
@@ -58,7 +58,7 @@
 
   `COMPLETED`: bài học có `best_percent ≥ pass_percent`; đề thi có bài nộp đạt `passing_score`, hoặc chỉ cần có bài nộp nếu đề không có `passing_score`.
 - **BR-L05** Đổi `unlock_mode` lúc nào cũng được; các dòng `class_unlocks` giữ nguyên.
-- **BR-L06** Chấm khách quan trên server theo điểm thành phần: mỗi câu con, ô trống, cặp nối, thẻ = 1 điểm.
+- **BR-L06** Chấm khách quan trên server theo điểm thành phần: mỗi câu con, ô trống, cặp nối, thẻ = 1 điểm. *(FEAT-017: hết câu con — mỗi ý trắc nghiệm là một câu, BR-P12)*
 - **BR-L07** Tự luận và trả lời ngắn chấm bằng AI, mỗi mục tối đa 1 điểm = band / 9.
 - **BR-L08** `score_percent = (objective_earned + ai_earned) / (objective_max + ai_max) × 100`, làm tròn 1 chữ số; tổng tối đa = 0 thì lấy 100.
 - **BR-L09** Đáp án không bao giờ có trong phản hồi cho học sinh trước khi nộp.
@@ -68,7 +68,7 @@
 
 ## 6. Đề thi & chuẩn chấm (E): FEAT-011
 - **BR-E01** Chuẩn áp dụng: `exams.scoring_standard_id`; không có thì `courses.default_scoring_standard_id` của khoá chứa đề; không có nữa thì `std_internal_10`. Chuẩn được chụp vào `standard_snapshot` lúc bắt đầu thi.
-- **BR-E02** Điểm phần nhóm theo `questions.skill`. Quy đổi `LINEAR` hoặc `TABLE` (đề khác số câu chuẩn thì quy tỷ lệ về số câu chuẩn rồi tra bảng). Làm tròn theo `step`.
+- **BR-E02** Điểm phần nhóm theo `questions.skill` (FEAT-017: luôn bằng `sections.skill`, BR-P04). Quy đổi `LINEAR` hoặc `TABLE` (đề khác số câu chuẩn thì quy tỷ lệ về số câu chuẩn rồi tra bảng). Làm tròn theo `step`.
 - **BR-E03** Có `classId`: học sinh phải đã ghi danh, và đề phải được giao cho lớp hoặc là mục EXAM đang mở trong lộ trình.
 - **BR-E04** Số lần làm: theo `class_assignments.max_attempts`, mục lộ trình mặc định 1, lớp dùng thử 1. Đề trong ngân hàng luyện tập không giới hạn.
 - **BR-E05** `deadline_at = started_at + duration_minutes`. Nộp sau `deadline_at + 2 phút` vẫn được chấm nhưng `is_late = true`. Lưu nháp sau hạn trả 409.
@@ -112,6 +112,67 @@ Chi tiết đầy đủ ở `docs/features/cham-diem-bang-diem.md` §7. Tóm t�
 - **BR-B12** AI chấm bài học lỗi 3 lần / `giveUp` → `NEEDS_REVIEW`, không cho 0.
 - **BR-B13** AI chấm xong ghi `ai_score`, `ai_feedback` cùng `score`.
 
+## 9c. Chuyển dạng câu khi nhập đề (I): FEAT-015, DEC-042 → DEC-046, DEC-049; `lib/question-conversion.ts`
+Chi tiết, bảng dạng giấy và mã cảnh báo ở `docs/features/chuyen-doi-dang-cau-nhap-de.md` §7. Tóm tắt:
+- **BR-I01** AI chỉ gắn nhãn `paper_format`, `answer_source`, `confidence`; `convertGroup` (hàm thuần) dựng content.
+- **BR-I02** 1 ô → `OPTION_BANK` 4 phương án, mỗi câu một bản ghi.
+- **BR-I03** ≥ 2 ô → `INLINE_SELECT`, mỗi ô 4 phương án của ô đó.
+- **BR-I04** Phương án dạng cặp, cả 4 tách được đúng k phần → k ô, mỗi ô 1 điểm; không tách được → `READING_MC`.
+- **BR-I05** Hộp từ chung → `OPTION_BANK` chung.
+- **BR-I06** Đoạn văn ghi `(n) [đáp án]`; ngoặc vuông gốc đổi thành ngoặc tròn; số ô = số đáp án.
+- **BR-I07** Không có đáp án → `null` + `NO_ANSWER`, không tự gán "A"; phải chọn đáp án mới nhập được.
+- **BR-I08** Dạng chưa hỗ trợ → `READING_MC` + cảnh báo + `reportAlert` WARN, không chặn nhập.
+- **BR-I09** Nhóm code không dựng được → AI lượt 2 (≤ 10 nhóm, 20 giây/lần); vẫn lỗi → `READING_MC` + cảnh báo.
+- **BR-I10** Học sinh không nhận `import_meta`.
+- **BR-I11** Nhóm lẫn dạng → tách thành khối liền nhau, giữ chung `prompt`.
+- **BR-I12** Listening dùng tiền tố `LISTENING_` + cảnh báo `AUDIO_MISSING`.
+- **BR-I13** `confidence < 0.6` → `LOW_CONFIDENCE`.
+- **BR-I14** Bóc tách giữ `<u> <b> <strong> <i> <em> <br>` để AI nhận dạng; câu con và phương án lưu chữ trơn (BR-I25); đáp án chấm luôn là chữ trơn.
+- **BR-I15** Ghép nối đúng 1-1 không thừa → `READING_MATCHING`; có nhiễu / đáp án lặp / > 4 phương án → `INLINE_SELECT` giữ đủ lựa chọn (thay `DISTRACTORS_DROPPED`, DEC-049).
+- **BR-I16** `SHORT_ANSWER` Reading/Listening có đáp án → `FILL_IN · FREE_TYPING`; chấm ô điền nhận ` / ` và từ tuỳ chọn trong ngoặc tròn.
+- **BR-I17** Bài đọc chung (`passages` + `passage_id`) → `stimulus_text` mọi câu của nhóm; thiếu bài đọc → cấu trúc lại một lần rồi `PASSAGE_MISSING`.
+- **BR-I18** PDF scan (kể cả có watermark) → OCR theo cụm 4 trang; thiếu trang → 503, không tạo đề thiếu; > 40 trang hoặc quá dài → 400 `DOCUMENT_TOO_LONG`.
+- **BR-I19** AI trả thiếu > 10 % số câu đề tự khai → cấu trúc lại một lần; đáp án ghi bằng nội dung phương án → khoá chữ cái.
+- **BR-I20** Bỏ tiền tố số câu khỏi chữ câu; câu chỉ có dãy phương án để trống; LessonPlayer hiện số câu gốc.
+- **BR-I21** Câu gợi ý từ `a / b / c` có đáp án → sắp xếp từ (`WORD_ORDERING`, học sinh xếp toàn bộ từ của câu đúng), kể cả khi AI gắn nhầm `GENERAL_MC`; lệch quá xa → giữ trắc nghiệm (DEC-050).
+- **BR-I22** Không bịa đoạn văn: cloze dựng được trên bài đọc chung; AI lượt 2 thêm > 10 % từ mới bị loại; "the following passage" cũng là nhắc bài đọc.
+- **BR-I23** Kỹ năng câu nhập đề suy từ tiền tố dạng câu (không dùng nhãn AI), để thứ tự màn thi giữ đúng đề giấy; nhãn AI lưu ở `import_meta.paper_skill`.
+- **BR-I24** Câu nhập AI mở Sửa hiện đủ trường như câu tạo tay, lưu lại không mất dữ liệu; đáp án trắc nghiệm luôn lưu chữ cái A–D; danh sách chọn lưu `inline_options_per_gap`; đổi dạng trong form không xoá dữ liệu; đề độc lập không bị gắn vào khoá khi lưu (DEC-050).
+- **BR-I25** Câu con và phương án nhập AI lưu chữ trơn, không giữ gạch chân; bỏ `UNDERLINE_MISSING` (DEC-050).
+- **BR-I26** `OPTION_BANK` trên màn học sinh là kho từ bấm để điền vào ô, không phải danh sách chọn (DEC-050).
+
+## 9d. Cảnh báo admin (W): FEAT-016, DEC-047, DEC-048; `lib/admin-alerts.ts`
+Chi tiết ở `docs/features/canh-bao-admin.md` §7. Tóm tắt:
+- **BR-W01** `reportAlert` không bao giờ ném lỗi, không gọi đệ quy.
+- **BR-W02** Upsert theo `fingerprint`; dòng `RESOLVED` tái phát thì về `NEW` và gửi ngay.
+- **BR-W03** Telegram: lần đầu, tái phát, hoặc ≥ 15 phút từ tin trước; tin ghi số lần lặp.
+- **BR-W04** Trần 20 tin / 60 phút toàn hệ thống; chạm trần thì gửi 1 tin báo.
+- **BR-W05** DB lỗi → gửi thẳng Telegram, chống spam trong bộ nhớ.
+- **BR-W06** Không PII, không bí mật (`redactSensitive`); không body, cookie, header, tên file.
+- **BR-W07** Thiếu biến Telegram → chỉ ghi DB.
+- **BR-W08** Mọi nhánh 500 trong `app/api/**` đi qua `serverError` (có test khoá).
+- **BR-W09** Dọn dòng `RESOLVED` quá 90 ngày, tối đa 1 lần/24 giờ.
+- **BR-W10** Worker báo khi bỏ cuộc sau 5 lần giao (`WORKER:GIVE_UP:*`) và khi mất Redis (`WORKER:REDIS_DOWN`).
+- **BR-W11** Nguồn AI: hết nhà cung cấp khi nhập đề (ERROR); bài `NEEDS_REVIEW` do AI (WARN).
+
+## 9e. Bài học & đề thi theo Phần (P): FEAT-017, DEC-051 → DEC-055; `lib/exam-structure.ts`, `lib/section-editor.ts`
+Chi tiết ở `docs/features/phan-bai-hoc-de-thi.md` §7. Tóm tắt:
+- **BR-P01** Đề / bài học = danh sách phần có thứ tự; mỗi phần thuộc đúng một cha; dùng lại = sao chép.
+- **BR-P02** ≥ 1 phần; đề thi có ≥ 1 câu tính điểm; bài học có thể chỉ có phần đọc.
+- **BR-P03** Phần có thể 0 câu nhưng phải có lời dẫn, chữ hoặc audio.
+- **BR-P04** Dạng câu thuộc kỹ năng của phần; `questions.skill` = `sections.skill`.
+- **BR-P05** Ngữ cảnh khớp `stimulus_type`; phần Listening có câu phải có audio.
+- **BR-P06** Số câu tính bằng `numberedCount` (điền ô = số ô, nối = số cặp, còn lại 1), liên tục qua các phần; không lưu.
+- **BR-P07** Lưu cả cây trong một transaction, `position` = chỉ số mảng; lỗi → rollback.
+- **BR-P08** `updated_at` lệch → 409.
+- **BR-P09** Đã có lượt làm → xoá mềm, không chấm lại bài cũ, trình soạn hiện số lượt; chưa có → xoá hẳn.
+- **BR-P10** Học sinh không thấy phần / câu xoá mềm; xem lại bài nộp thì thấy câu có trong bài đó.
+- **BR-P11** Một phần một màn theo `position`; phần 0 câu có nút Tiếp tục, không tính vào số câu.
+- **BR-P12** Trắc nghiệm một ý một bản ghi, đáp án A–D; không còn `sub_questions`; code mới không đọc định dạng cũ.
+- **BR-P13** Nhân bản chép sâu; chuyển bài học ↔ đề giữ id.
+- **BR-P15** Điền ô kho từ và sắp xếp: kéo thả (chuột + cảm ứng) và bấm để chọn cùng tồn tại, cho cùng đáp án.
+- **BR-P14** AI nhập đề: mỗi nhóm đề giấy → một phần; nhóm liền nhau cùng bài đọc → chung một phần.
+
 ## 10. Máy trạng thái
 ```text
 submissions.status      IN_PROGRESS ─submit─▶ GRADED (toàn câu khách quan)
@@ -125,4 +186,5 @@ slot_requests.status    PENDING ─approve─▶ APPROVED
                         PENDING ─cancel─▶ CANCELLED          (payment_reported_at: cờ, không phải trạng thái)
 users.teacher_status    TRIAL ─verify─▶ VERIFIED | REJECTED ; REJECTED ─verify─▶ VERIFIED   (NULL = coi như VERIFIED)
 leads.status            NEW ─▶ CONTACTED ─▶ DONE
+admin_alerts.status     (mới) ─▶ NEW ─admin đánh dấu─▶ RESOLVED ─tái phát / mở lại─▶ NEW      (FEAT-016)
 ```

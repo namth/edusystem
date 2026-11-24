@@ -4,7 +4,8 @@
 > **Trạng thái**: DONE (khôi phục 31/10/2026; chưa thử file thật trên server — `docs/11` N2)  
 > **Phân hệ**: Teacher Portal & Admin Settings  
 > **Tác giả**: Principal Solutions Architect & Lead Product Owner  
-> **Phiên bản**: 1.0 (2026-10-05)
+> **Phiên bản**: 1.0 (2026-10-05)  
+> **Mở rộng bởi FEAT-015** (`docs/features/chuyen-doi-dang-cau-nhap-de.md`, DEC-042 → DEC-046): chuyển dạng câu, giữ gạch chân, `ai-parse` / `ai-import` đổi payload. **BR-INGEST-04 thay một phần:** câu điền ô trống không dùng `stimulus_text`, vì đoạn văn nằm trong `content.passage`.
 
 ---
 

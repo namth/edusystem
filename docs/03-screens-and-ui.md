@@ -1,7 +1,7 @@
 # 03 — Màn hình & giao diện
 
-> Cập nhật: 2026-11-03 · Nguồn: `app/**/page.tsx`. Code status: `DONE` có trong code và test; `PARTIAL` có trong code nhưng còn tồn đọng (xem `docs/11` §4); `REDIRECT` là trang chỉ chuyển hướng.
-> Design status: `APPROVED` (đã duyệt mock / prototype) · `CODE-ONLY` (làm thẳng trong code, chưa có mock duyệt).
+> Cập nhật: 2026-11-23 · Nguồn: `app/**/page.tsx`. Code status: `DONE` có trong code và test; `PARTIAL` có trong code nhưng còn tồn đọng (xem `docs/11` §4); `REDIRECT` là trang chỉ chuyển hướng.
+> Design status: `APPROVED` (đã duyệt mock / prototype) · `CODE-ONLY` (làm thẳng trong code, chưa có mock duyệt) · `SPEC_ONLY` (mới có đặc tả).
 
 ## 1. Kiểm kê màn hình
 ### Công khai
@@ -15,6 +15,8 @@
 | SCR-06 | `/join/[classId]` | Xem trước lớp qua link mời, đăng nhập / đăng ký rồi vào lớp | CODE-ONLY | DONE |
 | SCR-07 | `/change-password` | Đổi mật khẩu (bắt buộc khi `must_change_password`) | CODE-ONLY | DONE |
 | SCR-08 | `/profile` | Hồ sơ cá nhân | CODE-ONLY | DONE |
+| SCR-09 | `/for-teachers` | Giới thiệu KitoKit cho giáo viên & trung tâm (SEO) | CODE-ONLY | DONE |
+| SCR-09b | `/about`, `/terms`, `/privacy`, `/payment-policy` | Trang pháp lý: thông tin đơn vị vận hành, điều khoản, bảo vệ thông tin cá nhân, chính sách thanh toán & hoàn tiền | CODE-ONLY | DONE |
 | — | `/teacher/login` | Chuyển về `/login` | — | REDIRECT |
 
 ### Học sinh
@@ -22,9 +24,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-10 | `/student/dashboard` | Trang chủ học sinh: lớp, việc cần làm, vào lớp bằng mã | CODE-ONLY | DONE |
 | SCR-11 | `/student/class/[classId]` | Lớp: lộ trình (khoá / mở / hoàn thành), đề được giao; tab Bảng điểm (`?tab=gradebook`) xem điểm chính thức các bài đã chốt | CODE-ONLY | PARTIAL (menu trỏ cứng `cls_101`) |
-| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại | CODE-ONLY | DONE |
-| SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm | CODE-ONLY | DONE |
-| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm" | CODE-ONLY | DONE |
+| SCR-12 | `/student/lesson/[lessonId]` | Làm bài học, kết quả từng câu (điểm/nhận xét GV nếu có), trạng thái `NEEDS_REVIEW`, làm lại. FEAT-017: mỗi phần một màn, phần chỉ đọc có nút Tiếp tục (Design: APPROVED — prototype 24/11, Code: DONE 24/11) | CODE-ONLY | DONE |
+| SCR-13 | `/student/exam/[examId]` | Làm đề: bố cục LISTENING / SPLIT / FOCUS (DEC-020), giờ server, ghi âm. FEAT-017: màn theo phần (không nhóm theo kỹ năng), ô điều hướng `number_start` (Design: APPROVED — prototype 24/11, Code: DONE 24/11) | CODE-ONLY | DONE |
+| SCR-14 | `/student/exam/review/[submissionId]` | Xem lại bài, điểm theo chuẩn, điểm/nhận xét GV câu AI và chung bài, phần "đang chấm". FEAT-017: hiện theo phần, gồm câu đã xoá mềm có trong bài (Code: DONE 24/11) | CODE-ONLY | DONE |
 | SCR-15 | `/student/analytics` | Biểu đồ điểm | CODE-ONLY | DONE |
 | SCR-16 | `/student/landing` | Trang chờ (đổi mật khẩu / chưa có lớp) | CODE-ONLY | DONE |
 | — | `/student` | Chuyển hướng | — | REDIRECT |
@@ -35,9 +37,9 @@
 | SCR-20 | `/teacher/classes` | Danh sách lớp, tạo / sửa lớp | CODE-ONLY | DONE |
 | SCR-21 | `/teacher/classes/[classId]` | Chi tiết lớp: học viên, tab Đề giao, lộ trình lớp, mở khoá, tiến độ, nút "Mở bảng điểm" → `/teacher/grading?class=` | CODE-ONLY | DONE |
 | SCR-22 | `/teacher/tests` | Khoá học + cây giáo trình kéo-thả | CODE-ONLY | DONE |
-| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn) | CODE-ONLY | DONE |
-| SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi | CODE-ONLY | DONE |
-| SCR-25 | `/teacher/lessons`, `/teacher/lessons/[id]` | Kho bài học, soạn bài học, xem trước | CODE-ONLY | DONE |
+| SCR-23 | `/teacher/tests/create` | Soạn đề 4 kỹ năng (file lớn); tab AI nhập đề dùng chung Review Studio với SCR-24. FEAT-017: thay bằng `SectionEditor` — cột phải Cấu trúc bài, vùng trái soạn phần đang chọn (Design: APPROVED — prototype 24/11, Code: DONE 24/11) | CODE-ONLY | DONE |
+| SCR-24 | `/teacher/library` | Kho bài học & đề, AI nhập đề, nhân bản, chuyển đổi. FEAT-015: Review Studio có nhãn "Trên giấy → Hệ thống", cảnh báo, Đổi dạng, Xem như học sinh, tổng điểm, khoá khi thiếu đáp án | CODE-ONLY | DONE (FEAT-015) |
+| SCR-25 | `/teacher/lessons`, `/teacher/lessons/[id]` | Kho bài học, soạn bài học, xem trước. FEAT-017: soạn bài học bằng `SectionEditor` như SCR-23 (Design: APPROVED — prototype 24/11, Code: DONE 24/11) | CODE-ONLY | DONE |
 | SCR-26 | `/teacher/subjects` | Môn học | CODE-ONLY | DONE |
 | SCR-27 | `/teacher/flashcards` | Thư viện flashcard | CODE-ONLY | DONE |
 | SCR-28 | `/teacher/students/create` | Tạo tài khoản học sinh | CODE-ONLY | DONE |
@@ -50,6 +52,7 @@
 | SCR | Đường dẫn | Mô tả | Design | Code |
 | :--- | :--- | :--- | :--- | :--- |
 | SCR-40 | `/admin` | Tổng quan: thẻ số liệu, chọn tháng, biểu đồ, top giáo viên | CODE-ONLY | DONE |
+| SCR-52 | `/admin/alerts` | Cảnh báo hệ thống: lọc mức / nguồn / trạng thái, ngăn chi tiết, đánh dấu đã xử lý, trạng thái Telegram + Gửi tin thử (FEAT-016) | CODE-ONLY | DONE (FEAT-016) |
 | SCR-41 | `/admin/orders` | Đơn hàng (lọc, duyệt / từ chối / huỷ) + tab Cấu hình thanh toán | CODE-ONLY | DONE |
 | SCR-42 | `/admin/orders/[id]` | Trang thanh toán + duyệt / từ chối | CODE-ONLY | DONE |
 | SCR-43 | `/admin/teachers` | Danh sách giáo viên, lọc chờ xác minh (`?status=TRIAL`) | CODE-ONLY | DONE |
@@ -81,7 +84,9 @@
   - học sinh: `/student/exam/review/<id>`;
   - giáo viên: `/teacher/grading/<classId>/<kind>/<itemId>` (`EXAM_NEEDS_REVIEW` của bài lớp, `LESSON_NEEDS_REVIEW`), `/teacher/grading` (bài luyện tự do), `/teacher/orders/<id>`;
   - học sinh (chốt bảng điểm): `/student/class/<classId>?tab=gradebook` (`GRADEBOOK_FINALIZED`);
-  - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`.
+  - admin: `/admin/teachers?status=TRIAL`, `/admin/orders?q=<mã đơn>`;
+  - tin Telegram cảnh báo (FEAT-016): ghi đường dẫn `/admin/alerts` (không kèm tên miền).
+- Menu admin: "Cảnh Báo Hệ Thống" ngay sau "Tổng quan", có huy hiệu số cảnh báo `NEW` (FEAT-016).
 
 ## 3. Quy tắc giao diện (bắt buộc, có test)
 | Quy tắc | Nguồn | Test |

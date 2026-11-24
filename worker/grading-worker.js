@@ -15,6 +15,22 @@ const CLAIM_INTERVAL_MS = 60000;
 
 const deliveryCounts = new Map();
 
+// FEAT-016 BR-W10: báo admin qua /api/internal/alerts. Lỗi khi báo chỉ log, không thử lại.
+async function reportToAdmin({ level = "ERROR", title, fingerprint, message, extra }) {
+  try {
+    await fetch(`${APP_URL}/api/internal/alerts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-token": process.env.INTERNAL_API_TOKEN || "",
+      },
+      body: JSON.stringify({ level, title, fingerprint, detail: { message, extra } }),
+    });
+  } catch (alertErr) {
+    console.error("[Grading Worker] Không gửi được cảnh báo admin:", alertErr && alertErr.message);
+  }
+}
+
 async function processMessage(redis, streamName, messageId, fields) {
   if (!Array.isArray(fields)) return;
 
@@ -104,6 +120,14 @@ async function processMessage(redis, streamName, messageId, fields) {
     console.error(
       `❌ [Grading Worker] Message ${messageId} exceeded MAX_DELIVERIES (${MAX_DELIVERIES}); XACK to prevent infinite loop.`
     );
+    const kind = eventType === "LESSON_GRADING_REQUESTED" ? "LESSON" : "EXAM";
+    await reportToAdmin({
+      level: "ERROR",
+      title: `Worker bỏ cuộc sau ${MAX_DELIVERIES} lần giao (${kind === "LESSON" ? "bài học" : "đề thi"}), bài chuyển chấm tay`,
+      fingerprint: `WORKER:GIVE_UP:${kind}`,
+      message: `eventType=${eventType}`,
+      extra: { submissionId: payload.submissionId, attemptId: payload.attemptId, messageId },
+    });
     // Bài thi: báo server chuyển sang giáo viên chấm tay để không kẹt "đang chấm"
     if (eventType === "GRADING_REQUESTED" && payload.submissionId) {
       try {
@@ -165,6 +189,22 @@ async function main() {
   const redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+  });
+
+  // BR-W10: mỗi lần mất kết nối Redis chỉ báo một lần; kết nối lại thì mở cờ.
+  let redisDownReported = false;
+  redis.on("ready", () => {
+    redisDownReported = false;
+  });
+  redis.on("error", (redisErr) => {
+    if (redisDownReported) return;
+    redisDownReported = true;
+    void reportToAdmin({
+      level: "ERROR",
+      title: "Worker mất kết nối Redis",
+      fingerprint: "WORKER:REDIS_DOWN",
+      message: String((redisErr && redisErr.message) || redisErr),
+    });
   });
 
   console.log(`⚡ [Grading Worker] Connecting to Redis at ${REDIS_URL}...`);

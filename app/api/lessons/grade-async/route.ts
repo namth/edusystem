@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { hasValidInternalToken } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions } from "@/lib/sections-db";
 import { withAiUsageContext } from "@/lib/ai-usage";
 import { gradeOpenAnswer } from "@/lib/lesson-ai-grading";
 import { computeScorePercent, type GradeResult } from "@/lib/grading";
 import { notifyLessonNeedsReview } from "@/lib/notifications";
+import { reportAlert } from "@/lib/admin-alerts";
 
 async function callGradeWithRetry(input: {
   category: string;
@@ -88,29 +90,16 @@ export async function POST(req: Request) {
       const results: GradeResult[] =
         typeof attempt.results === "string" ? JSON.parse(attempt.results) : attempt.results || [];
 
-      const lessonRes = await queryPg("SELECT question_ids FROM lessons WHERE id = $1", [
-        attempt.lesson_id,
-      ]);
+      const lessonRes = await queryPg("SELECT id FROM lessons WHERE id = $1", [attempt.lesson_id]);
       if (lessonRes.rows.length === 0) {
         return NextResponse.json({ success: false, error: "Không tìm thấy bài học." }, { status: 404 });
       }
 
-      const questionIds: string[] = Array.isArray(lessonRes.rows[0].question_ids)
-        ? lessonRes.rows[0].question_ids
-        : typeof lessonRes.rows[0].question_ids === "string"
-        ? JSON.parse(lessonRes.rows[0].question_ids)
-        : [];
-
-      const qMap = new Map<string, any>();
-      if (questionIds.length > 0) {
-        const qRes = await queryPg("SELECT * FROM questions WHERE id = ANY($1)", [questionIds]);
-        for (const row of qRes.rows) {
-          qMap.set(row.id, {
-            ...row,
-            content: typeof row.content === "string" ? JSON.parse(row.content) : row.content,
-          });
-        }
-      }
+      // FEAT-017: câu theo phần; câu đã xoá mềm sau khi nộp vẫn chấm được (BR-P10)
+      const { questions: loadedQ } = await loadParentQuestions("lesson", String(attempt.lesson_id), {
+        includeDeletedIds: results.map((r) => String(r.question_id)),
+      });
+      const qMap = new Map<string, any>(loadedQ.map((q) => [q.id, q]));
 
       let totalAiEarned = 0;
       let gradingError: string | null = null;
@@ -153,6 +142,22 @@ export async function POST(req: Request) {
               });
               if (item) questionEarned += setItemBand(item, band);
               else questionEarned += Math.max(0, Math.min(1, Math.max(0, Math.min(9, band)) / 9));
+            } catch (err: any) {
+              gradingError = err?.message || String(err);
+              if (item) clearItemBand(item);
+            }
+          } else if (r.category === "WRITING_SHORT_ANSWER" && !Array.isArray(q?.content?.sub_questions)) {
+            // FEAT-017 (BR-P12): trả lời ngắn một ý một bản ghi
+            const item = r.items[0];
+            const raw = answers?.[r.question_id];
+            try {
+              const band = await callGradeWithRetry({
+                category: r.category,
+                prompt: q?.content?.text || q?.prompt || "",
+                answer: typeof raw === "string" ? raw : raw ? String(raw) : "",
+                sample_answer: q?.content?.sample_answer || null,
+              });
+              if (item) questionEarned += setItemBand(item, band);
             } catch (err: any) {
               gradingError = err?.message || String(err);
               if (item) clearItemBand(item);
@@ -205,6 +210,14 @@ export async function POST(req: Request) {
           [JSON.stringify(results), gradingError, attempt.id]
         );
         await notifyLessonNeedsReview(attempt.id);
+        // FEAT-016 BR-W11: AI chấm bài học lỗi → báo admin (WARN, gộp theo loại)
+        void reportAlert({
+          level: "WARN",
+          source: "AI",
+          title: "AI chấm bài học lỗi, bài chuyển giáo viên chấm tay",
+          fingerprint: "AI:GRADING:NEEDS_REVIEW:LESSON",
+          detail: { message: String(gradingError), extra: { attemptId: attempt.id } },
+        });
         return NextResponse.json({ success: true, status: "NEEDS_REVIEW" });
       }
 

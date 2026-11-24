@@ -45,6 +45,28 @@ function normalizeString(val: unknown): string {
   return String(val ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+/**
+ * Các cách viết được chấp nhận của một đáp án điền ô (FEAT-015 BR-I16, kiểu đáp án IELTS):
+ * "half an hour / 30 minutes" → hai phương án; "(space) race" → "space race" hoặc "race".
+ * Chỉ tách ở " / " có khoảng trắng hai bên để "and/or" vẫn là một đáp án.
+ */
+export function acceptedAnswers(expected: unknown): string[] {
+  const alts = String(expected ?? "").split(/\s+\/\s+/);
+  const out = new Set<string>();
+  for (const alt of alts) {
+    out.add(normalizeString(alt.replace(/[()]/g, "")));
+    out.add(normalizeString(alt.replace(/\([^)]*\)/g, " ")));
+  }
+  out.delete("");
+  return [...out];
+}
+
+function matchesAnswer(given: unknown, expected: unknown): boolean {
+  if (typeof given !== "string" || !given.trim()) return false;
+  const g = normalizeString(given);
+  return g === normalizeString(expected) || acceptedAnswers(expected).includes(g);
+}
+
 function sortStrings(arr: string[]): string[] {
   return [...arr].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
 }
@@ -82,6 +104,19 @@ export function gradeQuestion(
 
   // 1. *_MC
   if (category.endsWith("_MC")) {
+    // FEAT-017 (BR-P12): trắc nghiệm một ý — answers[questionId] = "B"
+    if (!Array.isArray(content.sub_questions)) {
+      const expected = content.correct_answer ? String(content.correct_answer).toUpperCase() : "";
+      const correct = typeof answer === "string" && !!expected && normalizeString(answer) === normalizeString(expected);
+      return {
+        question_id: q.id,
+        category: q.category,
+        kind: "OBJECTIVE",
+        earned: correct ? 1 : 0,
+        max: 1,
+        items: [{ key: q.id, correct, given: answer, expected }],
+      };
+    }
     const subQuestions: any[] = Array.isArray(content.sub_questions) ? content.sub_questions : [];
     const answerObj =
       typeof answer === "object" && answer !== null && !Array.isArray(answer)
@@ -123,7 +158,7 @@ export function gradeQuestion(
     const items: GradeItem[] = expectedGaps.map((expected, idx) => {
       const key = `gap_${idx}`;
       const given = Array.isArray(answer) && idx < answer.length ? answer[idx] : undefined;
-      const correct = typeof given === "string" && normalizeString(given) === normalizeString(expected);
+      const correct = matchesAnswer(given, expected);
 
       return {
         key,
@@ -251,7 +286,7 @@ export function gradeQuestion(
     const items: GradeItem[] = gaps.map((expected, idx) => {
       const key = `gap_${idx}`;
       const given = Array.isArray(answer) && idx < answer.length ? answer[idx] : undefined;
-      const correct = typeof given === "string" && normalizeString(given) === normalizeString(expected);
+      const correct = matchesAnswer(given, expected);
 
       return {
         key,
@@ -322,6 +357,16 @@ export function gradeQuestion(
 
   // 9. WRITING_SHORT_ANSWER
   if (category === "WRITING_SHORT_ANSWER") {
+    if (!Array.isArray(content.sub_questions)) {
+      return {
+        question_id: q.id,
+        category: q.category,
+        kind: "AI",
+        earned: 0,
+        max: 1,
+        items: [{ key: q.id, correct: false, given: answer, expected: null }],
+      };
+    }
     const subQuestions: any[] = Array.isArray(content.sub_questions) ? content.sub_questions : [];
     const answerObj =
       typeof answer === "object" && answer !== null && !Array.isArray(answer)
@@ -364,6 +409,7 @@ function sanitizeByCategory(q: GradableQuestion): GradableQuestion {
 
   if (category.endsWith("_MC")) {
     const content = { ...q.content };
+    delete content.correct_answer;
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) => {
         const { correct_answer, ...rest } = sub;
@@ -442,6 +488,7 @@ function sanitizeByCategory(q: GradableQuestion): GradableQuestion {
 
   if (category === "WRITING_SHORT_ANSWER") {
     const content = { ...q.content };
+    delete content.sample_answer;
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) => {
         const { sample_answer, ...rest } = sub;
@@ -532,6 +579,7 @@ export function sanitizeQuestionForStudent(q: GradableQuestion): GradableQuestio
 
   if (result.content && typeof result.content === "object") {
     const content = stripAnswerKeys(result.content);
+    delete content.import_meta; // FEAT-015 BR-I10: vết chuyển đổi khi nhập đề không gửi cho học sinh
     if (Array.isArray(content.sub_questions)) {
       content.sub_questions = content.sub_questions.map((sub: any) =>
         sub && typeof sub === "object" ? stripAnswerKeys(sub) : sub
@@ -540,12 +588,13 @@ export function sanitizeQuestionForStudent(q: GradableQuestion): GradableQuestio
     result.content = content;
   }
 
-  // AI Import lưu đoạn văn điền ô (kèm đáp án trong ngoặc) vào cả cột stimulus_text
+  // Lớp chặn dự phòng: câu điền ô kiểu cũ (AI nhập đề bản đầu) chép đoạn văn có đáp án vào stimulus_text.
+  // FEAT-017: script TASK-061 đã đưa đoạn văn này vào content.passage; nhánh này chỉ còn để không lộ đáp án nếu sót.
   const category = q.category || "";
-  if ((category.endsWith("_FILL_IN") || category === "WRITING_FREE_TYPING_BLANKS") && typeof q.stimulus_text === "string") {
+  const importedV2 = !!(q.content && typeof q.content === "object" && (q.content as Record<string, unknown>).import_meta);
+  if ((category.endsWith("_FILL_IN") || category === "WRITING_FREE_TYPING_BLANKS") && typeof q.stimulus_text === "string" && !importedV2) {
     const { parts, gaps } = parseFillInGaps(q.stimulus_text);
     if (gaps.length > 0) result.stimulus_text = parts.join("____");
   }
-
   return result;
 }

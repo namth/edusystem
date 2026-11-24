@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TeacherLayout from "@/components/TeacherLayout";
-import QuestionSetEditor, { QuestionSetSavePayload } from "@/components/question-builder/QuestionSetEditor";
+import SectionEditor, { type SectionEditorSavePayload, type SaveResult } from "@/components/section-builder/SectionEditor";
+import type { TreeSection } from "@/lib/exam-structure";
 import { StudentPreviewButton } from "@/components/teacher/StudentPreviewModal";
 import { Loader2, AlertCircle, RefreshCw, ArrowLeft, Edit3 } from "lucide-react";
 
@@ -28,8 +29,11 @@ function TeacherTestCreateContent() {
     duration?: number;
     courseId?: string | null;
     scoring_standard_id?: string | null;
-    questions?: any[];
+    sections?: TreeSection[];
     flashcards?: any[];
+    version?: string | null;
+    attemptCount?: number;
+    loadKey?: number;
   }>({});
 
   const loadExam = useCallback(async (id: string) => {
@@ -43,15 +47,18 @@ function TeacherTestCreateContent() {
         throw new Error(data?.error || "Không thể tải thông tin đề thi.");
       }
 
-      setInitialData({
+      setInitialData((prev) => ({
         title: data.exam?.title || "",
         description: data.exam?.description || "",
         duration: data.exam?.duration_minutes || 60,
         courseId: data.course_id || null,
         scoring_standard_id: data.exam?.scoring_standard_id || null,
-        questions: data.questions || [],
+        sections: data.sections || [],
         flashcards: data.flashcards || [],
-      });
+        version: data.exam?.updated_at || null,
+        attemptCount: Number(data.exam?.attempt_count) || 0,
+        loadKey: (prev.loadKey || 0) + 1,
+      }));
     } catch (err: any) {
       console.error("Load exam error:", err);
       setLoadError(err.message || "Lỗi tải thông tin đề thi.");
@@ -70,25 +77,35 @@ function TeacherTestCreateContent() {
     }
   }, [editId, loadExam]);
 
-  const handleSave = async (payload: QuestionSetSavePayload): Promise<{ ok: boolean; error?: string }> => {
+  // FEAT-017: lưu cả cây (đề → phần → câu) trong một lần gọi
+  const handleSave = async (payload: SectionEditorSavePayload): Promise<SaveResult> => {
     try {
       const url = editId ? `/api/teacher/exams/${editId}` : "/api/teacher/exams";
       const method = editId ? "PUT" : "POST";
-
+      const { meta } = payload;
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          exam: {
+            title: meta.title,
+            description: meta.description,
+            duration_minutes: meta.duration_minutes,
+            course_id: meta.course_id,
+            scoring_standard_id: meta.scoring_standard_id,
+            updated_at: editId ? meta.updated_at : null,
+          },
+          sections: payload.sections,
+        }),
       });
-
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) {
-        return { ok: false, error: data?.error || "Lỗi lưu đề thi." };
+        return { ok: false, error: data?.error || "Lỗi lưu đề thi.", status: res.status, errors: data?.errors };
       }
-
-      alert(editId ? "Đã cập nhật bộ đề thi & danh sách câu hỏi thành công!" : "Đã lưu bộ đề thi mới thành công!");
-      router.push("/teacher/tests");
-      return { ok: true };
+      if (!editId) {
+        router.replace(`/teacher/tests/create?editId=${data.exam.id}`);
+      }
+      return { ok: true, sections: data.sections, version: data.exam?.updated_at ?? null };
     } catch (err: any) {
       console.error("Save exam error:", err);
       return { ok: false, error: err.message || "Lỗi kết nối khi lưu đề thi." };
@@ -145,17 +162,23 @@ function TeacherTestCreateContent() {
             </div>
           </div>
         ) : (
-          <QuestionSetEditor
+          <SectionEditor
+            key={`${editId || "new"}_${initialData.loadKey || 0}`}
             mode="EXAM"
-            initialTitle={initialData.title}
-            initialDescription={initialData.description}
-            initialDuration={initialData.duration}
-            initialCourseId={initialData.courseId || courseIdParam || null}
-            initialScoringStandardId={initialData.scoring_standard_id || null}
-            initialQuestions={initialData.questions}
+            initialMeta={{
+              title: initialData.title || "",
+              description: initialData.description || "",
+              duration_minutes: initialData.duration || 60,
+              course_id: initialData.courseId || courseIdParam || null,
+              scoring_standard_id: initialData.scoring_standard_id || null,
+            }}
+            initialSections={initialData.sections}
             initialFlashcards={initialData.flashcards}
+            version={initialData.version}
+            attemptCount={initialData.attemptCount}
             isLoading={isLoading}
             onSave={handleSave}
+            onReload={() => editId && loadExam(editId)}
             initialCreationMode={!editId && modeParam === "ai" ? "ai-ingest" : "manual"}
             aiIngestProps={{
               initialDestinationType: sourceParam === "course" || courseIdParam ? "curriculum" : "standalone",

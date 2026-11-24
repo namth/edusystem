@@ -3,6 +3,7 @@
 import fs from "fs";
 import path from "path";
 import { PGlite } from "@electric-sql/pglite";
+import { sectionizeParent } from "@/lib/section-migration";
 
 const BASE_SCHEMA = `
 CREATE TABLE users (
@@ -64,7 +65,47 @@ export async function createFakePg(migrations: string[] = []) {
     await db.exec(fs.readFileSync(path.resolve(__dirname, "../../docs", m), "utf8"));
   }
   const calls: { sql: string; params: unknown[] }[] = [];
+  // FEAT-017: dữ liệu test cũ seed bằng question_ids + stimulus ở câu → tự gom thành phần (migration 019 + script
+  // TASK-061, không tách sub_questions) trước mỗi truy vấn của code ứng dụng. Đề / bài học đã có phần thì bỏ qua.
+  // Bảng lessons tối thiểu (đủ cột của migration 006 + 012) để migration 019 tạo được khoá ngoại ngay từ đầu.
+  await origExec(`CREATE TABLE IF NOT EXISTS lessons (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT,
+    skills TEXT[] NOT NULL DEFAULT '{}', question_ids JSONB NOT NULL DEFAULT '[]', created_by VARCHAR(50),
+    subject_id VARCHAR(50), created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())`);
+  await origExec(fs.readFileSync(path.resolve(__dirname, "../../docs/db-migration-019-sections.sql"), "utf8"));
+  const raw = { query: async (q: string, p?: unknown[]) => ({ rows: (await origQuery(q, p as Parameters<typeof origQuery>[1])).rows as Record<string, unknown>[] }) };
+  // Dấu vân tay dữ liệu cũ của từng đề / bài học: seed đổi (thêm câu, đổi ngữ cảnh) thì gom lại các phần tự sinh.
+  const autoSig = new Map<string, string>();
+  const autoIds = new Set<string>();
+  async function autoSections() {
+    for (const [kind, table, col] of [["exam", "exams", "exam_id"], ["lesson", "lessons", "lesson_id"]] as const) {
+      const parents = (await raw.query(`SELECT * FROM ${table}`)).rows;
+      for (const p of parents) {
+        let qids: string[] = [];
+        if (Array.isArray(p.question_ids)) qids = p.question_ids as string[];
+        else if (typeof p.question_ids === "string") { try { qids = JSON.parse(p.question_ids); } catch { qids = []; } }
+        const sigOf = async () => {
+          const qs = qids.length ? (await raw.query("SELECT id, category, prompt, content, stimulus_text, stimulus_audio_url FROM questions WHERE id = ANY($1) ORDER BY id", [qids])).rows : [];
+          return JSON.stringify([qids, qs, p.stimulus_text ?? null, p.stimulus_audio_url ?? null]);
+        };
+        const sig = await sigOf();
+        const key = `${kind}:${p.id}`;
+        const secs = (await raw.query(`SELECT id FROM sections WHERE ${col} = $1`, [p.id])).rows;
+        if (secs.length) {
+          // chỉ gom lại khi mọi phần hiện có đều do helper tự sinh và seed đã đổi; phần do API lưu thì không đụng
+          if (!autoSig.has(key) || autoSig.get(key) === sig || !secs.every((s) => autoIds.has(String(s.id)))) continue;
+          const ids = secs.map((s) => s.id);
+          await raw.query("UPDATE questions SET section_id = NULL WHERE section_id = ANY($1)", [ids]);
+          await raw.query("DELETE FROM sections WHERE id = ANY($1)", [ids]);
+        }
+        if (!qids.length && !p.stimulus_text && !p.stimulus_audio_url) continue;
+        await sectionizeParent(raw, kind, String(p.id));
+        for (const s of (await raw.query(`SELECT id FROM sections WHERE ${col} = $1`, [p.id])).rows) autoIds.add(String(s.id));
+        autoSig.set(key, await sigOf());
+      }
+    }
+  }
   async function queryPg(sql: string, params: unknown[] = []) {
+    if (!/^\s*(BEGIN|COMMIT|ROLLBACK)\b/i.test(sql)) await autoSections();
     calls.push({ sql, params });
     const res = await db.query(sql, params as any[]);
     return { rows: res.rows as any[], rowCount: res.affectedRows ?? res.rows.length };

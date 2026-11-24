@@ -1,22 +1,23 @@
 # 02 — Phân hệ, tính năng & ma trận phân quyền
 
-> Cập nhật: 2026-11-03 · Nguồn: menu `components/*Layout.tsx`, `app/**/page.tsx`, `app/api/**` (`requireRole`).
+> Cập nhật: 2026-11-23 · Nguồn: menu `components/*Layout.tsx`, `app/**/page.tsx`, `app/api/**` (`requireRole`).
 
 ## 1. Phân hệ
 | Phân hệ | Đường dẫn | Layout | Mô tả |
 | :--- | :--- | :--- | :--- |
-| Công khai | `/`, `/login`, `/register`, `/register/teacher`, `/forgot-password`, `/reset-password`, `/join/[classId]` | không | Landing, đăng nhập, đăng ký phỏng vấn, khôi phục mật khẩu, xem trước lớp qua link mời |
+| Công khai | `/`, `/login`, `/register`, `/register/teacher`, `/forgot-password`, `/reset-password`, `/join/[classId]`, `/for-teachers`, `/about`, `/terms`, `/privacy`, `/payment-policy` | không | Landing, đăng nhập, đăng ký phỏng vấn, khôi phục mật khẩu, xem trước lớp qua link mời, giới thiệu cho giáo viên, trang pháp lý |
 | Học sinh | `/student/**` | `StudentLayout` | Trang chủ, lớp học, lộ trình, làm bài học / đề thi, xem lại, analytics |
 | Giáo viên | `/teacher/**` | `TeacherLayout` | Lớp học, lộ trình & khoá học, kho bài học & đề, môn học, flashcard, tạo học sinh, slot & đơn hàng, duyệt điểm AI |
 | Quản trị | `/admin/**` | `AdminLayout` | Tổng quan, đơn hàng, giáo viên, học sinh, tài khoản, chuẩn chấm, liên hệ, cấu hình AI |
 | Dùng chung | `/profile`, `/change-password` | theo vai trò | Hồ sơ, đổi mật khẩu (bắt buộc khi `must_change_password`) |
-| Nền | `worker/grading-worker.js` | — | Consumer Redis Streams, gọi API chấm AI nội bộ |
+| Nền | `worker/grading-worker.js` | — | Consumer Redis Streams, gọi API chấm AI nội bộ; FEAT-016: gửi sự kiện lỗi về kênh cảnh báo admin |
 
 ## 2. Tính năng theo phân hệ
 ### 2.1 Quản trị (menu theo đúng thứ tự trong code)
 | Menu | Đường dẫn | Tính năng | FEAT / DEC |
 | :--- | :--- | :--- | :--- |
 | Tổng quan | `/admin` | Số tổng, số theo tháng (giờ VN), biểu đồ theo ngày, top giáo viên dùng AI | FEAT-013, DEC-034 |
+| Cảnh Báo Hệ Thống (kèm số cảnh báo mới) | `/admin/alerts` | Lỗi 500, lỗi AI, worker, dạng câu nhập đề chưa hỗ trợ; lọc, đánh dấu đã xử lý, gửi tin Telegram thử | FEAT-016, DEC-047/048 |
 | Đơn hàng (kèm số đơn chờ) | `/admin/orders`, `/admin/orders/[id]` | Lọc, duyệt, từ chối, huỷ đơn mua slot; tab cấu hình thanh toán (ngân hàng, STK, đơn giá) | FEAT-013, DEC-032/033 |
 | Quản Lý Giáo Viên | `/admin/teachers`, `/admin/teachers/[id]` | Danh sách, lọc chờ xác minh, xác minh / từ chối, sửa `slot_limit`, tạo đơn mua slot, nhật ký AI | DEC-028, FEAT-013 |
 | Quản Lý Học Sinh | `/admin/students`, `/admin/students/[id]` | Danh sách, chi tiết, lớp đang học, điểm | — |
@@ -33,7 +34,7 @@ Trang chuyển hướng: `/admin/requests` → `/admin/orders`, `/admin/rubrics`
 | :--- | :--- | :--- |
 | Quản Lý Lớp Học | `/teacher/classes`, `/teacher/classes/[classId]` | Tạo lớp, mã/link mời, thêm học viên, giao đề, cài đặt mở khoá, lộ trình lớp, tiến độ |
 | Quản Lý Lộ Trình & Khóa Học | `/teacher/tests`, `/teacher/tests/create` | Khoá học, cây giáo trình kéo-thả (UNIT / LESSON / EXAM), soạn đề 4 kỹ năng |
-| Kho Bài Học & Đề Thi | `/teacher/library`, `/teacher/lessons`, `/teacher/lessons/[id]` | Kho dùng chung, soạn bài học, xem trước, nhân bản, chuyển đổi bài học ↔ đề, AI nhập đề |
+| Kho Bài Học & Đề Thi | `/teacher/library`, `/teacher/lessons`, `/teacher/lessons/[id]` | Kho dùng chung, soạn bài học, xem trước, nhân bản, chuyển đổi bài học ↔ đề, AI nhập đề (FEAT-015: tự chuyển dạng câu giấy sang dạng hệ thống, cảnh báo, đổi dạng) |
 | Môn Học | `/teacher/subjects` | Môn của giáo viên (`owner_id`) + môn hệ thống |
 | Quản Lý Flashcards | `/teacher/flashcards` | Thư viện thẻ dùng chung, upload ảnh/audio |
 | Tạo Acc Học Sinh | `/teacher/students/create` | Tạo tài khoản học sinh (kèm lớp) |
@@ -77,6 +78,8 @@ Giáo viên dùng thử thấy banner tiến độ (`TrialBanner`) và bị gi�
 | `tts` | — | ✓ | ✓ | ✓ |
 | `admin/*` (dashboard, orders, users, teachers, verify, leads, settings, classes, create/delete-user, requests, parse-exam-text, test-portkey) | — | — | — | ✓ |
 | `exam/grade-async`, `lessons/grade-async` | 🔑 | 🔑 | 🔑 | 🔑 (+ ADMIN/TEACHER gọi thủ công ở `exam/grade-async`) |
+| `admin/alerts*` (FEAT-016: xem, đánh dấu, gửi tin thử) | — | — | — | ✓ |
+| `internal/alerts` (FEAT-016: worker gửi sự kiện) | 🔑 | 🔑 | 🔑 | 🔑 |
 
 **Giới hạn giáo viên dùng thử** (DEC-027, đọc từ DB mỗi request):
 - tối đa 1 lớp;

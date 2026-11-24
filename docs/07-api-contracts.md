@@ -1,12 +1,12 @@
 # 07 — Hợp đồng API
 
-> Cập nhật: 2026-11-03 · Nguồn: `app/api/**/route.ts`. Hợp đồng chi tiết (payload, mã lỗi từng nhánh) được khoá bằng test trong `tests/*.test.ts` (cột "Test"). Test thắng nếu tài liệu này thiếu.
+> Cập nhật: 2026-11-23 · Nguồn: `app/api/**/route.ts`. Hợp đồng chi tiết (payload, mã lỗi từng nhánh) được khoá bằng test trong `tests/*.test.ts` (cột "Test"). Test thắng nếu tài liệu này thiếu.
 
 ## 1. Quy ước chung
 - **Xác thực:** cookie httpOnly `auth_token` (JWT HS256, `lib/jwt.ts`). Payload gồm `userId`, `email`, `role`, và `mcp` khi bắt buộc đổi mật khẩu. Danh tính luôn lấy từ token, không bao giờ lấy từ body hay query.
 - **Phân quyền:** `requireRole([...])` chạy trước mọi truy vấn. Không có phiên trả **401**, sai vai trò trả **403**.
 - **Route công khai có chủ đích:** `auth/*` (có giới hạn tần suất), `leads` POST (giới hạn theo IP), `classes/lookup/[ref]` (chỉ trả trường công khai).
-- **Gọi máy – máy:** `exam/grade-async`, `lessons/grade-async` dùng header `x-internal-token` = `INTERNAL_API_TOKEN`.
+- **Gọi máy – máy:** `exam/grade-async`, `lessons/grade-async`, `internal/alerts` dùng header `x-internal-token` = `INTERNAL_API_TOKEN`.
 - **Dạng phản hồi:** thành công là `{ success: true, ... }`, lỗi là `{ success: false, error: "<tiếng Việt>" }`.
 
   | Mã | Ý nghĩa |
@@ -44,7 +44,7 @@
 | GET / POST | `/api/student/lessons/[lessonId]/attempts` | Nộp bài học, chấm ngay câu khách quan; có câu AI thì `GRADING` | `student-lessons-api` |
 | GET | `/api/student/attempts/[id]` | Kết quả lượt bài học | `student-lessons-api` |
 | POST | `/api/student/exams/[examId]/attempts` | Bắt đầu lượt thi (`classId?`), 409 nếu hết lượt | `exam-attempts-api` |
-| GET | `/api/student/exams/[examId]/content` | Nội dung đề, không có đáp án | `exam-attempts-api` |
+| GET | `/api/student/exams/[examId]/content` | Nội dung đề, không có đáp án. FEAT-017: trả `sections[]`, câu kèm `number_start` / `number_count`, không có câu xoá mềm | `exam-attempts-api` |
 | PUT | `/api/student/exam-attempts/[id]/answers` | Lưu nháp; sau hạn → 409 | `exam-attempts-api` |
 | POST | `/api/student/exam-attempts/[id]/submit` | Nộp và chấm; nộp lần hai → 409 | `exam-attempts-api` |
 | GET | `/api/submissions/[id]` | Đang làm → 409 với học sinh; GV/ADMIN xem được | `exam-attempts-api` |
@@ -60,11 +60,10 @@
 | GET | `/api/teacher/classes/[classId]/members`, `/api/teacher/classes/[classId]/progress`, `/api/teacher/classes/[classId]/roadmap` | | `class-roadmap-api` |
 | POST / DELETE | `/api/teacher/classes/[classId]/unlocks`, `/api/teacher/classes/[classId]/assignments` | Mở khoá mục; giao đề (`max_attempts`) | `class-roadmap-api`, `teacher-trial` |
 | GET / POST / PUT / DELETE | `/api/teacher/courses`, `/api/teacher/curriculum` | Khoá học, cây giáo trình | `curriculum-api` |
-| GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409 | `lessons-api`, `lesson-preview` |
-| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học) | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
-| POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT` | `ai-import`, `ai-usage` |
-| POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch) | `ai-import` |
-| POST / PUT | `/api/teacher/questions`, `/api/teacher/questions/[id]` | | `lessons-api` |
+| GET / POST / PUT / DELETE | `/api/teacher/lessons`, `/api/teacher/lessons/[id]`, `/api/teacher/lessons/[id]/duplicate`, `/api/teacher/lessons/[id]/preview` | Xoá bài học đang gắn lộ trình → 409. FEAT-017 (TASK-057): GET / POST / PUT trả và nhận cả cây `sections[].questions[]` kèm `updated_at`, lệch → 409 (`docs/features/phan-bai-hoc-de-thi.md` §6) | `lessons-api`, `lesson-preview` |
+| GET / POST / PUT / DELETE | `/api/teacher/exams`, `/api/teacher/exams/[id]`, `/api/teacher/exams/[id]/duplicate`, `/api/teacher/exams/[id]/preview` | `preview`: GET nội dung đã ẩn đáp án, POST chấm thử không tạo lượt làm (dùng chung `lib/teacher-preview.ts` với bài học). FEAT-017 (TASK-057): cây phần như bài học | `exams-api`, `library-convert-duplicate`, `teacher-preview-isolation` |
+| POST | `/api/teacher/exams/ai-parse` | multipart `file` (docx/pdf/ảnh ≤ 15MB) → bản xem trước; ghi log AI `EXAM_IMPORT`. FEAT-015 (TASK-052) thêm `extractedData.groups` (dữ liệu gốc có `paper_format`, `passage_html`) và `conversion` (câu đã chuyển dạng, cảnh báo, `scoreItems`). 400 `DOCUMENT_TOO_LONG` khi PDF scan > 40 trang hoặc đề quá dài cho một lần (BR-I18); 503 `AI_UNAVAILABLE` khi AI lỗi hoặc OCR thiếu trang | `ai-import`, `ai-usage` |
+| POST | `/api/teacher/exams/ai-import` | Lưu đề từ bản xem trước (một giao dịch). FEAT-015 (TASK-052): nhận `ConvertedQuestion[]`, kiểm từng câu, sai → 400 `INVALID_CONTENT` kèm `invalid[]`; `skill` lưu suy từ tiền tố `category`, bỏ qua `skill` client gửi (BR-I23) | `ai-import` |
 | GET / POST / PUT / DELETE | `/api/teacher/flashcards`, `/api/teacher/flashcards/[id]` | | `flashcards-uploads-api` |
 | POST | `/api/teacher/library/convert` | Bài học ↔ đề | `library-convert-duplicate` |
 | GET | `/api/teacher/trial-usage` | `{ status, limits, used, reviewNote }`; đã xác minh → `limits: null` | `teacher-trial` |
@@ -118,6 +117,9 @@ Test: `slot-orders-api`, `admin-api`.
 | GET / PUT | `/api/admin/settings/ai-model` | Model AI nhập đề | `ai-import` |
 | GET / PUT | `/api/admin/settings/ai-pricing` | `{ pricing, unpriced_models }` | `ai-usage` |
 | POST | `/api/admin/parse-exam-text`, `/api/admin/test-portkey` | Công cụ AI (ghi log) | — |
+| GET | `/api/admin/alerts?status=NEW\|RESOLVED\|ALL&level=&source=&page=` | FEAT-016: `{ items, total, page, pageSize, counts: { NEW }, telegram: { configured } }`, 50 dòng/trang, mặc định `NEW`; tham số sai → 400 | `admin-alerts-api` |
+| PATCH | `/api/admin/alerts/[id]` | `{ status: RESOLVED\|NEW }` → `{ alert }`; RESOLVED ghi `resolved_by`; id lạ → 404 | `admin-alerts-api` |
+| POST | `/api/admin/alerts/test` | Gửi tin Telegram thử; chưa cấu hình → 400; Telegram từ chối → 502 (không lộ token); không tạo dòng cảnh báo | `admin-alerts-api` |
 
 ### 2.6 Dùng chung & nội bộ
 | Method | Route | Vai trò | Ghi chú | Test |
@@ -129,4 +131,8 @@ Test: `slot-orders-api`, `admin-api`.
 | POST | `/api/leads` | công khai | Form landing; bẫy bot; 5 lần / giờ / IP | `landing` |
 | GET | `/api/classes/lookup/[ref]` | công khai | Xem trước lớp qua link mời | `exam-flow` |
 | POST | `/api/exam/grade-async` | 🔑 nội bộ | `{ submissionId, giveUp? }` | `exam-attempts-api`, `ai-usage` |
+| POST | `/api/internal/alerts` | 🔑 nội bộ | FEAT-016: worker gửi `{ level, title, fingerprint?, detail? }`; nguồn luôn `WORKER`, fingerprint thêm tiền tố `WORKER:` | `admin-alerts-api` |
 | POST | `/api/lessons/grade-async` | 🔑 nội bộ | `{ attemptId }` (FEAT-014 thêm `giveUp?`; AI lỗi → `NEEDS_REVIEW` thay vì 0) | `student-lessons-api`, `ai-usage` |
+
+## 3. Lỗi 500 (FEAT-016)
+Mọi nhánh 500 của `app/api/**` đi qua `serverError(err, ctx)` (`lib/api-errors.ts`): log, ghi `admin_alerts` + Telegram, trả `{ success:false, error }` với thông điệp riêng của route (BR-W08, khoá bằng `server-error-coverage`). Riêng `/api/tts` giữ thân `{ error: "TTS_FAILED", message }`.

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions } from "@/lib/sections-db";
 import {
   applyExamTeacherEdits,
   applyLessonTeacherEdits,
@@ -96,40 +97,25 @@ export async function GET(_req: Request, context: Ctx) {
     if (ctx.error) return ctx.error;
     const { kind, row, itemId, locked } = ctx;
 
-    const parent =
-      kind === "EXAM"
-        ? await queryPg("SELECT question_ids FROM exams WHERE id = $1 LIMIT 1", [itemId])
-        : await queryPg("SELECT question_ids FROM lessons WHERE id = $1 LIMIT 1", [itemId]);
-    let qids: string[] = [];
-    const rawIds = parseJson(parent.rows[0]?.question_ids);
-    if (Array.isArray(rawIds)) qids = rawIds.map((x: any) => String(x));
     const answers = parseJson(row.answers) || {};
     const results: any[] = parseJson(row.results) || [];
-
-    const qRes =
-      qids.length > 0
-        ? await queryPg(
-            "SELECT id, skill, category, prompt, content, stimulus_text, stimulus_audio_url FROM questions WHERE id = ANY($1::text[])",
-            [qids]
-          )
-        : { rows: [] as any[] };
-    const qMap = new Map<string, any>(qRes.rows.map((q: any) => [q.id, q]));
-
-    const questions = qids
-      .filter((id) => qMap.has(id))
-      .map((id) => {
-        const q = qMap.get(id);
-        return {
-          id,
-          category: q.category,
-          skill: q.skill,
-          prompt: q.prompt,
-          stimulus: { text: q.stimulus_text ?? null, audio_url: q.stimulus_audio_url ?? null },
-          content: parseJson(q.content),
-          answer: answers[id] ?? null,
-          result: results.find((r: any) => r && r.question_id === id) ?? null,
-        };
-      });
+    // FEAT-017: câu theo phần; câu đã xoá mềm nhưng có trong lượt làm vẫn hiện (BR-P10)
+    const loaded = await loadParentQuestions(kind === "EXAM" ? "exam" : "lesson", String(itemId), {
+      includeDeletedIds: results.map((r: any) => String(r?.question_id ?? "")).filter(Boolean),
+    });
+    const questions = loaded.questions.map((q) => ({
+      id: q.id,
+      category: q.category,
+      skill: q.skill,
+      prompt: q.prompt,
+      section_id: q.section_id,
+      number_start: q.number_start,
+      number_count: q.number_count,
+      stimulus: { text: q.stimulus_text ?? null, audio_url: q.stimulus_audio_url ?? null },
+      content: q.content,
+      answer: answers[q.id] ?? null,
+      result: results.find((r: any) => r && r.question_id === q.id) ?? null,
+    }));
 
     const st = await queryPg("SELECT id, name FROM users WHERE id = $1 LIMIT 1", [row.student_id]);
     return NextResponse.json({

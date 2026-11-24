@@ -1,6 +1,6 @@
 # 01 — Tổng quan dự án KitoKit
 
-> Cập nhật: 2026-11-03 · Dựng lại từ code (nhánh sau FEAT-013). Khi mâu thuẫn, `docs/14-decisions.md` thắng; tài liệu lệch code thì sửa tài liệu theo code.
+> Cập nhật: 2026-11-23 · Dựng lại từ code (nhánh sau FEAT-013). Khi mâu thuẫn, `docs/14-decisions.md` thắng; tài liệu lệch code thì sửa tài liệu theo code.
 
 ## 1. Sản phẩm
 **KitoKit** là cổng bài học và đề thi đa môn cho trung tâm và giáo viên. Học sinh vào lớp, học theo lộ trình, làm bài học và đề thi, xem kết quả và tiến độ (DEC-023, DEC-024).
@@ -12,7 +12,7 @@
 | :--- | :--- | :--- |
 | Giáo viên / trung tâm | Soạn đề, chấm Writing/Speaking tốn thời gian; quản lý lớp rời rạc | Kho bài học & đề dùng chung, AI nhập đề từ DOCX/PDF/ảnh (FEAT-009), AI chấm nền theo chuẩn (FEAT-011), lộ trình lớp có mở khoá (FEAT-010) |
 | Học sinh / phụ huynh | Không biết tiến độ, đề luyện không sát chuẩn | Lộ trình theo lớp, điểm quy đổi theo chuẩn IELTS/TOEIC/HSK…, thông báo khi có điểm |
-| Vận hành (admin) | Không thấy chi phí AI, duyệt mua slot thủ công | Dashboard tổng quan, đơn hàng slot có VietQR, theo dõi token/chi phí AI (FEAT-013) |
+| Vận hành (admin) | Không thấy chi phí AI, duyệt mua slot thủ công, không biết khi hệ thống lỗi | Dashboard tổng quan, đơn hàng slot có VietQR, theo dõi token/chi phí AI (FEAT-013), cảnh báo lỗi qua Telegram (FEAT-016) |
 
 ## 3. Vai trò
 | Vai trò | Mô tả |
@@ -30,6 +30,9 @@
 | FEAT-012 | Đăng nhập mới, đăng ký kiểu phỏng vấn, giáo viên dùng thử | `docs/features/dang-ky-phong-van.md` |
 | FEAT-013 | Tổng quan admin, đơn hàng slot + VietQR, chi phí AI, slot = học sinh | `docs/features/quan-tri-he-thong.md` |
 | FEAT-014 | Chấm & Bảng điểm theo lớp: bảng điểm từng bài, sửa điểm từng câu AI, chốt, tổng kết lớp (DONE 06/11) | `docs/features/cham-diem-bang-diem.md` |
+| FEAT-015 | Chuyển đổi dạng câu khi AI nhập đề: ABCD trên giấy → điền ô trống / sắp xếp / ghép nối…, giữ gạch chân, cảnh báo dạng chưa hỗ trợ (DONE 23/11, chưa deploy) | `docs/features/chuyen-doi-dang-cau-nhap-de.md` |
+| FEAT-017 | Bài học & đề thi theo Phần: mỗi phần có lời dẫn + ngữ cảnh tuỳ chọn, chứa nhiều câu khác dạng (hoặc 0 câu); số câu liên tục theo số ý; trình soạn theo cấu trúc bài (DONE 24/11, chưa chạy script chuyển dữ liệu / deploy) | `docs/features/phan-bai-hoc-de-thi.md` |
+| FEAT-016 | Kênh cảnh báo admin: bảng `admin_alerts`, Telegram, trang Cảnh báo hệ thống (DONE 23/11, chưa deploy) | `docs/features/canh-bao-admin.md` |
 
 Không có mã FEAT riêng nhưng đã có trong code: landing `/` và form liên hệ (TASK-033); nền tảng đa môn (TASK-034); thông báo trong app (TASK-030); thương hiệu và token màu (DEC-022).
 

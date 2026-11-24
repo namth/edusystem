@@ -1,6 +1,6 @@
 # 15 — Vận hành: deploy, migration, rollback, sao lưu
 
-> Cập nhật: 2026-11-03 · Nguồn: `scripts/deploy.sh`, `docker-compose.yml`, `docs/qa/checklist-production.md`.
+> Cập nhật: 2026-11-23 · Nguồn: `scripts/deploy.sh`, `docker-compose.yml`, `docs/qa/checklist-production.md`.
 > **Luôn hỏi người dùng trước mỗi lần deploy.** Không build trên server.
 
 ## 1. Môi trường
@@ -29,7 +29,7 @@
 **Sau khi deploy:** xem log `docker logs edusystem-nextjs-1` để chắc không có lỗi `[env]` hay lỗi `ensureSchema`. Đi các mục liên quan trong `docs/qa/checklist-production.md`.
 
 ## 3. Migration
-- Migration 001–014 và 016 chạy cùng `ensureSchema()` khi app khởi động; viết để chạy lặp được.
+- Migration 001–014, 016, 017 và 018 (FEAT-016) chạy cùng `ensureSchema()` khi app khởi động; viết để chạy lặp được.
 - **Migration chạy tay một lần** (không nằm trong `ensureSchema`, vì chạy lại sẽ ghi đè dữ liệu admin đã sửa):
 
   | File | Khi nào | Ghi chú |
@@ -41,6 +41,12 @@
   psql "$DATABASE_URL" -f docs/db-migration-015-student-slots.sql
   ```
   Chạy xong thì ghi ngày chạy vào bảng §6.
+- **FEAT-017 (TASK-061) — đổi cấu trúc nội dung, làm trong một đợt deploy, phải được người dùng đồng ý:**
+  1. Sao lưu `exams`, `lessons`, `questions`, `submissions`, `lesson_attempts` (`pg_dump -t …`).
+  2. Deploy code FEAT-017; migration 019 chạy cùng `ensureSchema`.
+  3. `npx vite-node --config vitest.config.ts scripts/migrate-sections.ts` (mặc định chạy thử): chạy trong transaction rồi ROLLBACK, in báo cáo JSON (số phần / câu, câu nhân bản vì dùng chung, câu con tách, câu mồ côi, `mismatches` = đề lệch tổng số câu). `mismatches` rỗng mới chạy thật (thêm `-- --commit`); có lệch thì script tự ROLLBACK. Mặc định xoá bài nộp / lượt học thử và bảng điểm (DEC-053), thêm `-- --keep-attempts` để giữ.
+  4. `psql "$DATABASE_URL" -f docs/db-migration-020-drop-question-ids.sql`.
+  5. Thử một đề Cambridge trên trình duyệt (giáo viên mở sửa, học sinh làm), ghi ngày vào §6.
 - Thêm migration mới: tạo `docs/db-migration-0NN-*.sql`, thêm DDL vào `ensureSchema` (trừ khi là migration chạy tay), cập nhật `docs/06` §1 và bảng §3 ở trên. Không sửa file migration cũ.
 
 ## 4. Cấu hình sau deploy (lưu trong DB, admin nhập trong app)
@@ -50,6 +56,14 @@
 | Bảng giá model AI + tỷ giá USD→VND | `/admin/settings` | Trước khi xem chi phí AI. Dashboard cảnh báo khi có model chưa có giá |
 | Model AI nhập đề | `/admin/settings` | Tuỳ chọn |
 | Kiểm múi giờ Postgres là UTC (`show timezone;`) | DB server | Một lần. Dashboard coi `ai_usage_logs.created_at` là UTC (`docs/11` D4) |
+| Kênh cảnh báo Telegram (FEAT-016) | `.env` trên server + `/admin/alerts` | Sau deploy FEAT-016, các bước ở dưới bảng |
+
+**Cấu hình Telegram (FEAT-016):** biến chỉ nằm trong `.env` của server, không lưu DB (bất biến 7).
+1. Trên Telegram, nhắn `@BotFather` lệnh `/newbot` → nhận token.
+2. Tạo nhóm admin, thêm bot vào nhóm, gửi một tin bất kỳ trong nhóm.
+3. Mở `https://api.telegram.org/bot<token>/getUpdates` → lấy `chat.id` (nhóm có dạng `-100…`).
+4. Thêm `TELEGRAM_BOT_TOKEN=…` và `TELEGRAM_ALERT_CHAT_ID=…` vào `.env` server, rồi `docker compose up -d` (không cần build lại).
+5. Vào `/admin/alerts`, bấm **Gửi tin thử**; tin phải tới nhóm.
 
 ## 5. Sao lưu & rollback
 - **Sao lưu mã nguồn trước lần ghi đè lớn:** dùng `tar` thư mục app trên server, ví dụ `edusystem-backup-20261031.tar.gz`.
@@ -67,6 +81,7 @@
 | 2026-10-31 | build local | Code chuẩn đầu tiên, ghi đè server cũ; migration 006–009, seed 4 chuẩn chấm | — | người dùng |
 | 2026-11-01 | — | Đợt sửa media Cambridge (volume `/app/public/media`) | — | người dùng |
 | 2026-11-03 23:15 | `2a4a9b3` (PR #5–#9) | FEAT-013 quản trị, tài liệu chuẩn, logo + mascot 3D, cấu hình MCP. Sao lưu DB trước: `~/edusystem-backups/db-truoc-feat013-20261103-2309.dump`. Migration 014/016 tự áp qua `ensureSchema` (đã kiểm cột + 4 khoá `system_settings`). Postgres `timezone = UTC` (D4 đúng). Build lần 1 lỗi tải Google Fonts (mạng), build lại OK | 015: xem trước không đổi giá trị nào (3 GV VERIFIED đều 250 slot, chưa có đơn duyệt) — **chưa chạy** | người dùng |
+| 2026-11-24 06:11 | `12489b7` (nhánh `claude/question-type-conversion-import-764eaf`, chưa merge `main`) | FEAT-015, FEAT-016, FEAT-017. Sao lưu trước: `~/edusystem-backups/db-truoc-feat017-20261124-0601.dump` (máy local, toàn DB) + `~/edusystem-backup-truoc-feat017-20261124.tar.gz` (mã nguồn trên server). Telegram FEAT-016 chưa cấu hình | `migrate-sections.ts --commit`: 321 đề + 2 bài học → 704 phần (10 chỉ đọc), 796 → 1088 câu (tách 237 câu gom ý), 0 lệch, xoá 4 bài nộp thử. 020: đã chạy 2026-11-24 (bỏ `question_ids` / `stimulus_*`, `section_id` + `position` NOT NULL) | người dùng |
 
 ## 7. Theo dõi & sự cố thường gặp
 | Triệu chứng | Kiểm | Xử lý |
@@ -77,3 +92,5 @@
 | Build image lỗi `module-not-found` ở `next/font/google` | log build | Mạng tới Google Fonts chập chờn lúc build — chạy lại `deploy.sh` |
 | Chi phí AI hiện 0 | `/admin/settings`, mục `unpriced_models` | Thêm giá cho model |
 | QR không hiện | `/admin/orders`, tab Cấu hình thanh toán | Nhập BIN, STK, chủ tài khoản |
+| Không nhận tin Telegram cảnh báo | `/admin/alerts` (trạng thái Telegram, Gửi tin thử) | Kiểm 2 biến Telegram; bot còn trong nhóm; quá trần 20 tin/giờ thì xem trực tiếp trang |
+| Telegram báo dồn một lỗi | `/admin/alerts`, cột Số lần | Sửa nguyên nhân rồi *Đánh dấu đã xử lý*; tái phát sẽ báo lại |

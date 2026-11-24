@@ -219,10 +219,15 @@ export function applyOptionShortcut(
   question: any,
   currentAnswer: unknown,
   letter: "A" | "B" | "C" | "D"
-): Record<string, string> | null {
+): Record<string, string> | string | null {
   if (!question || typeof question !== "object") return null;
   const category = typeof question.category === "string" ? question.category : "";
   if (!category.endsWith("_MC")) return null;
+  // FEAT-017 (BR-P12): trắc nghiệm một ý → đáp án là chữ cái
+  if (!Array.isArray(question.content?.sub_questions)) {
+    const v = question.content?.[`option_${letter.toLowerCase()}`];
+    return typeof v === "string" && v.trim() ? letter : null;
+  }
   const subs = question.content?.sub_questions;
   if (!Array.isArray(subs) || subs.length !== 1) return null;
   const sub = subs[0];
@@ -240,4 +245,56 @@ export function applyOptionShortcut(
     ...base,
     [String(sub.id)]: letter,
   };
+}
+
+// ── FEAT-017 (BR-P11): mỗi phần một màn, theo thứ tự giáo viên xếp ─────────
+export interface SectionLike {
+  id?: string;
+  skill?: string;
+  instruction?: string | null;
+  stimulus_text?: string | null;
+  stimulus_audio_url?: string | null;
+  questions: { id: string; number_start?: number; number_count?: number }[];
+}
+export interface SectionScreen extends ExamScreen {
+  instruction: string | null;
+  /** Phần không có câu: học sinh đọc rồi bấm Tiếp tục, không tính vào số câu. */
+  readOnly: boolean;
+  numberStart: number | null;
+  numberEnd: number | null;
+}
+
+/** Màn theo phần: không gom lại theo kỹ năng; phần 0 câu là màn chỉ đọc. Bố cục giữ DEC-020. */
+export function buildSectionScreens(sections: SectionLike[]): SectionScreen[] {
+  if (!Array.isArray(sections)) return [];
+  return sections.map((s, i) => {
+    const text = typeof s.stimulus_text === "string" ? s.stimulus_text : null;
+    const audio = typeof s.stimulus_audio_url === "string" ? s.stimulus_audio_url : null;
+    const base = finalizeScreen({
+      key: String(s.id || `sec_${i}`),
+      skill: s.skill || "Reading",
+      stimulus_text: text,
+      stimulus_audio_url: audio,
+      normText: (text || "").trim(),
+      normAudio: (audio || "").trim(),
+      questionIds: (s.questions || []).map((q) => String(q.id)),
+    });
+    const qs = s.questions || [];
+    const first = qs.find((q) => Number(q.number_start) > 0);
+    const last = [...qs].reverse().find((q) => Number(q.number_start) > 0);
+    return {
+      ...base,
+      instruction: s.instruction ?? null,
+      readOnly: qs.length === 0,
+      numberStart: first ? Number(first.number_start) : null,
+      numberEnd: last ? Number(last.number_start) + Math.max(1, Number(last.number_count) || 1) - 1 : null,
+    };
+  });
+}
+
+/** Nhãn số của một câu trên bảng điều hướng: "7" hoặc "7–11" (câu chiếm nhiều số, BR-P06). */
+export function questionNumberLabel(q: { number_start?: number; number_count?: number }, fallback: number): string {
+  const a = Number(q.number_start) > 0 ? Number(q.number_start) : fallback;
+  const c = Number(q.number_count) > 1 ? Number(q.number_count) : 1;
+  return c > 1 ? `${a}–${a + c - 1}` : String(a);
 }

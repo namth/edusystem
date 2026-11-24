@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getAdminDashboardData } from "@/lib/admin-dashboard";
+import { serverError } from "@/lib/api-errors";
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -24,10 +25,6 @@ export async function GET(req: Request) {
     const data = await getAdminDashboardData(rawMonth);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Dashboard error:", error);
-    return NextResponse.json(
-      { success: false, error: "Lỗi tải dữ liệu tổng quan admin." },
-      { status: 500 }
-    );
+    return serverError(error, { route: "/api/admin/dashboard", method: "GET", message: "Lỗi tải dữ liệu tổng quan admin." });
   }
 }

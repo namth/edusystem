@@ -49,6 +49,13 @@ beforeEach(async () => {
     ALTER TABLE exams ADD COLUMN IF NOT EXISTS description TEXT;
     CREATE TABLE curriculum_items (id VARCHAR(50) PRIMARY KEY, course_id VARCHAR(50) NOT NULL, parent_id VARCHAR(50), title VARCHAR(255) NOT NULL,
       type VARCHAR(20) NOT NULL, exam_id VARCHAR(50), order_index INT DEFAULT 0, created_by VARCHAR(50));
+    -- FEAT-017: số câu đếm theo câu thật trong các phần (BR-P06), nên seed câu hỏi thật
+    INSERT INTO questions (id,skill,category,prompt,content) VALUES
+      ('q1','Reading','READING_MC','1','{"text":"?","option_a":"a","option_b":"b","correct_answer":"A"}'),
+      ('q2','Reading','READING_MC','2','{"text":"?","option_a":"a","option_b":"b","correct_answer":"A"}'),
+      ('q3','Reading','READING_MC','3','{"text":"?","option_a":"a","option_b":"b","correct_answer":"A"}'),
+      ('q4','Listening','LISTENING_MC','4','{"text":"?","option_a":"a","option_b":"b","correct_answer":"A"}'),
+      ('q5','Writing','WRITING_ESSAY','5','{"min_words":50}');
     INSERT INTO exams (id,title,duration_minutes,skills,question_ids,created_by,created_at) VALUES
       ('eA','Starters Reading 1',30,ARRAY['Reading'],'["q1","q2","q3"]','t1', NOW() - INTERVAL '2 day'),
       ('eB','Movers Listening',20,ARRAY['Listening','Reading'],'["q4"]','t1', NOW() - INTERVAL '1 day'),

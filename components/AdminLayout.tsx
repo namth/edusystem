@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Bookmark,
   Settings,
+  ShieldAlert,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -43,6 +44,25 @@ export default function AdminLayout({
   const closeUserDropdown = useCallback(() => setShowUserDropdown(false), []);
   useDismissable(userMenuRef, showUserDropdown, closeUserDropdown);
   const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
+  const [newAlertsCount, setNewAlertsCount] = useState<number>(0);
+
+  // FEAT-016: huy hiệu số cảnh báo NEW, hỏi lại mỗi 60 giây như chuông thông báo
+  useEffect(() => {
+    let unmounted = false;
+    const loadAlerts = () =>
+      fetch("/api/admin/alerts?status=NEW&page=1")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!unmounted && data?.counts) setNewAlertsCount(Number(data.counts.NEW) || 0);
+        })
+        .catch(() => {});
+    void loadAlerts();
+    const timer = setInterval(loadAlerts, 60_000);
+    return () => {
+      unmounted = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let unmounted = false;
@@ -65,6 +85,7 @@ export default function AdminLayout({
 
   const navItems = [
     { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
+    { href: "/admin/alerts", label: "Cảnh Báo Hệ Thống", icon: ShieldAlert },
     { href: "/admin/orders", label: "Đơn hàng", icon: Receipt },
     { href: "/admin/teachers", label: "Quản Lý Giáo Viên", icon: UserCheck },
     { href: "/admin/students", label: "Quản Lý Học Sinh", icon: GraduationCap },
@@ -107,6 +128,11 @@ export default function AdminLayout({
                   >
                     <Icon className="w-5 h-5 mr-3 text-brand-600 shrink-0" />
                     <span>{item.label}</span>
+                    {item.href === "/admin/alerts" && newAlertsCount > 0 && (
+                      <span className="ml-auto bg-rose-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {newAlertsCount}
+                      </span>
+                    )}
                     {item.href === "/admin/orders" && pendingOrdersCount > 0 && (
                       <span className="ml-auto bg-amber-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                         {pendingOrdersCount}

@@ -40,17 +40,17 @@ describe("SCR-L1 Kho bài học — app/teacher/lessons/page.tsx", () => {
 
 describe("SCR-L2 Soạn bài học — app/teacher/lessons/[id]/page.tsx", () => {
   const src = () => read(EDIT);
-  it("dùng QuestionSetEditor ở chế độ LESSON", () => {
-    expect(src()).toContain("@/components/question-builder/QuestionSetEditor");
+  it("dùng SectionEditor (FEAT-017) ở chế độ LESSON", () => {
+    expect(src()).toContain("@/components/section-builder/SectionEditor");
     expect(src()).toMatch(/mode=\{?["']LESSON["']\}?/);
   });
-  it("id = new → POST /api/teacher/lessons rồi PUT question_ids; id có sẵn → GET rồi PUT", () => {
+  it("id = new → POST /api/teacher/lessons rồi PUT cây phần (sections); id có sẵn → GET rồi PUT", () => {
     const s = src();
     expect(s).toContain("/api/teacher/lessons");
     expect(s).toMatch(/"new"/);
     expect(s).toMatch(/method:\s*"POST"/);
     expect(s).toMatch(/method:\s*"PUT"/);
-    expect(s).toContain("question_ids");
+    expect(s).toContain("sections: payload.sections");
   });
   it("xử lý 403/404 và lỗi tải", () => {
     expect(src()).toMatch(/403/);

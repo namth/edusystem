@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
+import { loadParentQuestions, sectionsForStudent, flashcardIdsOf } from "@/lib/sections-db";
 import {
   sanitizeQuestionForStudent,
   sanitizeFlashcardForStudent,
@@ -37,7 +38,7 @@ export async function GET(
       : sub.standard_snapshot || {};
 
   const examRes = await queryPg(
-    "SELECT id, title, duration_minutes, skills, question_ids FROM exams WHERE id = $1 LIMIT 1",
+    "SELECT id, title, duration_minutes, skills FROM exams WHERE id = $1 LIMIT 1",
     [examId]
   );
   if (examRes.rows.length === 0) {
@@ -48,70 +49,16 @@ export async function GET(
   }
   const exam = examRes.rows[0];
 
-  let questionIds: string[] = [];
-  if (Array.isArray(exam.question_ids)) {
-    questionIds = exam.question_ids;
-  } else if (typeof exam.question_ids === "string") {
-    try {
-      const parsed = JSON.parse(exam.question_ids);
-      if (Array.isArray(parsed)) questionIds = parsed;
-    } catch {
-      questionIds = [];
-    }
-  }
+  // FEAT-017: đề → phần → câu; học sinh không nhận phần / câu xoá mềm (BR-P10) và không nhận đáp án (BR-E08)
+  const { sections: tree, questions: rawQuestions } = await loadParentQuestions("exam", examId);
+  const questions: GradableQuestion[] = rawQuestions.map((q) => sanitizeQuestionForStudent(q));
+  const sections = sectionsForStudent(tree);
 
-  let questions: GradableQuestion[] = [];
-  let flashcards: any[] = [];
-
-  if (questionIds.length > 0) {
-    const placeholders = questionIds.map((_, i) => `$${i + 1}`).join(", ");
-    const qRes = await queryPg(
-      `SELECT * FROM questions WHERE id IN (${placeholders});`,
-      questionIds
-    );
-
-    const qMap = new Map<string, any>(qRes.rows.map((q: any) => [q.id, q]));
-    const rawQuestions = questionIds.map((qId) => qMap.get(qId)).filter(Boolean);
-
-    // Sanitize questions
-    questions = rawQuestions.map((q) => sanitizeQuestionForStudent(q));
-
-    // Flashcards
-    const flashcardIdsSet = new Set<string>();
-    for (const q of rawQuestions) {
-      if (q.category && typeof q.category === "string" && q.category.includes("FLASHCARD")) {
-        let contentObj = q.content;
-        if (typeof contentObj === "string") {
-          try {
-            contentObj = JSON.parse(contentObj);
-          } catch {
-            contentObj = null;
-          }
-        }
-        const ids: string[] =
-          (q as any).flashcard_ids ||
-          contentObj?.flashcard_ids ||
-          contentObj?.flashcardIds ||
-          [];
-        if (Array.isArray(ids)) {
-          for (const fcId of ids) {
-            if (fcId && typeof fcId === "string") {
-              flashcardIdsSet.add(fcId);
-            }
-          }
-        }
-      }
-    }
-
-    if (flashcardIdsSet.size > 0) {
-      const fcIdList = Array.from(flashcardIdsSet);
-      const fcPlaceholders = fcIdList.map((_, i) => `$${i + 1}`).join(", ");
-      const fcRes = await queryPg(
-        `SELECT * FROM flashcards WHERE id IN (${fcPlaceholders});`,
-        fcIdList
-      );
-      flashcards = fcRes.rows.map((fc: any) => sanitizeFlashcardForStudent(fc));
-    }
+  let flashcards: ReturnType<typeof sanitizeFlashcardForStudent>[] = [];
+  const fcIdList = flashcardIdsOf(rawQuestions);
+  if (fcIdList.length > 0) {
+    const fcRes = await queryPg("SELECT * FROM flashcards WHERE id = ANY($1)", [fcIdList]);
+    flashcards = fcRes.rows.map((fc) => sanitizeFlashcardForStudent(fc as FlashcardRow));
   }
 
   return NextResponse.json({
@@ -133,6 +80,7 @@ export async function GET(
           }))
         : [],
     },
+    sections,
     questions,
     flashcards,
   });

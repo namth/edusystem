@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { duplicateLessonInTx } from "@/lib/library-ops";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(
   req: Request,
@@ -39,10 +40,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, lesson: outcome.lesson }, { status: 201 });
   } catch (err: any) {
-    console.error("API /api/teacher/lessons/[id]/duplicate POST Error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi nhân bản bài học." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/teacher/lessons/[id]/duplicate", method: "POST", message: err.message || "Lỗi nhân bản bài học." });
   }
 }

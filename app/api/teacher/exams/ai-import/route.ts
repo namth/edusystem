@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getPgPool, queryPg } from "@/lib/db-pg";
 import { assertTrialAllows, trialLimitResponse } from "@/lib/teacher-trial";
+import { validateQuestionContent, skillOfCategory } from "@/lib/question-conversion";
+import { serverError } from "@/lib/api-errors";
+import { importToSections, saveTreeInTx, type Queryable } from "@/lib/exam-structure";
+import { treeErrorResponse } from "@/lib/sections-db";
 
 export async function POST(req: Request) {
   const auth = await requireRole(["ADMIN", "TEACHER"]);
@@ -14,6 +18,33 @@ export async function POST(req: Request) {
   if (!examTitle || !Array.isArray(questions) || questions.length === 0) {
     return NextResponse.json(
       { success: false, error: "Dữ liệu đề thi hoặc danh sách câu hỏi không hợp lệ." },
+      { status: 400 }
+    );
+  }
+
+  // FEAT-015 §6.2: nhận câu đã chuyển dạng, kiểm content từng câu trước khi chạm DB
+  const invalid: { index: number; tempId?: string; reason: string }[] = [];
+  const normalized = questions.map((q: Record<string, unknown>, index: number) => {
+    const category = typeof q?.category === "string" ? q.category : "";
+    const content = q?.content && typeof q.content === "object" && !Array.isArray(q.content) ? { ...(q.content as Record<string, unknown>) } : null;
+    const check = validateQuestionContent(category, content);
+    if (!check.ok) invalid.push({ index, tempId: typeof q?.tempId === "string" ? q.tempId : undefined, reason: check.reason });
+    const meta = content?.import_meta && typeof content.import_meta === "object" ? (content.import_meta as Record<string, unknown>) : {};
+    return {
+      // FEAT-017 BR-P14: nhóm đề giấy (tempId "<nhóm>_<n>") → một phần
+      group: typeof q?.tempId === "string" ? q.tempId.replace(/_\d+$/, "") : `g${index}`,
+      // BR-I23: không tin nhãn kỹ năng client gửi ("Phonetics"…) — suy từ dạng câu để thứ tự màn thi giữ nguyên đề giấy
+      skill: skillOfCategory(category),
+      category,
+      prompt: typeof q?.prompt === "string" ? q.prompt : "",
+      stimulus_text: typeof q?.stimulus_text === "string" && q.stimulus_text ? q.stimulus_text : null,
+      content: { ...(content || {}), import_meta: { ...meta, source: "AI_IMPORT" } },
+    };
+  });
+  if (invalid.length > 0) {
+    const labels = [...new Set(invalid.map((x) => x.index + 1))].join(", ");
+    return NextResponse.json(
+      { success: false, error: `Câu hỏi số ${labels} có nội dung không hợp lệ.`, code: "INVALID_CONTENT", invalid },
       { status: 400 }
     );
   }
@@ -44,119 +75,27 @@ export async function POST(req: Request) {
     // Business Rule BR-INGEST-05: PostgreSQL Transaction boundary
     await client.query("BEGIN");
 
-    const createdQuestionIds: string[] = [];
-    const detectedSkills = new Set<string>();
-    let primaryStimulusText = "";
-
-    // 1. Insert each question into `questions` table
-    for (let idx = 0; idx < questions.length; idx++) {
-      const q = questions[idx];
-      const qSkill = q.skill || "Reading";
-      detectedSkills.add(qSkill);
-
-      if (q.stimulus_text && !primaryStimulusText) {
-        primaryStimulusText = q.stimulus_text;
-      }
-
-      const qId = `q_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`;
-      
-      let formattedSubQuestions = [];
-      if (Array.isArray(q.sub_questions) && q.sub_questions.length > 0) {
-        formattedSubQuestions = q.sub_questions.map((sub: any, sIdx: number) => {
-          const optMap: Record<string, string> = {};
-          if (Array.isArray(sub.options)) {
-            sub.options.forEach((o: any) => {
-              const k = (o.key || "").toLowerCase();
-              if (["a", "b", "c", "d"].includes(k)) {
-                optMap[`option_${k}`] = o.text || "";
-              }
-            });
-          }
-          return {
-            id: sub.id || `sub_${idx + 1}_${sIdx + 1}`,
-            number: Number(sub.number) || sIdx + 1,
-            text: sub.text || `Câu ${sub.number || sIdx + 1}`,
-            option_a: optMap.option_a || sub.option_a || "",
-            option_b: optMap.option_b || sub.option_b || "",
-            option_c: optMap.option_c || sub.option_c || "",
-            option_d: optMap.option_d || sub.option_d || "",
-            options: sub.options || [],
-            correct_answer: (sub.correct_answer || "A").toUpperCase(),
-          };
-        });
-      } else {
-        const optMap: Record<string, string> = {};
-        if (Array.isArray(q.options)) {
-          q.options.forEach((o: any) => {
-            const k = (o.key || "").toLowerCase();
-            if (["a", "b", "c", "d"].includes(k)) {
-              optMap[`option_${k}`] = o.text || "";
-            }
-          });
-        }
-        formattedSubQuestions = [
-          {
-            id: `sub_${idx + 1}_1`,
-            number: Number(q.number) || idx + 1,
-            text: q.prompt || `Câu ${q.number || idx + 1}`,
-            option_a: optMap.option_a || "",
-            option_b: optMap.option_b || "",
-            option_c: optMap.option_c || "",
-            option_d: optMap.option_d || "",
-            options: q.options || [],
-            correct_answer: (q.content?.correct_answer || "A").toUpperCase(),
-          },
-        ];
-      }
-
-      const qContent: any = {
-        ...(q.content || {}),
-        sub_questions: formattedSubQuestions,
-      };
-
-      if (q.category === "READING_FILL_IN" && q.stimulus_text) {
-        qContent.fill_subtype = "INLINE_SELECT";
-        qContent.passage = q.stimulus_text;
-      }
-
-      const qRes = await client.query(
-        `INSERT INTO questions (
-          id, skill, category, prompt, stimulus_text, content, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-        RETURNING id`,
-        [
-          qId,
-          qSkill,
-          q.category || "READING_MULTIPLE_CHOICE",
-          q.prompt,
-          q.stimulus_text || null,
-          JSON.stringify(qContent),
-        ]
-      );
-
-      createdQuestionIds.push(qRes.rows[0].id);
-    }
-
-    const skillsArray = Array.from(detectedSkills);
-    if (skillsArray.length === 0) skillsArray.push("Reading");
-
-    // 2. Insert into `exams` table
+    // FEAT-017 (BR-P14): nhóm đề giấy → phần; trắc nghiệm tách mỗi ý một câu; lưu cả cây như trình soạn
+    const sections = importToSections(normalized);
     const examId = `exam_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const examRes = await client.query(
-      `INSERT INTO exams (
-        id, title, duration_minutes, skills, question_ids, stimulus_text, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-      RETURNING id`,
-      [
-        examId,
-        examTitle,
-        Number(durationMinutes) || 60,
-        skillsArray,
-        JSON.stringify(createdQuestionIds),
-        primaryStimulusText || null,
-        authUser.userId,
-      ]
+      `INSERT INTO exams (id, title, duration_minutes, skills, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [examId, examTitle, Number(durationMinutes) || 60, [], authUser.userId]
     );
+    const db: Queryable = { query: async (t, p) => ({ rows: (await client.query(t, p as unknown[])).rows }) };
+    try {
+      await saveTreeInTx(db, { kind: "exam", id: examId, userId: authUser.userId, sections, allowMissingAudio: true });
+    } catch (e) {
+      const res = treeErrorResponse(e);
+      if (res) {
+        await client.query("ROLLBACK");
+        return res;
+      }
+      throw e;
+    }
+    const importedCount = sections.reduce((n, s) => n + s.questions.length, 0);
 
     const finalExamId = examRes.rows[0]?.id || examId;
     let curriculumItemId: string | null = null;
@@ -250,7 +189,7 @@ export async function POST(req: Request) {
         examId: finalExamId,
         courseId: destination?.courseId || null,
         curriculumItemId,
-        importedQuestionsCount: createdQuestionIds.length,
+        importedQuestionsCount: importedCount,
         message: destination?.type === "COURSE_CURRICULUM"
           ? "Đã tạo đề thi và liên kết thành công vào lộ trình khóa học!"
           : "Đã lưu đề thi thành công vào Kho Đề Thi!",
@@ -259,11 +198,7 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     await client.query("ROLLBACK");
-    console.error("AI Exam Import transaction error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Lỗi giao dịch khi lưu câu hỏi vào hệ thống." },
-      { status: 500 }
-    );
+    return serverError(error, { route: "/api/teacher/exams/ai-import", method: "POST", message: error.message || "Lỗi giao dịch khi lưu câu hỏi vào hệ thống." });
   } finally {
     client.release();
   }

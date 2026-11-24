@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { queryPg } from "@/lib/db-pg";
 import { createNotification } from "@/lib/notifications";
+import { serverError } from "@/lib/api-errors";
 
 export async function POST(
   req: Request,
@@ -115,10 +116,6 @@ export async function POST(
       },
     });
   } catch (err: any) {
-    console.error("POST /api/admin/teachers/[id]/verify error:", err);
-    return NextResponse.json(
-      { success: false, error: err.message || "Lỗi xác minh giáo viên." },
-      { status: 500 }
-    );
+    return serverError(err, { route: "/api/admin/teachers/[id]/verify", method: "POST", message: err.message || "Lỗi xác minh giáo viên." });
   }
 }

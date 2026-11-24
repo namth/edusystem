@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { queryPg } from "@/lib/db-pg";
 import { requireRole } from "@/lib/api-auth";
+import { serverError } from "@/lib/api-errors";
 
 export function parseJsonField<T>(val: any, fallback: T): T {
   if (val === null || val === undefined) return fallback;
@@ -208,8 +209,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ standards }, { status: 200 });
   } catch (err: any) {
-    console.error("GET /api/scoring-standards error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi nạp danh sách chuẩn chấm." }, { status: 500 });
+    return serverError(err, { route: "/api/scoring-standards", method: "GET", message: err.message || "Lỗi nạp danh sách chuẩn chấm." });
   }
 }
 
@@ -275,7 +275,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, standard }, { status: 201 });
   } catch (err: any) {
-    console.error("POST /api/scoring-standards error:", err);
-    return NextResponse.json({ success: false, error: err.message || "Lỗi tạo chuẩn chấm." }, { status: 500 });
+    return serverError(err, { route: "/api/scoring-standards", method: "POST", message: err.message || "Lỗi tạo chuẩn chấm." });
   }
 }
